@@ -1,0 +1,981 @@
+# Corsair MVP - Capability Evaluation Suite
+# Purpose: Validate 6 primitives + 15 OpenClaw patterns + compliance mapping
+# Type: Capability (stretch goals, target ~70% pass)
+# Domain: Coding (security/chaos engineering focus)
+
+suite:
+  id: "corsair-mvp-capability"
+  name: "Corsair MVP Atomic Implementation - Capability Eval"
+  description: "Comprehensive evaluation of Corsair's 6 primitives (RECON, MARK, RAID, PLUNDER, CHART, ESCAPE) and 15 OpenClaw patterns against TDD contracts and production AWS Cognito scenarios"
+  type: capability
+  domain: coding
+  pass_threshold: 0.70
+  trials: 3
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CATEGORY 1: PRIMITIVE FUNCTIONAL CORRECTNESS (6 tasks)
+# Grader: binary_tests (fast, deterministic, test file execution)
+# ══════════════════════════════════════════════════════════════════════════════
+
+tasks:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 1: RECON Primitive
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "recon-primitive-correctness"
+    description: "RECON observes AWS Cognito without state modification"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: binary_tests
+        weight: 0.50
+        params:
+          test_command: "bun test tests/primitives/test_recon_read_only.test.ts"
+          required_patterns:
+            - "8 pass"
+            - "0 fail"
+
+      - type: tool_calls
+        weight: 0.30
+        params:
+          required_sequence: ["Read", "Grep"]
+          forbidden_sequence: ["Edit", "Write", "Bash"]
+
+      - type: llm_rubric
+        weight: 0.20
+        params:
+          rubric: |
+            Score 1.0 if:
+            - ReconResult has stateModified=false
+            - No API calls modify user pool
+            - Duration tracking present
+            - Snapshot captures MFA config accurately
+
+            Score 0.5 if:
+            - Basic functionality works but missing metadata
+
+            Score 0.0 if:
+            - RECON modifies state or fails
+
+    trials: 3
+    pass_threshold: 0.75
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 2: MARK Primitive
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "mark-drift-detection"
+    description: "MARK identifies drift with severity assignment"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: binary_tests
+        weight: 0.50
+        params:
+          test_command: "bun test tests/primitives/test_mark_drift.test.ts"
+          required_patterns:
+            - "7 pass"
+            - "0 fail"
+
+      - type: natural_language_assert
+        weight: 0.30
+        params:
+          assertions:
+            - "MarkResult contains findings array"
+            - "driftDetected boolean computed automatically"
+            - "MFA OPTIONAL vs ON expectation triggers HIGH severity"
+            - "Password policy drift detected correctly"
+
+      - type: llm_rubric
+        weight: 0.20
+        params:
+          rubric: |
+            Score 1.0 if:
+            - Returns MarkResult wrapper (not raw array)
+            - Drift detection accurate for all test cases
+            - Severity levels (CRITICAL/HIGH/MEDIUM/LOW) correct
+            - Duration tracking present
+
+            Score 0.0 if:
+            - Returns raw array instead of MarkResult
+            - Severity assignment incorrect
+
+    trials: 3
+    pass_threshold: 0.75
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 3: RAID Primitive
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "raid-chaos-execution"
+    description: "RAID executes controlled chaos with lane serialization"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: binary_tests
+        weight: 0.50
+        params:
+          test_command: "bun test tests/primitives/test_raid_chaos.test.ts"
+          required_patterns:
+            - "10 pass"
+            - "0 fail"
+
+      - type: state_check
+        weight: 0.30
+        params:
+          checks:
+            - type: "file_exists"
+              path: "tests/evidence/raid-*.jsonl"
+            - type: "jsonl_valid"
+              path: "tests/evidence/raid-*.jsonl"
+            - type: "contains"
+              path: "tests/evidence/raid-*.jsonl"
+              pattern: "RAID-"
+
+      - type: llm_rubric
+        weight: 0.20
+        params:
+          rubric: |
+            Score 1.0 if:
+            - Lane serialization prevents concurrent raids
+            - Blast radius computed correctly
+            - Controls held/bypassed tracked accurately
+            - RaidResult has all required fields
+
+            Score 0.5 if:
+            - Basic raid works but lane serialization missing
+
+            Score 0.0 if:
+            - Concurrent raids allowed or crashes
+
+    trials: 3
+    pass_threshold: 0.70
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 4: PLUNDER Primitive
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "plunder-evidence-capture"
+    description: "PLUNDER extracts JSONL evidence with hash chain"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: binary_tests
+        weight: 0.40
+        params:
+          test_command: "bun test tests/primitives/test_plunder_evidence.test.ts"
+          required_patterns:
+            - "9 pass"
+            - "0 fail"
+
+      - type: state_check
+        weight: 0.40
+        params:
+          checks:
+            - type: "file_exists"
+              path: "tests/evidence/plunder-*.jsonl"
+            - type: "jsonl_valid"
+              path: "tests/evidence/plunder-*.jsonl"
+            - type: "contains"
+              path: "tests/evidence/plunder-*.jsonl"
+              pattern: '"previousHash"'
+            - type: "contains"
+              path: "tests/evidence/plunder-*.jsonl"
+              pattern: '"eventHash"'
+
+      - type: llm_rubric
+        weight: 0.20
+        params:
+          rubric: |
+            Score 1.0 if:
+            - JSONL format correct (one event per line)
+            - SHA-256 hash chain present
+            - Append-only guarantee maintained
+            - Evidence includes timestamps and metadata
+
+            Score 0.0 if:
+            - Hash chain broken or missing
+            - Not append-only
+
+    trials: 3
+    pass_threshold: 0.75
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 5: CHART Primitive
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "chart-framework-mapping"
+    description: "CHART maps findings to MITRE→NIST→SOC2 frameworks"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: binary_tests
+        weight: 0.40
+        params:
+          test_command: "bun test tests/primitives/test_chart_mapping.test.ts"
+          required_patterns:
+            - "10 pass"
+            - "0 fail"
+
+      - type: natural_language_assert
+        weight: 0.40
+        params:
+          assertions:
+            - "MFA drift maps to MITRE T1078 or T1556"
+            - "MITRE techniques map to NIST CSF PR.AC controls"
+            - "NIST controls map to SOC2 CC6.1 criteria"
+            - "Mapping chain shows MITRE→NIST→SOC2 lineage"
+            - "Evidence references link back to findings"
+
+      - type: llm_rubric
+        weight: 0.20
+        params:
+          rubric: |
+            Score 1.0 if:
+            - All three frameworks mapped correctly
+            - Mapping chain traceable
+            - Evidence type (positive/negative) correct
+            - Framework filtering works (SOC2-only, NIST-only)
+
+            Score 0.5 if:
+            - 2/3 frameworks correct
+
+            Score 0.0 if:
+            - Framework mappings incorrect or missing
+
+    trials: 3
+    pass_threshold: 0.75
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 6: ESCAPE Primitive
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "escape-scope-guard"
+    description: "ESCAPE cleans up with RAII scope guard pattern"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: binary_tests
+        weight: 0.50
+        params:
+          test_command: "bun test tests/primitives/test_escape_cleanup.test.ts"
+          required_patterns:
+            - "8 pass"
+            - "0 fail"
+
+      - type: tool_calls
+        weight: 0.30
+        params:
+          required_sequence: ["Read"]
+          context: "Verify cleanup handlers executed in reverse order"
+
+      - type: llm_rubric
+        weight: 0.20
+        params:
+          rubric: |
+            Score 1.0 if:
+            - Cleanup handlers execute in reverse order (LIFO)
+            - Error handling preserves cleanup execution
+            - Scope guard pattern implemented correctly
+            - No resource leaks
+
+            Score 0.0 if:
+            - Cleanup order wrong or handlers skip on error
+
+    trials: 3
+    pass_threshold: 0.75
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CATEGORY 2: OPENCLAW PATTERN VALIDATION (8 tasks)
+# Grader: llm_rubric (subjective quality, pattern recognition)
+# ══════════════════════════════════════════════════════════════════════════════
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 7: JSONL Serialization Pattern
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "pattern-jsonl-serialization"
+    description: "JSONL serialization with SHA-256 hash chain implemented"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: llm_rubric
+        weight: 0.70
+        params:
+          rubric: |
+            Score 1.0 if:
+            - SHA-256 hash chain present and correct
+            - Each event includes previousHash field
+            - First event has previousHash = null or genesis
+            - Hash computation uses deterministic input
+            - Append-only guarantee maintained
+
+            Score 0.5 if:
+            - JSONL format correct but hash chain weak/missing
+
+            Score 0.0 if:
+            - Not using JSONL or no hash chain
+
+      - type: binary_tests
+        weight: 0.30
+        params:
+          test_command: "bun test tests/patterns/test_jsonl_hash_chain.test.ts"
+
+    trials: 3
+    pass_threshold: 0.70
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 8: Lane Serialization Pattern
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "pattern-lane-serialization"
+    description: "Lane serialization prevents concurrent raid execution"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: llm_rubric
+        weight: 0.70
+        params:
+          rubric: |
+            Score 1.0 if:
+            - LaneSerializer class implemented correctly
+            - Concurrent raids on same target blocked
+            - Different targets can raid in parallel
+            - Lane tracking with Map or equivalent
+            - Clean error messaging when lane busy
+
+            Score 0.5 if:
+            - Basic locking works but not per-target granular
+
+            Score 0.0 if:
+            - Concurrent raids allowed on same target
+
+      - type: binary_tests
+        weight: 0.30
+        params:
+          test_command: "bun test tests/patterns/test_lane_serialization.test.ts"
+
+    trials: 3
+    pass_threshold: 0.70
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 9: Scope Guard Pattern (RAII)
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "pattern-scope-guard-raii"
+    description: "Scope guards implement RAII cleanup pattern correctly"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: llm_rubric
+        weight: 0.70
+        params:
+          rubric: |
+            Score 1.0 if:
+            - Cleanup handlers stored in array/stack
+            - Execution order is LIFO (reverse registration)
+            - Error in one handler doesn't skip others
+            - Try-finally or equivalent ensures execution
+            - Pattern resembles C++ RAII or Go defer
+
+            Score 0.5 if:
+            - Cleanup works but order not guaranteed
+
+            Score 0.0 if:
+            - No cleanup or skips on error
+
+      - type: binary_tests
+        weight: 0.30
+        params:
+          test_command: "bun test tests/patterns/test_scope_guards.test.ts"
+
+    trials: 3
+    pass_threshold: 0.70
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 10: State Machine Types
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "pattern-state-machine-types"
+    description: "Seven-phase lifecycle types define state transitions"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: llm_rubric
+        weight: 1.0
+        params:
+          rubric: |
+            Score 1.0 if:
+            - 7 phases defined: OBSERVE, THINK, PLAN, BUILD, EXECUTE, VERIFY, LEARN
+            - TypeScript union type or enum
+            - State transitions typed correctly
+            - Used in method signatures for phase tracking
+
+            Score 0.5 if:
+            - Types exist but not enforced in code
+
+            Score 0.0 if:
+            - No state machine types or wrong phases
+
+    trials: 3
+    pass_threshold: 0.60
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 11: Result Wrapper Pattern
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "pattern-result-wrappers"
+    description: "Result wrappers provide ergonomic metadata for consumers"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: llm_rubric
+        weight: 0.70
+        params:
+          rubric: |
+            Score 1.0 if:
+            - All primitives return wrapped result objects (not raw primitives)
+            - Wrappers include duration tracking (durationMs)
+            - MarkResult has driftDetected computed boolean
+            - ReconResult has stateModified at top level
+            - Wrappers make API ergonomic for consumers
+
+            Score 0.5 if:
+            - Some primitives wrapped, others return raw
+
+            Score 0.0 if:
+            - No result wrappers, primitives return raw arrays/values
+
+      - type: natural_language_assert
+        weight: 0.30
+        params:
+          assertions:
+            - "MarkResult has findings, driftDetected, durationMs"
+            - "ReconResult has snapshot, stateModified, durationMs"
+            - "RaidResult includes controlsHeld and duration"
+
+    trials: 3
+    pass_threshold: 0.75
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 12: API Ergonomics Pattern
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "pattern-api-ergonomics"
+    description: "API designed for consumer ergonomics not just test contracts"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: llm_rubric
+        weight: 1.0
+        params:
+          rubric: |
+            Score 1.0 if:
+            - Consumer code (demo) uses API naturally
+            - No manual duration tracking required
+            - No manual drift boolean computation
+            - Rich metadata available without extra work
+            - API feels intuitive, not clunky
+
+            Score 0.5 if:
+            - API works but requires boilerplate
+
+            Score 0.0 if:
+            - API awkward, requires manual metadata tracking
+
+    trials: 3
+    pass_threshold: 0.70
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 13: Severity Assignment Pattern
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "pattern-severity-assignment"
+    description: "Drift severity assigned automatically by implementation"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: llm_rubric
+        weight: 0.70
+        params:
+          rubric: |
+            Score 1.0 if:
+            - Severity computed by implementation (not caller)
+            - MFA drift → HIGH or CRITICAL
+            - Password policy drift → MEDIUM
+            - Risk config missing → MEDIUM or HIGH
+            - Logic defensible and consistent
+
+            Score 0.5 if:
+            - Severity exists but assignment questionable
+
+            Score 0.0 if:
+            - Caller must specify severity (wrong pattern)
+
+      - type: natural_language_assert
+        weight: 0.30
+        params:
+          assertions:
+            - "MFA OPTIONAL vs ON drift has HIGH severity"
+            - "Password length drift has MEDIUM severity"
+            - "Missing risk config has MEDIUM or HIGH severity"
+
+    trials: 3
+    pass_threshold: 0.70
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 14: Fixture Realism Pattern
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "pattern-fixture-realism"
+    description: "Fixtures match production AWS Cognito API schemas"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: llm_rubric
+        weight: 1.0
+        params:
+          rubric: |
+            Score 1.0 if:
+            - Fixtures use real AWS Cognito response structure
+            - GetUserPoolMfaConfig schema accurate
+            - DescribeUserPool schema accurate
+            - Field names match AWS API docs
+            - CVE references documented (CVE-2024-28056)
+
+            Score 0.5 if:
+            - Fixtures realistic but some fields missing/wrong
+
+            Score 0.0 if:
+            - Fixtures are fake/synthetic with wrong structure
+
+    trials: 3
+    pass_threshold: 0.75
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CATEGORY 3: COMPLIANCE MAPPING ACCURACY (3 tasks)
+# Grader: natural_language_assert (compliance framework validation)
+# ══════════════════════════════════════════════════════════════════════════════
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 15: MITRE ATT&CK Mapping Accuracy
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "compliance-mitre-accuracy"
+    description: "MFA bypass maps to correct MITRE ATT&CK technique"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: natural_language_assert
+        weight: 0.60
+        params:
+          assertions:
+            - "MFA bypass maps to T1078 (Valid Accounts) OR T1556 (Modify Authentication Process)"
+            - "Technique ID format is T#### with 4 digits"
+            - "Mapping includes technique description"
+            - "Evidence reference links back to drift finding"
+
+      - type: llm_rubric
+        weight: 0.40
+        params:
+          rubric: |
+            Score 1.0 if:
+            - MITRE technique ID correct for MFA bypass
+            - Technique description accurate
+            - Mapping chain documented
+
+            Score 0.5 if:
+            - Technique ID in right family but not exact match
+
+            Score 0.0 if:
+            - Wrong technique or no MITRE mapping
+
+    trials: 3
+    pass_threshold: 0.70
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 16: NIST CSF Mapping Accuracy
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "compliance-nist-accuracy"
+    description: "MITRE techniques map to NIST CSF controls correctly"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: natural_language_assert
+        weight: 0.60
+        params:
+          assertions:
+            - "MFA control maps to PR.AC (Protect - Access Control)"
+            - "Control ID format is XX.YY (function.category)"
+            - "NIST CSF v1.1 or v2.0 framework referenced"
+            - "Mapping chain shows MITRE → NIST lineage"
+
+      - type: llm_rubric
+        weight: 0.40
+        params:
+          rubric: |
+            Score 1.0 if:
+            - NIST control ID correct (PR.AC or PR.DS)
+            - Control description matches NIST documentation
+            - Framework version specified
+
+            Score 0.5 if:
+            - Control in right function but wrong category
+
+            Score 0.0 if:
+            - Wrong control or no NIST mapping
+
+    trials: 3
+    pass_threshold: 0.70
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 17: SOC2 Common Criteria Mapping
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "compliance-soc2-accuracy"
+    description: "NIST controls map to SOC2 CC criteria accurately"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: natural_language_assert
+        weight: 0.60
+        params:
+          assertions:
+            - "MFA control maps to CC6.1 (Logical Access Security)"
+            - "Control ID format is CC#.# (Common Criteria)"
+            - "TSC 2017 or TSC 2018 framework referenced"
+            - "Mapping chain shows MITRE → NIST → SOC2"
+
+      - type: llm_rubric
+        weight: 0.40
+        params:
+          rubric: |
+            Score 1.0 if:
+            - SOC2 criterion correct (CC6.1, CC6.2, CC6.6)
+            - Criterion description matches TSC documentation
+            - Full mapping chain traceable
+
+            Score 0.5 if:
+            - Criterion in CC6 family but not exact match
+
+            Score 0.0 if:
+            - Wrong criterion or no SOC2 mapping
+
+    trials: 3
+    pass_threshold: 0.70
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CATEGORY 4: INTEGRATION & E2E SCENARIOS (6 tasks)
+# Grader: state_check + tool_calls (demo execution validation)
+# ══════════════════════════════════════════════════════════════════════════════
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 18: Full Pipeline Execution
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "integration-full-pipeline"
+    description: "Demo executes RECON→MARK→RAID→PLUNDER→CHART→ESCAPE successfully"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: state_check
+        weight: 0.40
+        params:
+          checks:
+            - type: "command_exit_code"
+              command: "bun run demo-e2e.ts"
+              expected: 0
+            - type: "file_exists"
+              path: "tests/evidence/raid-*.jsonl"
+
+      - type: tool_calls
+        weight: 0.30
+        params:
+          required_sequence: ["Bash"]
+          context: "Run demo and verify no crashes"
+
+      - type: llm_rubric
+        weight: 0.30
+        params:
+          rubric: |
+            Score 1.0 if:
+            - Demo completes without errors
+            - All 6 primitives execute
+            - Evidence files generated
+            - Output shows expected stages
+
+            Score 0.5 if:
+            - 3-5 primitives work, some fail
+
+            Score 0.0 if:
+            - Demo crashes or <3 primitives work
+
+    trials: 3
+    pass_threshold: 0.70
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 19: API Surface Consistency
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "integration-api-consistency"
+    description: "Demo calls match actual implementation signatures"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: llm_rubric
+        weight: 0.60
+        params:
+          rubric: |
+            Score 1.0 if:
+            - All demo method calls match implementation
+            - No TypeError or property undefined errors
+            - Result object access patterns correct
+            - Parameter shapes match expected types
+
+            Score 0.5 if:
+            - 1-2 mismatches but mostly correct
+
+            Score 0.0 if:
+            - Multiple API mismatches or crashes
+
+      - type: natural_language_assert
+        weight: 0.40
+        params:
+          assertions:
+            - "Demo accesses markResult.findings not raw array"
+            - "Demo accesses reconResult.stateModified at top level"
+            - "RAID call passes (snapshot, options) not config object"
+
+    trials: 3
+    pass_threshold: 0.75
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 20: Evidence Chain Integrity
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "integration-evidence-integrity"
+    description: "JSONL evidence chain maintains integrity across full pipeline"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: state_check
+        weight: 0.50
+        params:
+          checks:
+            - type: "jsonl_valid"
+              path: "tests/evidence/raid-*.jsonl"
+            - type: "contains"
+              path: "tests/evidence/raid-*.jsonl"
+              pattern: '"previousHash"'
+            - type: "contains"
+              path: "tests/evidence/raid-*.jsonl"
+              pattern: '"eventHash"'
+
+      - type: llm_rubric
+        weight: 0.50
+        params:
+          rubric: |
+            Score 1.0 if:
+            - Hash chain unbroken from first to last event
+            - Each event previousHash matches prior eventHash
+            - No missing or duplicate events
+            - Timestamps monotonically increasing
+
+            Score 0.5 if:
+            - JSONL format correct but hash chain has gaps
+
+            Score 0.0 if:
+            - Hash chain broken or invalid JSONL
+
+    trials: 3
+    pass_threshold: 0.75
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 21: Concurrent Raid Prevention
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "integration-concurrent-prevention"
+    description: "Lane serialization prevents concurrent raids on same target"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: binary_tests
+        weight: 0.50
+        params:
+          test_command: "bun test tests/integration/test_concurrent_raids.test.ts"
+
+      - type: llm_rubric
+        weight: 0.50
+        params:
+          rubric: |
+            Score 1.0 if:
+            - Second raid on same target blocks
+            - Error message clear ("Lane busy")
+            - Different targets can raid in parallel
+            - Lane cleanup after raid completion
+
+            Score 0.0 if:
+            - Concurrent raids allowed on same target
+
+    trials: 3
+    pass_threshold: 0.75
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 22: Fixture Coverage Scenarios
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "integration-fixture-scenarios"
+    description: "Tests cover compliant, non-compliant, optional MFA scenarios"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: llm_rubric
+        weight: 0.60
+        params:
+          rubric: |
+            Score 1.0 if:
+            - cognito-userpool-compliant.json tested
+            - cognito-userpool-noncompliant.json tested
+            - cognito-userpool-optional-mfa.json tested
+            - CVE-2024-28056 device key theft scenario documented
+            - Password policy variations covered
+
+            Score 0.5 if:
+            - 2-3 scenarios covered
+
+            Score 0.0 if:
+            - Single scenario or missing key fixtures
+
+      - type: natural_language_assert
+        weight: 0.40
+        params:
+          assertions:
+            - "Compliant pool fixture has MFA ON"
+            - "Non-compliant pool fixture has MFA OFF"
+            - "Optional pool fixture has MFA OPTIONAL"
+
+    trials: 3
+    pass_threshold: 0.70
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 23: Error Handling Resilience
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "integration-error-handling"
+    description: "System handles errors gracefully without breaking pipeline"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: llm_rubric
+        weight: 1.0
+        params:
+          rubric: |
+            Score 1.0 if:
+            - Invalid fixture returns clear error (not crash)
+            - Missing fields handled gracefully
+            - ESCAPE cleanup runs even if RAID errors
+            - Error messages actionable
+
+            Score 0.5 if:
+            - Some error handling but crashes on edge cases
+
+            Score 0.0 if:
+            - Crashes on invalid input
+
+    trials: 3
+    pass_threshold: 0.60
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CATEGORY 5: ANTI-CRITERIA (3 tasks)
+# Grader: llm_rubric (negative testing, what must NOT happen)
+# ══════════════════════════════════════════════════════════════════════════════
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 24: No Credential Exposure
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "anti-credential-exposure"
+    description: "No credentials or secrets exposed in logs or evidence"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: llm_rubric
+        weight: 1.0
+        params:
+          rubric: |
+            Score 1.0 if:
+            - No AWS credentials in JSONL evidence
+            - No API keys in logs
+            - No password values in drift findings
+            - Sensitive fields redacted or excluded
+
+            Score 0.0 if:
+            - Any credential or secret exposed
+
+    trials: 3
+    pass_threshold: 0.90
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 25: No State Mutation in RECON
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "anti-state-mutation-recon"
+    description: "RECON never modifies target state (read-only guarantee)"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: llm_rubric
+        weight: 1.0
+        params:
+          rubric: |
+            Score 1.0 if:
+            - ReconResult.stateModified always false
+            - No AWS SDK write calls in RECON implementation
+            - Fixture loading doesn't modify files
+            - RECON truly read-only
+
+            Score 0.0 if:
+            - Any state modification detected
+
+    trials: 3
+    pass_threshold: 0.95
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Task 26: No Uncontrolled Blast Radius
+  # ─────────────────────────────────────────────────────────────────────────
+  - id: "anti-uncontrolled-blast"
+    description: "RAID blast radius controlled and does not exceed limits"
+    type: capability
+    domain: coding
+
+    graders:
+      - type: llm_rubric
+        weight: 1.0
+        params:
+          rubric: |
+            Score 1.0 if:
+            - Blast radius computed before execution
+            - High blast radius raids require dryRun=false explicit
+            - Lane serialization prevents blast amplification
+            - No cross-account or cross-region leakage
+
+            Score 0.5 if:
+            - Blast radius tracked but limits not enforced
+
+            Score 0.0 if:
+            - Uncontrolled blast radius possible
+
+    trials: 3
+    pass_threshold: 0.80
+
+# ══════════════════════════════════════════════════════════════════════════════
+# END OF SUITE
+# Total Tasks: 26
+# Category Breakdown:
+#   - Primitive Correctness: 6 tasks (binary_tests)
+#   - Pattern Validation: 8 tasks (llm_rubric)
+#   - Compliance Mapping: 3 tasks (natural_language_assert)
+#   - Integration E2E: 6 tasks (state_check + tool_calls)
+#   - Anti-Criteria: 3 tasks (llm_rubric negative testing)
+# ══════════════════════════════════════════════════════════════════════════════

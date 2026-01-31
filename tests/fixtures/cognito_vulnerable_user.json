@@ -1,0 +1,32 @@
+{
+  "Username": "legacy.user@example.com",
+  "UserAttributes": [
+    {
+      "Name": "sub",
+      "Value": "b2c3d4e5-6789-01ab-cdef-EXAMPLE22222"
+    },
+    {
+      "Name": "email_verified",
+      "Value": "true"
+    },
+    {
+      "Name": "email",
+      "Value": "legacy.user@example.com"
+    },
+    {
+      "Name": "phone_number",
+      "Value": "+15555551234"
+    },
+    {
+      "Name": "phone_number_verified",
+      "Value": "true"
+    }
+  ],
+  "UserCreateDate": 1577836800,
+  "UserLastModifiedDate": 1577836800,
+  "Enabled": true,
+  "UserStatus": "CONFIRMED",
+  "MFAOptions": [],
+  "PreferredMfaSetting": null,
+  "UserMFASettingList": []
+}

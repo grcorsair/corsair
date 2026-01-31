@@ -1,0 +1,28 @@
+{
+  "attack_vector": "device_key_theft",
+  "cve_reference": "CVE-2024-28056",
+  "description": "Attacker steals device key to bypass MFA permanently",
+  "target_user": "john.doe@example.com",
+  "stolen_device_key": {
+    "DeviceKey": "us-east-1_abc123def456",
+    "DeviceGroupKey": "us-east-1_ghijklmnop",
+    "DeviceAttributes": [
+      {
+        "Name": "device_name",
+        "Value": "johns-iphone"
+      },
+      {
+        "Name": "last_authenticated",
+        "Value": "1706745600"
+      }
+    ]
+  },
+  "expected_outcome": "bypass_mfa_permanently",
+  "exploitation_steps": [
+    "Obtain device key from compromised session (phishing, malware, etc.)",
+    "Use device key in subsequent authentication attempts",
+    "Cognito recognizes device as 'remembered' and skips MFA challenge",
+    "Attacker gains persistent access without MFA"
+  ],
+  "mitigation": "Implement device key rotation policy, monitor for suspicious device usage patterns"
+}

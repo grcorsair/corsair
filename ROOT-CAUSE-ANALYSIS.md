@@ -1,0 +1,408 @@
+# Root Cause Analysis - Corsair MVP API Mismatch
+
+**Date:** 2026-01-31
+**Issue:** Demo crashed due to API surface mismatch between implementation and consumer expectations
+**Status:** ✅ Core issue FIXED (RECON + MARK working), ⚠️ PLUNDER remains mismatched
+
+---
+
+## Root Cause
+
+**The fundamental problem:** Two competing specifications created during TDD process:
+
+1. **Test Contracts** (what tests validated): Raw primitives for testability
+   - `mark()` returns `DriftFinding[]` array
+   - Tests assert directly on array elements
+
+2. **Consumer Expectations** (what demo assumed): Rich metadata wrappers for usability
+   - Demo expects `markResult.findings`, `markResult.driftDetected`, `markResult.durationMs`
+   - Demo expects `reconResult.stateModified`, `reconResult.durationMs` at top level
+
+**Why this happened:**
+
+1. Engineer agent was told: "Make tests pass"
+   - Agent implemented to satisfy test assertions (return array, not wrapper)
+   - TDD success metric = green tests, not ergonomic API
+
+2. Demo was written independently
+   - Assumed rich result objects (reasonable expectation for production API)
+   - Never validated against actual implementation
+
+3. No integration layer between unit tests and E2E demo
+   - Unit tests validate primitives in isolation
+   - Demo validates composition and ergonomics
+   - Gap between these two went undetected until demo execution
+
+**The deeper issue:** TDD focused on "functional correctness" (does it compute correctly?) but not "interface ergonomics" (is it pleasant to use?). Both are requirements.
+
+---
+
+## Fixes Applied
+
+### 1. Added MarkResult Wrapper Type ✅
+
+**Before:**
+```typescript
+async mark(snapshot: CognitoSnapshot, expectations: Expectation[]): Promise<DriftFinding[]> {
+  const findings: DriftFinding[] = [];
+  // ... logic ...
+  return findings;  // Raw array
+}
+```
+
+**After:**
+```typescript
+export interface MarkResult {
+  findings: DriftFinding[];
+  driftDetected: boolean;
+  durationMs: number;
+}
+
+async mark(snapshot: CognitoSnapshot, expectations: Expectation[]): Promise<MarkResult> {
+  const startTime = Date.now();
+  const findings: DriftFinding[] = [];
+  // ... logic ...
+  const durationMs = Date.now() - startTime;
+  const driftDetected = findings.some(f => f.drift === true);
+
+  return {
+    findings,
+    driftDetected,
+    durationMs,
+  };
+}
+```
+
+**Impact:**
+- ✅ Demo now works: `markResult.findings.length`
+- ✅ Tests updated to access `.findings` property
+- ✅ Duration tracking automatic
+- ✅ Drift detection computed automatically (no manual check needed)
+
+---
+
+### 2. Enhanced ReconResult with Top-Level Fields ✅
+
+**Before:**
+```typescript
+export interface ReconResult {
+  snapshot: CognitoSnapshot;
+  metadata: ReconMetadata;  // durationMs buried here
+}
+```
+
+**After:**
+```typescript
+export interface ReconResult {
+  snapshot: CognitoSnapshot;
+  metadata: ReconMetadata;
+  stateModified: boolean;  // Top-level for easy access
+  durationMs: number;      // Top-level (not buried in metadata)
+}
+```
+
+**Implementation:**
+```typescript
+return {
+  snapshot,
+  metadata: {
+    source: "fixture",
+    readonly: true,
+    durationMs,  // Also in metadata for backward compat
+  },
+  stateModified: false,  // RECON is read-only by contract
+  durationMs,  // Top level for ergonomics
+};
+```
+
+**Impact:**
+- ✅ Demo accesses `reconResult.durationMs` directly
+- ✅ Demo verifies `reconResult.stateModified === false`
+- ✅ No breaking changes (durationMs still in metadata too)
+
+---
+
+### 3. Added Optional Fields to CognitoSnapshot ✅
+
+**Before:**
+```typescript
+export interface CognitoSnapshot {
+  userPoolId: string;
+  userPoolName: string;
+  mfaConfiguration: MfaConfiguration;
+  // ... other fields ...
+  observedAt: string;
+}
+```
+
+**After:**
+```typescript
+export interface CognitoSnapshot {
+  // ... existing fields ...
+  observedAt: string;
+  userCount?: number;  // Optional - requires user list parsing
+  status?: string;     // Optional - from UserPool.Status
+}
+```
+
+**Impact:**
+- ✅ Demo shows `undefined` instead of crashing
+- ✅ Type system allows fields without breaking existing code
+- ⚠️ Not populated yet (requires parsing user list from fixtures)
+
+---
+
+### 4. Fixed Demo Expectation Format ✅
+
+**Before (WRONG):**
+```typescript
+const expectations: Expectation[] = [
+  {
+    field: "mfaConfiguration",
+    expectedValue: "ON",  // Wrong property name
+    severity: "CRITICAL", // Not part of Expectation interface
+    rationale: "..."     // Not part of Expectation interface
+  }
+];
+```
+
+**After (CORRECT):**
+```typescript
+const expectations: Expectation[] = [
+  {
+    field: "mfaConfiguration",
+    operator: "eq",  // Required
+    value: "ON"      // Correct property name
+  }
+];
+```
+
+**Impact:**
+- ✅ Demo matches actual `Expectation` interface
+- ✅ Severity assigned by implementation (not caller)
+- ✅ Description generated by implementation
+
+---
+
+### 5. Fixed RAID API Call ✅
+
+**Before (WRONG):**
+```typescript
+const raidResult = await corsair.raid({
+  target: reconResult.snapshot.userPoolId,
+  attackVector: "mfa-bypass",
+  blastRadius: "low",
+  chaosIntensity: 1
+});
+```
+
+**After (CORRECT):**
+```typescript
+const raidResult = await corsair.raid(reconResult.snapshot, {
+  vector: "mfa-bypass",
+  intensity: 0.8,
+  dryRun: false
+});
+```
+
+**Impact:**
+- ✅ Matches actual `raid(snapshot, options)` signature
+- ✅ Uses correct `RaidOptions` properties
+
+---
+
+### 6. Updated All Tests to Use New API ✅
+
+**Changes:**
+- `const findings = await corsair.mark(...)` → `const result = await corsair.mark(...)`
+- `findings.length` → `result.findings.length`
+- `findings.find(...)` → `result.findings.find(...)`
+- `corsair.chart(findings)` → `corsair.chart(result.findings)`
+
+**Test Results:**
+```bash
+$ bun test tests/primitives/
+
+bun test v1.3.7 (ba426210)
+
+ 50 pass
+ 0 fail
+ 202 expect() calls
+Ran 50 tests across 6 files. [243.00ms]
+```
+
+✅ **All 50 tests pass after changes**
+
+---
+
+## What Works Now ✅
+
+### RECON Primitive
+```
+📊 Reconnaissance Complete:
+  Pool ID:       us-west-2_OPTIONAL001
+  Pool Name:     staging-optional-mfa-pool
+  MFA Config:    OPTIONAL
+  User Count:    undefined (optional field)
+  Status:        undefined (optional field)
+  Duration:      0ms ✅
+  Modified:      ✅ NO ✅
+```
+
+### MARK Primitive
+```
+🎯 Drift Analysis Complete:
+  Total Findings:     4 ✅
+  Critical:           0 ✅
+  High:               1 ✅
+  Medium:             3 ✅
+  Drift Detected:     ⚠️  YES ✅
+
+📋 Drift Findings:
+  🟠 [HIGH] mfaConfiguration ✅
+     Expected: "ON" ✅
+     Actual:   "OPTIONAL" ✅
+     Description: mfaConfiguration drift detected: expected "ON", found "OPTIONAL" ✅
+```
+
+### RAID Primitive
+```
+⚔️  Raid Execution Complete:
+  Raid ID:            RAID-9e266c06 ✅
+  Target:             us-west-2_OPTIONAL001 ✅
+  Attack Vector:      mfa-bypass ✅
+  Outcome:            ❌ Failed ✅
+  Controls Held:      ✅ YES ✅
+  Duration:           0ms ✅
+  Findings:           2 ✅
+  Lane Serialized:    ✅ YES ✅
+```
+
+---
+
+## Remaining Issues ⚠️
+
+### PLUNDER API Mismatch
+
+**Implementation Signature:**
+```typescript
+async plunder(data: unknown, operation: OperationType): Promise<PlunderResult>
+
+interface PlunderResult {
+  path: string;
+  recordsWritten: number;
+}
+```
+
+**Demo Expectation:**
+```typescript
+const plunderResult = corsair.plunder(raidResult, evidencePath);
+
+// Expects:
+plunderResult.evidencePath
+plunderResult.eventCount
+plunderResult.chainVerified
+plunderResult.immutable
+plunderResult.auditReady
+```
+
+**Gap:** Complete API mismatch
+- Implementation takes `(data, operation)` - generic evidence capture
+- Demo expects `(raidResult, evidencePath)` - raid-specific with path
+- Return type completely different
+
+**To Fix:**
+1. Either change implementation to match demo expectations
+2. Or change demo to match implementation API
+3. Or add overload: `plunder(raidResult, path)` for convenience
+
+---
+
+## Test Coverage Verification
+
+### Before Changes:
+- 50 tests passing
+- Tests validated raw arrays
+
+### After Changes:
+- 50 tests passing ✅
+- Tests validate wrapper objects with metadata
+- 2 additional expect() calls (202 vs 200)
+
+**No regression** - all tests adapted successfully.
+
+---
+
+## Lessons Learned
+
+### 1. TDD Must Include Ergonomics
+
+**What we did:**
+✅ Write tests
+✅ Make tests pass
+❌ Validate ergonomic API
+
+**What we should do:**
+✅ Write tests
+✅ Make tests pass
+✅ **Write integration/E2E demo**
+✅ **Validate demo uses API naturally**
+
+### 2. Tests vs Reality Gap
+
+**Tests tell you:** Does it work correctly?
+**Demo tells you:** Is it pleasant to use?
+
+Both are necessary. Green tests + failing demo = incomplete success.
+
+### 3. Two Ways to Satisfy Test Contracts
+
+**Option A: Return raw primitive**
+```typescript
+return findings;  // Tests pass ✅, API awkward ❌
+```
+
+**Option B: Return wrapped object**
+```typescript
+return { findings, driftDetected, durationMs };  // Tests pass ✅, API ergonomic ✅
+```
+
+Both satisfy "tests pass" requirement. Only B satisfies "good API" requirement.
+
+### 4. Demo Should Be Part of TDD Cycle
+
+**Traditional TDD:**
+Red → Green → Refactor
+
+**Complete TDD for Libraries/APIs:**
+Red → Green → **Demo** → Refactor
+
+If demo fails, you haven't completed "Green" yet.
+
+---
+
+## Summary
+
+**Root Cause:** Tests validated functional correctness (does math work?) but not interface ergonomics (is API pleasant?). Implementation satisfied test contracts but not consumer expectations.
+
+**Fix:** Added wrapper types (`MarkResult`), enhanced result objects (`ReconResult`), updated tests to access wrapper properties. 50/50 tests still pass.
+
+**Result:**
+- ✅ RECON works in demo
+- ✅ MARK works in demo
+- ✅ RAID works in demo
+- ⚠️ PLUNDER needs API redesign
+- ⚠️ CHART not tested in demo yet
+- ⚠️ ESCAPE not tested in demo yet
+
+**Next Steps:**
+1. Fix PLUNDER API to match demo expectations
+2. Extend demo to show CHART and ESCAPE
+3. Add integration test that runs full demo programmatically
+
+---
+
+**Fixed by:** Arudjreis
+**Date:** 2026-01-31
+**Test Evidence:** 50/50 pass (202 assertions)
+**Demo Evidence:** 3/6 primitives working (RECON, MARK, RAID)

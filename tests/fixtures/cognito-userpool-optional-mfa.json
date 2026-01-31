@@ -1,0 +1,90 @@
+{
+  "UserPool": {
+    "Id": "us-west-2_OPTIONAL001",
+    "Name": "staging-optional-mfa-pool",
+    "Policies": {
+      "PasswordPolicy": {
+        "MinimumLength": 12,
+        "RequireUppercase": true,
+        "RequireLowercase": true,
+        "RequireNumbers": true,
+        "RequireSymbols": false,
+        "TemporaryPasswordValidityDays": 7
+      }
+    },
+    "MfaConfiguration": "OPTIONAL",
+    "UserPoolTags": {
+      "Environment": "staging",
+      "Owner": "platform-team"
+    },
+    "AdminCreateUserConfig": {
+      "AllowAdminCreateUserOnly": false,
+      "InviteMessageTemplate": {
+        "SMSMessage": "Your username is {username} and temporary password is {####}",
+        "EmailMessage": "Your username is {username} and temporary password is {####}",
+        "EmailSubject": "Your temporary password"
+      },
+      "UnusedAccountValidityDays": 14
+    },
+    "DeviceConfiguration": {
+      "ChallengeRequiredOnNewDevice": false,
+      "DeviceOnlyRememberedOnUserPrompt": true
+    },
+    "AccountRecoverySetting": {
+      "RecoveryMechanisms": [
+        {
+          "Priority": 1,
+          "Name": "verified_email"
+        }
+      ]
+    },
+    "UsernameConfiguration": {
+      "CaseSensitive": false
+    },
+    "VerificationMessageTemplate": {
+      "DefaultEmailOption": "CONFIRM_WITH_CODE"
+    },
+    "UserAttributeUpdateSettings": {
+      "AttributesRequireVerificationBeforeUpdate": ["email"]
+    },
+    "CreationDate": "2023-06-20T14:00:00.000Z",
+    "LastModifiedDate": "2024-09-15T11:30:00.000Z",
+    "Status": "Active"
+  },
+  "UserPoolMfaConfig": {
+    "SmsMfaConfiguration": {
+      "SmsAuthenticationMessage": "Your code is {####}",
+      "SmsConfiguration": {
+        "SnsCallerArn": "arn:aws:iam::123456789012:role/cognito-sms-role",
+        "ExternalId": "sms-external-id"
+      }
+    },
+    "SoftwareTokenMfaConfiguration": {
+      "Enabled": true
+    },
+    "MfaConfiguration": "OPTIONAL"
+  },
+  "RiskConfiguration": {
+    "UserPoolId": "us-west-2_OPTIONAL001",
+    "CompromisedCredentialsRiskConfiguration": null,
+    "AccountTakeoverRiskConfiguration": {
+      "NotifyConfiguration": {
+        "From": "noreply@company.com"
+      },
+      "Actions": {
+        "LowAction": {
+          "Notify": false,
+          "EventAction": "NO_ACTION"
+        },
+        "MediumAction": {
+          "Notify": true,
+          "EventAction": "NO_ACTION"
+        },
+        "HighAction": {
+          "Notify": true,
+          "EventAction": "MFA_IF_CONFIGURED"
+        }
+      }
+    }
+  }
+}

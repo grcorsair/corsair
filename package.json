@@ -1,0 +1,46 @@
+{
+  "name": "corsair-mvp",
+  "version": "0.2.0",
+  "description": "CORSAIR MVP - Atomic chaos engineering primitives for GRC security testing",
+  "type": "module",
+  "main": "src/corsair-mvp.ts",
+  "bin": {
+    "corsair": "./corsair.ts",
+    "corsair-mvp": "./src/corsair-mvp.ts"
+  },
+  "scripts": {
+    "test": "bun test tests/primitives/",
+    "test:recon": "bun test tests/primitives/test_recon_readonly.test.ts",
+    "test:mark": "bun test tests/primitives/test_mark_drift.test.ts",
+    "test:raid": "bun test tests/primitives/test_raid_chaos.test.ts",
+    "test:plunder": "bun test tests/primitives/test_plunder_evidence.test.ts",
+    "test:chart": "bun test tests/primitives/test_chart_mapping.test.ts",
+    "test:escape": "bun test tests/primitives/test_escape_rollback.test.ts",
+    "corsair": "bun run corsair.ts",
+    "strike": "bun run corsair.ts strike",
+    "recon": "bun run corsair.ts recon",
+    "evidence": "bun run corsair.ts evidence",
+    "help": "bun run corsair.ts help",
+    "demo": "bun run demo.sh"
+  },
+  "keywords": [
+    "chaos-engineering",
+    "security",
+    "offensive-security",
+    "compliance",
+    "soc2",
+    "mfa",
+    "authentication",
+    "tdd",
+    "cognito",
+    "aws"
+  ],
+  "author": "GRC Engineer",
+  "license": "MIT",
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "exports": {
+    ".": "./src/corsair-mvp.ts"
+  }
+}
