@@ -33,9 +33,123 @@ Compliance evidence is generated as a **byproduct** of attacks, not as a goal.
 
 ## Architecture
 
-### Plugin System
+CORSAIR uses a **layered plugin architecture** that separates universal primitives (core) from provider-specific implementations (plugins). This design enables scaling from 1 to 100+ providers while maintaining cryptographic guarantees.
 
-Corsair uses a **provider plugin architecture** that scales from 1 to 100+ providers:
+### System Architecture
+
+```mermaid
+graph TB
+    subgraph "User Layer"
+        CLI[CLI / API]
+    end
+
+    subgraph "Core Layer (Universal)"
+        Corsair[Corsair Orchestrator]
+        Registry[Plugin Registry]
+        EvidenceCtrl[Evidence Controller<br/>SHA-256 Hash Chain]
+        LaneSerial[Provider Lane Serializer<br/>Composite Keys]
+
+        Corsair --> Registry
+        Corsair --> EvidenceCtrl
+        Corsair --> LaneSerial
+    end
+
+    subgraph "Plugin Layer (Provider-Specific)"
+        CognitoPlugin[AWS Cognito Plugin<br/>Identity Provider]
+        CrowdPlugin[CrowdStrike Plugin<br/>Endpoint Security]
+        JamfPlugin[JAMF Pro Plugin<br/>Device Management]
+        CustomPlugin[Custom Plugin<br/>Your Enterprise System]
+
+        CognitoPlugin -.implements.-> ProviderInterface[ProviderPlugin&lt;T&gt; Interface]
+        CrowdPlugin -.implements.-> ProviderInterface
+        JamfPlugin -.implements.-> ProviderInterface
+        CustomPlugin -.implements.-> ProviderInterface
+    end
+
+    subgraph "Provider Layer (External Systems)"
+        Cognito[AWS Cognito API]
+        CrowdStrike[CrowdStrike Falcon API]
+        JAMF[JAMF Pro API]
+        Custom[Your System API]
+
+        CognitoPlugin --> Cognito
+        CrowdPlugin --> CrowdStrike
+        JamfPlugin --> JAMF
+        CustomPlugin --> Custom
+    end
+
+    CLI --> Corsair
+    Corsair --> CognitoPlugin
+    Corsair --> CrowdPlugin
+    Corsair --> JamfPlugin
+    Corsair --> CustomPlugin
+
+    style Corsair fill:#3b82f6,stroke:#1e40af,color:#fff
+    style ProviderInterface fill:#8b5cf6,stroke:#6d28d9,color:#fff
+    style EvidenceCtrl fill:#10b981,stroke:#059669,color:#fff
+    style LaneSerial fill:#10b981,stroke:#059669,color:#fff
+```
+
+**Key Components:**
+- **Core Layer**: Universal primitives (PLUNDER, CHART), evidence controller with SHA-256 hash chain, provider lane serializer with composite keys
+- **Plugin Layer**: Provider-specific implementations of RECON, RAID, ESCAPE via generic `ProviderPlugin<T>` interface
+- **Provider Layer**: External systems accessible via JSON APIs (identity, endpoint security, device management, custom)
+
+### Execution Flow
+
+```mermaid
+graph LR
+    subgraph "Phase 1: RECON (Read-Only)"
+        A[Plugin: Observe<br/>Provider State] --> B[Snapshot<br/>Current Config]
+    end
+
+    subgraph "Phase 2: MARK (Drift Detection)"
+        B --> C[Core: Compare<br/>vs Expectations]
+        C --> D{Drift<br/>Detected?}
+    end
+
+    subgraph "Phase 3: RAID (Chaos)"
+        D -->|Yes| E[Plugin: Execute<br/>Attack Vector]
+        E --> F[Lane Lock:<br/>provider:targetId]
+        F --> G[Simulate Chaos<br/>Intensity 1-10]
+    end
+
+    subgraph "Phase 4: PLUNDER (Evidence)"
+        G --> H[Core: Extract<br/>Evidence]
+        H --> I[JSONL Append<br/>SHA-256 Hash]
+        I --> J[Cryptographic<br/>Chain Link]
+    end
+
+    subgraph "Phase 5: CHART (Compliance)"
+        J --> K[Core: Map to<br/>Frameworks]
+        K --> L[MITRE ATT&CK<br/>SOC2 / ISO27001]
+    end
+
+    subgraph "Phase 6: ESCAPE (Rollback)"
+        L --> M[Plugin: Create<br/>Cleanup Function]
+        M --> N[Core: Execute<br/>Scope Guards]
+        N --> O[State Restored<br/>No Leaked Resources]
+    end
+
+    D -->|No| P[Log: No Action<br/>Needed]
+
+    style A fill:#3b82f6,stroke:#1e40af,color:#fff
+    style C fill:#10b981,stroke:#059669,color:#fff
+    style E fill:#ef4444,stroke:#dc2626,color:#fff
+    style H fill:#10b981,stroke:#059669,color:#fff
+    style K fill:#10b981,stroke:#059669,color:#fff
+    style M fill:#f59e0b,stroke:#d97706,color:#fff
+```
+
+**The 6-Primitive Lifecycle:**
+1. **RECON** (Blue): Plugin observes provider state read-only
+2. **MARK** (Green): Core detects drift from expected configuration
+3. **RAID** (Red): Plugin executes controlled chaos with lane-level serialization
+4. **PLUNDER** (Green): Core extracts cryptographic evidence with hash chain
+5. **CHART** (Green): Core automatically maps to compliance frameworks
+6. **ESCAPE** (Orange): Plugin creates cleanup, core executes scope guards
+
+### Plugin System
 
 ```typescript
 // Initialize with plugin discovery
