@@ -15,52 +15,48 @@
 
 import { describe, test, expect, beforeAll } from "bun:test";
 import { Corsair, ScopeGuard, EscapeResult, CognitoSnapshot } from "../../src/corsair-mvp";
+import {
+  compliantSnapshot,
+  nonCompliantSnapshot,
+} from "../fixtures/mock-snapshots";
 
 describe("ESCAPE Primitive - Rollback & Scope Guards", () => {
   let corsair: Corsair;
-  const fixtureCompliant = "./tests/fixtures/cognito-userpool-compliant.json";
-  const fixtureNonCompliant = "./tests/fixtures/cognito-userpool-noncompliant.json";
 
   beforeAll(() => {
     corsair = new Corsair();
   });
 
   test("ESCAPE creates scope guard with initial state", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
-    const guard = await corsair.createGuard(snapshot);
+    const guard = await corsair.createGuard(nonCompliantSnapshot);
 
     expect(guard).toBeDefined();
     expect(guard.guardId).toMatch(/^GUARD-/);
     expect(guard.initialState).toBeDefined();
-    expect(guard.initialState.userPoolId).toBe(snapshot.userPoolId);
+    expect(guard.initialState.userPoolId).toBe(nonCompliantSnapshot.userPoolId);
     expect(guard.active).toBe(true);
     expect(guard.createdAt).toBeDefined();
   });
 
   test("ESCAPE restores state on scope exit", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
-    const guard = await corsair.createGuard(snapshot);
+    const guard = await corsair.createGuard(nonCompliantSnapshot);
 
     // Simulate state modification (in-memory only for testing)
-    const modifiedSnapshot = { ...snapshot, mfaConfiguration: "ON" as const };
+    const modifiedSnapshot = { ...nonCompliantSnapshot, mfaConfiguration: "ON" as const };
 
     // Release guard - should restore to initial state
     const result = await corsair.releaseGuard(guard, modifiedSnapshot);
 
     expect(result.restored).toBe(true);
-    expect(result.finalState.mfaConfiguration).toBe(snapshot.mfaConfiguration);
+    expect(result.finalState.mfaConfiguration).toBe(nonCompliantSnapshot.mfaConfiguration);
     expect(guard.active).toBe(false);
   });
 
   test("ESCAPE handles errors with cleanup", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
     let guardReleased = false;
 
     try {
-      const result = await corsair.withEscapeGuard(snapshot, async (guard) => {
+      const result = await corsair.withEscapeGuard(nonCompliantSnapshot, async (guard) => {
         // Simulate some operation that throws
         throw new Error("Simulated failure");
       });
@@ -76,15 +72,12 @@ describe("ESCAPE Primitive - Rollback & Scope Guards", () => {
   });
 
   test("ESCAPE supports nested scope guards", async () => {
-    const outerSnapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-    const innerSnapshot = (await corsair.recon(fixtureCompliant)).snapshot;
-
     const guards: string[] = [];
 
-    await corsair.withEscapeGuard(outerSnapshot, async (outerGuard) => {
+    await corsair.withEscapeGuard(nonCompliantSnapshot, async (outerGuard) => {
       guards.push(outerGuard.guardId);
 
-      await corsair.withEscapeGuard(innerSnapshot, async (innerGuard) => {
+      await corsair.withEscapeGuard(compliantSnapshot, async (innerGuard) => {
         guards.push(innerGuard.guardId);
 
         // Both guards should be active
@@ -102,9 +95,7 @@ describe("ESCAPE Primitive - Rollback & Scope Guards", () => {
   });
 
   test("ESCAPE logs all state transitions", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
-    await corsair.withEscapeGuard(snapshot, async (guard) => {
+    await corsair.withEscapeGuard(nonCompliantSnapshot, async (guard) => {
       // Simulate state changes
       corsair.logStateTransition(guard, "mfaConfiguration", "OFF", "ON");
       corsair.logStateTransition(guard, "mfaConfiguration", "ON", "OFF");
@@ -121,11 +112,9 @@ describe("ESCAPE Primitive - Rollback & Scope Guards", () => {
   });
 
   test("ESCAPE verifies state restoration", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
-    const result = await corsair.withEscapeGuard(snapshot, async (guard) => {
+    const result = await corsair.withEscapeGuard(nonCompliantSnapshot, async (guard) => {
       // Return modified state
-      return { ...snapshot, mfaConfiguration: "ON" as const };
+      return { ...nonCompliantSnapshot, mfaConfiguration: "ON" as const };
     });
 
     // Result should include verification
@@ -136,14 +125,12 @@ describe("ESCAPE Primitive - Rollback & Scope Guards", () => {
   });
 
   test("ESCAPE guard tracks duration", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
     const start = Date.now();
 
-    const result = await corsair.withEscapeGuard(snapshot, async (guard) => {
+    const result = await corsair.withEscapeGuard(nonCompliantSnapshot, async (guard) => {
       // Simulate some work
-      await new Promise(resolve => setTimeout(resolve, 50));
-      return snapshot;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      return nonCompliantSnapshot;
     });
 
     expect(result.durationMs).toBeGreaterThanOrEqual(50);
@@ -151,12 +138,10 @@ describe("ESCAPE Primitive - Rollback & Scope Guards", () => {
   });
 
   test("ESCAPE provides rollback capability", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
-    const guard = await corsair.createGuard(snapshot);
+    const guard = await corsair.createGuard(nonCompliantSnapshot);
 
     // Capture some intermediate state
-    const intermediateSnapshot = { ...snapshot, mfaConfiguration: "ON" as const };
+    const intermediateSnapshot = { ...nonCompliantSnapshot, mfaConfiguration: "ON" as const };
     corsair.captureIntermediateState(guard, intermediateSnapshot);
 
     // Rollback to initial
@@ -168,13 +153,11 @@ describe("ESCAPE Primitive - Rollback & Scope Guards", () => {
   });
 
   test("ESCAPE guard timeout expires correctly", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
     // Create guard with short timeout
-    const guard = await corsair.createGuard(snapshot, { timeoutMs: 100 });
+    const guard = await corsair.createGuard(nonCompliantSnapshot, { timeoutMs: 100 });
 
     // Wait for timeout
-    await new Promise(resolve => setTimeout(resolve, 150));
+    await new Promise((resolve) => setTimeout(resolve, 150));
 
     // Guard should be expired
     expect(corsair.isGuardExpired(guard)).toBe(true);
@@ -182,11 +165,9 @@ describe("ESCAPE Primitive - Rollback & Scope Guards", () => {
   });
 
   test("ESCAPE generates escape report", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
-    const result = await corsair.withEscapeGuard(snapshot, async (guard) => {
+    const result = await corsair.withEscapeGuard(nonCompliantSnapshot, async (guard) => {
       // Some operations
-      return snapshot;
+      return nonCompliantSnapshot;
     });
 
     const report = result.report;

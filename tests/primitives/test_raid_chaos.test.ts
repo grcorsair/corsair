@@ -14,24 +14,25 @@
  */
 
 import { describe, test, expect, beforeAll } from "bun:test";
-import { Corsair, RaidResult, AttackVector, CognitoSnapshot } from "../../src/corsair-mvp";
+import { Corsair, RaidResult, AttackVector } from "../../src/corsair-mvp";
+import {
+  compliantSnapshot,
+  nonCompliantSnapshot,
+  createMockSnapshot,
+} from "../fixtures/mock-snapshots";
 
 describe("RAID Primitive - Controlled Chaos", () => {
   let corsair: Corsair;
-  const fixtureCompliant = "./tests/fixtures/cognito-userpool-compliant.json";
-  const fixtureNonCompliant = "./tests/fixtures/cognito-userpool-noncompliant.json";
 
   beforeAll(() => {
     corsair = new Corsair();
   });
 
   test("RAID returns RaidResult with required structure", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
-    const result: RaidResult = await corsair.raid(snapshot, {
+    const result: RaidResult = await corsair.raid(nonCompliantSnapshot, {
       vector: "mfa-bypass",
       intensity: 5,
-      dryRun: true
+      dryRun: true,
     });
 
     expect(result).toBeDefined();
@@ -47,27 +48,23 @@ describe("RAID Primitive - Controlled Chaos", () => {
   });
 
   test("RAID simulates MFA bypass on non-compliant pool", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
-    const result = await corsair.raid(snapshot, {
+    const result = await corsair.raid(nonCompliantSnapshot, {
       vector: "mfa-bypass",
       intensity: 5,
-      dryRun: true
+      dryRun: true,
     });
 
     // Non-compliant pool has MFA OFF - bypass should succeed
     expect(result.success).toBe(true);
     expect(result.findings.length).toBeGreaterThan(0);
-    expect(result.findings.some(f => f.includes("MFA"))).toBe(true);
+    expect(result.findings.some((f) => f.includes("MFA"))).toBe(true);
   });
 
   test("RAID fails MFA bypass on compliant pool", async () => {
-    const snapshot = (await corsair.recon(fixtureCompliant)).snapshot;
-
-    const result = await corsair.raid(snapshot, {
+    const result = await corsair.raid(compliantSnapshot, {
       vector: "mfa-bypass",
       intensity: 5,
-      dryRun: true
+      dryRun: true,
     });
 
     // Compliant pool has MFA ON - bypass should fail
@@ -76,12 +73,10 @@ describe("RAID Primitive - Controlled Chaos", () => {
   });
 
   test("RAID captures attack timeline", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
-    const result = await corsair.raid(snapshot, {
+    const result = await corsair.raid(nonCompliantSnapshot, {
       vector: "mfa-bypass",
       intensity: 5,
-      dryRun: true
+      dryRun: true,
     });
 
     expect(result.timeline).toBeDefined();
@@ -96,20 +91,18 @@ describe("RAID Primitive - Controlled Chaos", () => {
   });
 
   test("RAID supports multiple attack vectors", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
     const vectors: AttackVector[] = [
       "mfa-bypass",
       "password-spray",
       "token-replay",
-      "session-hijack"
+      "session-hijack",
     ];
 
     for (const vector of vectors) {
-      const result = await corsair.raid(snapshot, {
+      const result = await corsair.raid(nonCompliantSnapshot, {
         vector,
         intensity: 3,
-        dryRun: true
+        dryRun: true,
       });
 
       expect(result.vector).toBe(vector);
@@ -118,20 +111,18 @@ describe("RAID Primitive - Controlled Chaos", () => {
   });
 
   test("RAID enforces lane serialization", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
     // Start first raid
-    const raid1Promise = corsair.raid(snapshot, {
+    const raid1Promise = corsair.raid(nonCompliantSnapshot, {
       vector: "mfa-bypass",
       intensity: 5,
-      dryRun: true
+      dryRun: true,
     });
 
     // Try to start second raid on same target - should be serialized
-    const raid2Promise = corsair.raid(snapshot, {
+    const raid2Promise = corsair.raid(nonCompliantSnapshot, {
       vector: "mfa-bypass",
       intensity: 5,
-      dryRun: true
+      dryRun: true,
     });
 
     const [result1, result2] = await Promise.all([raid1Promise, raid2Promise]);
@@ -151,37 +142,37 @@ describe("RAID Primitive - Controlled Chaos", () => {
   });
 
   test("RAID respects intensity parameter", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
-    const lowIntensity = await corsair.raid(snapshot, {
+    const lowIntensity = await corsair.raid(nonCompliantSnapshot, {
       vector: "mfa-bypass",
       intensity: 1,
-      dryRun: true
+      dryRun: true,
     });
 
-    const highIntensity = await corsair.raid(snapshot, {
+    const highIntensity = await corsair.raid(nonCompliantSnapshot, {
       vector: "mfa-bypass",
       intensity: 10,
-      dryRun: true
+      dryRun: true,
     });
 
     // Higher intensity should produce more detailed findings
-    expect(highIntensity.timeline.length).toBeGreaterThanOrEqual(lowIntensity.timeline.length);
+    expect(highIntensity.timeline.length).toBeGreaterThanOrEqual(
+      lowIntensity.timeline.length
+    );
   });
 
   test("RAID dryRun flag prevents actual changes", async () => {
-    const beforeSnapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
+    const beforeSnapshot = { ...nonCompliantSnapshot };
 
     await corsair.raid(beforeSnapshot, {
       vector: "mfa-bypass",
       intensity: 10,
-      dryRun: true
+      dryRun: true,
     });
 
-    const afterSnapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
-    // Snapshots should be identical - no changes made
-    expect(afterSnapshot.mfaConfiguration).toBe(beforeSnapshot.mfaConfiguration);
-    expect(afterSnapshot.userPoolId).toBe(beforeSnapshot.userPoolId);
+    // Snapshot should be unchanged - no side effects
+    expect(nonCompliantSnapshot.mfaConfiguration).toBe(
+      beforeSnapshot.mfaConfiguration
+    );
+    expect(nonCompliantSnapshot.userPoolId).toBe(beforeSnapshot.userPoolId);
   });
 });

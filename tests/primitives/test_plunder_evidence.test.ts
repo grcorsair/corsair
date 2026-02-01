@@ -14,14 +14,16 @@
  */
 
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
-import { Corsair, PlunderRecord, EvidenceChain } from "../../src/corsair-mvp";
-import { readFileSync, existsSync, unlinkSync } from "fs";
+import { Corsair, PlunderRecord } from "../../src/corsair-mvp";
+import { readFileSync, existsSync, unlinkSync, writeFileSync } from "fs";
 import { createHash } from "crypto";
+import {
+  compliantSnapshot,
+  nonCompliantSnapshot,
+} from "../fixtures/mock-snapshots";
 
 describe("PLUNDER Primitive - Evidence Extraction", () => {
   let corsair: Corsair;
-  const fixtureCompliant = "./tests/fixtures/cognito-userpool-compliant.json";
-  const fixtureNonCompliant = "./tests/fixtures/cognito-userpool-noncompliant.json";
   const testEvidencePath = "./tests/test-evidence.jsonl";
 
   beforeAll(() => {
@@ -36,13 +38,11 @@ describe("PLUNDER Primitive - Evidence Extraction", () => {
   });
 
   test("PLUNDER creates JSONL formatted output", async () => {
-    const reconResult = await corsair.recon(fixtureNonCompliant);
-
     // Create a raid to plunder
-    const raidResult = await corsair.raid(reconResult.snapshot, {
+    const raidResult = await corsair.raid(nonCompliantSnapshot, {
       vector: "mfa-bypass",
       intensity: 5,
-      dryRun: true
+      dryRun: true,
     });
 
     const plunderResult = await corsair.plunder(raidResult, testEvidencePath);
@@ -64,17 +64,19 @@ describe("PLUNDER Primitive - Evidence Extraction", () => {
     // Clear and start fresh
     corsair.resetEvidence();
 
-    const recon1 = await corsair.recon(fixtureNonCompliant);
-    const raid1 = await corsair.raid(recon1.snapshot, {
+    const raid1 = await corsair.raid(nonCompliantSnapshot, {
       vector: "mfa-bypass",
       intensity: 5,
-      dryRun: true
+      dryRun: true,
     });
     await corsair.plunder(raid1, testEvidencePath);
 
     // Read and parse records
     const content = readFileSync(testEvidencePath, "utf-8");
-    const records: PlunderRecord[] = content.trim().split("\n").map(line => JSON.parse(line));
+    const records: PlunderRecord[] = content
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
 
     expect(records.length).toBeGreaterThanOrEqual(3); // Plunder creates 3 events per raid
 
@@ -94,11 +96,10 @@ describe("PLUNDER Primitive - Evidence Extraction", () => {
   test("PLUNDER hash is computed correctly", async () => {
     corsair.resetEvidence();
 
-    const reconResult = await corsair.recon(fixtureNonCompliant);
-    const raidResult = await corsair.raid(reconResult.snapshot, {
+    const raidResult = await corsair.raid(nonCompliantSnapshot, {
       vector: "mfa-bypass",
       intensity: 5,
-      dryRun: true
+      dryRun: true,
     });
     await corsair.plunder(raidResult, testEvidencePath);
 
@@ -112,7 +113,7 @@ describe("PLUNDER Primitive - Evidence Extraction", () => {
       timestamp: record.timestamp,
       operation: record.operation,
       data: record.data,
-      previousHash: record.previousHash
+      previousHash: record.previousHash,
     });
 
     const expectedHash = createHash("sha256").update(dataToHash).digest("hex");
@@ -123,11 +124,10 @@ describe("PLUNDER Primitive - Evidence Extraction", () => {
     corsair.resetEvidence();
 
     // Write first raid
-    const recon1 = await corsair.recon(fixtureNonCompliant);
-    const raid1 = await corsair.raid(recon1.snapshot, {
+    const raid1 = await corsair.raid(nonCompliantSnapshot, {
       vector: "mfa-bypass",
       intensity: 5,
-      dryRun: true
+      dryRun: true,
     });
     await corsair.plunder(raid1, testEvidencePath);
 
@@ -135,11 +135,10 @@ describe("PLUNDER Primitive - Evidence Extraction", () => {
     const recordsBefore = contentBefore.trim().split("\n").length;
 
     // Write second raid
-    const recon2 = await corsair.recon(fixtureCompliant);
-    const raid2 = await corsair.raid(recon2.snapshot, {
+    const raid2 = await corsair.raid(compliantSnapshot, {
       vector: "password-spray",
       intensity: 3,
-      dryRun: true
+      dryRun: true,
     });
     await corsair.plunder(raid2, testEvidencePath);
 
@@ -160,19 +159,21 @@ describe("PLUNDER Primitive - Evidence Extraction", () => {
 
     // Write multiple raids
     for (let i = 0; i < 2; i++) {
-      const result = await corsair.recon(fixtureNonCompliant);
-      const raidResult = await corsair.raid(result.snapshot, {
+      const raidResult = await corsair.raid(nonCompliantSnapshot, {
         vector: "mfa-bypass",
         intensity: 5,
-        dryRun: true
+        dryRun: true,
       });
       await corsair.plunder(raidResult, testEvidencePath);
     }
 
     const content = readFileSync(testEvidencePath, "utf-8");
-    const records: PlunderRecord[] = content.trim().split("\n").map(line => JSON.parse(line));
+    const records: PlunderRecord[] = content
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
 
-    expect(records.length).toBe(6); // 2 raids × 3 events each
+    expect(records.length).toBe(6); // 2 raids * 3 events each
 
     for (let i = 0; i < records.length; i++) {
       expect(records[i].sequence).toBe(i + 1);
@@ -183,18 +184,20 @@ describe("PLUNDER Primitive - Evidence Extraction", () => {
     corsair.resetEvidence();
 
     // Raid operation
-    const reconResult = await corsair.recon(fixtureNonCompliant);
-    const raidResult = await corsair.raid(reconResult.snapshot, {
+    const raidResult = await corsair.raid(nonCompliantSnapshot, {
       vector: "mfa-bypass",
       intensity: 5,
-      dryRun: true
+      dryRun: true,
     });
     await corsair.plunder(raidResult, testEvidencePath);
 
     const content = readFileSync(testEvidencePath, "utf-8");
-    const records: PlunderRecord[] = content.trim().split("\n").map(line => JSON.parse(line));
+    const records: PlunderRecord[] = content
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
 
-    const operations = records.map(r => r.operation);
+    const operations = records.map((r) => r.operation);
     expect(operations).toContain("raid_initiated");
     expect(operations).toContain("raid_executed");
     expect(operations).toContain("raid_completed");
@@ -204,11 +207,10 @@ describe("PLUNDER Primitive - Evidence Extraction", () => {
     corsair.resetEvidence();
 
     // Write some records
-    const recon1 = await corsair.recon(fixtureNonCompliant);
-    const raid1 = await corsair.raid(recon1.snapshot, {
+    const raid1 = await corsair.raid(nonCompliantSnapshot, {
       vector: "mfa-bypass",
       intensity: 5,
-      dryRun: true
+      dryRun: true,
     });
     await corsair.plunder(raid1, testEvidencePath);
 
@@ -224,11 +226,10 @@ describe("PLUNDER Primitive - Evidence Extraction", () => {
     corsair.resetEvidence();
 
     // Write some records
-    const recon1 = await corsair.recon(fixtureNonCompliant);
-    const raid1 = await corsair.raid(recon1.snapshot, {
+    const raid1 = await corsair.raid(nonCompliantSnapshot, {
       vector: "mfa-bypass",
       intensity: 5,
-      dryRun: true
+      dryRun: true,
     });
     await corsair.plunder(raid1, testEvidencePath);
 
@@ -240,7 +241,6 @@ describe("PLUNDER Primitive - Evidence Extraction", () => {
     lines[0] = JSON.stringify(record1);
 
     // Write tampered content
-    const { writeFileSync } = await import("fs");
     writeFileSync(testEvidencePath, lines.join("\n") + "\n");
 
     // Verify should detect tampering
@@ -253,11 +253,10 @@ describe("PLUNDER Primitive - Evidence Extraction", () => {
   test("PLUNDER records include ISO timestamps", async () => {
     corsair.resetEvidence();
 
-    const reconResult = await corsair.recon(fixtureNonCompliant);
-    const raidResult = await corsair.raid(reconResult.snapshot, {
+    const raidResult = await corsair.raid(nonCompliantSnapshot, {
       vector: "mfa-bypass",
       intensity: 5,
-      dryRun: true
+      dryRun: true,
     });
     await corsair.plunder(raidResult, testEvidencePath);
 

@@ -1,30 +1,50 @@
 /**
- * AWS Cognito Provider Plugin
+ * AWS Cognito Plugin for Corsair
  *
- * First provider plugin demonstrating the pattern.
- * Implements RECON, RAID, and ESCAPE primitives for AWS Cognito.
+ * This plugin provides:
+ * - Cognito-specific type definitions
+ * - Type guards for runtime validation
+ * - Factory functions for creating valid snapshots
  *
- * This plugin proves the architecture scales:
- * - Extends ObservedState with Cognito-specific fields
- * - Implements ProviderPlugin<CognitoSnapshot>
- * - Proposes evidence, Core writes it
- * - Uses composite lane keys for concurrency
+ * Architectural Decision: Provider-specific types belong in plugins,
+ * NOT in the core Corsair module. This enables:
+ * - Clean separation of concerns
+ * - Independent plugin versioning
+ * - Type-safe plugin development
+ * - Easy addition of new providers (Auth0, Okta, etc.)
  */
 
-import { readFileSync } from "fs";
-import type {
-  ProviderPlugin,
-  ObservedState,
-  AttackVectorDeclaration,
-  PluginRaidResult
-} from "../../src/types/provider-plugin";
-
 // ═══════════════════════════════════════════════════════════════════════════════
-// COGNITO-SPECIFIC TYPES
+// PLUGIN IDENTITY
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Unique identifier for this plugin.
+ * Used by Corsair core for plugin registration and dispatch.
+ */
+export const COGNITO_PROVIDER_ID = "aws-cognito";
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COGNITO-SPECIFIC TYPE DEFINITIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * MFA configuration options for Cognito User Pools.
+ * - ON: MFA is required for all users
+ * - OFF: MFA is disabled
+ * - OPTIONAL: Users can choose to enable MFA
+ */
 export type MfaConfiguration = "ON" | "OFF" | "OPTIONAL";
 
+/**
+ * Array of valid MFA configurations for runtime validation.
+ */
+export const MFA_CONFIGURATIONS: readonly MfaConfiguration[] = ["ON", "OFF", "OPTIONAL"] as const;
+
+/**
+ * Password policy configuration for Cognito User Pools.
+ * Defines the requirements for user passwords.
+ */
 export interface PasswordPolicy {
   minimumLength: number;
   requireUppercase: boolean;
@@ -34,6 +54,10 @@ export interface PasswordPolicy {
   temporaryPasswordValidityDays: number;
 }
 
+/**
+ * Risk configuration for advanced security features.
+ * Defines actions to take for various risk levels.
+ */
 export interface RiskConfiguration {
   compromisedCredentialsAction: string | null;
   accountTakeoverLowAction: string | null;
@@ -42,12 +66,19 @@ export interface RiskConfiguration {
 }
 
 /**
- * CognitoSnapshot - Provider-specific observed state
- *
- * Extends ObservedState with Cognito-specific fields.
- * targetId = userPoolId for Cognito.
+ * Device configuration for Cognito User Pools.
+ * Controls device tracking and challenge behavior.
  */
-export interface CognitoSnapshot extends ObservedState {
+export interface DeviceConfiguration {
+  challengeRequiredOnNewDevice: boolean;
+  deviceOnlyRememberedOnUserPrompt: boolean;
+}
+
+/**
+ * Complete snapshot of a Cognito User Pool's security configuration.
+ * This is the primary type for RECON operations against Cognito.
+ */
+export interface CognitoSnapshot {
   userPoolId: string;
   userPoolName: string;
   mfaConfiguration: MfaConfiguration;
@@ -55,329 +86,222 @@ export interface CognitoSnapshot extends ObservedState {
   smsMfaEnabled: boolean;
   passwordPolicy: PasswordPolicy;
   riskConfiguration: RiskConfiguration | null;
-  deviceConfiguration: {
-    challengeRequiredOnNewDevice: boolean;
-    deviceOnlyRememberedOnUserPrompt: boolean;
+  deviceConfiguration: DeviceConfiguration;
+  observedAt: string;
+  userCount?: number;
+  status?: string;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TYPE GUARDS (Runtime Validation)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Validates that an object is a valid PasswordPolicy.
+ * Used for runtime type checking when processing external data.
+ */
+export function isValidPasswordPolicy(obj: unknown): obj is PasswordPolicy {
+  if (obj === null || obj === undefined || typeof obj !== "object") {
+    return false;
+  }
+
+  const policy = obj as Record<string, unknown>;
+
+  return (
+    typeof policy.minimumLength === "number" &&
+    typeof policy.requireUppercase === "boolean" &&
+    typeof policy.requireLowercase === "boolean" &&
+    typeof policy.requireNumbers === "boolean" &&
+    typeof policy.requireSymbols === "boolean" &&
+    typeof policy.temporaryPasswordValidityDays === "number"
+  );
+}
+
+/**
+ * Validates that an object is a valid RiskConfiguration.
+ * Note: All fields can be null, so we check for the correct shape.
+ */
+export function isValidRiskConfiguration(obj: unknown): obj is RiskConfiguration {
+  if (obj === null || obj === undefined || typeof obj !== "object") {
+    return false;
+  }
+
+  const config = obj as Record<string, unknown>;
+
+  // All fields should be either string or null
+  const isStringOrNull = (val: unknown): boolean =>
+    val === null || typeof val === "string";
+
+  return (
+    isStringOrNull(config.compromisedCredentialsAction) &&
+    isStringOrNull(config.accountTakeoverLowAction) &&
+    isStringOrNull(config.accountTakeoverMediumAction) &&
+    isStringOrNull(config.accountTakeoverHighAction)
+  );
+}
+
+/**
+ * Validates that an object is a valid DeviceConfiguration.
+ */
+export function isValidDeviceConfiguration(obj: unknown): obj is DeviceConfiguration {
+  if (obj === null || obj === undefined || typeof obj !== "object") {
+    return false;
+  }
+
+  const config = obj as Record<string, unknown>;
+
+  return (
+    typeof config.challengeRequiredOnNewDevice === "boolean" &&
+    typeof config.deviceOnlyRememberedOnUserPrompt === "boolean"
+  );
+}
+
+/**
+ * Validates that an object is a valid MfaConfiguration value.
+ */
+export function isValidMfaConfiguration(value: unknown): value is MfaConfiguration {
+  return MFA_CONFIGURATIONS.includes(value as MfaConfiguration);
+}
+
+/**
+ * Main type guard for CognitoSnapshot.
+ * Validates all required fields are present and correctly typed.
+ */
+export function isCognitoSnapshot(obj: unknown): obj is CognitoSnapshot {
+  if (obj === null || obj === undefined || typeof obj !== "object") {
+    return false;
+  }
+
+  const snapshot = obj as Record<string, unknown>;
+
+  // Validate required string fields
+  if (
+    typeof snapshot.userPoolId !== "string" ||
+    typeof snapshot.userPoolName !== "string" ||
+    typeof snapshot.observedAt !== "string"
+  ) {
+    return false;
+  }
+
+  // Validate MFA configuration
+  if (!isValidMfaConfiguration(snapshot.mfaConfiguration)) {
+    return false;
+  }
+
+  // Validate boolean fields
+  if (
+    typeof snapshot.softwareTokenMfaEnabled !== "boolean" ||
+    typeof snapshot.smsMfaEnabled !== "boolean"
+  ) {
+    return false;
+  }
+
+  // Validate password policy
+  if (!isValidPasswordPolicy(snapshot.passwordPolicy)) {
+    return false;
+  }
+
+  // Validate risk configuration (can be null)
+  if (snapshot.riskConfiguration !== null && !isValidRiskConfiguration(snapshot.riskConfiguration)) {
+    return false;
+  }
+
+  // Validate device configuration
+  if (!isValidDeviceConfiguration(snapshot.deviceConfiguration)) {
+    return false;
+  }
+
+  return true;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FACTORY FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Options for creating a CognitoSnapshot.
+ * Only required fields are mandatory; others have sensible defaults.
+ */
+export interface CreateCognitoSnapshotOptions {
+  userPoolId: string;
+  userPoolName: string;
+  mfaConfiguration: MfaConfiguration;
+  softwareTokenMfaEnabled?: boolean;
+  smsMfaEnabled?: boolean;
+  passwordPolicy?: Partial<PasswordPolicy>;
+  riskConfiguration?: RiskConfiguration | null;
+  deviceConfiguration?: Partial<DeviceConfiguration>;
+  userCount?: number;
+  status?: string;
+}
+
+/**
+ * Factory function to create a valid CognitoSnapshot with sensible defaults.
+ * Use this when programmatically creating snapshots for testing or simulation.
+ */
+export function createCognitoSnapshot(options: CreateCognitoSnapshotOptions): CognitoSnapshot {
+  const defaultPasswordPolicy: PasswordPolicy = {
+    minimumLength: 8,
+    requireUppercase: true,
+    requireLowercase: true,
+    requireNumbers: true,
+    requireSymbols: false,
+    temporaryPasswordValidityDays: 7,
+  };
+
+  const defaultDeviceConfiguration: DeviceConfiguration = {
+    challengeRequiredOnNewDevice: false,
+    deviceOnlyRememberedOnUserPrompt: false,
+  };
+
+  return {
+    userPoolId: options.userPoolId,
+    userPoolName: options.userPoolName,
+    mfaConfiguration: options.mfaConfiguration,
+    softwareTokenMfaEnabled: options.softwareTokenMfaEnabled ?? false,
+    smsMfaEnabled: options.smsMfaEnabled ?? false,
+    passwordPolicy: {
+      ...defaultPasswordPolicy,
+      ...options.passwordPolicy,
+    },
+    riskConfiguration: options.riskConfiguration ?? null,
+    deviceConfiguration: {
+      ...defaultDeviceConfiguration,
+      ...options.deviceConfiguration,
+    },
+    observedAt: new Date().toISOString(),
+    userCount: options.userCount,
+    status: options.status,
   };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PLUGIN IMPLEMENTATION
+// PLUGIN METADATA
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export class AwsCognitoPlugin implements ProviderPlugin<CognitoSnapshot> {
-  readonly providerId = "aws-cognito";
-  readonly version = "1.0.0";
-  readonly attackVectors: AttackVectorDeclaration[] = [
-    {
-      vector: "mfa-bypass",
-      description: "Test MFA enforcement by attempting authentication without second factor",
-      mitreMapping: "T1556.006",
-      requiredPermissions: ["cognito-idp:DescribeUserPool", "cognito-idp:GetUserPoolMfaConfig"],
-      intensity: { min: 1, max: 10, default: 5 }
-    },
-    {
-      vector: "password-spray",
-      description: "Test password policy strength against brute force attacks",
-      mitreMapping: "T1110.003",
-      requiredPermissions: ["cognito-idp:DescribeUserPool"],
-      intensity: { min: 1, max: 10, default: 7 }
-    },
-    {
-      vector: "token-replay",
-      description: "Test token handling and replay attack detection",
-      mitreMapping: "T1550.001",
-      requiredPermissions: ["cognito-idp:DescribeUserPool"],
-      intensity: { min: 1, max: 10, default: 6 }
-    },
-    {
-      vector: "session-hijack",
-      description: "Test device challenge requirements for session hijacking prevention",
-      mitreMapping: "T1563",
-      requiredPermissions: ["cognito-idp:DescribeUserPool"],
-      intensity: { min: 1, max: 10, default: 5 }
-    }
-  ];
+/**
+ * Plugin metadata for registration with Corsair core.
+ */
+export const pluginMetadata = {
+  id: COGNITO_PROVIDER_ID,
+  name: "AWS Cognito",
+  version: "1.0.0",
+  description: "Corsair plugin for AWS Cognito User Pools",
+  supportedVectors: [
+    "mfa-bypass",
+    "password-spray",
+    "token-replay",
+    "session-hijack",
+  ] as const,
+};
 
-  /**
-   * RECON primitive - Observe Cognito user pool state
-   *
-   * Reads fixture file and parses into CognitoSnapshot.
-   * In production, this would call AWS Cognito APIs.
-   *
-   * @param targetId - Cognito user pool ID (e.g., "us-east-1_ABC123")
-   * @returns Cognito snapshot with observed state
-   */
-  async recon(targetId: string): Promise<CognitoSnapshot> {
-    // For MVP, we read from fixture files
-    // In production: AWS SDK calls to DescribeUserPool + GetUserPoolMfaConfig
-
-    // Fixture path would be resolved based on targetId
-    // For now, using a placeholder approach
-    const fixturePath = this.resolveFixturePath(targetId);
-    const content = readFileSync(fixturePath, "utf-8");
-    const data = JSON.parse(content);
-
-    return {
-      targetId,
-      observedAt: new Date().toISOString(),
-      userPoolId: data.UserPool.Id,
-      userPoolName: data.UserPool.Name,
-      mfaConfiguration: data.UserPool.MfaConfiguration as MfaConfiguration,
-      softwareTokenMfaEnabled: data.UserPoolMfaConfig?.SoftwareTokenMfaConfiguration?.Enabled ?? false,
-      smsMfaEnabled: data.UserPoolMfaConfig?.SmsMfaConfiguration !== null,
-      passwordPolicy: {
-        minimumLength: data.UserPool.Policies.PasswordPolicy.MinimumLength,
-        requireUppercase: data.UserPool.Policies.PasswordPolicy.RequireUppercase,
-        requireLowercase: data.UserPool.Policies.PasswordPolicy.RequireLowercase,
-        requireNumbers: data.UserPool.Policies.PasswordPolicy.RequireNumbers,
-        requireSymbols: data.UserPool.Policies.PasswordPolicy.RequireSymbols,
-        temporaryPasswordValidityDays: data.UserPool.Policies.PasswordPolicy.TemporaryPasswordValidityDays
-      },
-      riskConfiguration: data.RiskConfiguration
-        ? {
-            compromisedCredentialsAction:
-              data.RiskConfiguration.CompromisedCredentialsRiskConfiguration?.Actions?.EventAction ?? null,
-            accountTakeoverLowAction:
-              data.RiskConfiguration.AccountTakeoverRiskConfiguration?.Actions?.LowAction?.EventAction ?? null,
-            accountTakeoverMediumAction:
-              data.RiskConfiguration.AccountTakeoverRiskConfiguration?.Actions?.MediumAction?.EventAction ?? null,
-            accountTakeoverHighAction:
-              data.RiskConfiguration.AccountTakeoverRiskConfiguration?.Actions?.HighAction?.EventAction ?? null
-          }
-        : null,
-      deviceConfiguration: {
-        challengeRequiredOnNewDevice: data.UserPool.DeviceConfiguration?.ChallengeRequiredOnNewDevice ?? false,
-        deviceOnlyRememberedOnUserPrompt: data.UserPool.DeviceConfiguration?.DeviceOnlyRememberedOnUserPrompt ?? false
-      }
-    };
-  }
-
-  /**
-   * RAID primitive - Execute controlled chaos attack
-   *
-   * Simulates attack based on vector and intensity.
-   * Returns findings and timeline for Core to wrap in evidence.
-   *
-   * @param snapshot - Current Cognito state
-   * @param vector - Attack vector to execute
-   * @param intensity - Attack intensity (1-10)
-   * @returns Plugin raid result with proposed evidence
-   */
-  async raid(snapshot: CognitoSnapshot, vector: string, intensity: number): Promise<PluginRaidResult> {
-    const timeline: Array<{ timestamp: string; action: string; result: string }> = [];
-    const findings: string[] = [];
-
-    switch (vector) {
-      case "mfa-bypass": {
-        timeline.push({
-          timestamp: new Date().toISOString(),
-          action: "CHECK_MFA",
-          result: `MFA Configuration: ${snapshot.mfaConfiguration}`
-        });
-
-        if (snapshot.mfaConfiguration === "OFF") {
-          findings.push("CRITICAL: MFA is disabled - bypass trivial");
-          findings.push("MFA bypass successful - no second factor required");
-          return {
-            findings,
-            timeline,
-            success: true,
-            controlsHeld: false,
-            proposedEvidence: {
-              mfaStatus: "OFF",
-              bypassMethod: "direct-login",
-              riskLevel: "CRITICAL"
-            }
-          };
-        }
-
-        if (snapshot.mfaConfiguration === "OPTIONAL") {
-          findings.push("WARNING: MFA is optional - user may bypass");
-          findings.push("MFA bypass possible for users without MFA configured");
-          return {
-            findings,
-            timeline,
-            success: intensity > 5,
-            controlsHeld: intensity <= 5,
-            proposedEvidence: {
-              mfaStatus: "OPTIONAL",
-              bypassMethod: "optional-enrollment",
-              riskLevel: "HIGH"
-            }
-          };
-        }
-
-        findings.push("MFA is enforced - bypass blocked");
-        return {
-          findings,
-          timeline,
-          success: false,
-          controlsHeld: true,
-          proposedEvidence: {
-            mfaStatus: "ON",
-            bypassMethod: "none",
-            riskLevel: "LOW"
-          }
-        };
-      }
-
-      case "password-spray": {
-        timeline.push({
-          timestamp: new Date().toISOString(),
-          action: "CHECK_PASSWORD_POLICY",
-          result: `Min length: ${snapshot.passwordPolicy.minimumLength}`
-        });
-
-        const weakPolicy =
-          snapshot.passwordPolicy.minimumLength < 12 ||
-          !snapshot.passwordPolicy.requireSymbols ||
-          !snapshot.passwordPolicy.requireUppercase;
-
-        if (weakPolicy) {
-          findings.push("WARNING: Weak password policy detected");
-          findings.push(`Minimum length: ${snapshot.passwordPolicy.minimumLength}`);
-          return {
-            findings,
-            timeline,
-            success: intensity > 7,
-            controlsHeld: intensity <= 7,
-            proposedEvidence: {
-              policyStrength: "weak",
-              minimumLength: snapshot.passwordPolicy.minimumLength,
-              complexityRequirements: {
-                uppercase: snapshot.passwordPolicy.requireUppercase,
-                lowercase: snapshot.passwordPolicy.requireLowercase,
-                numbers: snapshot.passwordPolicy.requireNumbers,
-                symbols: snapshot.passwordPolicy.requireSymbols
-              }
-            }
-          };
-        }
-
-        findings.push("Password policy is strong - spray attack mitigated");
-        return {
-          findings,
-          timeline,
-          success: false,
-          controlsHeld: true,
-          proposedEvidence: {
-            policyStrength: "strong",
-            minimumLength: snapshot.passwordPolicy.minimumLength
-          }
-        };
-      }
-
-      case "token-replay": {
-        timeline.push({
-          timestamp: new Date().toISOString(),
-          action: "CHECK_TOKEN_HANDLING",
-          result: "Analyzing token configuration"
-        });
-
-        if (!snapshot.riskConfiguration) {
-          findings.push("WARNING: No risk configuration - token replay detection limited");
-          return {
-            findings,
-            timeline,
-            success: intensity > 6,
-            controlsHeld: intensity <= 6,
-            proposedEvidence: {
-              riskConfigPresent: false,
-              replayDetection: "limited"
-            }
-          };
-        }
-
-        findings.push("Risk configuration active - token replay monitored");
-        return {
-          findings,
-          timeline,
-          success: false,
-          controlsHeld: true,
-          proposedEvidence: {
-            riskConfigPresent: true,
-            replayDetection: "active"
-          }
-        };
-      }
-
-      case "session-hijack": {
-        timeline.push({
-          timestamp: new Date().toISOString(),
-          action: "CHECK_DEVICE_CONFIG",
-          result: `Challenge on new device: ${snapshot.deviceConfiguration.challengeRequiredOnNewDevice}`
-        });
-
-        if (!snapshot.deviceConfiguration.challengeRequiredOnNewDevice) {
-          findings.push("WARNING: No device challenge - session hijack easier");
-          return {
-            findings,
-            timeline,
-            success: intensity > 5,
-            controlsHeld: intensity <= 5,
-            proposedEvidence: {
-              deviceChallengeEnabled: false,
-              hijackRisk: "elevated"
-            }
-          };
-        }
-
-        findings.push("Device challenge enabled - session hijack mitigated");
-        return {
-          findings,
-          timeline,
-          success: false,
-          controlsHeld: true,
-          proposedEvidence: {
-            deviceChallengeEnabled: true,
-            hijackRisk: "low"
-          }
-        };
-      }
-
-      default:
-        return {
-          findings: ["Unknown attack vector"],
-          timeline,
-          success: false,
-          controlsHeld: true
-        };
-    }
-  }
-
-  /**
-   * ESCAPE primitive - Create cleanup function
-   *
-   * Returns function that can restore state or clean up resources.
-   * Core executes this via scope guard pattern.
-   *
-   * @param snapshot - Snapshot to restore to
-   * @returns Cleanup function
-   */
-  createCleanup(snapshot: CognitoSnapshot): () => { operation: string; success: boolean } {
-    return () => {
-      // In production, this would call AWS APIs to restore settings
-      // For MVP, we just return success
-      return {
-        operation: `restore-cognito-${snapshot.userPoolId}`,
-        success: true
-      };
-    };
-  }
-
-  /**
-   * Resolve fixture path from target ID
-   *
-   * Helper to map user pool ID to fixture file.
-   * In production, this would be replaced with AWS SDK calls.
-   */
-  private resolveFixturePath(targetId: string): string {
-    // For MVP, use a default fixture path
-    // This would be enhanced to map targetId to appropriate fixture
-    return "fixtures/cognito-user-pool.json";
-  }
-}
-
-// Export default instance
-export default new AwsCognitoPlugin();
+/**
+ * Export types for external consumers who want TypeScript support.
+ * Note: The actual types are exported above, this is just documentation.
+ */
+export type {
+  CognitoSnapshot as CognitoSnapshotType,
+  PasswordPolicy as PasswordPolicyType,
+  RiskConfiguration as RiskConfigurationType,
+  DeviceConfiguration as DeviceConfigurationType,
+};

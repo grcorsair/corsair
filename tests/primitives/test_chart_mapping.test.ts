@@ -15,20 +15,18 @@
 
 import { describe, test, expect, beforeAll } from "bun:test";
 import { Corsair, ComplianceMapping, DriftFinding, RaidResult } from "../../src/corsair-mvp";
+import { nonCompliantSnapshot } from "../fixtures/mock-snapshots";
 
 describe("CHART Primitive - Framework Mapping", () => {
   let corsair: Corsair;
-  const fixtureNonCompliant = "./tests/fixtures/cognito-userpool-noncompliant.json";
 
   beforeAll(() => {
     corsair = new Corsair();
   });
 
   test("CHART maps MFA drift to MITRE ATT&CK", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
-    const result = await corsair.mark(snapshot, [
-      { field: "mfaConfiguration", operator: "eq", value: "ON" }
+    const result = await corsair.mark(nonCompliantSnapshot, [
+      { field: "mfaConfiguration", operator: "eq", value: "ON" },
     ]);
 
     const chartResult = await corsair.chart(result.findings);
@@ -42,10 +40,8 @@ describe("CHART Primitive - Framework Mapping", () => {
   });
 
   test("CHART maps MITRE to NIST CSF", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
-    const result = await corsair.mark(snapshot, [
-      { field: "mfaConfiguration", operator: "eq", value: "ON" }
+    const result = await corsair.mark(nonCompliantSnapshot, [
+      { field: "mfaConfiguration", operator: "eq", value: "ON" },
     ]);
 
     const chartResult = await corsair.chart(result.findings);
@@ -57,14 +53,12 @@ describe("CHART Primitive - Framework Mapping", () => {
     expect(Array.isArray(chartResult.nist.controls)).toBe(true);
     expect(chartResult.nist.controls.length).toBeGreaterThan(0);
     // Should have PR.AC or similar controls
-    expect(chartResult.nist.controls.some(c => c.startsWith("PR."))).toBe(true);
+    expect(chartResult.nist.controls.some((c) => c.startsWith("PR."))).toBe(true);
   });
 
   test("CHART maps NIST to SOC2 CC", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
-    const result = await corsair.mark(snapshot, [
-      { field: "mfaConfiguration", operator: "eq", value: "ON" }
+    const result = await corsair.mark(nonCompliantSnapshot, [
+      { field: "mfaConfiguration", operator: "eq", value: "ON" },
     ]);
 
     const chartResult = await corsair.chart(result.findings);
@@ -75,14 +69,12 @@ describe("CHART Primitive - Framework Mapping", () => {
     expect(Array.isArray(chartResult.soc2.criteria)).toBe(true);
     expect(chartResult.soc2.criteria.length).toBeGreaterThan(0);
     // Should have CC6.x controls for access security
-    expect(chartResult.soc2.criteria.some(c => c.startsWith("CC6"))).toBe(true);
+    expect(chartResult.soc2.criteria.some((c) => c.startsWith("CC6"))).toBe(true);
   });
 
   test("CHART returns ChartResult with all frameworks", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
-    const result = await corsair.mark(snapshot, [
-      { field: "mfaConfiguration", operator: "eq", value: "ON" }
+    const result = await corsair.mark(nonCompliantSnapshot, [
+      { field: "mfaConfiguration", operator: "eq", value: "ON" },
     ]);
 
     const chartResult = await corsair.chart(result.findings);
@@ -110,16 +102,14 @@ describe("CHART Primitive - Framework Mapping", () => {
   });
 
   test("CHART maps password policy drift correctly", async () => {
-    const snapshot = (await corsair.recon(fixtureNonCompliant)).snapshot;
-
-    const result = await corsair.mark(snapshot, [
-      { field: "passwordPolicy.minimumLength", operator: "gte", value: 12 }
+    const result = await corsair.mark(nonCompliantSnapshot, [
+      { field: "passwordPolicy.minimumLength", operator: "gte", value: 12 },
     ]);
 
     const chartResult = await corsair.chart(result.findings);
 
     // Password policy should map to access/credential-related controls
-    expect(chartResult.soc2.criteria.some(c => c.includes("CC6"))).toBe(true);
+    expect(chartResult.soc2.criteria.some((c) => c.includes("CC6"))).toBe(true);
     expect(chartResult.soc2.description.toLowerCase()).toMatch(/access|credential/);
   });
 });

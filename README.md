@@ -1,364 +1,336 @@
-<div align="center">
-
-<img src="assets/updated corsair logo.png" alt="Corsair Logo" width="700"/>
-
-</div>
-
 # CORSAIR
 
-**Chaos Operations for Resilience, Security Assessment & Incremental Reinforcement**
+```
+   ██████╗ ██████╗ ██████╗ ███████╗ █████╗ ██╗██████╗
+  ██╔════╝██╔═══██╗██╔══██╗██╔════╝██╔══██╗██║██╔══██╗
+  ██║     ██║   ██║██████╔╝███████╗███████║██║██████╔╝
+  ██║     ██║   ██║██╔══██╗╚════██║██╔══██║██║██╔══██╗
+  ╚██████╗╚██████╔╝██║  ██║███████║██║  ██║██║██║  ██║
+   ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝
+```
 
-> Agentic Pirate raiding your GRC program.
+**Chaos Operations for Resilience, Security Assessment & Incident Response**
 
-**Tagline:** Attack first. Discover reality. Evidence emerges.
-
----
+> Attack first. Discover reality. Evidence emerges.
 
 ## What is CORSAIR?
 
-CORSAIR is an **agentic chaos engineering platform** that validates compliance through adversarial testing. It discovers the *actual* state of your security controls by attacking them—not by reading documentation.
-
-Unlike traditional GRC tools that check if you *documented* security controls, CORSAIR proves they *actually work under attack*.
-
-**Provider Scope:** Any system with a JSON-based API and testable controls:
-- **Identity providers** (AWS Cognito, Okta, Auth0, Azure AD)
-- **Endpoint security** (CrowdStrike, Microsoft Defender, SentinelOne)
-- **Device management** (JAMF Pro, Intune, Workspace ONE)
-- **Productivity suites** (Google Workspace, Microsoft 365, Slack)
-- **Cloud IAM, databases, secret managers, API gateways, custom enterprise systems**
+CORSAIR is an offensive chaos engineering tool for authentication systems. It discovers the *actual* state of your security controls by attacking them—not by reading documentation.
 
 Compliance evidence is generated as a **byproduct** of attacks, not as a goal.
 
----
+## The Exception Drift Attack Pattern
 
-## Architecture
+Traditional security testing asks: "Does MFA work?"
 
-CORSAIR uses a **layered plugin architecture** that separates universal primitives (core) from provider-specific implementations (plugins). This design enables scaling from 1 to 100+ providers while maintaining cryptographic guarantees.
+Exception Drift asks: "What happens when MFA encounters temporal anomalies, geographic impossibilities, behavioral deviations, or protocol downgrades?"
 
-### System Architecture
-
-```mermaid
-graph TB
-    subgraph "User Layer"
-        CLI[CLI / API]
-    end
-
-    subgraph "Core Layer (Universal)"
-        Corsair[Corsair Orchestrator]
-        Registry[Plugin Registry]
-        EvidenceCtrl[Evidence Controller<br/>SHA-256 Hash Chain]
-        LaneSerial[Provider Lane Serializer<br/>Composite Keys]
-
-        Corsair --> Registry
-        Corsair --> EvidenceCtrl
-        Corsair --> LaneSerial
-    end
-
-    subgraph "Plugin Layer (Provider-Specific)"
-        CognitoPlugin[AWS Cognito Plugin<br/>Identity Provider]
-        CrowdPlugin[CrowdStrike Plugin<br/>Endpoint Security]
-        JamfPlugin[JAMF Pro Plugin<br/>Device Management]
-        CustomPlugin[Custom Plugin<br/>Your Enterprise System]
-
-        CognitoPlugin -.implements.-> ProviderInterface[ProviderPlugin&lt;T&gt; Interface]
-        CrowdPlugin -.implements.-> ProviderInterface
-        JamfPlugin -.implements.-> ProviderInterface
-        CustomPlugin -.implements.-> ProviderInterface
-    end
-
-    subgraph "Provider Layer (External Systems)"
-        Cognito[AWS Cognito API]
-        CrowdStrike[CrowdStrike Falcon API]
-        JAMF[JAMF Pro API]
-        Custom[Your System API]
-
-        CognitoPlugin --> Cognito
-        CrowdPlugin --> CrowdStrike
-        JamfPlugin --> JAMF
-        CustomPlugin --> Custom
-    end
-
-    CLI --> Corsair
-    Corsair --> CognitoPlugin
-    Corsair --> CrowdPlugin
-    Corsair --> JamfPlugin
-    Corsair --> CustomPlugin
-
-    style Corsair fill:#3b82f6,stroke:#1e40af,color:#fff
-    style ProviderInterface fill:#8b5cf6,stroke:#6d28d9,color:#fff
-    style EvidenceCtrl fill:#10b981,stroke:#059669,color:#fff
-    style LaneSerial fill:#10b981,stroke:#059669,color:#fff
-```
-
-**Key Components:**
-- **Core Layer**: Universal primitives (PLUNDER, CHART), evidence controller with SHA-256 hash chain, provider lane serializer with composite keys
-- **Plugin Layer**: Provider-specific implementations of RECON, RAID, ESCAPE via generic `ProviderPlugin<T>` interface
-- **Provider Layer**: External systems accessible via JSON APIs (identity, endpoint security, device management, custom)
-
-### Execution Flow
-
-```mermaid
-graph LR
-    subgraph "Phase 1: RECON (Read-Only)"
-        A[Plugin: Observe<br/>Provider State] --> B[Snapshot<br/>Current Config]
-    end
-
-    subgraph "Phase 2: MARK (Drift Detection)"
-        B --> C[Core: Compare<br/>vs Expectations]
-        C --> D{Drift<br/>Detected?}
-    end
-
-    subgraph "Phase 3: RAID (Chaos)"
-        D -->|Yes| E[Plugin: Execute<br/>Attack Vector]
-        E --> F[Lane Lock:<br/>provider:targetId]
-        F --> G[Simulate Chaos<br/>Intensity 1-10]
-    end
-
-    subgraph "Phase 4: PLUNDER (Evidence)"
-        G --> H[Core: Extract<br/>Evidence]
-        H --> I[JSONL Append<br/>SHA-256 Hash]
-        I --> J[Cryptographic<br/>Chain Link]
-    end
-
-    subgraph "Phase 5: CHART (Compliance)"
-        J --> K[Core: Map to<br/>Frameworks]
-        K --> L[MITRE ATT&CK<br/>SOC2 / ISO27001]
-    end
-
-    subgraph "Phase 6: ESCAPE (Rollback)"
-        L --> M[Plugin: Create<br/>Cleanup Function]
-        M --> N[Core: Execute<br/>Scope Guards]
-        N --> O[State Restored<br/>No Leaked Resources]
-    end
-
-    D -->|No| P[Log: No Action<br/>Needed]
-
-    style A fill:#3b82f6,stroke:#1e40af,color:#fff
-    style C fill:#10b981,stroke:#059669,color:#fff
-    style E fill:#ef4444,stroke:#dc2626,color:#fff
-    style H fill:#10b981,stroke:#059669,color:#fff
-    style K fill:#10b981,stroke:#059669,color:#fff
-    style M fill:#f59e0b,stroke:#d97706,color:#fff
-```
-
-**The 6-Primitive Lifecycle:**
-1. **RECON** (Blue): Plugin observes provider state read-only
-2. **MARK** (Green): Core detects drift from expected configuration
-3. **RAID** (Red): Plugin executes controlled chaos with lane-level serialization
-4. **PLUNDER** (Green): Core extracts cryptographic evidence with hash chain
-5. **CHART** (Green): Core automatically maps to compliance frameworks
-6. **ESCAPE** (Orange): Plugin creates cleanup, core executes scope guards
-
-### Plugin System
-
-```typescript
-// Initialize with plugin discovery
-const corsair = new Corsair();
-await corsair.initialize("plugins/");
-
-// Execute plugin-based RECON
-const { snapshot } = await corsair.reconWithPlugin("aws-cognito", "us-east-1_ABC123");
-
-// Execute plugin-based RAID
-const result = await corsair.raidWithPlugin("aws-cognito", snapshot, "mfa-bypass", 5);
-
-// Create plugin-based cleanup
-const cleanup = corsair.createPluginCleanup("aws-cognito", snapshot);
-const escapeResult = corsair.escape([cleanup]);
-```
-
-**Current Status:**
-- ✅ Plugin architecture implemented
-- ✅ AWS Cognito plugin (first proof-of-concept)
-- ✅ 108 tests passing (45 primitives + 63 plugin system)
-- ⬜ Additional providers (Okta, CrowdStrike, JAMF, etc.) - coming soon
-
-See [`PLUGIN_ARCHITECTURE.md`](PLUGIN_ARCHITECTURE.md) for complete documentation.
-
----
-
-## The 6 Primitives
-
-Every Corsair operation is built from these atomic primitives:
-
-| Primitive | Purpose | Example |
-|-----------|---------|---------|
-| **RECON** | Observe provider state (read-only) | Snapshot AWS Cognito MFA configuration |
-| **MARK** | Identify drift from expectations | Compare observed vs expected MFA settings |
-| **RAID** | Execute controlled chaos attacks | Simulate MFA bypass when MFA=OFF |
-| **PLUNDER** | Extract cryptographic evidence | JSONL with SHA-256 hash chain |
-| **CHART** | Map to compliance frameworks | Automatic MITRE ATT&CK + SOC2/ISO27001 |
-| **ESCAPE** | Rollback with scope guards | Restore original state, no leaked resources |
-
-**Design Principle:** Plugins implement 4 primitives (RECON, RAID, ESCAPE, provider-specific MARK). PLUNDER and CHART are 100% universal—no plugin code needed.
-
----
-
-## Attack Vectors with MITRE Mapping
-
-Each plugin declares attack vectors with MITRE ATT&CK mappings:
-
-### AWS Cognito Plugin (Current)
-
-| Vector | MITRE Technique | Description |
-|--------|-----------------|-------------|
-| `mfa-bypass` | T1556.006 | Multi-Factor Authentication Interception |
-| `password-spray` | T1110.003 | Password Spraying |
-| `token-replay` | T1550.001 | Application Access Token |
-| `session-hijack` | T1563 | Remote Service Session Hijacking |
-
-### Coming Soon
-
-| Provider | Example Vectors | MITRE Techniques |
-|----------|-----------------|------------------|
-| **CrowdStrike** | Quarantine policy bypass | T1562.001 (Impair Defenses) |
-| **JAMF Pro** | Compliance drift (encryption disabled) | T1601 (Modify System Image) |
-| **Google Workspace** | External sharing override | T1567.002 (Data Exfiltration) |
-| **AWS IAM** | Overly permissive role assumption | T1078.004 (Cloud Accounts) |
-
----
-
-## Evidence Auto-Generation
-
-Every raid automatically generates cryptographic evidence:
-
-**Format:** JSONL with SHA-256 hash chain linking all records
-
-**Framework Mappings:**
-- **MITRE ATT&CK**: Attack vector techniques (T1556.006, etc.)
-- **SOC2**: CC6.1, CC6.2, CC6.3, CC6.6, CC7.2
-- **ISO27001**: A.9.2.3, A.9.4.2, A.12.4.1
-- **NIST-CSF**: PR.AC-7, PR.DS-2
-
-**Key Features:**
-- Append-only JSONL (immutable audit trail)
-- Cryptographic hash chain (tamper-evident)
-- Automatic framework mapping (invisible to operator)
-- MITRE ATT&CK enrichment (threat-driven testing)
-
-You don't select a framework. You attack. The mappings happen automatically.
-
----
+We inject controlled chaos into authentication flows to discover:
+- **Temporal Drift**: Token replay windows, clock skew tolerance
+- **Geographic Drift**: Impossible travel detection, geofencing weaknesses
+- **Behavioral Drift**: Anomaly detection gaps, step-up auth failures
+- **Protocol Drift**: Fallback vulnerabilities, backup code abuse
 
 ## Quick Start
 
 ```bash
-# Clone repository
-git clone https://github.com/Arudjreis/corsair.git
-cd corsair
+# Clone and enter
+cd corsair-mvp
 
-# Install dependencies
-bun install
+# Launch your first attack (no framework selection required)
+bun run corsair strike mfa
 
-# Run tests (108 passing)
-bun test
-
-# Try the AWS Cognito demo
-bun run src/corsair-mvp.ts
+# That's it. Evidence is generated automatically.
 ```
 
-**Current Implementation:**
-- TypeScript + Bun runtime
-- Plugin architecture (manifest-based discovery)
-- Test-driven development (TDD approach)
-- 100% backward compatibility with legacy methods
+## The First Command
 
----
+When you run `corsair strike mfa`, you're not configuring a compliance framework. You're launching an attack.
+
+```bash
+$ bun run corsair strike mfa
+
+   ██████╗ ██████╗ ██████╗ ███████╗ █████╗ ██╗██████╗
+  ██╔════╝██╔═══██╗██╔══██╗██╔════╝██╔══██╗██║██╔══██╗
+  ...
+
+[TARGET] mfa
+[VECTOR] Exception Drift (temporal)
+[INTENSITY] 5/10
+
+[DONE] Initializing attack vectors...
+[DONE] Mapping authentication surface...
+
+>>> INJECTING EXCEPTION DRIFT
+────────────────────────────────────────────────────────────
+
+>>> ATTACK COMPLETE
+────────────────────────────────────────────────────────────
+
+FINDINGS:
+   CRITICAL  MFA token replay possible within 30s window
+     └─ Exception: Time-based OTP accepts codes from previous period
+   WARNING  Excessive clock skew tolerance (>5 minutes)
+     └─ Exception: Authentication accepts tokens from future periods
+
+────────────────────────────────────────────────────────────
+>>> EVIDENCE GENERATED (background)
+
+Mapped to controls:
+  + SOC2 CC6.1: Logical access security
+  + SOC2 CC6.6: System boundary protection
+  + ISO27001 A.9.4.2: Secure log-on procedures
+  + NIST-CSF PR.AC-7: Authentication mechanisms
+
+Evidence saved: ./corsair-evidence-1706731200000.json
+Report saved: ./corsair-evidence-1706731200000.md
+```
+
+## API (Plugin-First)
+
+CORSAIR uses a plugin-first architecture. Provider-specific logic lives in plugins, keeping the core generic.
+
+### Primary API (Recommended)
+
+```typescript
+import { Corsair } from "./src/corsair-mvp";
+
+const corsair = new Corsair();
+
+// Auto-discover plugins from plugins/ directory
+await corsair.initialize();  // Discovers aws-cognito, future plugins...
+
+// Or: await corsair.initialize("./custom-plugins");
+
+// Access discovered plugins
+const cognitoPlugin = corsair.getPlugin("aws-cognito");
+console.log(`Loaded: ${cognitoPlugin?.manifest.providerName} v${cognitoPlugin?.manifest.version}`);
+
+// List all attack vectors from plugin manifest
+for (const vector of cognitoPlugin?.manifest.attackVectors || []) {
+  console.log(`  - ${vector.id}: ${vector.name} (${vector.severity})`);
+}
+
+// Recon via plugin (provider-agnostic)
+const reconResult = await corsair.reconWithPlugin("aws-cognito", "us-west-2_ABC123");
+
+// Raid via plugin (attack vectors defined by plugin)
+const raidResult = await corsair.raidWithPlugin(
+  "aws-cognito",
+  reconResult.snapshot,
+  "mfa-bypass",
+  5  // intensity
+);
+
+// Or raid with approval gate for production safety
+const approvalGate = {
+  requiredSeverity: "CRITICAL",
+  approvers: ["security-lead@example.com"],
+  timeoutMs: 30000,
+  channel: "webhook"
+};
+
+const secureRaidResult = await corsair.raid(snapshot, {
+  vector: "mfa-bypass",
+  intensity: 9,
+  dryRun: true,
+  approvalGate,
+  requestApproval: async (req) => ({
+    approved: true,
+    approver: "security-lead@example.com",
+    timestamp: new Date().toISOString()
+  })
+});
+
+// Plunder (evidence extraction - universal)
+const evidence = await corsair.plunder(raidResult, "./evidence.jsonl");
+
+// Chart (framework mapping - universal)
+const mapping = await corsair.chartRaid(raidResult);
+```
+
+### Event Subscriptions (OpenClaw Pattern 2)
+
+CORSAIR supports pub/sub event subscriptions for real-time monitoring:
+
+```typescript
+import { Corsair, type CorsairEvent } from "./src/corsair-mvp";
+
+const corsair = new Corsair();
+
+// Subscribe to raid completion events
+corsair.on("raid:complete", (event: CorsairEvent) => {
+  console.log(`Raid: ${event.vector} on ${event.targetId}`);
+  console.log(`Success: ${event.success}, Severity: ${event.severity}`);
+  console.log(`Findings: ${event.findings?.join(", ")}`);
+});
+
+// Subscribe to drift detection events
+corsair.on("drift:detected", (event: CorsairEvent) => {
+  console.log(`Drift detected on ${event.targetId}`);
+  console.log(`Severity: ${event.severity}`);
+  console.log(`Drifts: ${event.findings?.join(", ")}`);
+});
+
+// Create event aggregator for summary statistics
+const aggregator = corsair.createEventAggregator();
+
+// Execute operations (events fire automatically)
+await corsair.raid(snapshot, { vector: "mfa-bypass", intensity: 5, dryRun: true });
+await corsair.mark(snapshot, [{ field: "mfaConfiguration", operator: "eq", value: "ON" }]);
+
+// Get aggregated summary
+const summary = aggregator.getSummary();
+console.log(`Total events: ${summary.totalEvents}`);
+console.log(`By type: ${JSON.stringify(summary.byType)}`);
+console.log(`By severity: ${JSON.stringify(summary.bySeverity)}`);
+
+// Query historical events with filters
+const criticalEvents = await corsair.queryEvents({
+  severity: "CRITICAL",
+  timeRange: {
+    start: new Date(Date.now() - 3600000).toISOString(),
+    end: new Date().toISOString()
+  }
+});
+```
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `corsair strike <target>` | Launch exception drift attack |
+| `corsair recon <target>` | Reconnaissance on target (uses plugin internally) |
+| `corsair evidence` | Generate compliance evidence |
+| `corsair help` | Show help |
+
+## Attack Targets
+
+| Target | What It Attacks |
+|--------|-----------------|
+| `mfa` | Multi-factor authentication flows |
+| `session-hijack` | Session management controls |
+| `privilege-escalation` | Authorization boundaries |
+| `token-replay` | Token handling mechanisms |
+
+## Drift Types
+
+| Drift | Chaos Injected |
+|-------|----------------|
+| `--drift=temporal` | Time-based anomalies (token replay, clock skew) |
+| `--drift=geographic` | Location-based anomalies (impossible travel, VPN egress) |
+| `--drift=behavioral` | Pattern-based anomalies (rate bursts, access patterns) |
+| `--drift=protocol` | Protocol-level anomalies (downgrades, fallbacks) |
+
+## Evidence Auto-Generation
+
+Every attack automatically maps findings to compliance frameworks:
+
+- **SOC2**: CC6.1, CC6.2, CC6.3, CC6.6, CC7.2
+- **ISO27001**: A.9.2.3, A.9.4.2, A.12.4.1
+- **NIST-CSF**: PR.AC-7, PR.DS-2
+
+You don't select a framework. You attack. The framework mappings happen in the background.
 
 ## Philosophy
 
-**Traditional GRC approach:**
-1. Configure framework
-2. Define controls
-3. Test against checklist
-4. Generate evidence
+**Old approach**: Configure framework → Define controls → Test against checklist → Generate evidence
 
-**CORSAIR approach:**
-1. Launch attack
-2. Discover reality
-3. Evidence emerges
+**CORSAIR approach**: Launch attack → Discover reality → Evidence emerges
 
 The difference is existential. Compliance tools ask "are you compliant?" CORSAIR asks "what actually happens when things go wrong?"
-
-**Metaphor:** Ships with 100 cannons but unlocked cargo holds.
-- **Ships** = GRC programs (documented, certified, "compliant")
-- **100 cannons** = Pages of policies, frameworks, SOC2/ISO27001 certifications
-- **Unlocked cargo hold** = Actual security gaps despite documentation
-- **Corsairs** = Authorized raiders who expose gaps through chaos
-
----
 
 ## Technical Details
 
 - **Runtime**: Bun (TypeScript)
-- **Architecture**: Plugin-based, provider-agnostic
-- **Concurrency**: Composite lane keys (provider:targetId) for surgical serialization
-- **Evidence**: JSONL with SHA-256 hash chain
-- **Framework Mapping**: Automatic, background, invisible to attacker
-- **Testing**: 108 tests passing (45 primitives + 63 plugin system)
+- **Architecture**: Plugin-first, offensive chaos engineering, evidence as side-effect
+- **Plugin System**: Provider-agnostic core with aws-cognito reference implementation
+- **Output**: JSONL evidence (hash-chain integrity) + Markdown reports
+- **Framework Mapping**: Plugin-provided MITRE -> NIST-CSF -> SOC2 mappings
+- **Event System**: Pub/sub events with aggregation and query support
+- **Tests**: 205 tests across 15 files (primitives, patterns, plugin-system)
 
----
+## Project Structure
 
-## Scaling Path
+```
+src/
+  corsair-mvp.ts       # Main Corsair class and primitives (1416 lines)
+  types.ts             # Type definitions (536 lines)
+  evidence.ts          # JSONL evidence engine with hash chain (270 lines)
+  compaction.ts        # Evidence compaction (OpenClaw Pattern 1) (208 lines)
 
-### Today (MVP)
-- ✅ 1 provider (AWS Cognito)
-- ✅ 4 attack vectors
-- ✅ Plugin architecture proven
-- ✅ 108 tests passing
+plugins/
+  aws-cognito/
+    aws-cognito.plugin.json   # Plugin manifest with framework mappings
+    aws-cognito-plugin.ts     # Plugin implementation
+    index.ts                  # Module exports
 
-### Next 10 Providers (Month 1-2)
-1. **Okta** - T1556.006 (MFA bypass), T1078 (Valid Accounts)
-2. **Auth0** - T1556.006, T1110 (Brute Force)
-3. **Azure AD** - T1556.006, T1078, T1110
-4. **Google Workspace** - T1556.006, T1110
-5. **CrowdStrike** - T1562.001 (Impair Defenses)
-6. **JAMF Pro** - T1601 (Modify System Image)
-7. **Microsoft Intune** - T1601, T1078
-8. **Slack Enterprise** - T1078, T1567.002
-9. **AWS IAM** - T1078.004, T1098
-10. **PostgreSQL** - T1078, T1552.001
+tests/
+  primitives/          # Core primitive tests (RECON, MARK, RAID, etc.)
+  patterns/            # OpenClaw pattern tests (Events, Compaction, etc.)
+  plugin-system/       # Plugin discovery and type abstraction tests
+```
 
-**Implementation:** 2-3 days per provider (manifest + plugin + tests)
+## Plugin Architecture
 
-### Scale to 100+ (Month 3-12)
-- **Identity Providers (30)**: Okta, Auth0, Azure AD, Google, Ping, OneLogin, etc.
-- **Cloud IAM (20)**: AWS IAM, GCP IAM, Azure RBAC, Oracle Cloud, etc.
-- **Endpoint Security (15)**: CrowdStrike, Defender, SentinelOne, Carbon Black, etc.
-- **Device Management (15)**: JAMF Pro, Intune, Workspace ONE, Kandji, etc.
-- **Productivity Suites (12)**: Google Workspace, Microsoft 365, Slack, Zoom, etc.
-- **Databases (15)**: PostgreSQL, MySQL, MongoDB, DynamoDB, etc.
-- **Secret Managers (10)**: HashiCorp Vault, AWS Secrets Manager, Azure Key Vault, etc.
-- **API Gateways (10)**: Kong, Apigee, AWS API Gateway, etc.
-- **Custom/Enterprise (20+)**: Customer-specific providers, proprietary systems
+CORSAIR follows a plugin-first architecture with auto-discovery:
 
-**Core Principle:** Any system with a JSON API and testable controls can be a provider.
+```
+corsair-mvp/
+  src/
+    corsair-mvp.ts      # Core primitives (generic)
+  plugins/
+    aws-cognito/        # AWS Cognito provider plugin
+      aws-cognito-plugin.ts     # Plugin implementation
+      aws-cognito.plugin.json   # Plugin manifest (auto-discovered)
+      index.ts                  # Module exports
+    # Future: azure-ad/, okta/, auth0/
+```
 
----
+### Plugin Discovery
 
-## Documentation
+Plugins are auto-discovered when you call `corsair.initialize()`:
 
-- **[PLUGIN_ARCHITECTURE.md](PLUGIN_ARCHITECTURE.md)** - Complete plugin system documentation
-- **[docs/architecture/primitives/FUNDAMENTAL_PRIMITIVES.md](docs/architecture/primitives/FUNDAMENTAL_PRIMITIVES.md)** - The 6 primitives explained
-- **[docs/architecture/patterns/OPENCLAW_MAPPING.md](docs/architecture/patterns/OPENCLAW_MAPPING.md)** - OpenClaw pattern implementation
-- **[docs/BRAND.md](docs/BRAND.md)** - Brand identity and positioning
+```typescript
+const corsair = new Corsair();
+await corsair.initialize();  // Scans plugins/ for *.plugin.json
 
----
+// Check what was discovered
+console.log(corsair.getPlugins().map(p => p.manifest.providerId));
+// Output: ["aws-cognito"]
+```
 
-## Contributing
+### Plugin Manifest Schema
 
-Corsair welcomes contributions! Areas of interest:
-- **New provider plugins** (see PLUGIN_ARCHITECTURE.md for template)
-- **Attack vector expansions** (new MITRE techniques)
-- **Framework mappings** (additional compliance frameworks)
-- **Test coverage** (maintain 100% primitive coverage)
+Each plugin must provide a `*.plugin.json` manifest:
 
----
+```json
+{
+  "providerId": "aws-cognito",
+  "providerName": "AWS Cognito",
+  "version": "1.0.0",
+  "attackVectors": [
+    {
+      "id": "mfa-bypass",
+      "name": "MFA Bypass",
+      "description": "Tests MFA bypass scenarios",
+      "severity": "CRITICAL",
+      "mitreMapping": ["T1556.006"]
+    }
+  ]
+}
+```
+
+### Creating a New Provider Plugin
+
+1. Create directory: `plugins/my-provider/`
+2. Create manifest: `my-provider.plugin.json` with required fields
+3. Implement `ProviderPlugin<T>` interface in TypeScript
+4. Export plugin types and factory functions
+5. Test: `await corsair.initialize()` should discover your plugin
+
+See `plugins/aws-cognito/` for reference implementation.
 
 ## License
 
 MIT
-
----
-
-🏴‍☠️ **"Sanctioned chaos. Validated security."**

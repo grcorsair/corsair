@@ -1,269 +1,148 @@
 #!/usr/bin/env bun
 /**
- * CORSAIR MVP - Atomic Implementation with Plugin System
+ * CORSAIR MVP - Atomic Implementation
  *
  * Six Primitives:
- * - RECON: Observe provider state without modification (plugin-specific)
+ * - RECON: Observe AWS Cognito without modification
  * - MARK: Identify drift by comparing reality vs expectations
- * - RAID: Execute controlled chaos (plugin-specific attacks)
- * - PLUNDER: Extract JSONL evidence with cryptographic hash chain (universal)
- * - CHART: Map attack to compliance frameworks (universal via plugin declarations)
- * - ESCAPE: Rollback state with scope guards (plugin-specific cleanup)
+ * - RAID: Execute controlled chaos (MFA bypass simulation)
+ * - PLUNDER: Extract JSONL evidence with cryptographic hash chain
+ * - CHART: Map attack to compliance frameworks (MITRE -> NIST -> SOC2)
+ * - ESCAPE: Rollback state with scope guards (RAII pattern)
  *
  * Four OpenClaw Patterns:
  * - JSONL serialization (append-only, SHA-256 chain)
- * - Lane serialization (prevent concurrent raids on same target, now composite keys)
+ * - Lane serialization (prevent concurrent raids on same target)
  * - Scope guards (RAII cleanup pattern)
  * - State machine (7-phase lifecycle)
- *
- * Plugin Architecture:
- * - Scales from 1 to 100+ providers via ProviderPlugin<T> interface
- * - PluginRegistry for manifest-based discovery
- * - ProviderLaneSerializer for composite key concurrency control
- * - EvidenceController for core-controlled evidence writes
  */
 
 import { createHash } from "crypto";
-import { appendFileSync, readFileSync, writeFileSync, existsSync } from "fs";
-import { PluginRegistry } from "./core/plugin-registry";
-import { ProviderLaneSerializer, createLaneKey, type LaneKey } from "./core/provider-lane-serializer";
-import { EvidenceController } from "./core/evidence-controller";
-import type { ProviderPlugin, ObservedState } from "./types/provider-plugin";
+import { readFileSync, existsSync, readdirSync, statSync } from "fs";
+import { join } from "path";
+import { EventEmitter } from "events";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// TYPE DEFINITIONS
-// ═══════════════════════════════════════════════════════════════════════════════
+// Import EvidenceEngine and CompactionEngine for delegation
+import { EvidenceEngine } from "./evidence";
+import { CompactionEngine } from "./compaction";
 
-export type MfaConfiguration = "ON" | "OFF" | "OPTIONAL";
-export type Severity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
-export type AttackVector = "mfa-bypass" | "password-spray" | "token-replay" | "session-hijack";
-export type Framework = "MITRE" | "NIST-CSF" | "SOC2";
-export type EvidenceType = "positive" | "negative" | "exception";
-export type OperationType = "recon" | "mark" | "raid" | "chart" | "plunder" | "escape";
+// Import all types from the types module
+import type {
+  MfaConfiguration,
+  Severity,
+  AttackVector,
+  Framework,
+  EvidenceType,
+  OperationType,
+  PasswordPolicy,
+  RiskConfiguration,
+  CognitoSnapshot,
+  ReconMetadata,
+  ReconResult,
+  Expectation,
+  DriftFinding,
+  MarkResult,
+  TimelineEvent,
+  RaidResult,
+  RaidOptions,
+  PlunderRecord,
+  PlunderResult,
+  EvidenceChainVerification,
+  ComplianceMapping,
+  ChartOptions,
+  ChartResult,
+  StateTransition,
+  ScopeGuard,
+  GuardStatus,
+  EscapeVerification,
+  EscapeReport,
+  EscapeResult,
+  SimpleEscapeResult,
+  RollbackResult,
+  ReleaseResult,
+  EscapeOptions,
+  ApprovalChannel,
+  ApprovalGate,
+  ApprovalRequest,
+  ApprovalResponse,
+  RaidOptionsWithApproval,
+  CompactionResult,
+  CompactionSummary,
+  CorsairEventType,
+  CorsairEvent,
+  EventFilter,
+  EventAggregator,
+  EventAggregatorSummary,
+  PluginAttackVector,
+  PluginManifest,
+  RegisteredPlugin,
+  InitializeResult,
+  CorsairOptions,
+  FrameworkMappingEntry,
+  PluginFrameworkMappings,
+} from "./types";
 
-export interface PasswordPolicy {
-  minimumLength: number;
-  requireUppercase: boolean;
-  requireLowercase: boolean;
-  requireNumbers: boolean;
-  requireSymbols: boolean;
-  temporaryPasswordValidityDays: number;
-}
+// Re-export all types for external consumers
+export type {
+  MfaConfiguration,
+  Severity,
+  AttackVector,
+  Framework,
+  EvidenceType,
+  OperationType,
+  PasswordPolicy,
+  RiskConfiguration,
+  CognitoSnapshot,
+  ReconMetadata,
+  ReconResult,
+  Expectation,
+  DriftFinding,
+  MarkResult,
+  TimelineEvent,
+  RaidResult,
+  RaidOptions,
+  PlunderRecord,
+  PlunderResult,
+  EvidenceChainVerification,
+  ComplianceMapping,
+  ChartOptions,
+  ChartResult,
+  StateTransition,
+  ScopeGuard,
+  GuardStatus,
+  EscapeVerification,
+  EscapeReport,
+  EscapeResult,
+  SimpleEscapeResult,
+  RollbackResult,
+  ReleaseResult,
+  EscapeOptions,
+  ApprovalChannel,
+  ApprovalGate,
+  ApprovalRequest,
+  ApprovalResponse,
+  RaidOptionsWithApproval,
+  CompactionResult,
+  CompactionSummary,
+  CorsairEventType,
+  CorsairEvent,
+  EventFilter,
+  EventAggregator,
+  EventAggregatorSummary,
+  PluginAttackVector,
+  PluginManifest,
+  RegisteredPlugin,
+  InitializeResult,
+  CorsairOptions,
+  FrameworkMappingEntry,
+  PluginFrameworkMappings,
+};
 
-export interface RiskConfiguration {
-  compromisedCredentialsAction: string | null;
-  accountTakeoverLowAction: string | null;
-  accountTakeoverMediumAction: string | null;
-  accountTakeoverHighAction: string | null;
-}
-
-export interface CognitoSnapshot {
-  userPoolId: string;
-  userPoolName: string;
-  mfaConfiguration: MfaConfiguration;
-  softwareTokenMfaEnabled: boolean;
-  smsMfaEnabled: boolean;
-  passwordPolicy: PasswordPolicy;
-  riskConfiguration: RiskConfiguration | null;
-  deviceConfiguration: {
-    challengeRequiredOnNewDevice: boolean;
-    deviceOnlyRememberedOnUserPrompt: boolean;
-  };
-  observedAt: string;
-  userCount?: number;
-  status?: string;
-}
-
-export interface ReconMetadata {
-  source: "fixture" | "aws";
-  readonly: boolean;
-  durationMs: number;
-}
-
-export interface ReconResult {
-  snapshot: CognitoSnapshot;
-  metadata: ReconMetadata;
-  stateModified: boolean;
-  durationMs: number;
-}
-
-export interface Expectation {
-  field: string;
-  operator: "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "exists" | "contains";
-  value: unknown;
-}
-
-export interface DriftFinding {
-  id: string;
-  field: string;
-  expected: unknown;
-  actual: unknown;
-  drift: boolean;
-  severity: Severity;
-  description: string;
-  timestamp: string;
-}
-
-export interface MarkResult {
-  findings: DriftFinding[];
-  driftDetected: boolean;
-  durationMs: number;
-}
-
-export interface TimelineEvent {
-  timestamp: string;
-  action: string;
-  result: string;
-  data?: unknown;
-}
-
-export interface RaidResult {
-  raidId: string;
-  target: string;
-  vector: AttackVector;
-  success: boolean;
-  controlsHeld: boolean;
-  findings: string[];
-  timeline: TimelineEvent[];
-  startedAt: string;
-  completedAt: string;
-  serialized: boolean;
-  durationMs: number;
-}
-
-export interface RaidOptions {
-  vector: AttackVector;
-  intensity: number;
-  dryRun: boolean;
-}
-
-export interface PlunderRecord {
-  sequence: number;
-  timestamp: string;
-  operation: OperationType;
-  data: unknown;
-  previousHash: string | null;
-  hash: string;
-}
-
-export interface PlunderResult {
-  evidencePath: string;
-  eventCount: number;
-  chainVerified: boolean;
-  immutable: boolean;
-  auditReady: boolean;
-}
-
-export interface EvidenceChainVerification {
-  valid: boolean;
-  recordCount: number;
-  brokenAt: number | null;
-}
-
-export interface ComplianceMapping {
-  id: string;
-  findingId: string;
-  framework: Framework;
-  technique?: string;
-  control?: string;
-  description: string;
-  mappingChain: string[];
-  evidenceType: EvidenceType;
-  evidenceRef: string;
-}
-
-export interface ChartOptions {
-  frameworks?: Framework[];
-}
-
-export interface ChartResult {
-  mitre: {
-    technique: string;
-    name: string;
-    tactic: string;
-    description: string;
-  };
-  nist: {
-    function: string;
-    category: string;
-    controls: string[];
-  };
-  soc2: {
-    principle: string;
-    criteria: string[];
-    description: string;
-  };
-}
-
-export interface StateTransition {
-  guardId: string;
-  field: string;
-  from: unknown;
-  to: unknown;
-  timestamp: string;
-}
-
-export interface ScopeGuard {
-  guardId: string;
-  initialState: CognitoSnapshot;
-  active: boolean;
-  createdAt: string;
-  timeoutMs?: number;
-  transitions: StateTransition[];
-}
-
-export interface GuardStatus {
-  released: boolean;
-  releasedOnError: boolean;
-}
-
-export interface EscapeVerification {
-  initialHash: string;
-  finalHash: string;
-  stateRestored: boolean;
-}
-
-export interface EscapeReport {
-  guardId: string;
-  operationsPerformed: number;
-  stateChanges: number;
-  cleanupActions: string[];
-  success: boolean;
-}
-
-export interface EscapeResult<T = CognitoSnapshot> {
-  value: T;
-  verification: EscapeVerification;
-  durationMs: number;
-  report: EscapeReport;
-}
-
-export interface SimpleEscapeResult {
-  cleanupOps: number;
-  allSuccessful: boolean;
-  stateRestored: boolean;
-  noLeakedResources: boolean;
-  durationMs: number;
-}
-
-export interface RollbackResult {
-  rolledBack: boolean;
-  fromState: CognitoSnapshot;
-  toState: CognitoSnapshot;
-}
-
-export interface ReleaseResult {
-  restored: boolean;
-  finalState: CognitoSnapshot;
-}
-
-export interface EscapeOptions {
-  timeoutMs?: number;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// FRAMEWORK MAPPING DATA
-// ═══════════════════════════════════════════════════════════════════════════════
+// ===============================================================================
+// FRAMEWORK MAPPING DATA (LEGACY FALLBACK)
+// These are kept for backward compatibility when plugin mappings are not available.
+// New plugins should define frameworkMappings in their *.plugin.json manifest.
+// ===============================================================================
 
 const DRIFT_TO_MITRE: Record<string, { technique: string; name: string }> = {
   mfaConfiguration: { technique: "T1556", name: "Modify Authentication Process" },
@@ -296,9 +175,9 @@ const ATTACK_VECTOR_TO_MITRE: Record<AttackVector, { technique: string; name: st
   "session-hijack": { technique: "T1563", name: "Remote Service Session Hijacking" },
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ===============================================================================
 // LANE SERIALIZATION (Prevent Concurrent Raids)
-// ═══════════════════════════════════════════════════════════════════════════════
+// ===============================================================================
 
 class LaneSerializer {
   private locks: Map<string, Promise<void>> = new Map();
@@ -326,176 +205,273 @@ class LaneSerializer {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// STATE MACHINE (7-Phase Lifecycle)
-// ═══════════════════════════════════════════════════════════════════════════════
+// ===============================================================================
+// PLUGIN REGISTRY
+// ===============================================================================
 
-type Phase = "OBSERVE" | "THINK" | "PLAN" | "BUILD" | "EXECUTE" | "VERIFY" | "LEARN";
+/**
+ * PluginRegistry - Discovers and manages Corsair plugins
+ *
+ * Responsibilities:
+ * - Scan directories for *.plugin.json manifests
+ * - Validate manifest schemas
+ * - Register discovered plugins
+ * - Provide plugin lookup by providerId
+ */
+class PluginRegistry {
+  private plugins: Map<string, RegisteredPlugin> = new Map();
 
-interface StateMachine {
-  phase: Phase;
-  transitions: Array<{ from: Phase; to: Phase; timestamp: string }>;
+  /**
+   * Discover plugins from a directory.
+   * Scans for *.plugin.json files in subdirectories.
+   *
+   * @param pluginDir - Directory to scan for plugins
+   * @returns Discovery result with counts and plugin list
+   */
+  async discover(pluginDir: string): Promise<InitializeResult> {
+    const discovered: string[] = [];
+    const invalid: string[] = [];
+
+    // Handle non-existent directory gracefully
+    if (!existsSync(pluginDir)) {
+      return {
+        discoveredCount: 0,
+        plugins: [],
+        invalidManifests: [],
+      };
+    }
+
+    try {
+      const entries = readdirSync(pluginDir);
+
+      for (const entry of entries) {
+        const entryPath = join(pluginDir, entry);
+        const stat = statSync(entryPath);
+
+        if (stat.isDirectory()) {
+          // Look for *.plugin.json files in subdirectory
+          const subEntries = readdirSync(entryPath);
+          for (const subEntry of subEntries) {
+            if (subEntry.endsWith(".plugin.json")) {
+              const manifestPath = join(entryPath, subEntry);
+              const result = await this.loadManifest(manifestPath);
+
+              if (result.valid && result.manifest) {
+                // Check if already registered (don't overwrite)
+                if (!this.plugins.has(result.manifest.providerId)) {
+                  this.register(result.manifest);
+                  discovered.push(result.manifest.providerId);
+                }
+              } else {
+                invalid.push(manifestPath);
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      // Directory scan failed - return empty result
+      return {
+        discoveredCount: 0,
+        plugins: [],
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+
+    return {
+      discoveredCount: discovered.length,
+      plugins: discovered,
+      invalidManifests: invalid.length > 0 ? invalid : undefined,
+    };
+  }
+
+  /**
+   * Load and validate a plugin manifest from file.
+   */
+  private async loadManifest(
+    manifestPath: string
+  ): Promise<{ valid: boolean; manifest?: PluginManifest; error?: string }> {
+    try {
+      const content = readFileSync(manifestPath, "utf-8");
+      const manifest = JSON.parse(content);
+
+      // Validate required fields
+      if (!manifest.providerId || typeof manifest.providerId !== "string") {
+        return { valid: false, error: "Missing or invalid providerId" };
+      }
+
+      if (!manifest.providerName || typeof manifest.providerName !== "string") {
+        return { valid: false, error: "Missing or invalid providerName" };
+      }
+
+      if (!manifest.version || typeof manifest.version !== "string") {
+        return { valid: false, error: "Missing or invalid version" };
+      }
+
+      if (!Array.isArray(manifest.attackVectors)) {
+        return { valid: false, error: "Missing or invalid attackVectors" };
+      }
+
+      // Validate attack vectors structure
+      for (const vector of manifest.attackVectors) {
+        if (!vector.id || !vector.name || !vector.severity) {
+          return { valid: false, error: "Invalid attack vector structure" };
+        }
+
+        if (!["CRITICAL", "HIGH", "MEDIUM", "LOW"].includes(vector.severity)) {
+          return { valid: false, error: `Invalid severity: ${vector.severity}` };
+        }
+      }
+
+      return { valid: true, manifest: manifest as PluginManifest };
+    } catch (error) {
+      return {
+        valid: false,
+        error: error instanceof Error ? error.message : "Parse error",
+      };
+    }
+  }
+
+  /**
+   * Register a plugin manifest.
+   */
+  register(manifest: PluginManifest): void {
+    const plugin: RegisteredPlugin = {
+      manifest,
+      loadedAt: new Date().toISOString(),
+    };
+
+    this.plugins.set(manifest.providerId, plugin);
+    console.log(`  Registered plugin: ${manifest.providerId} (${manifest.providerName} v${manifest.version})`);
+  }
+
+  /**
+   * Get a registered plugin by providerId.
+   */
+  get(providerId: string): RegisteredPlugin | undefined {
+    return this.plugins.get(providerId);
+  }
+
+  /**
+   * Get all registered plugins.
+   */
+  getAll(): RegisteredPlugin[] {
+    return Array.from(this.plugins.values());
+  }
+
+  /**
+   * Check if a plugin is registered.
+   */
+  has(providerId: string): boolean {
+    return this.plugins.has(providerId);
+  }
+
+  /**
+   * Get all registered manifests.
+   */
+  getManifests(): PluginManifest[] {
+    return this.getAll().map((p) => p.manifest);
+  }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ===============================================================================
 // CORSAIR CLASS - MAIN IMPLEMENTATION
-// ═══════════════════════════════════════════════════════════════════════════════
+// ===============================================================================
 
-export interface CorsairOptions {
-  evidencePath?: string;
-  pluginDirectory?: string;
-}
-
-export class Corsair {
+export class Corsair extends EventEmitter {
   private evidencePath: string;
-  private sequence: number = 0;
-  private lastHash: string | null = null;
+  private evidenceEngine: EvidenceEngine;
+  private compactionEngine: CompactionEngine;
   private laneSerializer = new LaneSerializer();
   private guards: Map<string, ScopeGuard> = new Map();
   private transitions: StateTransition[] = [];
   private lastGuardStatus: GuardStatus = { released: false, releasedOnError: false };
   private intermediateStates: Map<string, CognitoSnapshot[]> = new Map();
-
-  // Plugin system components
-  private pluginRegistry: PluginRegistry;
-  private providerLaneSerializer: ProviderLaneSerializer;
-  private evidenceController: EvidenceController;
-  private plugins: Map<string, ProviderPlugin<any>> = new Map();
+  private pluginRegistry = new PluginRegistry();
+  private initialized: boolean = false;
+  /** Event store for queryEvents() */
+  private events: CorsairEvent[] = [];
 
   constructor(options: CorsairOptions = {}) {
+    super(); // Call EventEmitter constructor
     this.evidencePath = options.evidencePath || "./corsair-evidence.jsonl";
-
-    // Initialize plugin system
-    this.pluginRegistry = new PluginRegistry();
-    this.providerLaneSerializer = new ProviderLaneSerializer();
-    this.evidenceController = new EvidenceController(this.evidencePath);
+    this.evidenceEngine = new EvidenceEngine(this.evidencePath);
+    this.compactionEngine = new CompactionEngine(this.evidenceEngine);
   }
 
+  // ===============================================================================
+  // PLUGIN MANAGEMENT
+  // ===============================================================================
+
   /**
-   * Initialize Corsair - discovers and loads plugins
+   * Initialize Corsair with plugin discovery.
+   * Scans the specified directory for *.plugin.json manifests and auto-registers plugins.
    *
-   * Call this after construction to load plugins from directory
-   */
-  async initialize(pluginDirectory: string = "plugins"): Promise<void> {
-    await this.pluginRegistry.discover(pluginDirectory);
-  }
-
-  /**
-   * Register a plugin instance
+   * @param pluginDir - Directory to scan for plugins (default: "plugins/")
+   * @returns Discovery result with counts and plugin list
    *
-   * Allows manual plugin registration (alternative to automatic discovery)
+   * @example
+   * const corsair = new Corsair();
+   * await corsair.initialize(); // Discovers from plugins/
+   * await corsair.initialize("./custom-plugins"); // Custom directory
    */
-  registerPlugin<T extends ObservedState>(plugin: ProviderPlugin<T>): void {
-    this.plugins.set(plugin.providerId, plugin);
-  }
+  async initialize(pluginDir: string = "plugins/"): Promise<InitializeResult> {
+    console.log(`Discovering plugins in ${pluginDir}...`);
 
-  /**
-   * Get registered plugin by provider ID
-   */
-  getPlugin<T extends ObservedState>(providerId: string): ProviderPlugin<T> | undefined {
-    return this.plugins.get(providerId);
-  }
+    const result = await this.pluginRegistry.discover(pluginDir);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // RECON PRIMITIVE - Read-Only Observation (Plugin-Based)
-  // ═══════════════════════════════════════════════════════════════════════════
+    console.log(`Discovered ${result.discoveredCount} plugin(s): ${result.plugins.join(", ") || "none"}`);
 
-  /**
-   * Execute plugin-based reconnaissance
-   *
-   * @param providerId - Provider plugin to use (e.g., "aws-cognito")
-   * @param targetId - Target identifier (provider-specific)
-   */
-  async reconWithPlugin<T extends ObservedState>(
-    providerId: string,
-    targetId: string
-  ): Promise<{ snapshot: T; metadata: ReconMetadata; stateModified: boolean; durationMs: number }> {
-    const plugin = this.plugins.get(providerId);
-    if (!plugin) {
-      throw new Error(`Plugin not found: ${providerId}`);
+    if (result.invalidManifests && result.invalidManifests.length > 0) {
+      console.warn(`Skipped ${result.invalidManifests.length} invalid manifest(s)`);
     }
 
-    const startTime = Date.now();
-
-    // Execute plugin recon
-    const snapshot = await plugin.recon(targetId);
-
-    const durationMs = Date.now() - startTime;
-
-    return {
-      snapshot,
-      metadata: {
-        source: "fixture",
-        readonly: true,
-        durationMs,
-      },
-      stateModified: false, // RECON is read-only by contract
-      durationMs,
-    };
+    this.initialized = true;
+    return result;
   }
 
   /**
-   * Legacy RECON method - uses hardcoded Cognito logic
+   * Get a registered plugin by providerId.
    *
-   * @deprecated Use reconWithPlugin instead for provider-agnostic reconnaissance
+   * @param providerId - The plugin's provider ID (e.g., "aws-cognito")
+   * @returns The registered plugin or undefined if not found
    */
-  async recon(fixturePath: string): Promise<ReconResult> {
-    const startTime = Date.now();
-
-    // Read and parse fixture
-    const content = readFileSync(fixturePath, "utf-8");
-    const data = JSON.parse(content);
-
-    const snapshot: CognitoSnapshot = {
-      userPoolId: data.UserPool.Id,
-      userPoolName: data.UserPool.Name,
-      mfaConfiguration: data.UserPool.MfaConfiguration as MfaConfiguration,
-      softwareTokenMfaEnabled: data.UserPoolMfaConfig?.SoftwareTokenMfaConfiguration?.Enabled ?? false,
-      smsMfaEnabled: data.UserPoolMfaConfig?.SmsMfaConfiguration !== null,
-      passwordPolicy: {
-        minimumLength: data.UserPool.Policies.PasswordPolicy.MinimumLength,
-        requireUppercase: data.UserPool.Policies.PasswordPolicy.RequireUppercase,
-        requireLowercase: data.UserPool.Policies.PasswordPolicy.RequireLowercase,
-        requireNumbers: data.UserPool.Policies.PasswordPolicy.RequireNumbers,
-        requireSymbols: data.UserPool.Policies.PasswordPolicy.RequireSymbols,
-        temporaryPasswordValidityDays: data.UserPool.Policies.PasswordPolicy.TemporaryPasswordValidityDays,
-      },
-      riskConfiguration: data.RiskConfiguration
-        ? {
-            compromisedCredentialsAction:
-              data.RiskConfiguration.CompromisedCredentialsRiskConfiguration?.Actions?.EventAction ?? null,
-            accountTakeoverLowAction:
-              data.RiskConfiguration.AccountTakeoverRiskConfiguration?.Actions?.LowAction?.EventAction ?? null,
-            accountTakeoverMediumAction:
-              data.RiskConfiguration.AccountTakeoverRiskConfiguration?.Actions?.MediumAction?.EventAction ?? null,
-            accountTakeoverHighAction:
-              data.RiskConfiguration.AccountTakeoverRiskConfiguration?.Actions?.HighAction?.EventAction ?? null,
-          }
-        : null,
-      deviceConfiguration: {
-        challengeRequiredOnNewDevice: data.UserPool.DeviceConfiguration?.ChallengeRequiredOnNewDevice ?? false,
-        deviceOnlyRememberedOnUserPrompt: data.UserPool.DeviceConfiguration?.DeviceOnlyRememberedOnUserPrompt ?? false,
-      },
-      observedAt: new Date().toISOString(),
-    };
-
-    const durationMs = Date.now() - startTime;
-
-    return {
-      snapshot,
-      metadata: {
-        source: "fixture",
-        readonly: true,
-        durationMs,
-      },
-      stateModified: false,  // RECON is read-only by contract
-      durationMs,
-    };
+  getPlugin(providerId: string): RegisteredPlugin | undefined {
+    return this.pluginRegistry.get(providerId);
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
+  /**
+   * Get all registered plugins.
+   *
+   * @returns Array of all registered plugins
+   */
+  getPlugins(): RegisteredPlugin[] {
+    return this.pluginRegistry.getAll();
+  }
+
+  /**
+   * Check if a plugin is registered.
+   *
+   * @param providerId - The plugin's provider ID
+   * @returns true if the plugin is registered
+   */
+  hasPlugin(providerId: string): boolean {
+    return this.pluginRegistry.has(providerId);
+  }
+
+  /**
+   * Manually register a plugin manifest.
+   * Useful for programmatic plugin registration without file discovery.
+   *
+   * @param manifest - The plugin manifest to register
+   */
+  registerPlugin(manifest: PluginManifest): void {
+    this.pluginRegistry.register(manifest);
+  }
+
+  // ===============================================================================
   // MARK PRIMITIVE - Drift Detection
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ===============================================================================
 
   async mark(snapshot: CognitoSnapshot, expectations: Expectation[]): Promise<MarkResult> {
     const startTime = Date.now();
@@ -522,11 +498,50 @@ export class Corsair {
     const durationMs = Date.now() - startTime;
     const driftDetected = findings.some(f => f.drift === true);
 
+    // Emit drift:detected event if drift was found (OpenClaw Pattern 2)
+    if (driftDetected) {
+      const driftFindings = findings.filter(f => f.drift);
+      const maxSeverity = this.getDriftMaxSeverity(driftFindings);
+
+      const event: CorsairEvent = {
+        type: "drift:detected",
+        timestamp: new Date().toISOString(),
+        targetId: snapshot.userPoolId,
+        severity: maxSeverity,
+        findings: driftFindings.map(d => `${d.field}: ${JSON.stringify(d.expected)} -> ${JSON.stringify(d.actual)}`),
+        metadata: {
+          driftCount: driftFindings.length,
+          durationMs,
+        },
+      };
+
+      this.emit("drift:detected", event);
+      this.events.push(event);
+    }
+
     return {
       findings,
       driftDetected,
       durationMs,
     };
+  }
+
+  /**
+   * Get the maximum severity from a list of drift findings.
+   * @internal
+   */
+  private getDriftMaxSeverity(driftFindings: DriftFinding[]): Severity {
+    const severityOrder: Severity[] = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
+    let maxIndex = 0;
+
+    for (const finding of driftFindings) {
+      const index = severityOrder.indexOf(finding.severity);
+      if (index > maxIndex) {
+        maxIndex = index;
+      }
+    }
+
+    return severityOrder[maxIndex];
   }
 
   private getNestedValue(obj: unknown, path: string): unknown {
@@ -602,81 +617,115 @@ export class Corsair {
     return `${field} drift detected: expected ${JSON.stringify(expected)}, found ${JSON.stringify(actual)}`;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // RAID PRIMITIVE - Controlled Chaos (Plugin-Based)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ===============================================================================
+  // RAID PRIMITIVE - Controlled Chaos
+  // ===============================================================================
 
   /**
-   * Execute plugin-based raid with provider lane serialization
-   *
-   * @param providerId - Provider plugin to use (e.g., "aws-cognito")
-   * @param snapshot - Provider-specific snapshot
-   * @param vector - Attack vector to execute
-   * @param intensity - Attack intensity (1-10)
+   * Get severity level for a given attack vector.
+   * @internal
    */
-  async raidWithPlugin<T extends ObservedState>(
-    providerId: string,
-    snapshot: T,
-    vector: string,
-    intensity: number
-  ): Promise<RaidResult> {
-    const plugin = this.plugins.get(providerId);
-    if (!plugin) {
-      throw new Error(`Plugin not found: ${providerId}`);
-    }
-
-    const raidId = `RAID-${crypto.randomUUID().slice(0, 8)}`;
-    const startedAt = new Date().toISOString();
-
-    // Create composite lane key for provider + target
-    const laneKey = createLaneKey(providerId, snapshot.targetId);
-
-    // Acquire provider-specific lane lock
-    const release = await this.providerLaneSerializer.acquire(laneKey);
-
-    try {
-      // Execute plugin raid
-      const pluginResult = await plugin.raid(snapshot, vector, intensity);
-
-      // Record evidence via core controller
-      await this.evidenceController.recordPluginRaid(
-        providerId,
-        snapshot.targetId,
-        vector,
-        pluginResult
-      );
-
-      const completedAt = new Date().toISOString();
-      const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
-
-      return {
-        raidId,
-        target: snapshot.targetId,
-        vector: vector as AttackVector,
-        success: pluginResult.success,
-        controlsHeld: pluginResult.controlsHeld,
-        findings: pluginResult.findings,
-        timeline: pluginResult.timeline,
-        startedAt,
-        completedAt,
-        serialized: true,
-        durationMs,
-      };
-    } finally {
-      release();
-    }
+  private getVectorSeverity(vector: AttackVector): Severity {
+    const severityMap: Record<AttackVector, Severity> = {
+      "mfa-bypass": "CRITICAL",
+      "token-replay": "CRITICAL",
+      "session-hijack": "HIGH",
+      "password-spray": "MEDIUM",
+    };
+    return severityMap[vector] || "MEDIUM";
   }
 
   /**
-   * Legacy RAID method - uses hardcoded Cognito logic
-   *
-   * @deprecated Use raidWithPlugin instead for provider-agnostic raids
+   * Check if approval is required based on vector severity and gate threshold.
+   * @internal
    */
-  async raid(snapshot: CognitoSnapshot, options: RaidOptions): Promise<RaidResult> {
+  private requiresApproval(vectorSeverity: Severity, gateSeverity: Severity): boolean {
+    const severityLevels: Severity[] = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
+    const vectorLevel = severityLevels.indexOf(vectorSeverity);
+    const gateLevel = severityLevels.indexOf(gateSeverity);
+    return vectorLevel >= gateLevel;
+  }
+
+  /**
+   * Calculate blast radius for approval request.
+   * @internal
+   */
+  private calculateBlastRadius(
+    snapshot: CognitoSnapshot,
+    vector: AttackVector,
+    intensity: number
+  ): ApprovalRequest["blastRadius"] {
+    return {
+      affectedUsers: snapshot.userCount || 0,
+      affectedResources: [snapshot.userPoolId],
+      environment: "test", // Could be made configurable
+    };
+  }
+
+  /**
+   * Execute a controlled chaos raid against a snapshot.
+   * Supports approval gates for production safety (OpenClaw Pattern 4).
+   *
+   * @param snapshot - The Cognito snapshot to raid
+   * @param options - Raid options including vector, intensity, and optional approval gate
+   * @returns RaidResult with success/failure, timeline, and approval status
+   */
+  async raid(snapshot: CognitoSnapshot, options: RaidOptions | RaidOptionsWithApproval): Promise<RaidResult> {
     const raidId = `RAID-${crypto.randomUUID().slice(0, 8)}`;
     const startedAt = new Date().toISOString();
     const timeline: TimelineEvent[] = [];
     const findings: string[] = [];
+
+    // Extract approval gate options
+    const approvalGate = (options as RaidOptionsWithApproval).approvalGate;
+    const requestApproval = (options as RaidOptionsWithApproval).requestApproval;
+
+    // Determine if approval is required based on vector severity
+    const vectorSeverity = this.getVectorSeverity(options.vector);
+    let approvalResult: ApprovalResponse | null = null;
+    let approvalRequired = false;
+
+    // Check if approval gate is configured and applies to this vector
+    if (approvalGate && this.requiresApproval(vectorSeverity, approvalGate.requiredSeverity)) {
+      approvalRequired = true;
+
+      if (!requestApproval) {
+        throw new Error("Approval gate configured but no requestApproval function provided");
+      }
+
+      // Build approval request with blast radius details
+      const approvalRequest: ApprovalRequest = {
+        gate: approvalGate,
+        vector: options.vector,
+        intensity: options.intensity,
+        targetId: snapshot.userPoolId,
+        blastRadius: this.calculateBlastRadius(snapshot, options.vector, options.intensity),
+        requestedAt: new Date().toISOString(),
+      };
+
+      // Wait for approval with timeout
+      try {
+        approvalResult = await Promise.race([
+          requestApproval(approvalRequest),
+          new Promise<ApprovalResponse>((_, reject) =>
+            setTimeout(() => reject(new Error("Approval timeout")), approvalGate.timeoutMs)
+          ),
+        ]);
+      } catch (error) {
+        throw error;
+      }
+
+      // Check if approval was denied
+      if (!approvalResult.approved) {
+        throw new Error(`Approval denied: ${approvalResult.reason || "No reason provided"}`);
+      }
+
+      timeline.push({
+        timestamp: new Date().toISOString(),
+        action: "APPROVAL_GRANTED",
+        result: `Approved by ${approvalResult.approver}`,
+      });
+    }
 
     // Lane serialization - acquire lock for this target
     const release = await this.laneSerializer.acquire(snapshot.userPoolId);
@@ -700,7 +749,7 @@ export class Corsair {
       const completedAt = new Date().toISOString();
       const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
 
-      return {
+      const result: RaidResult = {
         raidId,
         target: snapshot.userPoolId,
         vector: options.vector,
@@ -712,12 +761,43 @@ export class Corsair {
         completedAt,
         serialized: true,
         durationMs,
+        // Approval Gate fields (OpenClaw Pattern 4)
+        approvalRequired,
+        approved: approvalResult?.approved,
+        approver: approvalResult?.approver,
+        approvalTimestamp: approvalResult?.timestamp,
       };
+
+      // Emit raid:complete event (OpenClaw Pattern 2 - Multi-Layer Events)
+      const event: CorsairEvent = {
+        type: "raid:complete",
+        timestamp: completedAt,
+        targetId: snapshot.userPoolId,
+        vector: options.vector,
+        success,
+        severity: vectorSeverity,
+        findings,
+        metadata: {
+          intensity: options.intensity,
+          controlsHeld: !success,
+          durationMs,
+          raidId,
+        },
+      };
+
+      this.emit("raid:complete", event);
+      this.events.push(event);
+
+      return result;
     } finally {
       release();
     }
   }
 
+  /**
+   * Simulate an attack against the snapshot.
+   * @internal
+   */
   private async simulateAttack(
     snapshot: CognitoSnapshot,
     options: RaidOptions,
@@ -810,164 +890,68 @@ export class Corsair {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // PLUNDER PRIMITIVE - Evidence Extraction
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ===============================================================================
+  // PLUNDER PRIMITIVE - Evidence Extraction (Delegated to EvidenceEngine)
+  // ===============================================================================
 
   async plunder(raidResult: RaidResult, evidencePath: string): Promise<PlunderResult> {
-    // Extract events from raid result
-    const events: PlunderRecord[] = [];
-
-    // Event 1: Raid initiation
-    this.sequence++;
-    let timestamp = new Date().toISOString();
-    let record: Omit<PlunderRecord, "hash"> = {
-      sequence: this.sequence,
-      timestamp,
-      operation: "raid_initiated",
-      data: {
-        raidId: raidResult.raidId,
-        target: raidResult.target,
-        vector: raidResult.vector,
-      },
-      previousHash: this.lastHash,
-    };
-    let hash = createHash("sha256").update(JSON.stringify({
-      sequence: record.sequence,
-      timestamp: record.timestamp,
-      operation: record.operation,
-      data: record.data,
-      previousHash: record.previousHash,
-    })).digest("hex");
-    events.push({ ...record, hash });
-    this.lastHash = hash;
-
-    // Event 2: Raid execution
-    this.sequence++;
-    timestamp = new Date().toISOString();
-    record = {
-      sequence: this.sequence,
-      timestamp,
-      operation: "raid_executed",
-      data: {
-        raidId: raidResult.raidId,
-        success: raidResult.success,
-        controlsHeld: raidResult.controlsHeld,
-        findings: raidResult.findings,
-      },
-      previousHash: this.lastHash,
-    };
-    hash = createHash("sha256").update(JSON.stringify({
-      sequence: record.sequence,
-      timestamp: record.timestamp,
-      operation: record.operation,
-      data: record.data,
-      previousHash: record.previousHash,
-    })).digest("hex");
-    events.push({ ...record, hash });
-    this.lastHash = hash;
-
-    // Event 3: Raid completion
-    this.sequence++;
-    timestamp = new Date().toISOString();
-    record = {
-      sequence: this.sequence,
-      timestamp,
-      operation: "raid_completed",
-      data: {
-        raidId: raidResult.raidId,
-        durationMs: raidResult.durationMs,
-        serialized: raidResult.serialized,
-      },
-      previousHash: this.lastHash,
-    };
-    hash = createHash("sha256").update(JSON.stringify({
-      sequence: record.sequence,
-      timestamp: record.timestamp,
-      operation: record.operation,
-      data: record.data,
-      previousHash: record.previousHash,
-    })).digest("hex");
-    events.push({ ...record, hash });
-    this.lastHash = hash;
-
-    // Write all events to JSONL file
-    for (const event of events) {
-      appendFileSync(evidencePath, JSON.stringify(event) + "\n");
-    }
-
-    // Verify chain integrity
-    const chainVerified = this.verifyEvidenceChain(evidencePath).valid;
-
-    return {
-      evidencePath,
-      eventCount: events.length,
-      chainVerified,
-      immutable: true, // JSONL append-only format
-      auditReady: chainVerified && events.length > 0,
-    };
+    return this.evidenceEngine.plunder(raidResult, evidencePath);
   }
 
   resetEvidence(): void {
-    this.sequence = 0;
-    this.lastHash = null;
-    if (existsSync(this.evidencePath)) {
-      writeFileSync(this.evidencePath, "");
-    }
+    this.evidenceEngine.resetEvidence();
   }
 
   verifyEvidenceChain(evidencePath?: string): EvidenceChainVerification {
-    const pathToVerify = evidencePath || this.evidencePath;
-
-    if (!existsSync(pathToVerify)) {
-      return { valid: true, recordCount: 0, brokenAt: null };
-    }
-
-    const content = readFileSync(pathToVerify, "utf-8").trim();
-    if (!content) {
-      return { valid: true, recordCount: 0, brokenAt: null };
-    }
-
-    const lines = content.split("\n");
-    let previousHash: string | null = null;
-
-    for (let i = 0; i < lines.length; i++) {
-      const record: PlunderRecord = JSON.parse(lines[i]);
-
-      // Verify previous hash matches
-      if (record.previousHash !== previousHash) {
-        return { valid: false, recordCount: lines.length, brokenAt: i + 1 };
-      }
-
-      // Verify hash computation
-      const dataToHash = JSON.stringify({
-        sequence: record.sequence,
-        timestamp: record.timestamp,
-        operation: record.operation,
-        data: record.data,
-        previousHash: record.previousHash,
-      });
-
-      const expectedHash = createHash("sha256").update(dataToHash).digest("hex");
-      if (record.hash !== expectedHash) {
-        return { valid: false, recordCount: lines.length, brokenAt: i + 1 };
-      }
-
-      previousHash = record.hash;
-    }
-
-    return { valid: true, recordCount: lines.length, brokenAt: null };
+    return this.evidenceEngine.verifyEvidenceChain(evidencePath);
   }
 
   verifyHashChain(evidencePath: string): boolean {
-    return this.verifyEvidenceChain(evidencePath).valid;
+    return this.evidenceEngine.verifyHashChain(evidencePath);
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // CHART PRIMITIVE - Framework Mapping
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ===============================================================================
+  // COMPACTION (OpenClaw Pattern 1) - Delegated to CompactionEngine
+  // ===============================================================================
 
-  async chart(findings: DriftFinding[], options: ChartOptions = {}): Promise<ChartResult> {
+  /**
+   * Compact an evidence file by aggregating records into summaries.
+   * Delegated to CompactionEngine.
+   *
+   * @param evidencePath - Path to the JSONL evidence file to compact
+   * @returns CompactionResult with before/after metrics and backup path
+   * @throws Error if file doesn't exist or chain is broken
+   */
+  async compactEvidence(evidencePath: string): Promise<CompactionResult> {
+    return this.compactionEngine.compactEvidence(evidencePath);
+  }
+
+  // ===============================================================================
+  // CHART PRIMITIVE - Framework Mapping (Plugin-Provided)
+  // ===============================================================================
+
+  /**
+   * Get framework mappings from a plugin manifest.
+   * Returns undefined if plugin not found or no mappings defined.
+   * @internal
+   */
+  private getPluginMappings(providerId: string = "aws-cognito"): PluginFrameworkMappings | undefined {
+    const plugin = this.pluginRegistry.get(providerId);
+    return plugin?.manifest.frameworkMappings;
+  }
+
+  /**
+   * Chart drift findings to compliance frameworks using plugin-provided mappings.
+   *
+   * @param findings - Array of drift findings from mark()
+   * @param options - Chart options (optional providerId to select plugin mappings)
+   * @returns ChartResult with MITRE, NIST, and SOC2 mappings
+   */
+  async chart(findings: DriftFinding[], options: ChartOptions & { providerId?: string } = {}): Promise<ChartResult> {
+    const providerId = options.providerId || "aws-cognito";
+    const pluginMappings = this.getPluginMappings(providerId);
+    const driftMappings = pluginMappings?.drift || {};
+
     // Aggregate all drift findings into consolidated framework mapping
     const mitreFindings: Set<string> = new Set();
     const nistControls: Set<string> = new Set();
@@ -979,50 +963,63 @@ export class Corsair {
     for (const finding of findings) {
       if (!finding.drift) continue;
 
-      const mitre = DRIFT_TO_MITRE[finding.field];
-      if (!mitre) continue;
+      // Look up mapping from plugin manifest (fallback to legacy hardcoded if not found)
+      const mapping = driftMappings[finding.field] || DRIFT_TO_MITRE[finding.field];
+      if (!mapping) continue;
 
-      mitreFindings.add(mitre.technique);
+      // Handle both FrameworkMappingEntry (plugin) and legacy { technique, name } format
+      const mitreId = "mitre" in mapping ? mapping.mitre : mapping.technique;
+      const mitreName = "mitreName" in mapping ? (mapping.mitreName || mapping.mitre) : mapping.name;
+
+      mitreFindings.add(mitreId);
 
       // Set primary MITRE (first drift finding)
       if (!primaryMitre) {
         primaryMitre = {
-          technique: mitre.technique,
-          name: mitre.name,
+          technique: mitreId,
+          name: mitreName,
           tactic: "Credential Access",
-          description: `${mitre.name} detected via ${finding.field} misconfiguration`
+          description: "description" in mapping && mapping.description
+            ? mapping.description
+            : `${mitreName} detected via ${finding.field} misconfiguration`
         };
       }
 
-      const nist = MITRE_TO_NIST[mitre.technique];
-      if (nist) {
-        nistControls.add(nist.control);
+      // Get NIST mapping from plugin or legacy
+      const nistControl = "nist" in mapping ? mapping.nist : MITRE_TO_NIST[mitreId]?.control;
+      const nistFunction = "nistFunction" in mapping ? mapping.nistFunction : MITRE_TO_NIST[mitreId]?.function;
+
+      if (nistControl) {
+        nistControls.add(nistControl);
 
         // Set primary NIST
         if (!primaryNist) {
           primaryNist = {
-            function: nist.function,
+            function: nistFunction || "Protect",
             category: "Access Control",
-            controls: [nist.control]
+            controls: [nistControl]
           };
         } else {
-          primaryNist.controls.push(nist.control);
+          primaryNist.controls.push(nistControl);
         }
 
-        const soc2 = NIST_TO_SOC2[nist.control];
-        if (soc2) {
-          soc2Controls.add(soc2.control);
+        // Get SOC2 mapping from plugin or legacy
+        const soc2Control = "soc2" in mapping ? mapping.soc2 : NIST_TO_SOC2[nistControl]?.control;
+        const soc2Description = "soc2Description" in mapping ? mapping.soc2Description : NIST_TO_SOC2[nistControl]?.description;
+
+        if (soc2Control) {
+          soc2Controls.add(soc2Control);
 
           // Set primary SOC2
           if (!primarySoc2) {
             primarySoc2 = {
               principle: "Common Criteria",
-              criteria: [soc2.control],
-              description: soc2.description
+              criteria: [soc2Control],
+              description: soc2Description || "Control mapping"
             };
           } else {
-            if (!primarySoc2.criteria.includes(soc2.control)) {
-              primarySoc2.criteria.push(soc2.control);
+            if (!primarySoc2.criteria.includes(soc2Control)) {
+              primarySoc2.criteria.push(soc2Control);
             }
           }
         }
@@ -1050,23 +1047,41 @@ export class Corsair {
     };
   }
 
-  async chartRaid(raidResult: RaidResult): Promise<ComplianceMapping[]> {
+  /**
+   * Chart a raid result to compliance frameworks using plugin-provided mappings.
+   *
+   * @param raidResult - The raid result to map
+   * @param providerId - Optional provider ID (defaults to "aws-cognito")
+   * @returns Array of ComplianceMapping entries for MITRE, NIST, and SOC2
+   */
+  async chartRaid(raidResult: RaidResult, providerId: string = "aws-cognito"): Promise<ComplianceMapping[]> {
+    const pluginMappings = this.getPluginMappings(providerId);
+    const attackVectorMappings = pluginMappings?.attackVectors || {};
+
+    // Look up mapping from plugin manifest (fallback to legacy hardcoded if not found)
+    const mapping = attackVectorMappings[raidResult.vector] || ATTACK_VECTOR_TO_MITRE[raidResult.vector];
+
+    // Handle both FrameworkMappingEntry (plugin) and legacy { technique, name } format
+    const mitreId = "mitre" in mapping ? mapping.mitre : mapping.technique;
+    const mitreName = "mitreName" in mapping ? (mapping.mitreName || mapping.mitre) : mapping.name;
+    const nistControl = "nist" in mapping ? mapping.nist : undefined;
+    const nistFunction = "nistFunction" in mapping ? mapping.nistFunction : undefined;
+    const soc2Control = "soc2" in mapping ? mapping.soc2 : undefined;
+    const soc2Description = "soc2Description" in mapping ? mapping.soc2Description : undefined;
+
     const mappings: ComplianceMapping[] = [];
-    const mitre = ATTACK_VECTOR_TO_MITRE[raidResult.vector];
     const evidenceType: EvidenceType = raidResult.success ? "negative" : "positive";
 
     // Build chain
     const chain: string[] = [];
-    chain.push(`MITRE:${mitre.technique}`);
+    chain.push(`MITRE:${mitreId}`);
 
-    const nist = MITRE_TO_NIST[mitre.technique] || MITRE_TO_NIST[mitre.technique.split(".")[0]];
-    if (nist) {
-      chain.push(`NIST:${nist.control}`);
+    if (nistControl) {
+      chain.push(`NIST:${nistControl}`);
     }
 
-    const soc2 = nist ? NIST_TO_SOC2[nist.control] : undefined;
-    if (soc2) {
-      chain.push(`SOC2:${soc2.control}`);
+    if (soc2Control) {
+      chain.push(`SOC2:${soc2Control}`);
     }
 
     // MITRE mapping
@@ -1074,21 +1089,21 @@ export class Corsair {
       id: `MAP-${crypto.randomUUID().slice(0, 8)}`,
       findingId: raidResult.raidId,
       framework: "MITRE",
-      technique: mitre.technique,
-      description: mitre.name,
+      technique: mitreId,
+      description: mitreName,
       mappingChain: chain,
       evidenceType,
       evidenceRef: raidResult.raidId,
     });
 
     // NIST mapping
-    if (nist) {
+    if (nistControl) {
       mappings.push({
         id: `MAP-${crypto.randomUUID().slice(0, 8)}`,
         findingId: raidResult.raidId,
         framework: "NIST-CSF",
-        control: nist.control,
-        description: nist.function,
+        control: nistControl,
+        description: nistFunction || "Protect",
         mappingChain: chain,
         evidenceType,
         evidenceRef: raidResult.raidId,
@@ -1096,13 +1111,13 @@ export class Corsair {
     }
 
     // SOC2 mapping
-    if (soc2) {
+    if (soc2Control) {
       mappings.push({
         id: `MAP-${crypto.randomUUID().slice(0, 8)}`,
         findingId: raidResult.raidId,
         framework: "SOC2",
-        control: soc2.control,
-        description: soc2.description,
+        control: soc2Control,
+        description: soc2Description || "Control mapping",
         mappingChain: chain,
         evidenceType,
         evidenceRef: raidResult.raidId,
@@ -1112,31 +1127,10 @@ export class Corsair {
     return mappings;
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // ESCAPE PRIMITIVE - Rollback & Scope Guards (Plugin-Aware)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ===============================================================================
+  // ESCAPE PRIMITIVE - Rollback & Scope Guards
+  // ===============================================================================
 
-  /**
-   * Create plugin-generated cleanup function
-   *
-   * @param providerId - Provider plugin to use
-   * @param snapshot - Provider-specific snapshot to restore
-   */
-  createPluginCleanup<T extends ObservedState>(
-    providerId: string,
-    snapshot: T
-  ): () => { operation: string; success: boolean } {
-    const plugin = this.plugins.get(providerId);
-    if (!plugin) {
-      throw new Error(`Plugin not found: ${providerId}`);
-    }
-
-    return plugin.createCleanup(snapshot);
-  }
-
-  /**
-   * Execute cleanup operations (works with both legacy and plugin-based cleanup)
-   */
   escape(cleanupOps: Array<() => { operation: string; success: boolean }>): SimpleEscapeResult {
     const startTime = Date.now();
     const results: Array<{ operation: string; success: boolean }> = [];
@@ -1296,40 +1290,127 @@ export class Corsair {
 
     return expired;
   }
+
+  // ===============================================================================
+  // EVENT SYSTEM (OpenClaw Pattern 2 - Multi-Layer Events)
+  // ===============================================================================
+
+  /**
+   * Query events by filter criteria.
+   * Supports filtering by severity, type, and time range.
+   *
+   * @param filter - Filter criteria for events
+   * @returns Array of events matching the filter
+   *
+   * @example
+   * // Get all CRITICAL severity events from the past hour
+   * const criticalEvents = await corsair.queryEvents({
+   *   severity: "CRITICAL",
+   *   timeRange: {
+   *     start: new Date(Date.now() - 3600000).toISOString(),
+   *     end: new Date().toISOString()
+   *   }
+   * });
+   */
+  async queryEvents(filter: EventFilter): Promise<CorsairEvent[]> {
+    let filtered = [...this.events];
+
+    // Filter by severity
+    if (filter.severity) {
+      filtered = filtered.filter(e => e.severity === filter.severity);
+    }
+
+    // Filter by type
+    if (filter.type) {
+      filtered = filtered.filter(e => e.type === filter.type);
+    }
+
+    // Filter by time range
+    if (filter.timeRange) {
+      const startTime = new Date(filter.timeRange.start).getTime();
+      const endTime = new Date(filter.timeRange.end).getTime();
+
+      filtered = filtered.filter(e => {
+        const eventTime = new Date(e.timestamp).getTime();
+        return eventTime >= startTime && eventTime <= endTime;
+      });
+    }
+
+    return filtered;
+  }
+
+  /**
+   * Create an event aggregator to collect and summarize events.
+   * The aggregator automatically subscribes to all event types and
+   * provides summary statistics.
+   *
+   * @returns EventAggregator instance
+   *
+   * @example
+   * const aggregator = corsair.createEventAggregator();
+   *
+   * await corsair.raid(snapshot, { vector: "mfa-bypass", intensity: 5, dryRun: true });
+   * await corsair.mark(snapshot, [{ field: "mfaConfiguration", operator: "eq", value: "ON" }]);
+   *
+   * const summary = aggregator.getSummary();
+   * console.log(`Total events: ${summary.totalEvents}`);
+   * console.log(`By type: ${JSON.stringify(summary.byType)}`);
+   */
+  createEventAggregator(): EventAggregator {
+    const startTime = new Date().toISOString();
+    const capturedEvents: CorsairEvent[] = [];
+
+    // Create listener function
+    const listener = (event: CorsairEvent) => {
+      capturedEvents.push(event);
+    };
+
+    // Subscribe to all event types
+    this.on("raid:complete", listener);
+    this.on("drift:detected", listener);
+    this.on("plunder:recorded", listener);
+    this.on("escape:executed", listener);
+
+    return {
+      getSummary: (): EventAggregatorSummary => {
+        const byType: Record<string, number> = {};
+        const bySeverity: Record<string, number> = {};
+
+        for (const event of capturedEvents) {
+          // Count by type
+          byType[event.type] = (byType[event.type] || 0) + 1;
+
+          // Count by severity
+          if (event.severity) {
+            bySeverity[event.severity] = (bySeverity[event.severity] || 0) + 1;
+          }
+        }
+
+        return {
+          totalEvents: capturedEvents.length,
+          byType,
+          bySeverity,
+          timeRange: {
+            start: startTime,
+            end: new Date().toISOString(),
+          },
+        };
+      },
+    };
+  }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ===============================================================================
 // CLI ENTRY POINT
-// ═══════════════════════════════════════════════════════════════════════════════
+// ===============================================================================
 
 if (import.meta.main) {
   const corsair = new Corsair();
 
-  console.log("CORSAIR MVP - Atomic Implementation with Plugin System");
-  console.log("=======================================================");
+  console.log("CORSAIR MVP - Atomic Implementation");
+  console.log("====================================");
   console.log("Primitives: RECON, MARK, RAID, PLUNDER, CHART, ESCAPE");
   console.log("");
-  console.log("Plugin Architecture:");
-  console.log("  - ProviderPlugin<T> interface enables scaling to 100+ providers");
-  console.log("  - PluginRegistry for manifest-based discovery");
-  console.log("  - ProviderLaneSerializer for composite key concurrency control");
-  console.log("  - EvidenceController for core-controlled evidence writes");
-  console.log("");
-  console.log("Usage:");
-  console.log("  // Initialize with plugin discovery");
-  console.log("  const corsair = new Corsair();");
-  console.log("  await corsair.initialize('plugins/');");
-  console.log("");
-  console.log("  // Or register plugins manually");
-  console.log("  import { AwsCognitoPlugin } from './plugins/aws-cognito/aws-cognito-plugin';");
-  console.log("  corsair.registerPlugin(new AwsCognitoPlugin());");
-  console.log("");
-  console.log("  // Execute plugin-based RECON");
-  console.log("  const { snapshot } = await corsair.reconWithPlugin('aws-cognito', 'us-east-1_ABC123');");
-  console.log("");
-  console.log("  // Execute plugin-based RAID");
-  console.log("  const result = await corsair.raidWithPlugin('aws-cognito', snapshot, 'mfa-bypass', 5);");
-  console.log("");
-  console.log("Tests: bun test");
-  console.log("Documentation: PLUGIN_ARCHITECTURE.md");
+  console.log("Usage: Import Corsair class and use programmatically");
+  console.log("Tests: bun test tests/primitives/");
 }

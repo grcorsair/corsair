@@ -1,0 +1,434 @@
+# OpenClaw Patterns Validation Suite
+# Purpose: Validate pattern COMPLIANCE (not just correctness)
+# Focus: llm_rubric graders that distinguish pattern adherence from working code
+# Target: 5 core patterns - JSONL, Lane, Scope Guard, State Machine, Hash Chain
+
+suite:
+  id: "openclaw-patterns-validation"
+  name: "OpenClaw Patterns - Pattern Compliance Validation"
+  description: |
+    Validates that the 5 core OpenClaw patterns are implemented according to
+    specification, not just that they produce correct outputs. A pattern can
+    produce correct results while violating the pattern contract.
+  type: capability
+  domain: coding
+  pass_threshold: 0.70
+  trials: 3
+
+# ==============================================================================
+# PATTERN 1: JSONL SERIALIZATION PATTERN
+# Contract: Append-only, one JSON object per line, deterministic ordering
+# ==============================================================================
+
+tasks:
+  - id: "pattern-jsonl-serialization-compliance"
+    description: |
+      JSONL serialization pattern compliance - not just valid JSON output.
+      Pattern requirements:
+      1. Append-only writes (never modify existing lines)
+      2. One complete JSON object per line (no pretty-printing)
+      3. Line ordering reflects temporal sequence
+      4. File readable mid-write (no buffering corruption)
+    type: capability
+    domain: coding
+
+    graders:
+      # Primary: Pattern compliance rubric
+      - type: llm_rubric
+        weight: 0.60
+        params:
+          rubric: |
+            PATTERN: JSONL Serialization
+
+            Score 1.0 (FULL COMPLIANCE) if ALL of these are true:
+            - [ ] appendFileSync used, NOT writeFileSync (append-only guarantee)
+            - [ ] Each record is a single line (no embedded newlines in JSON)
+            - [ ] No JSON.stringify pretty-printing (no indent/space args)
+            - [ ] Newline appended AFTER each record ("\n" suffix)
+            - [ ] Records written one-at-a-time (not batched then written)
+            - [ ] File can be read at any point without corruption
+            - [ ] Sequence numbers are monotonically increasing
+            - [ ] Timestamps are monotonically non-decreasing
+
+            Score 0.75 (MINOR DEVIATION) if:
+            - 6-7 requirements met
+            - Pattern recognizable but with minor variations
+
+            Score 0.50 (PARTIAL COMPLIANCE) if:
+            - Uses JSONL format but violates append-only
+            - OR uses append-only but allows malformed lines
+
+            Score 0.25 (WEAK COMPLIANCE) if:
+            - Output looks like JSONL but implementation doesn't follow pattern
+            - e.g., builds array then writes at end
+
+            Score 0.0 (NON-COMPLIANT) if ANY of:
+            - Uses writeFileSync (overwrites file)
+            - Pretty-prints JSON with newlines inside records
+            - No newline delimiter between records
+            - Batches all records then writes once
+
+      # Secondary: Code structure verification
+      - type: llm_rubric
+        weight: 0.25
+        params:
+          rubric: |
+            CODE STRUCTURE for JSONL Pattern
+
+            Score 1.0 if implementation shows:
+            - Explicit appendFileSync or fs.appendFile calls
+            - Each event written immediately upon creation
+            - Error handling that doesn't corrupt partial writes
+            - No in-memory accumulation before writing
+
+            Score 0.5 if:
+            - Pattern intent visible but implementation suboptimal
+
+            Score 0.0 if:
+            - Pattern not visible in code structure
+
+      # Tertiary: Test coverage for pattern edges
+      - type: binary_tests
+        weight: 0.15
+        params:
+          test_command: "bun test tests/patterns/test_jsonl_append_only.test.ts"
+          required_patterns:
+            - "pass"
+
+    trials: 3
+    pass_threshold: 0.70
+
+# ==============================================================================
+# PATTERN 2: LANE SERIALIZATION PATTERN
+# Contract: Per-target mutual exclusion, parallel across different targets
+# ==============================================================================
+
+  - id: "pattern-lane-serialization-compliance"
+    description: |
+      Lane serialization pattern compliance - not just mutex.
+      Pattern requirements:
+      1. Lock granularity is per-TARGET (not global mutex)
+      2. Same target blocks concurrent access
+      3. Different targets CAN execute in parallel
+      4. Lock release is guaranteed (finally/RAII pattern)
+      5. Waiting callers get lock in FIFO order
+      6. No deadlocks possible (single resource per lane)
+    type: capability
+    domain: coding
+
+    graders:
+      # Primary: Pattern compliance rubric
+      - type: llm_rubric
+        weight: 0.60
+        params:
+          rubric: |
+            PATTERN: Lane Serialization
+
+            Score 1.0 (FULL COMPLIANCE) if ALL of these are true:
+            - [ ] Lock key is derived from target identifier (userPoolId)
+            - [ ] Map/Dictionary used for per-target tracking (not single lock)
+            - [ ] Different targets can acquire locks simultaneously
+            - [ ] Same target blocks until previous holder releases
+            - [ ] Lock release in finally block or equivalent guarantee
+            - [ ] acquire() returns release function (RAII-style)
+            - [ ] While-loop polling for lock acquisition (not tight spin)
+            - [ ] Promise-based waiting (not blocking)
+
+            Score 0.75 (MINOR DEVIATION) if:
+            - 6-7 requirements met
+            - Lane isolation works but release not guaranteed
+
+            Score 0.50 (PARTIAL COMPLIANCE) if:
+            - Uses per-target locking but implementation fragile
+            - OR robust locking but global (not per-lane)
+
+            Score 0.25 (WEAK COMPLIANCE) if:
+            - Has locking concept but wrong granularity
+            - e.g., global semaphore instead of per-target
+
+            Score 0.0 (NON-COMPLIANT) if ANY of:
+            - No locking mechanism
+            - Global lock that blocks ALL operations
+            - Lock without guaranteed release
+            - Synchronous blocking (not async-safe)
+
+      # Secondary: Concurrent execution verification
+      - type: llm_rubric
+        weight: 0.25
+        params:
+          rubric: |
+            CONCURRENCY PROPERTIES for Lane Pattern
+
+            Score 1.0 if implementation demonstrates:
+            - Promise.all can execute raids on different targets
+            - Promise.all on same target executes sequentially
+            - No race conditions in lock/unlock logic
+            - Clean error propagation through lock boundaries
+
+            Score 0.5 if:
+            - Basic serialization works but concurrency not tested
+
+            Score 0.0 if:
+            - Concurrent execution shows races or deadlocks
+
+      # Tertiary: Test coverage for concurrency
+      - type: binary_tests
+        weight: 0.15
+        params:
+          test_command: "bun test tests/patterns/test_lane_concurrent.test.ts"
+          required_patterns:
+            - "pass"
+
+    trials: 3
+    pass_threshold: 0.70
+
+# ==============================================================================
+# PATTERN 3: SCOPE GUARD PATTERN (RAII-style cleanup)
+# Contract: Guaranteed cleanup on all exit paths including exceptions
+# ==============================================================================
+
+  - id: "pattern-scope-guard-raii-compliance"
+    description: |
+      Scope guard pattern compliance - RAII-style cleanup guarantee.
+      Pattern requirements:
+      1. Cleanup executes on normal completion
+      2. Cleanup executes on exception/error
+      3. Cleanup executes in reverse registration order (LIFO)
+      4. One cleanup failure doesn't skip others
+      5. Guard state captured at creation time
+      6. Guard can be manually released early
+      7. Double-release is safe (idempotent)
+    type: capability
+    domain: coding
+
+    graders:
+      # Primary: Pattern compliance rubric
+      - type: llm_rubric
+        weight: 0.60
+        params:
+          rubric: |
+            PATTERN: Scope Guard (RAII)
+
+            Score 1.0 (FULL COMPLIANCE) if ALL of these are true:
+            - [ ] try-finally or withEscapeGuard wrapper used
+            - [ ] Cleanup runs on both success AND error paths
+            - [ ] Initial state captured at guard creation
+            - [ ] State can be restored on cleanup
+            - [ ] Guard has 'active' flag to prevent double-release
+            - [ ] Error in cleanup doesn't skip remaining cleanup
+            - [ ] LIFO order for multiple cleanup handlers
+            - [ ] async cleanup properly awaited
+
+            Score 0.75 (MINOR DEVIATION) if:
+            - 6-7 requirements met
+            - Core RAII works but edge cases weak
+
+            Score 0.50 (PARTIAL COMPLIANCE) if:
+            - Cleanup exists but not guaranteed on all paths
+            - OR guaranteed but state restoration incomplete
+
+            Score 0.25 (WEAK COMPLIANCE) if:
+            - Manual cleanup calls (not automatic scope-based)
+            - No guarantee cleanup runs on error
+
+            Score 0.0 (NON-COMPLIANT) if ANY of:
+            - No cleanup mechanism
+            - Cleanup only runs on success (not on error)
+            - State not captured for restoration
+            - No RAII pattern visible
+
+      # Secondary: Exception handling verification
+      - type: llm_rubric
+        weight: 0.25
+        params:
+          rubric: |
+            EXCEPTION SAFETY for Scope Guard Pattern
+
+            Score 1.0 if implementation shows:
+            - Error thrown inside withEscapeGuard still cleans up
+            - Multiple guards created in sequence clean up in reverse
+            - Guard tracks releasedOnError vs normal release
+            - Verification hash compares initial vs final state
+
+            Score 0.5 if:
+            - Basic cleanup works but exception path not verified
+
+            Score 0.0 if:
+            - Exception causes cleanup to be skipped
+
+      # Tertiary: Test coverage for error paths
+      - type: binary_tests
+        weight: 0.15
+        params:
+          test_command: "bun test tests/patterns/test_scope_guard_exception.test.ts"
+          required_patterns:
+            - "pass"
+
+    trials: 3
+    pass_threshold: 0.70
+
+# ==============================================================================
+# PATTERN 4: STATE MACHINE PATTERN
+# Contract: Explicit phase definitions, typed transitions, lifecycle tracking
+# ==============================================================================
+
+  - id: "pattern-state-machine-lifecycle-compliance"
+    description: |
+      State machine pattern compliance - typed 7-phase lifecycle.
+      Pattern requirements:
+      1. All 7 phases defined as type (OBSERVE, THINK, PLAN, BUILD, EXECUTE, VERIFY, LEARN)
+      2. Phase transitions are explicit (not implicit)
+      3. Transition history tracked with timestamps
+      4. Invalid transitions rejected or typed away
+      5. Current phase queryable at any time
+      6. Phase used to gate operations
+    type: capability
+    domain: coding
+
+    graders:
+      # Primary: Pattern compliance rubric
+      - type: llm_rubric
+        weight: 0.70
+        params:
+          rubric: |
+            PATTERN: State Machine (7-Phase Lifecycle)
+
+            Score 1.0 (FULL COMPLIANCE) if ALL of these are true:
+            - [ ] TypeScript union type OR enum defines all 7 phases
+            - [ ] Phase names exactly: OBSERVE, THINK, PLAN, BUILD, EXECUTE, VERIFY, LEARN
+            - [ ] StateMachine interface has 'phase' field of Phase type
+            - [ ] Transitions array tracks {from, to, timestamp}
+            - [ ] Phase transitions are explicit method calls
+            - [ ] Current phase can be queried via getter or property
+            - [ ] Type system prevents invalid phase values
+
+            Score 0.75 (MINOR DEVIATION) if:
+            - 5-6 requirements met
+            - Phases defined but transitions not tracked
+
+            Score 0.50 (PARTIAL COMPLIANCE) if:
+            - Has phases but not all 7 defined
+            - OR all 7 defined but as strings (not typed)
+
+            Score 0.25 (WEAK COMPLIANCE) if:
+            - Phase concept exists but untyped/implicit
+            - Phases stored as magic strings
+
+            Score 0.0 (NON-COMPLIANT) if ANY of:
+            - No phase type definition
+            - Wrong phase names
+            - No transition tracking
+            - Phases as arbitrary runtime values
+
+      # Secondary: Type safety verification
+      - type: llm_rubric
+        weight: 0.30
+        params:
+          rubric: |
+            TYPE SAFETY for State Machine Pattern
+
+            Score 1.0 if:
+            - Phase type prevents invalid values at compile time
+            - Transition history strongly typed
+            - State machine can only be in one phase at a time
+            - Phase-specific operations typed appropriately
+
+            Score 0.5 if:
+            - Types exist but not enforced everywhere
+
+            Score 0.0 if:
+            - No type safety, phases are any/string/number
+
+    trials: 3
+    pass_threshold: 0.70
+
+# ==============================================================================
+# PATTERN 5: HASH CHAIN PATTERN (Cryptographic Evidence)
+# Contract: SHA-256 linking, tamper detection, verifiable integrity
+# ==============================================================================
+
+  - id: "pattern-hash-chain-cryptographic-compliance"
+    description: |
+      Hash chain pattern compliance - cryptographic evidence integrity.
+      Pattern requirements:
+      1. SHA-256 algorithm used (not MD5, not SHA-1)
+      2. Each record includes hash of previous record
+      3. First record has previousHash = null (genesis)
+      4. Hash computed over deterministic input (same data = same hash)
+      5. Chain can be verified independently
+      6. Tampering with any record breaks chain verification
+    type: capability
+    domain: coding
+
+    graders:
+      # Primary: Pattern compliance rubric
+      - type: llm_rubric
+        weight: 0.60
+        params:
+          rubric: |
+            PATTERN: Hash Chain (Cryptographic Evidence)
+
+            Score 1.0 (FULL COMPLIANCE) if ALL of these are true:
+            - [ ] crypto.createHash('sha256') used explicitly
+            - [ ] Each PlunderRecord has 'hash' and 'previousHash' fields
+            - [ ] First record: previousHash = null
+            - [ ] Subsequent records: previousHash = prior record's hash
+            - [ ] Hash input is deterministic (JSON.stringify of fixed fields)
+            - [ ] Hash computation includes: sequence, timestamp, operation, data, previousHash
+            - [ ] verifyEvidenceChain() method exists and works
+            - [ ] Tampering with one record invalidates all subsequent
+
+            Score 0.75 (MINOR DEVIATION) if:
+            - 6-7 requirements met
+            - Chain works but verification method incomplete
+
+            Score 0.50 (PARTIAL COMPLIANCE) if:
+            - Uses SHA-256 but chain linking incomplete
+            - OR proper chain but weak hash (MD5/SHA-1)
+
+            Score 0.25 (WEAK COMPLIANCE) if:
+            - Has hashes but not chained (each record independent)
+            - Non-deterministic hash input (includes random data)
+
+            Score 0.0 (NON-COMPLIANT) if ANY of:
+            - No cryptographic hashing
+            - No previousHash field
+            - Hash not SHA-256 family
+            - No verification mechanism
+
+      # Secondary: Tamper detection verification
+      - type: llm_rubric
+        weight: 0.25
+        params:
+          rubric: |
+            TAMPER DETECTION for Hash Chain Pattern
+
+            Score 1.0 if implementation demonstrates:
+            - verifyEvidenceChain returns {valid: false, brokenAt: N} on tamper
+            - Modifying any field (timestamp, data, etc.) breaks chain
+            - Verification reads file and recomputes all hashes
+            - brokenAt identifies exact record where chain breaks
+
+            Score 0.5 if:
+            - Verification exists but doesn't identify break point
+
+            Score 0.0 if:
+            - Tampered chain still verifies as valid
+
+      # Tertiary: Cryptographic correctness tests
+      - type: binary_tests
+        weight: 0.15
+        params:
+          test_command: "bun test tests/patterns/test_hash_chain_tamper.test.ts"
+          required_patterns:
+            - "pass"
+
+    trials: 3
+    pass_threshold: 0.70
+
+# ==============================================================================
+# END OF SUITE
+# Total Tasks: 5
+# Focus: Pattern COMPLIANCE grading via llm_rubric
+# Key Distinction: Working code vs Pattern-compliant code
+# ==============================================================================
