@@ -1,0 +1,60 @@
+{
+  "providerId": "aws-cognito",
+  "version": "1.0.0",
+  "entryPoint": "./aws-cognito-plugin.ts",
+  "attackVectors": [
+    {
+      "vector": "mfa-bypass",
+      "description": "Test MFA enforcement by attempting authentication without second factor",
+      "mitreMapping": "T1556.006",
+      "requiredPermissions": [
+        "cognito-idp:DescribeUserPool",
+        "cognito-idp:GetUserPoolMfaConfig"
+      ],
+      "intensity": {
+        "min": 1,
+        "max": 10,
+        "default": 5
+      }
+    },
+    {
+      "vector": "password-spray",
+      "description": "Test password policy strength against brute force attacks",
+      "mitreMapping": "T1110.003",
+      "requiredPermissions": [
+        "cognito-idp:DescribeUserPool"
+      ],
+      "intensity": {
+        "min": 1,
+        "max": 10,
+        "default": 7
+      }
+    },
+    {
+      "vector": "token-replay",
+      "description": "Test token handling and replay attack detection",
+      "mitreMapping": "T1550.001",
+      "requiredPermissions": [
+        "cognito-idp:DescribeUserPool"
+      ],
+      "intensity": {
+        "min": 1,
+        "max": 10,
+        "default": 6
+      }
+    },
+    {
+      "vector": "session-hijack",
+      "description": "Test device challenge requirements for session hijacking prevention",
+      "mitreMapping": "T1563",
+      "requiredPermissions": [
+        "cognito-idp:DescribeUserPool"
+      ],
+      "intensity": {
+        "min": 1,
+        "max": 10,
+        "default": 5
+      }
+    }
+  ]
+}

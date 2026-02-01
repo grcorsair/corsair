@@ -1,24 +1,34 @@
 #!/usr/bin/env bun
 /**
- * CORSAIR MVP - Atomic Implementation
+ * CORSAIR MVP - Atomic Implementation with Plugin System
  *
  * Six Primitives:
- * - RECON: Observe AWS Cognito without modification
+ * - RECON: Observe provider state without modification (plugin-specific)
  * - MARK: Identify drift by comparing reality vs expectations
- * - RAID: Execute controlled chaos (MFA bypass simulation)
- * - PLUNDER: Extract JSONL evidence with cryptographic hash chain
- * - CHART: Map attack to compliance frameworks (MITRE -> NIST -> SOC2)
- * - ESCAPE: Rollback state with scope guards (RAII pattern)
+ * - RAID: Execute controlled chaos (plugin-specific attacks)
+ * - PLUNDER: Extract JSONL evidence with cryptographic hash chain (universal)
+ * - CHART: Map attack to compliance frameworks (universal via plugin declarations)
+ * - ESCAPE: Rollback state with scope guards (plugin-specific cleanup)
  *
  * Four OpenClaw Patterns:
  * - JSONL serialization (append-only, SHA-256 chain)
- * - Lane serialization (prevent concurrent raids on same target)
+ * - Lane serialization (prevent concurrent raids on same target, now composite keys)
  * - Scope guards (RAII cleanup pattern)
  * - State machine (7-phase lifecycle)
+ *
+ * Plugin Architecture:
+ * - Scales from 1 to 100+ providers via ProviderPlugin<T> interface
+ * - PluginRegistry for manifest-based discovery
+ * - ProviderLaneSerializer for composite key concurrency control
+ * - EvidenceController for core-controlled evidence writes
  */
 
 import { createHash } from "crypto";
 import { appendFileSync, readFileSync, writeFileSync, existsSync } from "fs";
+import { PluginRegistry } from "./core/plugin-registry";
+import { ProviderLaneSerializer, createLaneKey, type LaneKey } from "./core/provider-lane-serializer";
+import { EvidenceController } from "./core/evidence-controller";
+import type { ProviderPlugin, ObservedState } from "./types/provider-plugin";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPE DEFINITIONS
@@ -333,6 +343,7 @@ interface StateMachine {
 
 export interface CorsairOptions {
   evidencePath?: string;
+  pluginDirectory?: string;
 }
 
 export class Corsair {
@@ -345,14 +356,89 @@ export class Corsair {
   private lastGuardStatus: GuardStatus = { released: false, releasedOnError: false };
   private intermediateStates: Map<string, CognitoSnapshot[]> = new Map();
 
+  // Plugin system components
+  private pluginRegistry: PluginRegistry;
+  private providerLaneSerializer: ProviderLaneSerializer;
+  private evidenceController: EvidenceController;
+  private plugins: Map<string, ProviderPlugin<any>> = new Map();
+
   constructor(options: CorsairOptions = {}) {
     this.evidencePath = options.evidencePath || "./corsair-evidence.jsonl";
+
+    // Initialize plugin system
+    this.pluginRegistry = new PluginRegistry();
+    this.providerLaneSerializer = new ProviderLaneSerializer();
+    this.evidenceController = new EvidenceController(this.evidencePath);
+  }
+
+  /**
+   * Initialize Corsair - discovers and loads plugins
+   *
+   * Call this after construction to load plugins from directory
+   */
+  async initialize(pluginDirectory: string = "plugins"): Promise<void> {
+    await this.pluginRegistry.discover(pluginDirectory);
+  }
+
+  /**
+   * Register a plugin instance
+   *
+   * Allows manual plugin registration (alternative to automatic discovery)
+   */
+  registerPlugin<T extends ObservedState>(plugin: ProviderPlugin<T>): void {
+    this.plugins.set(plugin.providerId, plugin);
+  }
+
+  /**
+   * Get registered plugin by provider ID
+   */
+  getPlugin<T extends ObservedState>(providerId: string): ProviderPlugin<T> | undefined {
+    return this.plugins.get(providerId);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // RECON PRIMITIVE - Read-Only Observation
+  // RECON PRIMITIVE - Read-Only Observation (Plugin-Based)
   // ═══════════════════════════════════════════════════════════════════════════
 
+  /**
+   * Execute plugin-based reconnaissance
+   *
+   * @param providerId - Provider plugin to use (e.g., "aws-cognito")
+   * @param targetId - Target identifier (provider-specific)
+   */
+  async reconWithPlugin<T extends ObservedState>(
+    providerId: string,
+    targetId: string
+  ): Promise<{ snapshot: T; metadata: ReconMetadata; stateModified: boolean; durationMs: number }> {
+    const plugin = this.plugins.get(providerId);
+    if (!plugin) {
+      throw new Error(`Plugin not found: ${providerId}`);
+    }
+
+    const startTime = Date.now();
+
+    // Execute plugin recon
+    const snapshot = await plugin.recon(targetId);
+
+    const durationMs = Date.now() - startTime;
+
+    return {
+      snapshot,
+      metadata: {
+        source: "fixture",
+        readonly: true,
+        durationMs,
+      },
+      stateModified: false, // RECON is read-only by contract
+      durationMs,
+    };
+  }
+
+  /**
+   * Legacy RECON method - uses hardcoded Cognito logic
+   *
+   * @deprecated Use reconWithPlugin instead for provider-agnostic reconnaissance
+   */
   async recon(fixturePath: string): Promise<ReconResult> {
     const startTime = Date.now();
 
@@ -517,9 +603,75 @@ export class Corsair {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // RAID PRIMITIVE - Controlled Chaos
+  // RAID PRIMITIVE - Controlled Chaos (Plugin-Based)
   // ═══════════════════════════════════════════════════════════════════════════
 
+  /**
+   * Execute plugin-based raid with provider lane serialization
+   *
+   * @param providerId - Provider plugin to use (e.g., "aws-cognito")
+   * @param snapshot - Provider-specific snapshot
+   * @param vector - Attack vector to execute
+   * @param intensity - Attack intensity (1-10)
+   */
+  async raidWithPlugin<T extends ObservedState>(
+    providerId: string,
+    snapshot: T,
+    vector: string,
+    intensity: number
+  ): Promise<RaidResult> {
+    const plugin = this.plugins.get(providerId);
+    if (!plugin) {
+      throw new Error(`Plugin not found: ${providerId}`);
+    }
+
+    const raidId = `RAID-${crypto.randomUUID().slice(0, 8)}`;
+    const startedAt = new Date().toISOString();
+
+    // Create composite lane key for provider + target
+    const laneKey = createLaneKey(providerId, snapshot.targetId);
+
+    // Acquire provider-specific lane lock
+    const release = await this.providerLaneSerializer.acquire(laneKey);
+
+    try {
+      // Execute plugin raid
+      const pluginResult = await plugin.raid(snapshot, vector, intensity);
+
+      // Record evidence via core controller
+      await this.evidenceController.recordPluginRaid(
+        providerId,
+        snapshot.targetId,
+        vector,
+        pluginResult
+      );
+
+      const completedAt = new Date().toISOString();
+      const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
+
+      return {
+        raidId,
+        target: snapshot.targetId,
+        vector: vector as AttackVector,
+        success: pluginResult.success,
+        controlsHeld: pluginResult.controlsHeld,
+        findings: pluginResult.findings,
+        timeline: pluginResult.timeline,
+        startedAt,
+        completedAt,
+        serialized: true,
+        durationMs,
+      };
+    } finally {
+      release();
+    }
+  }
+
+  /**
+   * Legacy RAID method - uses hardcoded Cognito logic
+   *
+   * @deprecated Use raidWithPlugin instead for provider-agnostic raids
+   */
   async raid(snapshot: CognitoSnapshot, options: RaidOptions): Promise<RaidResult> {
     const raidId = `RAID-${crypto.randomUUID().slice(0, 8)}`;
     const startedAt = new Date().toISOString();
@@ -961,9 +1113,30 @@ export class Corsair {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // ESCAPE PRIMITIVE - Rollback & Scope Guards
+  // ESCAPE PRIMITIVE - Rollback & Scope Guards (Plugin-Aware)
   // ═══════════════════════════════════════════════════════════════════════════
 
+  /**
+   * Create plugin-generated cleanup function
+   *
+   * @param providerId - Provider plugin to use
+   * @param snapshot - Provider-specific snapshot to restore
+   */
+  createPluginCleanup<T extends ObservedState>(
+    providerId: string,
+    snapshot: T
+  ): () => { operation: string; success: boolean } {
+    const plugin = this.plugins.get(providerId);
+    if (!plugin) {
+      throw new Error(`Plugin not found: ${providerId}`);
+    }
+
+    return plugin.createCleanup(snapshot);
+  }
+
+  /**
+   * Execute cleanup operations (works with both legacy and plugin-based cleanup)
+   */
   escape(cleanupOps: Array<() => { operation: string; success: boolean }>): SimpleEscapeResult {
     const startTime = Date.now();
     const results: Array<{ operation: string; success: boolean }> = [];
@@ -1132,10 +1305,31 @@ export class Corsair {
 if (import.meta.main) {
   const corsair = new Corsair();
 
-  console.log("CORSAIR MVP - Atomic Implementation");
-  console.log("====================================");
+  console.log("CORSAIR MVP - Atomic Implementation with Plugin System");
+  console.log("=======================================================");
   console.log("Primitives: RECON, MARK, RAID, PLUNDER, CHART, ESCAPE");
   console.log("");
-  console.log("Usage: Import Corsair class and use programmatically");
-  console.log("Tests: bun test tests/primitives/");
+  console.log("Plugin Architecture:");
+  console.log("  - ProviderPlugin<T> interface enables scaling to 100+ providers");
+  console.log("  - PluginRegistry for manifest-based discovery");
+  console.log("  - ProviderLaneSerializer for composite key concurrency control");
+  console.log("  - EvidenceController for core-controlled evidence writes");
+  console.log("");
+  console.log("Usage:");
+  console.log("  // Initialize with plugin discovery");
+  console.log("  const corsair = new Corsair();");
+  console.log("  await corsair.initialize('plugins/');");
+  console.log("");
+  console.log("  // Or register plugins manually");
+  console.log("  import { AwsCognitoPlugin } from './plugins/aws-cognito/aws-cognito-plugin';");
+  console.log("  corsair.registerPlugin(new AwsCognitoPlugin());");
+  console.log("");
+  console.log("  // Execute plugin-based RECON");
+  console.log("  const { snapshot } = await corsair.reconWithPlugin('aws-cognito', 'us-east-1_ABC123');");
+  console.log("");
+  console.log("  // Execute plugin-based RAID");
+  console.log("  const result = await corsair.raidWithPlugin('aws-cognito', snapshot, 'mfa-bypass', 5);");
+  console.log("");
+  console.log("Tests: bun test");
+  console.log("Documentation: PLUGIN_ARCHITECTURE.md");
 }
