@@ -3,55 +3,33 @@
  *
  * All type definitions extracted from corsair-mvp.ts for better modularity.
  * This file has no dependencies and can be imported by any module.
+ *
+ * NOTE: Cognito-specific types (MfaConfiguration, PasswordPolicy, RiskConfiguration,
+ * CognitoSnapshot) are now defined in the aws-cognito plugin and re-exported here
+ * for backwards compatibility. New provider plugins should define their own types.
  */
+
+// ===============================================================================
+// COGNITO TYPES (Re-exported from aws-cognito plugin for backwards compatibility)
+// ===============================================================================
+
+export type {
+  MfaConfiguration,
+  PasswordPolicy,
+  RiskConfiguration,
+  DeviceConfiguration,
+  CognitoSnapshot,
+} from "../plugins/aws-cognito/aws-cognito-plugin";
 
 // ===============================================================================
 // CORE TYPES
 // ===============================================================================
 
-export type MfaConfiguration = "ON" | "OFF" | "OPTIONAL";
 export type Severity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 export type AttackVector = "mfa-bypass" | "password-spray" | "token-replay" | "session-hijack";
 export type Framework = "MITRE" | "NIST-CSF" | "SOC2";
 export type EvidenceType = "positive" | "negative" | "exception";
 export type OperationType = "recon" | "mark" | "raid" | "chart" | "plunder" | "escape" | "compaction_summary";
-
-// ===============================================================================
-// COGNITO TYPES
-// ===============================================================================
-
-export interface PasswordPolicy {
-  minimumLength: number;
-  requireUppercase: boolean;
-  requireLowercase: boolean;
-  requireNumbers: boolean;
-  requireSymbols: boolean;
-  temporaryPasswordValidityDays: number;
-}
-
-export interface RiskConfiguration {
-  compromisedCredentialsAction: string | null;
-  accountTakeoverLowAction: string | null;
-  accountTakeoverMediumAction: string | null;
-  accountTakeoverHighAction: string | null;
-}
-
-export interface CognitoSnapshot {
-  userPoolId: string;
-  userPoolName: string;
-  mfaConfiguration: MfaConfiguration;
-  softwareTokenMfaEnabled: boolean;
-  smsMfaEnabled: boolean;
-  passwordPolicy: PasswordPolicy;
-  riskConfiguration: RiskConfiguration | null;
-  deviceConfiguration: {
-    challengeRequiredOnNewDevice: boolean;
-    deviceOnlyRememberedOnUserPrompt: boolean;
-  };
-  observedAt: string;
-  userCount?: number;
-  status?: string;
-}
 
 // ===============================================================================
 // RECON TYPES
