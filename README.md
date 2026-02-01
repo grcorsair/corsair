@@ -9,7 +9,7 @@
    ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝
 ```
 
-**Chaos Operations for Resilience, Security Assessment & Incremental Reinforcement**
+**Chaos Operations for Resilience, Security Assessment & Incident Response**
 
 > Attack first. Discover reality. Evidence emerges.
 
@@ -18,17 +18,6 @@
 CORSAIR is an offensive chaos engineering tool for authentication systems. It discovers the *actual* state of your security controls by attacking them—not by reading documentation.
 
 Compliance evidence is generated as a **byproduct** of attacks, not as a goal.
-
-## GRC: Incremental Reinforcement
-
-**GRC** in Corsair stands for **Governance, Risk, and Incremental Reinforcement**.
-
-Unlike traditional GRC (Governance, Risk, and Compliance) which focuses on static checkbox auditing, Corsair emphasizes **incremental reinforcement**—continuously strengthening controls through repeated adversarial validation.
-
-- **Incremental**: Iterative, repeated testing cycles (not one-time audits)
-- **Reinforcement**: Strengthening controls through adversarial stress-testing (not passive documentation)
-
-This philosophy shift moves from "are we compliant?" to "do our controls hold under attack?"
 
 ## The Exception Drift Attack Pattern
 
