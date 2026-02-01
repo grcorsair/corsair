@@ -1,3 +1,9 @@
+<div align="center">
+
+<img src="assets/corsair logo.png" alt="Corsair Logo" width="600"/>
+
+<img src="assets/corsair character.png" alt="Corsair Character" width="300"/>
+
 # CORSAIR
 
 ```
@@ -8,6 +14,8 @@
   ╚██████╗╚██████╔╝██║  ██║███████║██║  ██║██║██║  ██║
    ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝
 ```
+
+</div>
 
 **Chaos Operations for Resilience, Security Assessment & Incremental Reinforcement**
 
