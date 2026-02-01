@@ -9,7 +9,7 @@
    ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝
 ```
 
-**Chaos Operations for Resilience, Security Assessment & Incident Response**
+**Chaos Operations for Resilience, Security Assessment & Incremental Reinforcement**
 
 > Agentic Pirate raiding your GRC program.
 
