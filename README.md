@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/updated corsair logo.png" alt="Corsair Logo" width="700"/>
+<img src="assets/final corsair logo.png" alt="Corsair Logo" width="700"/>
 
 </div>
 
