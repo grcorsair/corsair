@@ -37,3 +37,6 @@ npm-debug.log*
 # Evidence files (test artifacts)
 *.jsonl
 /tmp/
+
+# Mission directories (generated during testing)
+missions/
