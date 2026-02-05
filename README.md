@@ -7,6 +7,10 @@
 # CORSAIR
 
 ![Tests](https://github.com/arudjreis/corsair/actions/workflows/test.yml/badge.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)
+![Bun](https://img.shields.io/badge/runtime-Bun-f9f1e1.svg?logo=bun)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg?logo=typescript)
 
 **Chaos Operations for Resilience, Security Assessment & Incremental Reinforcement**
 
@@ -413,6 +417,17 @@ Every attack automatically maps findings to compliance frameworks:
 - **NIST-CSF**: PR.AC-7, PR.DS-2
 
 You don't select a framework. You attack. The framework mappings happen in the background.
+
+### Framework Coverage
+
+| Framework | Controls Mapped | Coverage |
+|-----------|-----------------|----------|
+| SOC 2 | CC6.1, CC6.2, CC6.3, CC6.6, CC7.2 | Authentication, Authorization |
+| ISO 27001 | A.9.2.3, A.9.4.2, A.12.4.1 | Access Control, Logging |
+| NIST CSF | PR.AC-7, PR.DS-2 | Identity, Data Security |
+| MITRE ATT&CK | T1556.006, T1078 | Credential Access, Valid Accounts |
+
+> Framework mappings are defined per-plugin. See plugin manifests for complete mappings.
 
 ## Philosophy
 
