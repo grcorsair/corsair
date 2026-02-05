@@ -6,6 +6,8 @@
 
 # CORSAIR
 
+![Tests](https://github.com/arudjreis/corsair/actions/workflows/test.yml/badge.svg)
+
 **Chaos Operations for Resilience, Security Assessment & Incremental Reinforcement**
 
 > Agentic Pirate raiding your GRC program.
