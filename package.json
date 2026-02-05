@@ -5,8 +5,7 @@
   "type": "module",
   "main": "src/corsair-mvp.ts",
   "bin": {
-    "corsair": "./corsair.ts",
-    "corsair-mvp": "./src/corsair-mvp.ts"
+    "corsair": "./corsair.ts"
   },
   "scripts": {
     "test": "bun test tests/primitives/",

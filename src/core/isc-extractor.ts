@@ -68,6 +68,33 @@ export class ISCExtractor {
     /must be/i,
   ];
 
+  // Meta-criteria patterns (ISC validation checklist items, not actual security criteria)
+  private static readonly META_PATTERNS = [
+    /each.*\d+.*words?/i,          // "Each ≤8 words"
+    /binary testable/i,            // Validation requirement
+    /state-based/i,                // Validation requirement
+    /granular/i,                   // Validation requirement
+    /observable/i,                 // Validation requirement
+    /isc.*validation/i,            // ISC validation section
+    /^✅/,                          // Checkmark bullets are usually meta
+    /criterion.*requirement/i,     // Meta-criterion description
+    /criteria.*should/i,           // Meta-instruction
+    /format.*requirement/i,        // Formatting instruction
+
+    // Stakeholder roles (not security criteria)
+    /auditors?$/i,                 // "Security auditors"
+    /officers?$/i,                 // "Compliance officers"
+    /teams?$/i,                    // "Incident response teams"
+    /leadership$/i,                // "Executive leadership"
+    /stakeholders?$/i,             // Generic stakeholder
+
+    // Compliance framework codes (not security criteria)
+    /^PR\.[A-Z]{2}-\d+/,           // NIST codes: PR.AC-7, PR.DS-5
+    /^CC\d+\.\d+/,                 // SOC2 codes: CC6.1, CC6.7
+    /^T\d{4}/,                     // MITRE ATT&CK: T1556, T1530
+    /^\[?[A-Z]{2,}\]?:/,           // Generic framework prefix: [NIST]:, [SOC2]:
+  ];
+
   // Verification status patterns
   private static readonly STATUS_PATTERNS = [
     { pattern: /\[SATISFIED\]\s*/i, status: "SATISFIED" as ISCSatisfactionStatus },
@@ -315,6 +342,7 @@ export class ISCExtractor {
 
   /**
    * Filter and validate criteria.
+   * Removes meta-criteria, action-oriented text, and vague phrases.
    */
   private filterAndValidateCriteria(criteria: string[]): string[] {
     return criteria.filter((criterion) => {
@@ -326,6 +354,11 @@ export class ISCExtractor {
       // Check word count (max 8 words)
       const wordCount = criterion.trim().split(/\s+/).length;
       if (wordCount > 8) {
+        return false;
+      }
+
+      // Skip meta-criteria (ISC validation checklist items, not actual security criteria)
+      if (this.isMetaCriterion(criterion)) {
         return false;
       }
 
@@ -345,6 +378,14 @@ export class ISCExtractor {
 
       return true;
     });
+  }
+
+  /**
+   * Check if text is a meta-criterion (ISC validation checklist item).
+   * Meta-criteria describe how ISC should be formatted, not actual security expectations.
+   */
+  isMetaCriterion(text: string): boolean {
+    return ISCExtractor.META_PATTERNS.some((pattern) => pattern.test(text));
   }
 
   /**

@@ -7,12 +7,21 @@ Corsair uses a plugin-first architecture where provider-specific logic lives in 
 ## Overview
 
 ```
-corsair-mvp/
+corsair/
   src/
-    corsair-mvp.ts      # Core primitives (generic)
+    corsair-mvp.ts      # Backwards-compat shim (re-exports engine/)
     types.ts            # Type definitions
     evidence.ts         # Evidence engine
     compaction.ts       # Compaction engine
+    engine/             # Core engine modules
+      index.ts          # Corsair facade + barrel exports
+      recon-engine.ts   # RECON primitive
+      mark-engine.ts    # MARK primitive
+      raid-engine.ts    # RAID primitive + LaneSerializer
+      chart-engine.ts   # CHART primitive + framework constants
+      escape-engine.ts  # ESCAPE primitive + scope guards
+      event-engine.ts   # Event querying/aggregation
+      plugin-engine.ts  # Plugin discovery & registry
   plugins/
     aws-cognito/        # AWS Cognito provider plugin
       aws-cognito-plugin.ts     # Plugin implementation

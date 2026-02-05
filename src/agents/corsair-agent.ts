@@ -12,28 +12,14 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import {
-  CognitoIdentityProviderClient,
-  DescribeUserPoolCommand,
-  GetUserPoolMfaConfigCommand,
-} from "@aws-sdk/client-cognito-identity-provider";
-import {
-  S3Client,
-  GetBucketPolicyCommand,
-  GetPublicAccessBlockCommand,
-  GetBucketEncryptionCommand,
-  GetBucketVersioningCommand,
-  GetBucketLoggingCommand,
-} from "@aws-sdk/client-s3";
 import * as path from "node:path";
-import { Corsair } from "../corsair-mvp";
+import { Corsair } from "../engine";
 import { corsairTools } from "./tool-definitions";
 import { CORSAIR_SYSTEM_PROMPT } from "./system-prompts";
 import { ISCManager } from "../core/isc-manager";
 import { ISCExtractor } from "../core/isc-extractor";
 import type {
   CognitoSnapshot,
-  S3Snapshot,
   ReconResult,
   MarkResult,
   RaidResult,
@@ -265,201 +251,23 @@ export class CorsairAgent {
   }
 
   /**
-   * Handle RECON primitive
+   * Handle RECON primitive — delegates to ReconEngine via Corsair facade
    */
   private async handleRecon(input: Record<string, unknown>): Promise<ReconResult> {
     const targetId = input.targetId as string;
     const source = (input.source as string) || "fixture";
     const service = (input.service as string) || "cognito";
-    const startTime = Date.now();
 
-    let snapshot: CognitoSnapshot | S3Snapshot;
+    const result = await this.corsair.recon(targetId, {
+      source: source as "fixture" | "aws" | "file",
+      service: service as "cognito" | "s3",
+    });
 
-    if (source === "aws") {
-      // Call real AWS APIs based on service
-      if (service === "s3") {
-        snapshot = await this.fetchAwsS3Snapshot(targetId);
-      } else if (service === "cognito") {
-        snapshot = await this.fetchAwsCognitoSnapshot(targetId);
-      } else {
-        throw new Error(`Unknown service: ${service}`);
-      }
-    } else {
-      // Use fixture data based on service
-      if (service === "s3") {
-        snapshot = {
-          bucketName: targetId,
-          publicAccessBlock: false,
-          encryption: null,
-          versioning: "Disabled",
-          logging: false,
-        } as S3Snapshot;
-      } else {
-        snapshot = {
-          userPoolId: targetId,
-          mfaConfiguration: "OFF",
-          passwordPolicy: {
-            minimumLength: 8,
-            requireUppercase: false,
-            requireLowercase: true,
-            requireNumbers: false,
-            requireSymbols: false,
-          },
-          riskConfiguration: null,
-          deviceConfiguration: {
-            challengeRequiredOnNewDevice: false,
-            deviceOnlyRememberedOnUserPrompt: true,
-          },
-        } as CognitoSnapshot;
-      }
-    }
-
-    const durationMs = Date.now() - startTime;
-
-    const result: ReconResult = {
-      snapshotId: targetId,
-      snapshot,
-      metadata: {
-        source: source as "fixture" | "aws",
-        readonly: true,
-        durationMs,
-      },
-      stateModified: false,
-      durationMs,
-    };
-
-    // Store in context
-    this.context.snapshots.set(targetId, snapshot);
+    // Store in context for downstream primitives
+    this.context.snapshots.set(targetId, result.snapshot);
     this.context.reconResults.set(targetId, result);
 
     return result;
-  }
-
-  /**
-   * Fetch Cognito User Pool configuration from AWS
-   */
-  private async fetchAwsCognitoSnapshot(userPoolId: string): Promise<CognitoSnapshot> {
-    const client = new CognitoIdentityProviderClient({
-      region: process.env.AWS_REGION || "us-west-2",
-    });
-
-    try {
-      // Call DescribeUserPool to get configuration
-      const describeCommand = new DescribeUserPoolCommand({ UserPoolId: userPoolId });
-      const describeResponse = await client.send(describeCommand);
-
-      if (!describeResponse.UserPool) {
-        throw new Error(`User pool not found: ${userPoolId}`);
-      }
-
-      const pool = describeResponse.UserPool;
-
-      // Call GetUserPoolMfaConfig to get MFA details
-      const mfaCommand = new GetUserPoolMfaConfigCommand({ UserPoolId: userPoolId });
-      const mfaResponse = await client.send(mfaCommand);
-
-      // Map AWS response to CognitoSnapshot format
-      const snapshot: CognitoSnapshot = {
-        userPoolId,
-        mfaConfiguration: mfaResponse.MfaConfiguration || "OFF",
-        passwordPolicy: {
-          minimumLength: pool.Policies?.PasswordPolicy?.MinimumLength || 8,
-          requireUppercase: pool.Policies?.PasswordPolicy?.RequireUppercase ?? false,
-          requireLowercase: pool.Policies?.PasswordPolicy?.RequireLowercase ?? false,
-          requireNumbers: pool.Policies?.PasswordPolicy?.RequireNumbers ?? false,
-          requireSymbols: pool.Policies?.PasswordPolicy?.RequireSymbols ?? false,
-        },
-        riskConfiguration: pool.UserPoolAddOns?.AdvancedSecurityMode === "ENFORCED" ? {
-          riskLevel: "LOW",
-          compromisedCredentialsRiskConfiguration: {
-            actions: { eventAction: "BLOCK" },
-          },
-        } : null,
-        deviceConfiguration: {
-          challengeRequiredOnNewDevice: pool.DeviceConfiguration?.ChallengeRequiredOnNewDevice ?? false,
-          deviceOnlyRememberedOnUserPrompt: pool.DeviceConfiguration?.DeviceOnlyRememberedOnUserPrompt ?? false,
-        },
-      };
-
-      return snapshot;
-    } catch (error) {
-      throw new Error(`Failed to fetch AWS Cognito snapshot: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  /**
-   * Fetch S3 Bucket configuration from AWS
-   */
-  private async fetchAwsS3Snapshot(bucketName: string): Promise<S3Snapshot> {
-    const client = new S3Client({
-      region: process.env.AWS_REGION || "us-west-2",
-    });
-
-    try {
-      // Check public access block configuration
-      let publicAccessBlock = false;
-      try {
-        const publicAccessCommand = new GetPublicAccessBlockCommand({ Bucket: bucketName });
-        const publicAccessResponse = await client.send(publicAccessCommand);
-        const config = publicAccessResponse.PublicAccessBlockConfiguration;
-        // If ALL public access is blocked, consider it secure
-        publicAccessBlock = !!(
-          config?.BlockPublicAcls &&
-          config?.BlockPublicPolicy &&
-          config?.IgnorePublicAcls &&
-          config?.RestrictPublicBuckets
-        );
-      } catch (error) {
-        // If GetPublicAccessBlock fails, public access is likely NOT blocked
-        publicAccessBlock = false;
-      }
-
-      // Check encryption configuration
-      let encryption: "AES256" | "aws:kms" | null = null;
-      try {
-        const encryptionCommand = new GetBucketEncryptionCommand({ Bucket: bucketName });
-        const encryptionResponse = await client.send(encryptionCommand);
-        const rule = encryptionResponse.ServerSideEncryptionConfiguration?.Rules?.[0];
-        const algo = rule?.ApplyServerSideEncryptionByDefault?.SSEAlgorithm;
-        if (algo === "AES256") encryption = "AES256";
-        else if (algo === "aws:kms") encryption = "aws:kms";
-      } catch (error) {
-        // If GetBucketEncryption fails, encryption is not configured
-        encryption = null;
-      }
-
-      // Check versioning configuration
-      let versioning: "Enabled" | "Disabled" = "Disabled";
-      try {
-        const versioningCommand = new GetBucketVersioningCommand({ Bucket: bucketName });
-        const versioningResponse = await client.send(versioningCommand);
-        versioning = versioningResponse.Status === "Enabled" ? "Enabled" : "Disabled";
-      } catch (error) {
-        versioning = "Disabled";
-      }
-
-      // Check logging configuration
-      let logging = false;
-      try {
-        const loggingCommand = new GetBucketLoggingCommand({ Bucket: bucketName });
-        const loggingResponse = await client.send(loggingCommand);
-        logging = !!loggingResponse.LoggingEnabled;
-      } catch (error) {
-        logging = false;
-      }
-
-      const snapshot: S3Snapshot = {
-        bucketName,
-        publicAccessBlock,
-        encryption,
-        versioning,
-        logging,
-      };
-
-      return snapshot;
-    } catch (error) {
-      throw new Error(`Failed to fetch AWS S3 snapshot: ${error instanceof Error ? error.message : String(error)}`);
-    }
   }
 
   /**
@@ -478,7 +286,7 @@ export class CorsairAgent {
     this.context.markResults.set(snapshotId, result);
 
     // Update ISC satisfaction based on MARK findings
-    this.updateISCFromMarkResult(result);
+    await this.updateISCFromMarkResult(result);
 
     return result;
   }
@@ -487,7 +295,7 @@ export class CorsairAgent {
    * Update ISC satisfaction based on MARK drift findings.
    * Links evidence from drift detection to ISC criteria.
    */
-  private updateISCFromMarkResult(markResult: MarkResult): void {
+  private async updateISCFromMarkResult(markResult: MarkResult): Promise<void> {
     const iscManager = this.context.iscManager;
     if (!iscManager) return;
 
@@ -514,6 +322,14 @@ export class CorsairAgent {
     if (updatedCount > 0) {
       const rate = iscManager.getSatisfactionRate();
       this.log(`  ISC satisfaction rate: ${rate}%\n`);
+
+      // PERSIST ISC STATE TO DISK
+      try {
+        const iscPath = this.getISCPath();
+        await iscManager.persist(iscPath);
+      } catch (error) {
+        this.log(`⚠️  Failed to persist ISC after MARK: ${error}\n`);
+      }
     }
   }
 
@@ -562,26 +378,39 @@ export class CorsairAgent {
 
   /**
    * Handle CHART primitive
+   * Maps security findings to compliance frameworks.
+   * Supports findings from both MARK (drift detection) and RAID (attack simulation).
    */
   private async handleChart(input: Record<string, unknown>): Promise<ChartResult> {
     const findingsId = input.findingsId as string;
+    const collectedFindings: DriftFinding[] = [];
 
     // Try to find findings from MARK results by snapshotId
     const markResult = this.context.markResults.get(findingsId);
     if (markResult) {
-      const result = await this.corsair.chart(markResult.findings);
-      this.context.chartResults.set(findingsId, result);
-      return result;
+      collectedFindings.push(...markResult.findings);
     }
 
     // Try to find specific drift finding ID across all MARK results
-    for (const [snapshotId, result] of this.context.markResults.entries()) {
-      const finding = result.findings.find(f => f.id === findingsId);
-      if (finding) {
-        // Found the specific drift finding - chart it
-        const chartResult = await this.corsair.chart([finding]);
-        this.context.chartResults.set(findingsId, chartResult);
-        return chartResult;
+    // Also handles DRIFT-prefixed IDs for explicit drift finding requests
+    for (const [_snapshotId, result] of this.context.markResults.entries()) {
+      // Match exact finding ID
+      const exactMatch = result.findings.find(f => f.id === findingsId);
+      if (exactMatch) {
+        collectedFindings.push(exactMatch);
+      }
+
+      // Match DRIFT-prefixed requests (e.g., "DRIFT-encryption" matches findings about encryption)
+      if (findingsId.startsWith("DRIFT-") || findingsId.includes("DRIFT")) {
+        const driftKeyword = findingsId.replace(/^DRIFT[-_]?/i, "").toLowerCase();
+        const matchingFindings = result.findings.filter(f =>
+          f.drift && (
+            f.field.toLowerCase().includes(driftKeyword) ||
+            f.id.toLowerCase().includes(driftKeyword) ||
+            (f.description && f.description.toLowerCase().includes(driftKeyword))
+          )
+        );
+        collectedFindings.push(...matchingFindings);
       }
     }
 
@@ -589,7 +418,7 @@ export class CorsairAgent {
     const raidResult = this.context.raidResults.get(findingsId);
     if (raidResult) {
       // Convert raid findings to drift findings for chart
-      const driftFindings: DriftFinding[] = raidResult.findings.map((finding, idx) => ({
+      const raidDriftFindings: DriftFinding[] = raidResult.findings.map((finding, idx) => ({
         id: `${findingsId}-${idx}`,
         field: "mfaConfiguration",
         expected: "ON",
@@ -599,8 +428,17 @@ export class CorsairAgent {
         description: finding,
         timestamp: new Date().toISOString(),
       }));
+      collectedFindings.push(...raidDriftFindings);
+    }
 
-      const result = await this.corsair.chart(driftFindings);
+    // Deduplicate findings by ID
+    const uniqueFindings = Array.from(
+      new Map(collectedFindings.map(f => [f.id, f])).values()
+    );
+
+    // If we have findings, chart them
+    if (uniqueFindings.length > 0) {
+      const result = await this.corsair.chart(uniqueFindings);
       this.context.chartResults.set(findingsId, result);
       return result;
     }
