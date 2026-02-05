@@ -145,6 +145,13 @@ export const plunderTool: Tool = {
 This primitive takes raid results and generates tamper-proof evidence using SHA-256 hash chains.
 The evidence is append-only JSONL format suitable for compliance frameworks.
 
+**Evidence Output Control:**
+You MUST specify the exact output path via the evidencePath parameter. This allows users to control
+where evidence is stored (e.g., CI/CD pipelines, custom audit directories, enterprise workflows).
+
+If the user provides a specific output path in the mission, use that exact path.
+Otherwise, use a descriptive path like './evidence/[service]-[target]-[date].jsonl'
+
 Use this after successful RAID operations to capture findings for audit trails.
 
 Returns: Evidence file path, event count, and chain verification status.`,

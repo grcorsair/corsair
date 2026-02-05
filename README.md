@@ -175,6 +175,54 @@ bun run corsair strike mfa
 # That's it. Evidence is generated automatically.
 ```
 
+## CLI Usage (Agentic Mode)
+
+CORSAIR includes an autonomous agent that can test AWS services using Claude AI:
+
+```bash
+# Basic usage - test Cognito User Pool
+export ANTHROPIC_API_KEY=your_key_here
+export AWS_PROFILE=your_profile
+
+bun run corsair --target us-west-2_ABC123 --service cognito
+
+# Custom evidence output path (for CI/CD integration)
+bun run corsair \
+  --target us-west-2_ABC123 \
+  --service cognito \
+  --output ./audits/q1-2025/cognito-test.jsonl
+
+# Test S3 bucket with custom output
+bun run corsair \
+  --target my-bucket-name \
+  --service s3 \
+  --output ./evidence/s3-security-audit.jsonl
+
+# CI/CD pipeline integration
+bun run corsair \
+  --target prod-user-pool \
+  --service cognito \
+  --output /var/jenkins/evidence/cognito-${BUILD_ID}.jsonl
+```
+
+**CLI Options:**
+- `--target, -t`: Target resource ID (User Pool ID or bucket name)
+- `--service, -s`: Service type (`cognito` | `s3`)
+- `--output, -o`: Custom evidence output path (default: `./evidence/corsair-{timestamp}.jsonl`)
+- `--source`: Data source (`aws` | `fixture`, default: `aws`)
+- `--model, -m`: Model selection (`sonnet` | `haiku` | `auto`, default: `sonnet`)
+- `--max-turns`: Maximum agent turns (default: 20)
+- `--quiet, -q`: Suppress verbose output
+- `--help, -h`: Show help message
+
+**Output Control:**
+By default, evidence is written to `./evidence/corsair-{timestamp}.jsonl`. The `--output` flag gives you full control:
+- **Local audits**: `./audits/2025-q1/security-test.jsonl`
+- **CI/CD pipelines**: `/var/jenkins/workspace/evidence/${BUILD_ID}.jsonl`
+- **Enterprise workflows**: `/mnt/compliance/evidence/${PROJECT}-${DATE}.jsonl`
+
+Evidence files use JSONL format with SHA-256 hash chains for cryptographic verification.
+
 ## The First Command
 
 When you run `corsair strike mfa`, you're not configuring a compliance framework. You're launching an attack.

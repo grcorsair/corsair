@@ -73,7 +73,7 @@ Execute the complete 7-phase Algorithm cycle:
 
 💰 TALLY THE SPOILS (VERIFY):
 - MARK: Verify each ISC criterion (PASS/FAIL)
-- PLUNDER: Extract cryptographic evidence
+- PLUNDER: Extract cryptographic evidence to custom path: './evidence/s3-security-audit.jsonl'
 - CHART: Map findings to MITRE/NIST/SOC2
 
 📖 LOG THE VOYAGE (LEARN):
