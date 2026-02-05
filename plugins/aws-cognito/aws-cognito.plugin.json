@@ -62,6 +62,14 @@
       "mfaConfiguration": {
         "mitre": "T1556",
         "mitreName": "Modify Authentication Process",
+        "controls": {
+          "NIST-800-53": [{"controlId": "IA-2", "controlName": "Identification and Authentication"}, {"controlId": "IA-5", "controlName": "Authenticator Management"}],
+          "NIST-CSF": [{"controlId": "PR.AC-7", "controlName": "Authentication mechanisms"}],
+          "SOC2": [{"controlId": "CC6.1", "controlName": "Logical access security"}],
+          "CIS": [{"controlId": "6.5", "controlName": "Require MFA for Administrative Access"}],
+          "ISO27001": [{"controlId": "A.9.4.2", "controlName": "Secure log-on procedures"}],
+          "PCI-DSS": [{"controlId": "8.3.1", "controlName": "Multi-factor authentication"}]
+        },
         "nist": "PR.AC-7",
         "nistFunction": "Protect - Access Control",
         "soc2": "CC6.1",
@@ -71,6 +79,14 @@
       "passwordPolicy.minimumLength": {
         "mitre": "T1110",
         "mitreName": "Brute Force",
+        "controls": {
+          "NIST-800-53": [{"controlId": "AC-7", "controlName": "Unsuccessful Logon Attempts"}, {"controlId": "IA-5", "controlName": "Authenticator Management"}],
+          "NIST-CSF": [{"controlId": "PR.AC-1", "controlName": "Identity and credential management"}],
+          "SOC2": [{"controlId": "CC6.1", "controlName": "Logical access security"}],
+          "CIS": [{"controlId": "5.2", "controlName": "Use Unique Passwords"}],
+          "ISO27001": [{"controlId": "A.9.4.3", "controlName": "Password management system"}],
+          "PCI-DSS": [{"controlId": "8.2.3", "controlName": "Password complexity requirements"}]
+        },
         "nist": "PR.AC-1",
         "nistFunction": "Protect - Access Control",
         "soc2": "CC6.1",
@@ -80,6 +96,13 @@
       "passwordPolicy.requireSymbols": {
         "mitre": "T1110.001",
         "mitreName": "Password Guessing",
+        "controls": {
+          "NIST-800-53": [{"controlId": "IA-5", "controlName": "Authenticator Management"}],
+          "NIST-CSF": [{"controlId": "PR.AC-1", "controlName": "Identity and credential management"}],
+          "SOC2": [{"controlId": "CC6.1", "controlName": "Logical access security"}],
+          "ISO27001": [{"controlId": "A.9.4.3", "controlName": "Password management system"}],
+          "PCI-DSS": [{"controlId": "8.2.3", "controlName": "Password complexity requirements"}]
+        },
         "nist": "PR.AC-1",
         "nistFunction": "Protect - Access Control",
         "soc2": "CC6.1",
@@ -89,6 +112,14 @@
       "riskConfiguration": {
         "mitre": "T1078",
         "mitreName": "Valid Accounts",
+        "controls": {
+          "NIST-800-53": [{"controlId": "AC-2", "controlName": "Account Management"}, {"controlId": "AC-6", "controlName": "Least Privilege"}],
+          "NIST-CSF": [{"controlId": "PR.AC-4", "controlName": "Access permissions and authorizations"}],
+          "SOC2": [{"controlId": "CC6.2", "controlName": "Registration and authorization"}],
+          "CIS": [{"controlId": "6.2", "controlName": "Ensure No Duplicate User Names"}],
+          "ISO27001": [{"controlId": "A.9.2.5", "controlName": "Review of user access rights"}],
+          "PCI-DSS": [{"controlId": "7.1", "controlName": "Limit access to system components"}]
+        },
         "nist": "PR.AC-4",
         "nistFunction": "Protect - Access Control",
         "soc2": "CC6.2",
@@ -98,6 +129,14 @@
       "softwareTokenMfaEnabled": {
         "mitre": "T1556.006",
         "mitreName": "Multi-Factor Authentication Interception",
+        "controls": {
+          "NIST-800-53": [{"controlId": "IA-2", "controlName": "Identification and Authentication"}, {"controlId": "IA-5", "controlName": "Authenticator Management"}],
+          "NIST-CSF": [{"controlId": "PR.AC-7", "controlName": "Authentication mechanisms"}],
+          "SOC2": [{"controlId": "CC6.1", "controlName": "Logical access security"}],
+          "CIS": [{"controlId": "6.5", "controlName": "Require MFA for Administrative Access"}],
+          "ISO27001": [{"controlId": "A.9.4.2", "controlName": "Secure log-on procedures"}],
+          "PCI-DSS": [{"controlId": "8.3.1", "controlName": "Multi-factor authentication"}]
+        },
         "nist": "PR.AC-7",
         "nistFunction": "Protect - Access Control",
         "soc2": "CC6.1",

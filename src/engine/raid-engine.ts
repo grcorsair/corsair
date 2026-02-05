@@ -17,7 +17,11 @@ import type {
   ApprovalRequest,
   ApprovalResponse,
   CorsairEvent,
+  S3Snapshot,
 } from "../types";
+
+/** Any snapshot shape accepted by RaidEngine */
+type AnySnapshot = CognitoSnapshot | S3Snapshot | Record<string, unknown>;
 
 // ===============================================================================
 // LANE SERIALIZATION (Prevent Concurrent Raids)
@@ -78,19 +82,26 @@ export class RaidEngine {
     return vectorLevel >= gateLevel;
   }
 
+  private getTargetId(snapshot: AnySnapshot): string {
+    return (snapshot as Record<string, unknown>).userPoolId as string
+      || (snapshot as Record<string, unknown>).bucketName as string
+      || (snapshot as Record<string, unknown>).resourceId as string
+      || "unknown";
+  }
+
   private calculateBlastRadius(
-    snapshot: CognitoSnapshot,
+    snapshot: AnySnapshot,
     vector: AttackVector,
     intensity: number
   ): ApprovalRequest["blastRadius"] {
     return {
-      affectedUsers: snapshot.userCount || 0,
-      affectedResources: [snapshot.userPoolId],
+      affectedUsers: (snapshot as Record<string, unknown>).userCount as number || 0,
+      affectedResources: [this.getTargetId(snapshot)],
       environment: "test",
     };
   }
 
-  async raid(snapshot: CognitoSnapshot, options: RaidOptions | RaidOptionsWithApproval): Promise<RaidResult> {
+  async raid(snapshot: AnySnapshot, options: RaidOptions | RaidOptionsWithApproval): Promise<RaidResult> {
     const raidId = `RAID-${crypto.randomUUID().slice(0, 8)}`;
     const startedAt = new Date().toISOString();
     const timeline: TimelineEvent[] = [];
@@ -103,6 +114,8 @@ export class RaidEngine {
     let approvalResult: ApprovalResponse | null = null;
     let approvalRequired = false;
 
+    const targetId = this.getTargetId(snapshot);
+
     if (approvalGate && this.requiresApproval(vectorSeverity, approvalGate.requiredSeverity)) {
       approvalRequired = true;
 
@@ -114,7 +127,7 @@ export class RaidEngine {
         gate: approvalGate,
         vector: options.vector,
         intensity: options.intensity,
-        targetId: snapshot.userPoolId,
+        targetId,
         blastRadius: this.calculateBlastRadius(snapshot, options.vector, options.intensity),
         requestedAt: new Date().toISOString(),
       };
@@ -141,13 +154,13 @@ export class RaidEngine {
       });
     }
 
-    const release = await this.laneSerializer.acquire(snapshot.userPoolId);
+    const release = await this.laneSerializer.acquire(targetId);
 
     try {
       timeline.push({
         timestamp: new Date().toISOString(),
         action: "RAID_START",
-        result: `Initiating ${options.vector} attack on ${snapshot.userPoolId}`,
+        result: `Initiating ${options.vector} attack on ${targetId}`,
       });
 
       const success = await this.simulateAttack(snapshot, options, timeline, findings);
@@ -163,7 +176,7 @@ export class RaidEngine {
 
       const result: RaidResult = {
         raidId,
-        target: snapshot.userPoolId,
+        target: targetId,
         vector: options.vector,
         success,
         controlsHeld: !success,
@@ -182,7 +195,7 @@ export class RaidEngine {
       const event: CorsairEvent = {
         type: "raid:complete",
         timestamp: completedAt,
-        targetId: snapshot.userPoolId,
+        targetId,
         vector: options.vector,
         success,
         severity: vectorSeverity,
@@ -205,28 +218,35 @@ export class RaidEngine {
   }
 
   private async simulateAttack(
-    snapshot: CognitoSnapshot,
+    snapshot: AnySnapshot,
     options: RaidOptions,
     timeline: TimelineEvent[],
     findings: string[]
   ): Promise<boolean> {
     const { vector, intensity } = options;
 
+    // S3 attack vectors
+    if (vector === "public-access-test" || vector === "encryption-test" || vector === "versioning-test") {
+      return this.simulateS3Attack(snapshot as S3Snapshot, vector, intensity, timeline, findings);
+    }
+
+    // Cognito attack vectors (legacy)
+    const cognitoSnapshot = snapshot as CognitoSnapshot;
     switch (vector) {
       case "mfa-bypass": {
         timeline.push({
           timestamp: new Date().toISOString(),
           action: "CHECK_MFA",
-          result: `MFA Configuration: ${snapshot.mfaConfiguration}`,
+          result: `MFA Configuration: ${cognitoSnapshot.mfaConfiguration}`,
         });
 
-        if (snapshot.mfaConfiguration === "OFF") {
+        if (cognitoSnapshot.mfaConfiguration === "OFF") {
           findings.push("CRITICAL: MFA is disabled - bypass trivial");
           findings.push("MFA bypass successful - no second factor required");
           return true;
         }
 
-        if (snapshot.mfaConfiguration === "OPTIONAL") {
+        if (cognitoSnapshot.mfaConfiguration === "OPTIONAL") {
           findings.push("WARNING: MFA is optional - user may bypass");
           findings.push("MFA bypass possible for users without MFA configured");
           return intensity > 5;
@@ -240,17 +260,17 @@ export class RaidEngine {
         timeline.push({
           timestamp: new Date().toISOString(),
           action: "CHECK_PASSWORD_POLICY",
-          result: `Min length: ${snapshot.passwordPolicy.minimumLength}`,
+          result: `Min length: ${cognitoSnapshot.passwordPolicy.minimumLength}`,
         });
 
         const weakPolicy =
-          snapshot.passwordPolicy.minimumLength < 12 ||
-          !snapshot.passwordPolicy.requireSymbols ||
-          !snapshot.passwordPolicy.requireUppercase;
+          cognitoSnapshot.passwordPolicy.minimumLength < 12 ||
+          !cognitoSnapshot.passwordPolicy.requireSymbols ||
+          !cognitoSnapshot.passwordPolicy.requireUppercase;
 
         if (weakPolicy) {
           findings.push("WARNING: Weak password policy detected");
-          findings.push(`Minimum length: ${snapshot.passwordPolicy.minimumLength}`);
+          findings.push(`Minimum length: ${cognitoSnapshot.passwordPolicy.minimumLength}`);
           return intensity > 7;
         }
 
@@ -265,7 +285,7 @@ export class RaidEngine {
           result: "Analyzing token configuration",
         });
 
-        if (!snapshot.riskConfiguration) {
+        if (!cognitoSnapshot.riskConfiguration) {
           findings.push("WARNING: No risk configuration - token replay detection limited");
           return intensity > 6;
         }
@@ -278,15 +298,79 @@ export class RaidEngine {
         timeline.push({
           timestamp: new Date().toISOString(),
           action: "CHECK_DEVICE_CONFIG",
-          result: `Challenge on new device: ${snapshot.deviceConfiguration.challengeRequiredOnNewDevice}`,
+          result: `Challenge on new device: ${cognitoSnapshot.deviceConfiguration.challengeRequiredOnNewDevice}`,
         });
 
-        if (!snapshot.deviceConfiguration.challengeRequiredOnNewDevice) {
+        if (!cognitoSnapshot.deviceConfiguration.challengeRequiredOnNewDevice) {
           findings.push("WARNING: No device challenge - session hijack easier");
           return intensity > 5;
         }
 
         findings.push("Device challenge enabled - session hijack mitigated");
+        return false;
+      }
+
+      default:
+        return false;
+    }
+  }
+
+  private simulateS3Attack(
+    snapshot: S3Snapshot,
+    vector: string,
+    intensity: number,
+    timeline: TimelineEvent[],
+    findings: string[]
+  ): boolean {
+    switch (vector) {
+      case "public-access-test": {
+        timeline.push({
+          timestamp: new Date().toISOString(),
+          action: "CHECK_PUBLIC_ACCESS",
+          result: `Public access block: ${snapshot.publicAccessBlock}`,
+        });
+
+        if (!snapshot.publicAccessBlock) {
+          findings.push("CRITICAL: Public access block is disabled");
+          findings.push("Bucket may be publicly accessible");
+          return true;
+        }
+
+        findings.push("Public access block is enabled - bucket protected");
+        return false;
+      }
+
+      case "encryption-test": {
+        timeline.push({
+          timestamp: new Date().toISOString(),
+          action: "CHECK_ENCRYPTION",
+          result: `Encryption: ${snapshot.encryption || "none"}`,
+        });
+
+        if (!snapshot.encryption) {
+          findings.push("CRITICAL: No encryption configured");
+          findings.push("Data at rest is unencrypted");
+          return true;
+        }
+
+        findings.push(`Encryption enabled: ${snapshot.encryption}`);
+        return false;
+      }
+
+      case "versioning-test": {
+        timeline.push({
+          timestamp: new Date().toISOString(),
+          action: "CHECK_VERSIONING",
+          result: `Versioning: ${snapshot.versioning}`,
+        });
+
+        if (snapshot.versioning === "Disabled") {
+          findings.push("WARNING: Versioning is disabled");
+          findings.push("Data deletion or corruption cannot be recovered");
+          return intensity > 5;
+        }
+
+        findings.push("Versioning enabled - data protection active");
         return false;
       }
 

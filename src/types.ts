@@ -22,6 +22,25 @@ export type {
 } from "../plugins/aws-cognito/aws-cognito-plugin";
 
 // ===============================================================================
+// PROVIDER SNAPSHOT (Generic base for all provider snapshots)
+// ===============================================================================
+
+/**
+ * Base interface for any provider snapshot.
+ * Every plugin should produce snapshots compatible with this shape.
+ */
+export interface ProviderSnapshot {
+  /** Unique identifier for the resource (userPoolId, bucketName, tenantId, etc.) */
+  resourceId: string;
+  /** Provider plugin that produced this snapshot */
+  providerId: string;
+  /** ISO-8601 timestamp when snapshot was taken */
+  observedAt: string;
+  /** Arbitrary provider-specific data */
+  [key: string]: unknown;
+}
+
+// ===============================================================================
 // S3 TYPES
 // ===============================================================================
 
@@ -38,10 +57,15 @@ export interface S3Snapshot {
 // ===============================================================================
 
 export type Severity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
-export type AttackVector =
+// Core attack vectors with autocomplete; extensible via (string & {})
+export type CoreAttackVector =
   | "mfa-bypass" | "password-spray" | "token-replay" | "session-hijack"  // Cognito vectors
   | "public-access-test" | "encryption-test" | "versioning-test";        // S3 vectors
-export type Framework = "MITRE" | "NIST-CSF" | "SOC2";
+export type AttackVector = CoreAttackVector | (string & {});
+
+// Core frameworks with autocomplete; extensible via (string & {})
+export type CoreFramework = "MITRE" | "NIST-800-53" | "NIST-CSF" | "CIS" | "SOC2" | "ISO27001" | "PCI-DSS" | "CMMC" | "FedRAMP" | "HIPAA" | "GDPR" | "SOX" | "COBIT";
+export type Framework = CoreFramework | (string & {});
 export type EvidenceType = "positive" | "negative" | "exception";
 export type OperationType = "recon" | "mark" | "raid" | "chart" | "plunder" | "escape" | "compaction_summary";
 
@@ -190,6 +214,10 @@ export interface ChartResult {
     criteria: string[];
     description: string;
   };
+  /** Extensible framework mappings keyed by Framework string */
+  frameworks?: Record<Framework, {
+    controls: { controlId: string; controlName: string; status: string }[];
+  }>;
 }
 
 // ===============================================================================
@@ -206,7 +234,7 @@ export interface StateTransition {
 
 export interface ScopeGuard {
   guardId: string;
-  initialState: CognitoSnapshot;
+  initialState: CognitoSnapshot | Record<string, unknown>;
   active: boolean;
   createdAt: string;
   timeoutMs?: number;
@@ -249,13 +277,13 @@ export interface SimpleEscapeResult {
 
 export interface RollbackResult {
   rolledBack: boolean;
-  fromState: CognitoSnapshot;
-  toState: CognitoSnapshot;
+  fromState: CognitoSnapshot | Record<string, unknown>;
+  toState: CognitoSnapshot | Record<string, unknown>;
 }
 
 export interface ReleaseResult {
   restored: boolean;
-  finalState: CognitoSnapshot;
+  finalState: CognitoSnapshot | Record<string, unknown>;
 }
 
 export interface EscapeOptions {
@@ -440,14 +468,31 @@ export interface PluginAttackVector {
 }
 
 /**
+ * A single control reference within any compliance framework.
+ */
+export interface ControlRef {
+  controlId: string;
+  controlName?: string;
+  description?: string;
+}
+
+/**
  * Framework mapping for a drift field or attack vector.
  * Enables plugin-provided compliance framework mappings.
+ *
+ * The `controls` field is the extensible path (maps Framework -> ControlRef[]).
+ * Legacy flat fields (nist, soc2, etc.) are preserved for backwards compatibility.
  */
 export interface FrameworkMappingEntry {
   /** MITRE ATT&CK technique ID (e.g., "T1556", "T1556.006") */
   mitre: string;
   /** MITRE technique name for display */
   mitreName?: string;
+  /** MITRE tactic for context */
+  mitreTactic?: string;
+  /** Generic framework controls keyed by Framework string */
+  controls?: Partial<Record<Framework, ControlRef[]>>;
+  // Legacy flat fields preserved for backwards compat:
   /** NIST CSF control ID (e.g., "PR.AC-7") */
   nist?: string;
   /** NIST function description */

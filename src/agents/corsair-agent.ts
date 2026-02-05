@@ -20,6 +20,7 @@ import { ISCManager } from "../core/isc-manager";
 import { ISCExtractor } from "../core/isc-extractor";
 import type {
   CognitoSnapshot,
+  S3Snapshot,
   ReconResult,
   MarkResult,
   RaidResult,
@@ -27,6 +28,7 @@ import type {
   ChartResult,
   DriftFinding,
   Expectation,
+  Framework,
 } from "../types";
 
 /**
@@ -44,8 +46,10 @@ interface CorsairAgentOptions {
   missionsDir?: string;
 }
 
+type AnySnapshot = CognitoSnapshot | S3Snapshot | Record<string, unknown>;
+
 interface ExecutionContext {
-  snapshots: Map<string, CognitoSnapshot | S3Snapshot>;
+  snapshots: Map<string, AnySnapshot>;
   reconResults: Map<string, ReconResult>;
   markResults: Map<string, MarkResult>;
   raidResults: Map<string, RaidResult>;
@@ -338,7 +342,7 @@ export class CorsairAgent {
    */
   private async handleRaid(input: Record<string, unknown>): Promise<RaidResult> {
     const snapshotId = input.snapshotId as string;
-    const vector = input.vector as "mfa-bypass" | "password-spray" | "token-replay" | "session-hijack";
+    const vector = input.vector as string;
     const intensity = input.intensity as number;
     const dryRun = input.dryRun as boolean;
 
@@ -383,6 +387,7 @@ export class CorsairAgent {
    */
   private async handleChart(input: Record<string, unknown>): Promise<ChartResult> {
     const findingsId = input.findingsId as string;
+    const requestedFrameworks = input.frameworks as Framework[] | undefined;
     const collectedFindings: DriftFinding[] = [];
 
     // Try to find findings from MARK results by snapshotId
@@ -438,7 +443,11 @@ export class CorsairAgent {
 
     // If we have findings, chart them
     if (uniqueFindings.length > 0) {
-      const result = await this.corsair.chart(uniqueFindings);
+      const chartOptions: Record<string, unknown> = {};
+      if (requestedFrameworks) {
+        chartOptions.frameworks = requestedFrameworks;
+      }
+      const result = await this.corsair.chart(uniqueFindings, chartOptions);
       this.context.chartResults.set(findingsId, result);
       return result;
     }

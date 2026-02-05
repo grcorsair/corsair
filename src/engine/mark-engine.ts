@@ -15,6 +15,9 @@ import type {
   CorsairEvent,
 } from "../types";
 
+/** Any snapshot shape accepted by MarkEngine. CognitoSnapshot is the legacy default. */
+type AnySnapshot = CognitoSnapshot | Record<string, unknown>;
+
 export class MarkEngine {
   private emitter: EventEmitter;
   private events: CorsairEvent[];
@@ -24,7 +27,7 @@ export class MarkEngine {
     this.events = events;
   }
 
-  async mark(snapshot: CognitoSnapshot, expectations: Expectation[]): Promise<MarkResult> {
+  async mark(snapshot: AnySnapshot, expectations: Expectation[]): Promise<MarkResult> {
     const startTime = Date.now();
     const findings: DriftFinding[] = [];
 
@@ -53,10 +56,16 @@ export class MarkEngine {
       const driftFindings = findings.filter(f => f.drift);
       const maxSeverity = this.getDriftMaxSeverity(driftFindings);
 
+      // Extract targetId from snapshot — works for any provider shape
+      const targetId = (snapshot as Record<string, unknown>).userPoolId as string
+        || (snapshot as Record<string, unknown>).bucketName as string
+        || (snapshot as Record<string, unknown>).resourceId as string
+        || "unknown";
+
       const event: CorsairEvent = {
         type: "drift:detected",
         timestamp: new Date().toISOString(),
-        targetId: snapshot.userPoolId,
+        targetId,
         severity: maxSeverity,
         findings: driftFindings.map(d => `${d.field}: ${JSON.stringify(d.expected)} -> ${JSON.stringify(d.actual)}`),
         metadata: {

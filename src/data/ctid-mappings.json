@@ -1,0 +1,91 @@
+{
+  "_meta": {
+    "source": "Center for Threat-Informed Defense (CTID) ATT&CK → NIST 800-53 Mappings",
+    "url": "https://github.com/center-for-threat-informed-defense/attack-control-framework-mappings",
+    "description": "Maps MITRE ATT&CK techniques to NIST SP 800-53 Rev 5 controls",
+    "curated": true,
+    "version": "1.0.0"
+  },
+  "mappings": {
+    "T1078": {
+      "name": "Valid Accounts",
+      "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access",
+      "controls": ["AC-2", "AC-3", "AC-5", "AC-6", "AC-17", "IA-2", "IA-5", "IA-8", "CM-6", "SI-4"]
+    },
+    "T1110": {
+      "name": "Brute Force",
+      "tactic": "Credential Access",
+      "controls": ["AC-7", "IA-2", "IA-5", "SI-4", "SI-7"]
+    },
+    "T1110.001": {
+      "name": "Password Guessing",
+      "tactic": "Credential Access",
+      "controls": ["AC-7", "IA-2", "IA-5", "SI-4"]
+    },
+    "T1110.003": {
+      "name": "Password Spraying",
+      "tactic": "Credential Access",
+      "controls": ["AC-7", "IA-2", "IA-5", "SI-4"]
+    },
+    "T1556": {
+      "name": "Modify Authentication Process",
+      "tactic": "Credential Access, Defense Evasion, Persistence",
+      "controls": ["AC-2", "AC-3", "IA-2", "IA-5", "IA-8", "SI-3", "SI-4", "SI-7"]
+    },
+    "T1556.006": {
+      "name": "Multi-Factor Authentication Interception",
+      "tactic": "Credential Access, Defense Evasion, Persistence",
+      "controls": ["IA-2", "IA-5", "SI-4", "SI-7"]
+    },
+    "T1550": {
+      "name": "Use Alternate Authentication Material",
+      "tactic": "Defense Evasion, Lateral Movement",
+      "controls": ["AC-3", "AC-17", "IA-2", "IA-5", "SC-23"]
+    },
+    "T1550.001": {
+      "name": "Application Access Token",
+      "tactic": "Defense Evasion, Lateral Movement",
+      "controls": ["AC-3", "AC-17", "IA-2", "IA-5", "SC-23"]
+    },
+    "T1563": {
+      "name": "Remote Service Session Hijacking",
+      "tactic": "Lateral Movement",
+      "controls": ["AC-3", "AC-12", "AC-17", "SC-10", "SC-23"]
+    },
+    "T1530": {
+      "name": "Data from Cloud Storage Object",
+      "tactic": "Collection",
+      "controls": ["AC-3", "AC-4", "AC-6", "SC-7", "SC-28"]
+    },
+    "T1485": {
+      "name": "Data Destruction",
+      "tactic": "Impact",
+      "controls": ["AC-3", "AC-6", "CP-9", "CP-10", "SI-3", "SI-4"]
+    },
+    "T1190": {
+      "name": "Exploit Public-Facing Application",
+      "tactic": "Initial Access",
+      "controls": ["AC-3", "AC-4", "SC-7", "SI-2", "SI-3", "SI-4", "SI-10"]
+    },
+    "T1098": {
+      "name": "Account Manipulation",
+      "tactic": "Persistence, Privilege Escalation",
+      "controls": ["AC-2", "AC-3", "AC-5", "AC-6", "IA-2", "IA-5"]
+    },
+    "T1136": {
+      "name": "Create Account",
+      "tactic": "Persistence",
+      "controls": ["AC-2", "AC-3", "AC-6", "IA-2", "IA-5"]
+    },
+    "T1562": {
+      "name": "Impair Defenses",
+      "tactic": "Defense Evasion",
+      "controls": ["AC-3", "AC-6", "AU-6", "AU-12", "SI-4"]
+    },
+    "T1537": {
+      "name": "Transfer Data to Cloud Account",
+      "tactic": "Exfiltration",
+      "controls": ["AC-3", "AC-4", "SC-7", "SI-4"]
+    }
+  }
+}

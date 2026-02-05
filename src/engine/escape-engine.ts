@@ -18,11 +18,14 @@ import type {
   ReleaseResult,
 } from "../types";
 
+/** Any snapshot shape accepted by EscapeEngine */
+type AnySnapshot = CognitoSnapshot | Record<string, unknown>;
+
 export class EscapeEngine {
   private guards: Map<string, ScopeGuard> = new Map();
   private transitions: StateTransition[] = [];
   private lastGuardStatus: GuardStatus = { released: false, releasedOnError: false };
-  private intermediateStates: Map<string, CognitoSnapshot[]> = new Map();
+  private intermediateStates: Map<string, AnySnapshot[]> = new Map();
 
   escape(cleanupOps: Array<() => { operation: string; success: boolean }>): SimpleEscapeResult {
     const startTime = Date.now();
@@ -49,7 +52,7 @@ export class EscapeEngine {
     };
   }
 
-  async createGuard(snapshot: CognitoSnapshot, options: EscapeOptions = {}): Promise<ScopeGuard> {
+  async createGuard(snapshot: AnySnapshot, options: EscapeOptions = {}): Promise<ScopeGuard> {
     const guardId = `GUARD-${crypto.randomUUID().slice(0, 8)}`;
     const guard: ScopeGuard = {
       guardId,
@@ -75,7 +78,7 @@ export class EscapeEngine {
     return guard;
   }
 
-  async releaseGuard(guard: ScopeGuard, currentState: CognitoSnapshot): Promise<ReleaseResult> {
+  async releaseGuard(guard: ScopeGuard, currentState: AnySnapshot): Promise<ReleaseResult> {
     guard.active = false;
 
     return {
@@ -85,7 +88,7 @@ export class EscapeEngine {
   }
 
   async withEscapeGuard<T>(
-    snapshot: CognitoSnapshot,
+    snapshot: AnySnapshot,
     fn: (guard: ScopeGuard) => Promise<T>
   ): Promise<EscapeResult<T>> {
     const guard = await this.createGuard(snapshot);
@@ -151,7 +154,7 @@ export class EscapeEngine {
     return [...this.transitions];
   }
 
-  captureIntermediateState(guard: ScopeGuard, snapshot: CognitoSnapshot): void {
+  captureIntermediateState(guard: ScopeGuard, snapshot: AnySnapshot): void {
     const states = this.intermediateStates.get(guard.guardId) || [];
     states.push({ ...snapshot });
     this.intermediateStates.set(guard.guardId, states);

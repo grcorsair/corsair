@@ -12,12 +12,17 @@ import type {
   MfaConfiguration,
   Severity,
   AttackVector,
+  CoreAttackVector,
   Framework,
+  CoreFramework,
   EvidenceType,
   OperationType,
   PasswordPolicy,
   RiskConfiguration,
   CognitoSnapshot,
+  S3Snapshot,
+  ProviderSnapshot,
+  ControlRef,
   ReconMetadata,
   ReconResult,
   Expectation,
@@ -162,7 +167,7 @@ export class Corsair extends EventEmitter {
   // MARK
   // ===============================================================================
 
-  async mark(snapshot: CognitoSnapshot, expectations: Expectation[]): Promise<MarkResult> {
+  async mark(snapshot: CognitoSnapshot | Record<string, unknown>, expectations: Expectation[]): Promise<MarkResult> {
     return this.markEngine.mark(snapshot, expectations);
   }
 
@@ -170,7 +175,7 @@ export class Corsair extends EventEmitter {
   // RAID
   // ===============================================================================
 
-  async raid(snapshot: CognitoSnapshot, options: RaidOptions | RaidOptionsWithApproval): Promise<RaidResult> {
+  async raid(snapshot: CognitoSnapshot | Record<string, unknown>, options: RaidOptions | RaidOptionsWithApproval): Promise<RaidResult> {
     return this.raidEngine.raid(snapshot, options);
   }
 
@@ -222,16 +227,16 @@ export class Corsair extends EventEmitter {
     return this.escapeEngine.escape(cleanupOps);
   }
 
-  async createGuard(snapshot: CognitoSnapshot, options: EscapeOptions = {}): Promise<ScopeGuard> {
+  async createGuard(snapshot: CognitoSnapshot | Record<string, unknown>, options: EscapeOptions = {}): Promise<ScopeGuard> {
     return this.escapeEngine.createGuard(snapshot, options);
   }
 
-  async releaseGuard(guard: ScopeGuard, currentState: CognitoSnapshot): Promise<ReleaseResult> {
+  async releaseGuard(guard: ScopeGuard, currentState: CognitoSnapshot | Record<string, unknown>): Promise<ReleaseResult> {
     return this.escapeEngine.releaseGuard(guard, currentState);
   }
 
   async withEscapeGuard<T>(
-    snapshot: CognitoSnapshot,
+    snapshot: CognitoSnapshot | Record<string, unknown>,
     fn: (guard: ScopeGuard) => Promise<T>
   ): Promise<EscapeResult<T>> {
     return this.escapeEngine.withEscapeGuard(snapshot, fn);
@@ -249,7 +254,7 @@ export class Corsair extends EventEmitter {
     return this.escapeEngine.getGuardTransitions();
   }
 
-  captureIntermediateState(guard: ScopeGuard, snapshot: CognitoSnapshot): void {
+  captureIntermediateState(guard: ScopeGuard, snapshot: CognitoSnapshot | Record<string, unknown>): void {
     return this.escapeEngine.captureIntermediateState(guard, snapshot);
   }
 
@@ -283,12 +288,17 @@ export type {
   MfaConfiguration,
   Severity,
   AttackVector,
+  CoreAttackVector,
   Framework,
+  CoreFramework,
   EvidenceType,
   OperationType,
   PasswordPolicy,
   RiskConfiguration,
   CognitoSnapshot,
+  S3Snapshot,
+  ProviderSnapshot,
+  ControlRef,
   ReconMetadata,
   ReconResult,
   Expectation,

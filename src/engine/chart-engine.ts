@@ -1,8 +1,13 @@
 /**
  * CHART Engine - Framework Mapping
  *
- * Extracted from corsair-mvp.ts.
- * Maps security findings to compliance frameworks (MITRE -> NIST -> SOC2).
+ * Maps security findings to compliance frameworks using 3-tier resolution:
+ * 1. Plugin manifest mappings (highest priority — plugin knows its own controls)
+ * 2. CTID/SCF data-driven mappings (broad coverage via MappingLoader)
+ * 3. Legacy hardcoded fallback (safety net)
+ *
+ * The ChartResult retains legacy mitre/nist/soc2 fields for backwards compat
+ * while adding an extensible `frameworks` field for 12+ framework support.
  */
 
 import type {
@@ -13,13 +18,17 @@ import type {
   ChartResult,
   ComplianceMapping,
   EvidenceType,
+  Framework,
   RegisteredPlugin,
   PluginFrameworkMappings,
   FrameworkMappingEntry,
+  ControlRef,
 } from "../types";
+import { MappingLoader } from "../data/mapping-loader";
+import type { MappingDatabase } from "../data/mapping-loader";
 
 // ===============================================================================
-// FRAMEWORK MAPPING DATA (LEGACY FALLBACK)
+// FRAMEWORK MAPPING DATA (LEGACY FALLBACK - Tier 3)
 // ===============================================================================
 
 const DRIFT_TO_MITRE: Record<string, { technique: string; name: string }> = {
@@ -59,9 +68,23 @@ const ATTACK_VECTOR_TO_MITRE: Record<string, { technique: string; name: string }
 
 export class ChartEngine {
   private getPlugin: (providerId: string) => RegisteredPlugin | undefined;
+  private mappingDb: MappingDatabase | null = null;
 
   constructor(getPlugin: (providerId: string) => RegisteredPlugin | undefined) {
     this.getPlugin = getPlugin;
+  }
+
+  /**
+   * Initialize data-driven mappings (CTID + SCF). Call once on startup.
+   * Gracefully degrades to legacy fallback if data files are missing.
+   */
+  async initialize(dataDir?: string): Promise<void> {
+    try {
+      this.mappingDb = await MappingLoader.load(dataDir);
+    } catch {
+      // Graceful degradation: use legacy hardcoded mappings
+      this.mappingDb = null;
+    }
   }
 
   private getPluginMappings(providerId: string = "aws-cognito"): PluginFrameworkMappings | undefined {
@@ -69,67 +92,144 @@ export class ChartEngine {
     return plugin?.manifest.frameworkMappings;
   }
 
-  async chart(findings: DriftFinding[], options: ChartOptions & { providerId?: string } = {}): Promise<ChartResult> {
+  /**
+   * Resolve MITRE technique from a drift field using 3-tier priority:
+   * 1. Plugin manifest drift mappings
+   * 2. Legacy DRIFT_TO_MITRE hardcoded map
+   */
+  private resolveDriftToMitre(
+    field: string,
+    driftMappings: Record<string, FrameworkMappingEntry>
+  ): { mitreId: string; mitreName: string; mapping: FrameworkMappingEntry | { technique: string; name: string } } | null {
+    // Tier 1: Plugin manifest
+    const pluginMapping = driftMappings[field];
+    if (pluginMapping) {
+      return {
+        mitreId: pluginMapping.mitre,
+        mitreName: pluginMapping.mitreName || pluginMapping.mitre,
+        mapping: pluginMapping,
+      };
+    }
+
+    // Tier 3: Legacy hardcoded
+    const legacyMapping = DRIFT_TO_MITRE[field];
+    if (legacyMapping) {
+      return {
+        mitreId: legacyMapping.technique,
+        mitreName: legacyMapping.name,
+        mapping: legacyMapping,
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Resolve framework controls for a MITRE technique using 3-tier priority:
+   * 1. Plugin manifest controls field
+   * 2. CTID/SCF data-driven mappings
+   * 3. Legacy hardcoded MITRE→NIST→SOC2
+   */
+  private resolveFrameworks(
+    mitreId: string,
+    mapping: FrameworkMappingEntry | { technique: string; name: string },
+    requestedFrameworks?: Framework[]
+  ): Record<Framework, { controls: { controlId: string; controlName: string; status: string }[] }> {
+    const result: Record<string, { controls: { controlId: string; controlName: string; status: string }[] }> = {};
+
+    // Tier 1: Plugin manifest controls field
+    if ("controls" in mapping && mapping.controls) {
+      for (const [framework, controls] of Object.entries(mapping.controls)) {
+        if (requestedFrameworks && !requestedFrameworks.includes(framework as Framework)) continue;
+        result[framework] = {
+          controls: (controls as ControlRef[]).map(c => ({
+            controlId: c.controlId,
+            controlName: c.controlName || c.controlId,
+            status: "mapped",
+          })),
+        };
+      }
+    }
+
+    // Tier 2: CTID/SCF data-driven mappings (fill in gaps)
+    if (this.mappingDb) {
+      const dataFrameworks = MappingLoader.lookupMitre(this.mappingDb, mitreId);
+      for (const [framework, controls] of Object.entries(dataFrameworks)) {
+        if (requestedFrameworks && !requestedFrameworks.includes(framework as Framework)) continue;
+        if (result[framework]) continue; // Plugin mapping takes precedence
+        result[framework] = {
+          controls: controls!.map(c => ({
+            controlId: c.controlId,
+            controlName: c.controlName || c.controlId,
+            status: "mapped",
+          })),
+        };
+      }
+    }
+
+    return result;
+  }
+
+  async chart(findings: DriftFinding[], options: ChartOptions & { providerId?: string; frameworks?: Framework[] } = {}): Promise<ChartResult> {
     const providerId = options.providerId || "aws-cognito";
     const pluginMappings = this.getPluginMappings(providerId);
     const driftMappings = pluginMappings?.drift || {};
+    const requestedFrameworks = options.frameworks;
 
-    const mitreFindings: Set<string> = new Set();
     const nistControls: Set<string> = new Set();
     const soc2Controls: Set<string> = new Set();
     let primaryMitre: { technique: string; name: string; tactic: string; description: string } | null = null;
     let primaryNist: { function: string; category: string; controls: string[] } | null = null;
     let primarySoc2: { principle: string; criteria: string[]; description: string } | null = null;
+    const allFrameworks: Record<string, { controls: { controlId: string; controlName: string; status: string }[] }> = {};
 
     for (const finding of findings) {
       if (!finding.drift) continue;
 
-      const mapping = driftMappings[finding.field] || DRIFT_TO_MITRE[finding.field];
-      if (!mapping) continue;
+      const resolved = this.resolveDriftToMitre(finding.field, driftMappings);
+      if (!resolved) continue;
 
-      const mitreId = "mitre" in mapping ? mapping.mitre : mapping.technique;
-      const mitreName = "mitreName" in mapping ? (mapping.mitreName || mapping.mitre) : mapping.name;
-
-      mitreFindings.add(mitreId);
+      const { mitreId, mitreName, mapping } = resolved;
 
       if (!primaryMitre) {
         primaryMitre = {
           technique: mitreId,
           name: mitreName,
-          tactic: "Credential Access",
+          tactic: "description" in mapping && (mapping as FrameworkMappingEntry).mitreTactic
+            ? (mapping as FrameworkMappingEntry).mitreTactic!
+            : "Credential Access",
           description: "description" in mapping && mapping.description
             ? mapping.description
-            : `${mitreName} detected via ${finding.field} misconfiguration`
+            : `${mitreName} detected via ${finding.field} misconfiguration`,
         };
       }
 
-      const nistControl = "nist" in mapping ? mapping.nist : MITRE_TO_NIST[mitreId]?.control;
-      const nistFunction = "nistFunction" in mapping ? mapping.nistFunction : MITRE_TO_NIST[mitreId]?.function;
+      // Resolve legacy NIST-CSF and SOC2 fields (backwards compat)
+      const nistControl = "nist" in mapping ? (mapping as FrameworkMappingEntry).nist : MITRE_TO_NIST[mitreId]?.control;
+      const nistFunction = "nistFunction" in mapping ? (mapping as FrameworkMappingEntry).nistFunction : MITRE_TO_NIST[mitreId]?.function;
 
       if (nistControl) {
         nistControls.add(nistControl);
-
         if (!primaryNist) {
           primaryNist = {
             function: nistFunction || "Protect",
             category: "Access Control",
-            controls: [nistControl]
+            controls: [nistControl],
           };
         } else {
           primaryNist.controls.push(nistControl);
         }
 
-        const soc2Control = "soc2" in mapping ? mapping.soc2 : NIST_TO_SOC2[nistControl]?.control;
-        const soc2Description = "soc2Description" in mapping ? mapping.soc2Description : NIST_TO_SOC2[nistControl]?.description;
+        const soc2Control = "soc2" in mapping ? (mapping as FrameworkMappingEntry).soc2 : NIST_TO_SOC2[nistControl]?.control;
+        const soc2Description = "soc2Description" in mapping ? (mapping as FrameworkMappingEntry).soc2Description : NIST_TO_SOC2[nistControl]?.description;
 
         if (soc2Control) {
           soc2Controls.add(soc2Control);
-
           if (!primarySoc2) {
             primarySoc2 = {
               principle: "Common Criteria",
               criteria: [soc2Control],
-              description: soc2Description || "Control mapping"
+              description: soc2Description || "Control mapping",
             };
           } else {
             if (!primarySoc2.criteria.includes(soc2Control)) {
@@ -138,26 +238,46 @@ export class ChartEngine {
           }
         }
       }
+
+      // Resolve extensible frameworks (Tier 1 + Tier 2)
+      const frameworkMappings = this.resolveFrameworks(mitreId, mapping, requestedFrameworks);
+      for (const [fw, data] of Object.entries(frameworkMappings)) {
+        if (!allFrameworks[fw]) {
+          allFrameworks[fw] = { controls: [] };
+        }
+        for (const ctrl of data.controls) {
+          if (!allFrameworks[fw].controls.some(c => c.controlId === ctrl.controlId)) {
+            allFrameworks[fw].controls.push(ctrl);
+          }
+        }
+      }
     }
 
-    return {
+    const result: ChartResult = {
       mitre: primaryMitre || {
         technique: "N/A",
         name: "No drift detected",
         tactic: "N/A",
-        description: "No security misconfigurations found"
+        description: "No security misconfigurations found",
       },
       nist: primaryNist || {
         function: "N/A",
         category: "N/A",
-        controls: []
+        controls: [],
       },
       soc2: primarySoc2 || {
         principle: "N/A",
         criteria: [],
-        description: "No applicable controls"
-      }
+        description: "No applicable controls",
+      },
     };
+
+    // Only add frameworks field if we have data
+    if (Object.keys(allFrameworks).length > 0) {
+      result.frameworks = allFrameworks as Record<Framework, { controls: { controlId: string; controlName: string; status: string }[] }>;
+    }
+
+    return result;
   }
 
   async chartRaid(raidResult: RaidResult, providerId: string = "aws-cognito"): Promise<ComplianceMapping[]> {
@@ -165,9 +285,10 @@ export class ChartEngine {
     const attackVectorMappings = pluginMappings?.attackVectors || {};
 
     const mapping = attackVectorMappings[raidResult.vector] || ATTACK_VECTOR_TO_MITRE[raidResult.vector];
+    if (!mapping) return [];
 
-    const mitreId = "mitre" in mapping ? mapping.mitre : mapping.technique;
-    const mitreName = "mitreName" in mapping ? (mapping.mitreName || mapping.mitre) : mapping.name;
+    const mitreId = "mitre" in mapping ? mapping.mitre : (mapping as { technique: string }).technique;
+    const mitreName = "mitreName" in mapping ? (mapping.mitreName || mapping.mitre) : (mapping as { name: string }).name;
     const nistControl = "nist" in mapping ? mapping.nist : undefined;
     const nistFunction = "nistFunction" in mapping ? mapping.nistFunction : undefined;
     const soc2Control = "soc2" in mapping ? mapping.soc2 : undefined;
@@ -222,6 +343,27 @@ export class ChartEngine {
         evidenceType,
         evidenceRef: raidResult.raidId,
       });
+    }
+
+    // Add mappings for additional frameworks from CTID/SCF data
+    if (this.mappingDb) {
+      const dataFrameworks = MappingLoader.lookupMitre(this.mappingDb, mitreId);
+      for (const [framework, controls] of Object.entries(dataFrameworks)) {
+        if (framework === "NIST-CSF" || framework === "SOC2" || framework === "NIST-800-53") continue;
+        for (const ctrl of controls!) {
+          chain.push(`${framework}:${ctrl.controlId}`);
+        }
+        mappings.push({
+          id: `MAP-${crypto.randomUUID().slice(0, 8)}`,
+          findingId: raidResult.raidId,
+          framework: framework as Framework,
+          control: controls!.map(c => c.controlId).join(", "),
+          description: controls!.map(c => c.controlName || c.controlId).join(", "),
+          mappingChain: [...chain],
+          evidenceType,
+          evidenceRef: raidResult.raidId,
+        });
+      }
     }
 
     return mappings;

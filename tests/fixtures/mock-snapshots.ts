@@ -8,7 +8,7 @@
  *   import { compliantSnapshot, nonCompliantSnapshot } from "../fixtures/mock-snapshots";
  */
 
-import type { CognitoSnapshot } from "../../src/corsair-mvp";
+import type { CognitoSnapshot, S3Snapshot } from "../../src/corsair-mvp";
 
 /**
  * Compliant snapshot - MFA ON, strong password policy, risk config enabled
@@ -149,6 +149,61 @@ export const noRiskConfigSnapshot: CognitoSnapshot = {
   },
   observedAt: new Date().toISOString(),
 };
+
+// ===============================================================================
+// S3 SNAPSHOTS
+// ===============================================================================
+
+/**
+ * Compliant S3 snapshot - encryption on, public access blocked, versioning enabled
+ */
+export const compliantS3Snapshot: S3Snapshot = {
+  bucketName: "compliant-production-bucket",
+  publicAccessBlock: true,
+  encryption: "AES256",
+  versioning: "Enabled",
+  logging: true,
+};
+
+/**
+ * Non-compliant S3 snapshot - no encryption, public access open, versioning off
+ */
+export const nonCompliantS3Snapshot: S3Snapshot = {
+  bucketName: "legacy-dev-bucket",
+  publicAccessBlock: false,
+  encryption: null,
+  versioning: "Disabled",
+  logging: false,
+};
+
+/**
+ * Partially compliant S3 snapshot - some controls enabled
+ */
+export const partialS3Snapshot: S3Snapshot = {
+  bucketName: "staging-bucket",
+  publicAccessBlock: true,
+  encryption: null,
+  versioning: "Disabled",
+  logging: true,
+};
+
+/**
+ * Factory function to create custom S3 snapshot
+ */
+export function createMockS3Snapshot(overrides: Partial<S3Snapshot> = {}): S3Snapshot {
+  return {
+    bucketName: `test-bucket-${Date.now()}`,
+    publicAccessBlock: false,
+    encryption: null,
+    versioning: "Disabled",
+    logging: false,
+    ...overrides,
+  };
+}
+
+// ===============================================================================
+// COGNITO FACTORY
+// ===============================================================================
 
 /**
  * Factory function to create custom snapshot for specific test cases

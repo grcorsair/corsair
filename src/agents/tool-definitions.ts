@@ -101,11 +101,9 @@ This is the main offensive primitive. It simulates real-world attacks to validat
 security controls actually work under adversarial conditions. Always use dryRun: true
 unless explicitly authorized for destructive testing.
 
-Attack vectors:
-- mfa-bypass: Test MFA enforcement and bypass scenarios
-- password-spray: Test password policy strength
-- token-replay: Test token handling and replay protection
-- session-hijack: Test session management controls
+Attack vectors by service:
+- **Cognito**: mfa-bypass, password-spray, token-replay, session-hijack
+- **S3**: public-access-test, encryption-test, versioning-test
 
 Returns: Attack results including success/failure, findings, and timeline of actions.`,
   input_schema: {
@@ -117,8 +115,11 @@ Returns: Attack results including success/failure, findings, and timeline of act
       },
       vector: {
         type: "string",
-        enum: ["mfa-bypass", "password-spray", "token-replay", "session-hijack"],
-        description: "Attack vector to execute"
+        enum: [
+          "mfa-bypass", "password-spray", "token-replay", "session-hijack",
+          "public-access-test", "encryption-test", "versioning-test"
+        ],
+        description: "Attack vector to execute. Choose based on the target service."
       },
       intensity: {
         type: "integer",
@@ -176,14 +177,18 @@ Returns: Evidence file path, event count, and chain verification status.`,
  */
 export const chartTool: Tool = {
   name: "chart",
-  description: `Map security findings to compliance frameworks (MITRE ATT&CK, NIST-CSF, SOC2).
+  description: `Map security findings to compliance frameworks (12+ frameworks supported).
 
 This primitive automatically translates technical attack results into compliance language.
-It creates the connection between: Attack → MITRE Technique → NIST Control → SOC2 Criteria
+It creates the connection between: Attack → MITRE Technique → NIST 800-53 → any target framework.
+
+Supported frameworks include: MITRE, NIST-800-53, NIST-CSF, SOC2, ISO27001, CIS, PCI-DSS,
+CMMC, FedRAMP, HIPAA, GDPR, SOX, COBIT, and any custom framework with SCF mappings.
 
 Use this after MARK or RAID to understand compliance implications of findings.
 
-Returns: Structured mappings to MITRE ATT&CK techniques, NIST controls, and SOC2 criteria.`,
+Returns: Structured mappings including legacy MITRE/NIST/SOC2 fields plus an extensible
+\`frameworks\` field with per-framework control mappings.`,
   input_schema: {
     type: "object",
     properties: {
@@ -195,9 +200,12 @@ Returns: Structured mappings to MITRE ATT&CK techniques, NIST controls, and SOC2
         type: "array",
         items: {
           type: "string",
-          enum: ["MITRE", "NIST-CSF", "SOC2"]
+          enum: [
+            "MITRE", "NIST-800-53", "NIST-CSF", "SOC2", "ISO27001", "CIS",
+            "PCI-DSS", "CMMC", "FedRAMP", "HIPAA", "GDPR", "SOX", "COBIT"
+          ]
         },
-        description: "Which frameworks to map to (default: all three)"
+        description: "Which frameworks to map to (default: all available). Specify to narrow output."
       }
     },
     required: ["findingsId"]
