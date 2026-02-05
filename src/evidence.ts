@@ -10,7 +10,8 @@
  */
 
 import { createHash } from "crypto";
-import { appendFileSync, readFileSync, writeFileSync, existsSync } from "fs";
+import { appendFileSync, readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+import { dirname } from "path";
 
 import type {
   OperationType,
@@ -103,6 +104,12 @@ export class EvidenceEngine {
     hash = this.calculateHash(record);
     events.push({ ...record, hash });
     this.lastHash = hash;
+
+    // Ensure evidence directory exists before writing
+    const evidenceDir = dirname(evidencePath);
+    if (!existsSync(evidenceDir)) {
+      mkdirSync(evidenceDir, { recursive: true });
+    }
 
     // Write all events to JSONL file
     for (const event of events) {

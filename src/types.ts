@@ -22,11 +22,25 @@ export type {
 } from "../plugins/aws-cognito/aws-cognito-plugin";
 
 // ===============================================================================
+// S3 TYPES
+// ===============================================================================
+
+export interface S3Snapshot {
+  bucketName: string;
+  publicAccessBlock: boolean;
+  encryption: "AES256" | "aws:kms" | null;
+  versioning: "Enabled" | "Disabled";
+  logging: boolean;
+}
+
+// ===============================================================================
 // CORE TYPES
 // ===============================================================================
 
 export type Severity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
-export type AttackVector = "mfa-bypass" | "password-spray" | "token-replay" | "session-hijack";
+export type AttackVector =
+  | "mfa-bypass" | "password-spray" | "token-replay" | "session-hijack"  // Cognito vectors
+  | "public-access-test" | "encryption-test" | "versioning-test";        // S3 vectors
 export type Framework = "MITRE" | "NIST-CSF" | "SOC2";
 export type EvidenceType = "positive" | "negative" | "exception";
 export type OperationType = "recon" | "mark" | "raid" | "chart" | "plunder" | "escape" | "compaction_summary";
@@ -42,7 +56,8 @@ export interface ReconMetadata {
 }
 
 export interface ReconResult {
-  snapshot: CognitoSnapshot;
+  snapshotId: string;
+  snapshot: CognitoSnapshot | S3Snapshot;
   metadata: ReconMetadata;
   stateModified: boolean;
   durationMs: number;
