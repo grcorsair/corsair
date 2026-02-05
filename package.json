@@ -16,6 +16,8 @@
     "test:plunder": "bun test tests/primitives/test_plunder_evidence.test.ts",
     "test:chart": "bun test tests/primitives/test_chart_mapping.test.ts",
     "test:escape": "bun test tests/primitives/test_escape_rollback.test.ts",
+    "test:agents": "bun test tests/agents/",
+    "test:agent-isc": "bun test tests/agents/test_agent_isc_generation.test.ts",
     "corsair": "bun run corsair.ts",
     "strike": "bun run corsair.ts strike",
     "recon": "bun run corsair.ts recon",

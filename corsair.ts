@@ -19,8 +19,9 @@
  */
 
 import { CorsairAgent } from "./src/agents/corsair-agent";
-import { existsSync, mkdirSync } from "fs";
-import { dirname, resolve } from "path";
+import { existsSync, mkdirSync, readFileSync } from "fs";
+import { dirname, resolve, join } from "path";
+import type { ISCState } from "./src/types/isc";
 
 interface CLIOptions {
   target?: string;
@@ -188,6 +189,52 @@ function validateOutputPath(outputPath: string): void {
   }
 }
 
+/**
+ * Format ISC summary for CLI display.
+ */
+function formatISCSummary(iscPath: string): string {
+  if (!existsSync(iscPath)) {
+    return "  No ISC tracking data found";
+  }
+
+  try {
+    const content = readFileSync(iscPath, "utf-8");
+    const state: ISCState = JSON.parse(content);
+
+    const lines: string[] = [];
+    lines.push("");
+    lines.push("ISC (Ideal State Criteria) Summary");
+    lines.push("================================");
+    lines.push(`Mission ID: ${state.missionId}`);
+    lines.push(`Status: ${state.status}`);
+    lines.push("");
+    lines.push("Criteria Status:");
+    lines.push(`  Total:     ${state.satisfaction.total}`);
+    lines.push(`  Satisfied: ${state.satisfaction.satisfied}`);
+    lines.push(`  Failed:    ${state.satisfaction.failed}`);
+    lines.push(`  Pending:   ${state.satisfaction.pending}`);
+    lines.push("");
+    lines.push(`Satisfaction Rate: ${state.satisfaction.rate}%`);
+    lines.push("");
+    lines.push(`ISC File: ${iscPath}`);
+
+    // Add criteria details
+    if (state.criteria.length > 0) {
+      lines.push("");
+      lines.push("Criteria Details:");
+      for (const criterion of state.criteria) {
+        const statusIcon = criterion.satisfaction === "SATISFIED" ? "[PASS]" :
+                          criterion.satisfaction === "FAILED" ? "[FAIL]" : "[    ]";
+        lines.push(`  ${statusIcon} ${criterion.text}`);
+      }
+    }
+
+    return lines.join("\n");
+  } catch (error) {
+    return `  Error reading ISC file: ${error instanceof Error ? error.message : String(error)}`;
+  }
+}
+
 async function main() {
   const options = parseArgs();
 
@@ -305,6 +352,15 @@ Execute your mission with professional precision, pirate! 🏴‍☠️
     console.log(`💎 PLUNDER: ${context.plunderResults.size} evidence extractions`);
     console.log(`🗺️  CHART:   ${context.chartResults.size} compliance mappings`);
 
+    // Show ISC summary if available
+    const missionId = agent.getMissionId();
+    if (missionId) {
+      const iscPath = agent.getISCPath();
+      console.log("\n" + "=".repeat(80));
+      console.log("\n📋 " + formatISCSummary(iscPath));
+    }
+
+    console.log("\n" + "=".repeat(80));
     console.log(`\n✅ Evidence written to: ${outputPath}`);
     console.log("\n🏴‍☠️ Mission successful! Fair winds and following seas.");
   } catch (error) {

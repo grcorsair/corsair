@@ -39,450 +39,301 @@ Compliance evidence is generated as a **byproduct** of attacks, not as a goal.
 
 ## Architecture
 
-CORSAIR uses a **layered plugin architecture** that separates universal primitives (core) from provider-specific implementations (plugins). This design enables scaling from 1 to 100+ providers while maintaining cryptographic guarantees.
+CORSAIR uses a **three-phase architecture** that scales from atomic primitives to autonomous multi-agent execution.
 
-### System Architecture
+### Three-Phase Architecture
 
 ```mermaid
 graph TB
-    subgraph "User Layer"
-        CLI[CLI / API]
+    subgraph "Phase 1: Primitives Layer"
+        Primitives[6 Primitives<br/>RECON/MARK/RAID<br/>PLUNDER/CHART/ESCAPE]
+        Evidence[Evidence Engine<br/>SHA-256 Hash Chain]
+        Plugins[Plugin System<br/>aws-cognito reference]
     end
 
-    subgraph "Core Layer (Universal)"
-        Corsair[Corsair Orchestrator]
-        Registry[Plugin Registry]
-        EvidenceCtrl[Evidence Controller<br/>SHA-256 Hash Chain]
-        LaneSerial[Provider Lane Serializer<br/>Composite Keys]
-
-        Corsair --> Registry
-        Corsair --> EvidenceCtrl
-        Corsair --> LaneSerial
+    subgraph "Phase 2: Agentic Layer"
+        Agent[CorsairAgent<br/>Claude Sonnet 4.5]
+        ISC[ISC System<br/>Ideal State Criteria]
+        WorkDir[Work Directory<br/>Mission Lifecycle]
+        CLI[CLI Integration<br/>Autonomous Testing]
     end
 
-    subgraph "Plugin Layer (Provider-Specific)"
-        CognitoPlugin[AWS Cognito Plugin<br/>Identity Provider]
-        CrowdPlugin[CrowdStrike Plugin<br/>Endpoint Security]
-        JamfPlugin[JAMF Pro Plugin<br/>Device Management]
-        CustomPlugin[Custom Plugin<br/>Your Enterprise System]
-
-        CognitoPlugin -.implements.-> ProviderInterface[ProviderPlugin&lt;T&gt; Interface]
-        CrowdPlugin -.implements.-> ProviderInterface
-        JamfPlugin -.implements.-> ProviderInterface
-        CustomPlugin -.implements.-> ProviderInterface
+    subgraph "Phase 3: Multi-Agent Coordination"
+        Coord[CoordinatorAgent<br/>Parallel Orchestration]
+        ReconAgents[RECON Agents<br/>Parallel Scanning]
+        MarkAgents[MARK Agents<br/>Parallel Evaluation]
+        Metrics[Performance Metrics<br/>Speedup Tracking]
     end
 
-    subgraph "Provider Layer (External Systems)"
-        Cognito[AWS Cognito API]
-        CrowdStrike[CrowdStrike Falcon API]
-        JAMF[JAMF Pro API]
-        Custom[Your System API]
+    Primitives --> Agent
+    Agent --> Coord
+    ISC --> MarkAgents
+    Evidence --> WorkDir
 
-        CognitoPlugin --> Cognito
-        CrowdPlugin --> CrowdStrike
-        JamfPlugin --> JAMF
-        CustomPlugin --> Custom
-    end
-
-    CLI --> Corsair
-    Corsair --> CognitoPlugin
-    Corsair --> CrowdPlugin
-    Corsair --> JamfPlugin
-    Corsair --> CustomPlugin
-
-    style Corsair fill:#3b82f6,stroke:#1e40af,color:#fff
-    style ProviderInterface fill:#8b5cf6,stroke:#6d28d9,color:#fff
-    style EvidenceCtrl fill:#10b981,stroke:#059669,color:#fff
-    style LaneSerial fill:#10b981,stroke:#059669,color:#fff
+    style Primitives fill:#3b82f6,stroke:#1e40af,color:#fff
+    style Agent fill:#8b5cf6,stroke:#6d28d9,color:#fff
+    style Coord fill:#10b981,stroke:#059669,color:#fff
 ```
 
-**Key Components:**
-- **Core Layer**: Universal primitives (PLUNDER, CHART), evidence controller with SHA-256 hash chain, provider lane serializer with composite keys
-- **Plugin Layer**: Provider-specific implementations of RECON, RAID, ESCAPE via generic `ProviderPlugin<T>` interface
-- **Provider Layer**: External systems accessible via JSON APIs (identity, endpoint security, device management, custom)
-
-### Execution Flow
-
-```mermaid
-graph LR
-    subgraph "Phase 1: RECON (Read-Only)"
-        A[Plugin: Observe<br/>Provider State] --> B[Snapshot<br/>Current Config]
-    end
-
-    subgraph "Phase 2: MARK (Drift Detection)"
-        B --> C[Core: Compare<br/>vs Expectations]
-        C --> D{Drift<br/>Detected?}
-    end
-
-    subgraph "Phase 3: RAID (Chaos)"
-        D -->|Yes| E[Plugin: Execute<br/>Attack Vector]
-        E --> F[Lane Lock:<br/>provider:targetId]
-        F --> G[Simulate Chaos<br/>Intensity 1-10]
-    end
-
-    subgraph "Phase 4: PLUNDER (Evidence)"
-        G --> H[Core: Extract<br/>Evidence]
-        H --> I[JSONL Append<br/>SHA-256 Hash]
-        I --> J[Cryptographic<br/>Chain Link]
-    end
-
-    subgraph "Phase 5: CHART (Compliance)"
-        J --> K[Core: Map to<br/>Frameworks]
-        K --> L[MITRE ATT&CK<br/>SOC2 / ISO27001]
-    end
-
-    subgraph "Phase 6: ESCAPE (Rollback)"
-        L --> M[Plugin: Create<br/>Cleanup Function]
-        M --> N[Core: Execute<br/>Scope Guards]
-        N --> O[State Restored<br/>No Leaked Resources]
-    end
-
-    D -->|No| P[Log: No Action<br/>Needed]
-
-    style A fill:#3b82f6,stroke:#1e40af,color:#fff
-    style C fill:#10b981,stroke:#059669,color:#fff
-    style E fill:#ef4444,stroke:#dc2626,color:#fff
-    style H fill:#10b981,stroke:#059669,color:#fff
-    style K fill:#10b981,stroke:#059669,color:#fff
-    style M fill:#f59e0b,stroke:#d97706,color:#fff
-```
-
-**The 6-Primitive Lifecycle:**
-1. **RECON** (Blue): Plugin observes provider state read-only
-2. **MARK** (Green): Core detects drift from expected configuration
-3. **RAID** (Red): Plugin executes controlled chaos with lane-level serialization
-4. **PLUNDER** (Green): Core extracts cryptographic evidence with hash chain
-5. **CHART** (Green): Core automatically maps to compliance frameworks
-6. **ESCAPE** (Orange): Plugin creates cleanup, core executes scope guards
+**Phase 1:** Core chaos engineering primitives with plugin architecture
+**Phase 2:** AI-powered autonomous testing with ISC criteria tracking
+**Phase 3:** Multi-agent parallel execution for enterprise scale
 
 ---
 
-## The Exception Drift Attack Pattern
+## ISC System (Ideal State Criteria)
 
-Traditional security testing asks: "Does MFA work?"
+CORSAIR uses **ISC** (Ideal State Criteria) to define and track security expectations. This system bridges human intuition with automated verification.
 
-Exception Drift asks: "What happens when MFA encounters temporal anomalies, geographic impossibilities, behavioral deviations, or protocol downgrades?"
+### What is ISC?
 
-We inject controlled chaos into authentication flows to discover:
-- **Temporal Drift**: Token replay windows, clock skew tolerance
-- **Geographic Drift**: Impossible travel detection, geofencing weaknesses
-- **Behavioral Drift**: Anomaly detection gaps, step-up auth failures
-- **Protocol Drift**: Fallback vulnerabilities, backup code abuse
+ISC criteria are **security expectations** that meet these requirements:
+- **8 words maximum**: Concise, actionable statements
+- **Binary outcomes**: PENDING → SATISFIED or FAILED
+- **Granular**: One security control per criterion
+- **Testable**: Automated verification via API
+
+### ISC Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: Agent generates ISC
+    PENDING --> SATISFIED: MARK verifies control exists
+    PENDING --> FAILED: Control missing or weak
+    SATISFIED --> [*]: Security expectation met
+    FAILED --> [*]: Security gap identified
+```
+
+### Example ISC Criteria
+
+```
+✅ "Public access block enabled at bucket level"
+✅ "Server-side encryption configured using AES-256 standard"
+✅ "Multi-factor authentication enforced for all user accounts"
+✅ "CloudTrail logging enabled with integrity validation"
+```
+
+### ISC Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| **ISCManager** | `src/core/isc-manager.ts` | Tracks ISC lifecycle and satisfaction |
+| **ISCExtractor** | `src/core/isc-extractor.ts` | Extracts ISC from agent responses |
+| **ISCIndex** | `src/core/isc-index.ts` | Searchable ISC database |
+| **ISCDistributor** | `src/core/isc-distributor.ts` | Distributes ISC to parallel agents |
+
+### How It Works
+
+1. **Generation**: CorsairAgent generates ISC from service security knowledge
+2. **Extraction**: ISCExtractor parses criteria from agent response
+3. **Persistence**: ISC.json saved to `missions/{missionId}/ISC.json`
+4. **Evaluation**: MARK primitive verifies each criterion against reality
+5. **Tracking**: ISCManager updates satisfaction status (SATISFIED/FAILED)
+
+---
+
+## Work Directory System
+
+CORSAIR maintains structured mission directories for complete audit trails.
+
+### Directory Structure
+
+```
+missions/
+  mission_YYYYMMDD_HHMMSS_random/
+    mission-metadata.json  # Mission configuration
+    mission.log            # Execution log
+    ISC.json               # Generated criteria
+    evidence/              # PLUNDER artifacts
+```
+
+### Mission Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: Mission created
+    PENDING --> IN_PROGRESS: Agent starts execution
+    IN_PROGRESS --> COMPLETED: All ISC satisfied
+    IN_PROGRESS --> FAILED: Critical failure
+    IN_PROGRESS --> INTERRUPTED: User/timeout stop
+    COMPLETED --> [*]
+    FAILED --> [*]
+    INTERRUPTED --> IN_PROGRESS: Resume mission
+```
+
+### Mission Phases
+
+Each mission tracks progress through the 6-primitive lifecycle:
+
+```
+RECON → MARK → RAID → PLUNDER → CHART → ESCAPE
+```
+
+- **RECON**: Reconnaissance (read-only)
+- **MARK**: Drift detection (ISC evaluation)
+- **RAID**: Controlled chaos injection
+- **PLUNDER**: Evidence extraction
+- **CHART**: Framework mapping (SOC2, ISO27001, NIST, MITRE)
+- **ESCAPE**: Cleanup and rollback
+
+---
+
+## Multi-Agent Coordination (Phase 3)
+
+CORSAIR scales via **parallel agent execution** for enterprise workloads.
+
+### Coordination Architecture
+
+```mermaid
+graph TB
+    Coordinator[CoordinatorAgent<br/>Orchestrator] --> ResourceSplitter[Resource Splitter<br/>Work Distribution]
+    Coordinator --> ISCDistributor[ISC Distributor<br/>Criteria Assignment]
+
+    ResourceSplitter --> ReconAgent1[RECON Agent 1<br/>Resources 1-10]
+    ResourceSplitter --> ReconAgent2[RECON Agent 2<br/>Resources 11-20]
+    ResourceSplitter --> ReconAgentN[RECON Agent N<br/>Resources N]
+
+    ISCDistributor --> MarkAgent1[MARK Agent 1<br/>ISC subset A]
+    ISCDistributor --> MarkAgent2[MARK Agent 2<br/>ISC subset B]
+    ISCDistributor --> MarkAgentN[MARK Agent N<br/>ISC subset N]
+
+    ReconAgent1 --> Aggregator[Result Aggregator]
+    ReconAgent2 --> Aggregator
+    ReconAgentN --> Aggregator
+
+    MarkAgent1 --> Aggregator
+    MarkAgent2 --> Aggregator
+    MarkAgentN --> Aggregator
+
+    style Coordinator fill:#3b82f6,stroke:#1e40af,color:#fff
+    style ResourceSplitter fill:#10b981,stroke:#059669,color:#fff
+    style ISCDistributor fill:#10b981,stroke:#059669,color:#fff
+    style Aggregator fill:#f59e0b,stroke:#d97706,color:#fff
+```
+
+### Agent Specializations
+
+| Agent Type | Parallelism | Purpose | Coordination |
+|------------|-------------|---------|--------------|
+| **RECON** | ✅ Parallel | Resource discovery | Resource splitting |
+| **MARK** | ✅ Parallel | ISC evaluation | ISC distribution |
+| **RAID** | ❌ Single | Attack execution | Sequential only |
+
+### Agent Lifecycle
+
+```
+SPAWNING → RUNNING → COMPLETED / FAILED / TIMEOUT
+```
+
+Each agent maintains:
+- **Agent ID**: Unique identifier (e.g., `recon-agent-0`)
+- **Work Directory**: `agents/{agentId}/`
+- **Status File**: `agent-status.json`
+- **Output**: `snapshot-partial.json` or `drift-findings.json`
+
+### Performance Metrics
+
+The coordinator tracks:
+- **Speedup factor**: Parallel performance vs sequential
+- **Resources per second**: Throughput measurement
+- **Per-phase duration**: RECON, MARK, RAID timing
+- **Agent health**: Success/failure rates
+
+---
+
+## CLI Usage
+
+CORSAIR provides a command-line interface for autonomous security testing.
+
+### Basic Usage
+
+```bash
+# Set credentials
+export ANTHROPIC_API_KEY=your_key_here
+export AWS_PROFILE=your_profile
+
+# Run mission with automatic ISC generation
+bun run corsair --target us-west-2_ABC123 --service cognito
+```
+
+### CLI Options
+
+| Flag | Alias | Description | Default |
+|------|-------|-------------|---------|
+| `--target` | `-t` | Target resource ID (User Pool ID, bucket name) | Required |
+| `--service` | `-s` | Service type (`cognito` \| `s3`) | Required |
+| `--output` | `-o` | Custom evidence output path | `./evidence/corsair-{timestamp}.jsonl` |
+| `--model` | `-m` | Model selection (`sonnet` \| `haiku` \| `auto`) | `sonnet` |
+| `--max-turns` | | Maximum agent turns before timeout | `20` |
+| `--quiet` | `-q` | Suppress verbose output | `false` |
+| `--source` | | Data source (`aws` \| `fixture`) | `aws` |
+
+### ISC Workflow Example
+
+```bash
+# Run autonomous mission
+bun run corsair --target my-user-pool --service cognito \
+  --output ./audits/q1-2026/cognito-audit.jsonl
+
+# Agent will:
+# 1. Generate ISC criteria from security knowledge
+#    → "Multi-factor authentication enforced for all accounts"
+#    → "Password policy requires 14 characters minimum"
+#    → "Account lockout enabled after failed attempts"
+#
+# 2. Execute RECON → MARK → RAID lifecycle
+#
+# 3. Track ISC status: PENDING → SATISFIED/FAILED
+#    ✅ SATISFIED: "MFA enforced" (SmsMfaConfiguration=ON)
+#    ❌ FAILED: "Password requires 14 chars" (found 8)
+#
+# 4. Output cryptographic evidence chain
+#    → ./audits/q1-2026/cognito-audit.jsonl
+#    → missions/{missionId}/ISC.json
+```
+
+### CI/CD Integration
+
+```bash
+# Jenkins pipeline example
+bun run corsair \
+  --target prod-user-pool \
+  --service cognito \
+  --output /var/jenkins/evidence/cognito-${BUILD_ID}.jsonl \
+  --quiet
+```
+
+---
 
 ## Quick Start
 
 ```bash
 # Clone and enter
-cd corsair-mvp
+git clone https://github.com/Arudjreis/corsair.git
+cd corsair
 
-# Launch your first attack (no framework selection required)
-bun run corsair strike mfa
+# Install dependencies
+bun install
 
-# That's it. Evidence is generated automatically.
-```
-
-## CLI Usage (Agentic Mode)
-
-CORSAIR includes an autonomous agent that can test AWS services using Claude AI:
-
-```bash
-# Basic usage - test Cognito User Pool
+# Set credentials
 export ANTHROPIC_API_KEY=your_key_here
 export AWS_PROFILE=your_profile
 
+# Run your first mission
 bun run corsair --target us-west-2_ABC123 --service cognito
 
-# Custom evidence output path (for CI/CD integration)
-bun run corsair \
-  --target us-west-2_ABC123 \
-  --service cognito \
-  --output ./audits/q1-2025/cognito-test.jsonl
-
-# Test S3 bucket with custom output
-bun run corsair \
-  --target my-bucket-name \
-  --service s3 \
-  --output ./evidence/s3-security-audit.jsonl
-
-# CI/CD pipeline integration
-bun run corsair \
-  --target prod-user-pool \
-  --service cognito \
-  --output /var/jenkins/evidence/cognito-${BUILD_ID}.jsonl
+# Check generated mission
+ls -la missions/mission_*
+# → ISC.json (generated criteria)
+# → mission-metadata.json (configuration)
+# → mission.log (execution log)
 ```
 
-**CLI Options:**
-- `--target, -t`: Target resource ID (User Pool ID or bucket name)
-- `--service, -s`: Service type (`cognito` | `s3`)
-- `--output, -o`: Custom evidence output path (default: `./evidence/corsair-{timestamp}.jsonl`)
-- `--source`: Data source (`aws` | `fixture`, default: `aws`)
-- `--model, -m`: Model selection (`sonnet` | `haiku` | `auto`, default: `sonnet`)
-- `--max-turns`: Maximum agent turns (default: 20)
-- `--quiet, -q`: Suppress verbose output
-- `--help, -h`: Show help message
-
-**Output Control:**
-By default, evidence is written to `./evidence/corsair-{timestamp}.jsonl`. The `--output` flag gives you full control:
-- **Local audits**: `./audits/2025-q1/security-test.jsonl`
-- **CI/CD pipelines**: `/var/jenkins/workspace/evidence/${BUILD_ID}.jsonl`
-- **Enterprise workflows**: `/mnt/compliance/evidence/${PROJECT}-${DATE}.jsonl`
-
-Evidence files use JSONL format with SHA-256 hash chains for cryptographic verification.
-
-## The First Command
-
-When you run `corsair strike mfa`, you're not configuring a compliance framework. You're launching an attack.
-
-```bash
-$ bun run corsair strike mfa
-
-   ██████╗ ██████╗ ██████╗ ███████╗ █████╗ ██╗██████╗
-  ██╔════╝██╔═══██╗██╔══██╗██╔════╝██╔══██╗██║██╔══██╗
-  ...
-
-[TARGET] mfa
-[VECTOR] Exception Drift (temporal)
-[INTENSITY] 5/10
-
-[DONE] Initializing attack vectors...
-[DONE] Mapping authentication surface...
-
->>> INJECTING EXCEPTION DRIFT
-────────────────────────────────────────────────────────────
-
->>> ATTACK COMPLETE
-────────────────────────────────────────────────────────────
-
-FINDINGS:
-   CRITICAL  MFA token replay possible within 30s window
-     └─ Exception: Time-based OTP accepts codes from previous period
-   WARNING  Excessive clock skew tolerance (>5 minutes)
-     └─ Exception: Authentication accepts tokens from future periods
-
-────────────────────────────────────────────────────────────
->>> EVIDENCE GENERATED (background)
-
-Mapped to controls:
-  + SOC2 CC6.1: Logical access security
-  + SOC2 CC6.6: System boundary protection
-  + ISO27001 A.9.4.2: Secure log-on procedures
-  + NIST-CSF PR.AC-7: Authentication mechanisms
-
-Evidence saved: ./corsair-evidence-1706731200000.json
-Report saved: ./corsair-evidence-1706731200000.md
-```
-
-## API (Plugin-First)
-
-CORSAIR uses a plugin-first architecture. Provider-specific logic lives in plugins, keeping the core generic.
-
-### Primary API (Recommended)
-
-```typescript
-import { Corsair } from "./src/corsair-mvp";
-
-const corsair = new Corsair();
-
-// Auto-discover plugins from plugins/ directory
-await corsair.initialize();  // Discovers aws-cognito, future plugins...
-
-// Or: await corsair.initialize("./custom-plugins");
-
-// Access discovered plugins
-const cognitoPlugin = corsair.getPlugin("aws-cognito");
-console.log(`Loaded: ${cognitoPlugin?.manifest.providerName} v${cognitoPlugin?.manifest.version}`);
-
-// List all attack vectors from plugin manifest
-for (const vector of cognitoPlugin?.manifest.attackVectors || []) {
-  console.log(`  - ${vector.id}: ${vector.name} (${vector.severity})`);
-}
-
-// Recon via plugin (provider-agnostic)
-const reconResult = await corsair.reconWithPlugin("aws-cognito", "us-west-2_ABC123");
-
-// Raid via plugin (attack vectors defined by plugin)
-const raidResult = await corsair.raidWithPlugin(
-  "aws-cognito",
-  reconResult.snapshot,
-  "mfa-bypass",
-  5  // intensity
-);
-
-// Or raid with approval gate for production safety
-const approvalGate = {
-  requiredSeverity: "CRITICAL",
-  approvers: ["security-lead@example.com"],
-  timeoutMs: 30000,
-  channel: "webhook"
-};
-
-const secureRaidResult = await corsair.raid(snapshot, {
-  vector: "mfa-bypass",
-  intensity: 9,
-  dryRun: true,
-  approvalGate,
-  requestApproval: async (req) => ({
-    approved: true,
-    approver: "security-lead@example.com",
-    timestamp: new Date().toISOString()
-  })
-});
-
-// Plunder (evidence extraction - universal)
-const evidence = await corsair.plunder(raidResult, "./evidence.jsonl");
-
-// Chart (framework mapping - universal)
-const mapping = await corsair.chartRaid(raidResult);
-```
-
-### Event Subscriptions (OpenClaw Pattern 2)
-
-CORSAIR supports pub/sub event subscriptions for real-time monitoring:
-
-```typescript
-import { Corsair, type CorsairEvent } from "./src/corsair-mvp";
-
-const corsair = new Corsair();
-
-// Subscribe to raid completion events
-corsair.on("raid:complete", (event: CorsairEvent) => {
-  console.log(`Raid: ${event.vector} on ${event.targetId}`);
-  console.log(`Success: ${event.success}, Severity: ${event.severity}`);
-  console.log(`Findings: ${event.findings?.join(", ")}`);
-});
-
-// Subscribe to drift detection events
-corsair.on("drift:detected", (event: CorsairEvent) => {
-  console.log(`Drift detected on ${event.targetId}`);
-  console.log(`Severity: ${event.severity}`);
-  console.log(`Drifts: ${event.findings?.join(", ")}`);
-});
-
-// Create event aggregator for summary statistics
-const aggregator = corsair.createEventAggregator();
-
-// Execute operations (events fire automatically)
-await corsair.raid(snapshot, { vector: "mfa-bypass", intensity: 5, dryRun: true });
-await corsair.mark(snapshot, [{ field: "mfaConfiguration", operator: "eq", value: "ON" }]);
-
-// Get aggregated summary
-const summary = aggregator.getSummary();
-console.log(`Total events: ${summary.totalEvents}`);
-console.log(`By type: ${JSON.stringify(summary.byType)}`);
-console.log(`By severity: ${JSON.stringify(summary.bySeverity)}`);
-
-// Query historical events with filters
-const criticalEvents = await corsair.queryEvents({
-  severity: "CRITICAL",
-  timeRange: {
-    start: new Date(Date.now() - 3600000).toISOString(),
-    end: new Date().toISOString()
-  }
-});
-```
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `corsair strike <target>` | Launch exception drift attack |
-| `corsair recon <target>` | Reconnaissance on target (uses plugin internally) |
-| `corsair evidence` | Generate compliance evidence |
-| `corsair help` | Show help |
-
-## Attack Targets
-
-| Target | What It Attacks |
-|--------|-----------------|
-| `mfa` | Multi-factor authentication flows |
-| `session-hijack` | Session management controls |
-| `privilege-escalation` | Authorization boundaries |
-| `token-replay` | Token handling mechanisms |
-
-## Drift Types
-
-| Drift | Chaos Injected |
-|-------|----------------|
-| `--drift=temporal` | Time-based anomalies (token replay, clock skew) |
-| `--drift=geographic` | Location-based anomalies (impossible travel, VPN egress) |
-| `--drift=behavioral` | Pattern-based anomalies (rate bursts, access patterns) |
-| `--drift=protocol` | Protocol-level anomalies (downgrades, fallbacks) |
-
-## Evidence Auto-Generation
-
-Every attack automatically maps findings to compliance frameworks:
-
-- **SOC2**: CC6.1, CC6.2, CC6.3, CC6.6, CC7.2
-- **ISO27001**: A.9.2.3, A.9.4.2, A.12.4.1
-- **NIST-CSF**: PR.AC-7, PR.DS-2
-
-You don't select a framework. You attack. The framework mappings happen in the background.
-
-### Framework Coverage
-
-| Framework | Controls Mapped | Coverage |
-|-----------|-----------------|----------|
-| SOC 2 | CC6.1, CC6.2, CC6.3, CC6.6, CC7.2 | Authentication, Authorization |
-| ISO 27001 | A.9.2.3, A.9.4.2, A.12.4.1 | Access Control, Logging |
-| NIST CSF | PR.AC-7, PR.DS-2 | Identity, Data Security |
-| MITRE ATT&CK | T1556.006, T1078 | Credential Access, Valid Accounts |
-
-> Framework mappings are defined per-plugin. See plugin manifests for complete mappings.
-
-## Philosophy
-
-**Old approach**: Configure framework → Define controls → Test against checklist → Generate evidence
-
-**CORSAIR approach**: Launch attack → Discover reality → Evidence emerges
-
-The difference is existential. Compliance tools ask "are you compliant?" CORSAIR asks "what actually happens when things go wrong?"
-
-## Technical Details
-
-- **Runtime**: Bun (TypeScript)
-- **Architecture**: Plugin-first, offensive chaos engineering, evidence as side-effect
-- **Plugin System**: Provider-agnostic core with aws-cognito reference implementation
-- **Output**: JSONL evidence (hash-chain integrity) + Markdown reports
-- **Framework Mapping**: Plugin-provided MITRE -> NIST-CSF -> SOC2 mappings
-- **Event System**: Pub/sub events with aggregation and query support
-- **Tests**: 205 tests across 15 files (primitives, patterns, plugin-system)
-
-## Project Structure
-
-```
-src/
-  corsair-mvp.ts       # Main Corsair class and primitives (1416 lines)
-  types.ts             # Type definitions (536 lines)
-  evidence.ts          # JSONL evidence engine with hash chain (270 lines)
-  compaction.ts        # Evidence compaction (OpenClaw Pattern 1) (208 lines)
-
-plugins/
-  aws-cognito/
-    aws-cognito.plugin.json   # Plugin manifest with framework mappings
-    aws-cognito-plugin.ts     # Plugin implementation
-    index.ts                  # Module exports
-
-tests/
-  primitives/          # Core primitive tests (RECON, MARK, RAID, etc.)
-  patterns/            # OpenClaw pattern tests (Events, Compaction, etc.)
-  plugin-system/       # Plugin discovery and type abstraction tests
-```
+---
 
 ## Plugin Architecture
 
-CORSAIR follows a plugin-first architecture with auto-discovery:
-
-```
-corsair-mvp/
-  src/
-    corsair-mvp.ts      # Core primitives (generic)
-  plugins/
-    aws-cognito/        # AWS Cognito provider plugin
-      aws-cognito-plugin.ts     # Plugin implementation
-      aws-cognito.plugin.json   # Plugin manifest (auto-discovered)
-      index.ts                  # Module exports
-    # Future: azure-ad/, okta/, auth0/
-```
+CORSAIR follows a plugin-first architecture with auto-discovery.
 
 ### Plugin Discovery
 
@@ -530,86 +381,151 @@ See `plugins/aws-cognito/` for reference implementation.
 
 ---
 
-## 🏴‍☠️ PAI Algorithm Integration
+## Evidence Auto-Generation
 
-CORSAIR missions are powered by the **PAI Algorithm** - a 7-phase execution engine that transforms chaos into verifiable evidence. The Algorithm provides strategic structure while bounded autonomy provides intelligence.
+Every attack automatically maps findings to compliance frameworks:
 
-### The 7 Phases (Pirate Edition)
+- **SOC2**: CC6.1, CC6.2, CC6.3, CC6.6, CC7.2
+- **ISO27001**: A.9.2.3, A.9.4.2, A.12.4.1
+- **NIST-CSF**: PR.AC-7, PR.DS-2
+- **MITRE ATT&CK**: T1556.006, T1078
 
-Every Corsair security testing mission follows this framework:
+You don't select a framework. You attack. The framework mappings happen in the background.
 
-1. **🔭 SCOUT THE WATERS** (OBSERVE) - RECON reconnaissance
-2. **🧭 CHART THE COURSE** (THINK) - Apply security knowledge
-3. **📜 PLOT THE RAID** (PLAN) - Choose attack vectors
-4. **⚔️ READY THE CANNONS** (BUILD) - Generate ISC criteria
-5. **🏴‍☠️ RAID!** (EXECUTE) - Execute attacks
-6. **💰 TALLY THE SPOILS** (VERIFY) - MARK + PLUNDER + CHART
-7. **📖 LOG THE VOYAGE** (LEARN) - ESCAPE cleanup + lessons learned
+### Framework Coverage
 
-### ISC as Security Expectations
+| Framework | Controls Mapped | Coverage |
+|-----------|-----------------|----------|
+| SOC 2 | CC6.1, CC6.2, CC6.3, CC6.6, CC7.2 | Authentication, Authorization |
+| ISO 27001 | A.9.2.3, A.9.4.2, A.12.4.1 | Access Control, Logging |
+| NIST CSF | PR.AC-7, PR.DS-2 | Identity, Data Security |
+| MITRE ATT&CK | T1556.006, T1078 | Credential Access, Valid Accounts |
 
-The Algorithm's **ISC (Ideal State Criteria)** format maps perfectly to security testing:
-- **8 words**: Concise, actionable expectations
-- **Binary**: Pass/fail clarity (no ambiguity)
-- **Granular**: One security control per criterion
-- **Testable**: Automated verification via API
+> Framework mappings are defined per-plugin. See plugin manifests for complete mappings.
 
-**Example ISC Criteria:**
+---
+
+## Philosophy
+
+**Old approach**: Configure framework → Define controls → Test against checklist → Generate evidence
+
+**CORSAIR approach**: Launch attack → Discover reality → Evidence emerges
+
+The difference is existential. Compliance tools ask "are you compliant?" CORSAIR asks "what actually happens when things go wrong?"
+
+---
+
+## Technical Details
+
+- **Runtime**: Bun (TypeScript)
+- **AI Models**: Claude Sonnet 4.5 (complex reasoning), Haiku 4.5 (fast operations)
+- **Architecture**: 3-phase (Primitives → Agentic → Multi-Agent)
+- **ISC System**: Automatic criteria extraction and tracking
+- **Evidence**: JSONL with SHA-256 hash chain integrity
+- **Plugin System**: Provider-agnostic core with aws-cognito reference
+- **Event System**: Pub/sub events with aggregation and query support
+- **Tests**: 32 test files across primitives, patterns, ISC, coordination, integration
+
+---
+
+## Project Structure
+
 ```
-✓ "Public access block enabled at bucket level"
-✓ "Server-side encryption configured using AES-256 standard"
-✓ "Multi-factor authentication enforced for all user accounts"
+src/
+  corsair-mvp.ts         # Core primitives (RECON, MARK, RAID, PLUNDER, CHART, ESCAPE)
+  types.ts               # Type definitions
+  evidence.ts            # JSONL evidence engine with hash chain
+  compaction.ts          # Evidence compaction (OpenClaw Pattern 1)
+
+  core/
+    isc-manager.ts       # ISC lifecycle tracking
+    isc-extractor.ts     # Extract ISC from agent responses
+    isc-index.ts         # Searchable ISC database
+    isc-distributor.ts   # Parallel ISC distribution to MARK agents
+    work-manager.ts      # Mission directory management
+    learning-manager.ts  # Cross-mission pattern learning
+    resource-splitter.ts # Parallel RECON distribution
+    mission-resumer.ts   # Resume interrupted missions
+    plugin-registry.ts   # Plugin discovery and loading
+
+  agents/
+    corsair-agent.ts     # Main CorsairAgent (Claude Sonnet 4.5)
+    coordinator-agent.ts # Multi-agent coordinator
+    tool-definitions.ts  # Agent tool schemas
+    system-prompts.ts    # Agent system prompts
+    agent-validator.ts   # Agent output validation
+
+  types/
+    isc.ts               # ISC type definitions
+    work.ts              # Work directory types
+    learning.ts          # Learning system types
+    coordination.ts      # Multi-agent coordination types
+
+plugins/
+  aws-cognito/
+    aws-cognito.plugin.json   # Plugin manifest with framework mappings
+    aws-cognito-plugin.ts     # Plugin implementation
+    index.ts                  # Module exports
+
+missions/                # Generated mission directories
+  mission_{timestamp}_{id}/
+    mission-metadata.json
+    mission.log
+    ISC.json
+    evidence/
+
+tests/
+  primitives/            # 6 primitive tests (RECON, MARK, RAID, PLUNDER, CHART, ESCAPE)
+  patterns/              # OpenClaw pattern tests (events, compaction, hash chain)
+  plugin-system/         # Plugin discovery and type abstraction tests
+  isc/                   # ISC extraction, persistence, integration tests
+  work/                  # Work directory and mission lifecycle tests
+  coordination/          # Multi-agent coordination tests
+  integration/           # End-to-end integration tests
+  learning/              # Learning system tests
+  cli/                   # CLI tests
 ```
 
-### Bounded Autonomy Architecture
+---
 
-CORSAIR uses **bounded autonomy** to scale security testing:
+## Testing
 
-| Developer Provides (Structure) | Agent Provides (Intelligence) |
-|--------------------------------|-------------------------------|
-| Snapshot types (S3Snapshot) | Security expectations (ISC criteria) |
-| API authentication | Attack vectors |
-| Service routing | Compliance mappings (MITRE/NIST/SOC2) |
-
-**Result**: 60% faster integration with better coverage than manual expectations.
-
-### Three-Tier Service Adapter Pattern
-
-Different services require different autonomy levels:
-
-- **Tier 1 (60%)**: Full autonomy - agent generates all ISC from security knowledge
-- **Tier 2 (30%)**: Bounded + Baseline - developer provides CRITICAL criteria, agent adds HIGH/MEDIUM
-- **Tier 3 (10%)**: Hybrid strict - developer provides all expectations, agent validates
-
-**Scaling**: 50 services in 160 hours vs 400 hours with pre-programmed approach.
-
-### Documentation
-
-- **[PAI Algorithm Integration](docs/PAI-ALGORITHM.md)** - Complete 7-phase framework with examples
-- **[Agentic Examples](src/agents/)** - Live demonstrations of Algorithm execution
-
-### Running the Agentic Layer
+Run the full test suite:
 
 ```bash
-# Set API key
-export ANTHROPIC_API_KEY=your_key_here
-export AWS_PROFILE=insecure-corsair
+# All tests
+bun test
 
-# Run PAI Algorithm demonstration
-bun run src/agents/example-pai-algorithm.ts
+# By category
+bun test tests/primitives/       # Core primitive tests
+bun test tests/isc/              # ISC system tests
+bun test tests/coordination/     # Multi-agent tests
+bun test tests/integration/      # E2E tests
 
-# Run S3 autonomous discovery
-bun run src/agents/example-s3.ts
+# Individual primitives
+bun run test:recon
+bun run test:mark
+bun run test:raid
 ```
 
-The agent autonomously:
-1. Generates security expectations from service knowledge
-2. Executes reconnaissance and attack simulations
-3. Verifies ISC criteria with cryptographic evidence
-4. Maps findings to compliance frameworks automatically
+---
+
+## Security Policy
+
+See [SECURITY.md](SECURITY.md) for vulnerability reporting.
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 
 ---
 
 ## License
 
 MIT
+
+---
+
+🏴‍☠️ **Autonomous. Adversarial. Agentic.**

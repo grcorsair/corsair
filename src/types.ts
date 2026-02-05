@@ -527,3 +527,17 @@ export interface InitializeResult {
 export interface CorsairOptions {
   evidencePath?: string;
 }
+
+// ===============================================================================
+// ISC (IDEAL STATE CRITERIA) TYPES
+// ===============================================================================
+
+export type {
+  ISCSatisfactionStatus,
+  ISCStatus,
+  ISCCriterion,
+  ISCSatisfaction,
+  ISCState,
+  ISCExtractionResult,
+  ISCVerificationResult,
+} from "./types/isc";
