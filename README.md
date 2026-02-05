@@ -424,7 +424,7 @@ The difference is existential. Compliance tools ask "are you compliant?" CORSAIR
 - **Evidence**: JSONL with SHA-256 hash chain integrity
 - **Plugin System**: Provider-agnostic core with aws-cognito reference
 - **Event System**: Pub/sub events with aggregation and query support
-- **Tests**: 32 test files across primitives, patterns, ISC, coordination, integration
+- **Tests**: 33 test files across primitives, patterns, ISC, coordination, integration
 
 ---
 
@@ -432,10 +432,20 @@ The difference is existential. Compliance tools ask "are you compliant?" CORSAIR
 
 ```
 src/
-  corsair-mvp.ts         # Core primitives (RECON, MARK, RAID, PLUNDER, CHART, ESCAPE)
+  corsair-mvp.ts         # Backwards-compat shim (re-exports from engine/)
   types.ts               # Type definitions
   evidence.ts            # JSONL evidence engine with hash chain
   compaction.ts          # Evidence compaction (OpenClaw Pattern 1)
+
+  engine/                # Core engine modules (decomposed from corsair-mvp.ts)
+    index.ts             # Corsair facade class + barrel re-exports
+    recon-engine.ts      # RECON: Read-only observation (fixture/aws/file modes)
+    mark-engine.ts       # MARK: Drift detection with event emission
+    raid-engine.ts       # RAID: Attack simulation + LaneSerializer
+    chart-engine.ts      # CHART: Framework mapping (MITRE→NIST→SOC2)
+    escape-engine.ts     # ESCAPE: Scope guards, rollback, RAII cleanup
+    event-engine.ts      # Event querying and aggregation
+    plugin-engine.ts     # Plugin discovery and registry
 
   core/
     isc-manager.ts       # ISC lifecycle tracking
@@ -446,7 +456,6 @@ src/
     learning-manager.ts  # Cross-mission pattern learning
     resource-splitter.ts # Parallel RECON distribution
     mission-resumer.ts   # Resume interrupted missions
-    plugin-registry.ts   # Plugin discovery and loading
 
   agents/
     corsair-agent.ts     # Main CorsairAgent (Claude Sonnet 4.5)
