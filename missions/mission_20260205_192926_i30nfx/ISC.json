@@ -1,0 +1,87 @@
+{
+  "missionId": "mission_20260205_192926_i30nfx",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770319771910-787auf",
+      "text": "Public access blocked at bucket level",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:29:31.910Z",
+      "confidence": 0.9999999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319771910-d7jnvc",
+      "text": "Encryption enabled using AES256 algorithm",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:29:31.910Z",
+      "confidence": 0.9999999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319771910-nnrfh3",
+      "text": "Versioning enabled for data protection",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:29:31.910Z",
+      "confidence": 0.9999999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319771910-1gzu4b",
+      "text": "Server access logging enabled completely",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:29:31.910Z",
+      "confidence": 0.9999999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319771910-jbtbd8",
+      "text": "Block public ACL policies on bucket",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:29:31.910Z",
+      "confidence": 0.9999999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319771910-7y9qul",
+      "text": "MFA delete protection required for objects",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:29:31.910Z",
+      "confidence": 0.9999999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319771910-1zluc8",
+      "text": "Object lock enabled for compliance mode",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:29:31.910Z",
+      "confidence": 0.9999999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319771910-u3xz4p",
+      "text": "CloudTrail logging configured for audit",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:29:31.910Z",
+      "confidence": 0.9999999999999999,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 8,
+    "total": 8,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:29:26.370Z",
+  "updatedAt": "2026-02-05T19:29:31.910Z"
+}

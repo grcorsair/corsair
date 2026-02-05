@@ -1,0 +1,60 @@
+{
+  "missionId": "mission_20260205_185546_yvmsg1",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770317752048-qm5nli",
+      "text": "Encryption enabled using AES256 or KMS algorithm",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:55:52.048Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317752048-2o7dtu",
+      "text": "Default encryption enforced on all bucket objects",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:55:52.048Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317752048-hmyxru",
+      "text": "KMS key rotation enabled for CMK encryption",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:55:52.048Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317752048-edtx5o",
+      "text": "Server-side encryption denies unencrypted uploads",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:55:52.048Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317752048-zo8yyy",
+      "text": "Encryption headers present in object metadata",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:55:52.048Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 5,
+    "total": 5,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T18:55:46.996Z",
+  "updatedAt": "2026-02-05T18:55:52.048Z"
+}

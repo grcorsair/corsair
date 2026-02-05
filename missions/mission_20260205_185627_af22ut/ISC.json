@@ -1,0 +1,24 @@
+{
+  "missionId": "mission_20260205_185627_af22ut",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770317793538-ehvfyx",
+      "text": "public access block",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:56:33.538Z",
+      "confidence": 0.7,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 1,
+    "total": 1,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T18:56:27.986Z",
+  "updatedAt": "2026-02-05T18:56:33.538Z"
+}

@@ -1,0 +1,69 @@
+{
+  "missionId": "mission_20260205_193747_6gg8v6",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770320273059-ygfdkl",
+      "text": "**\"Public access blocked at bucket level\"**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:37:53.059Z",
+      "confidence": 0.8666666666666667,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320273059-c3ryqp",
+      "text": "**\"ACL public read access disabled\"**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:37:53.059Z",
+      "confidence": 0.8666666666666667,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320273059-f1n8h3",
+      "text": "**\"ACL public write access disabled\"**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:37:53.059Z",
+      "confidence": 0.8666666666666667,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320273059-v0lcdn",
+      "text": "**\"Bucket policy prevents anonymous access\"**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:37:53.059Z",
+      "confidence": 0.8666666666666667,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320273059-54zdi5",
+      "text": "**\"Object ownership prevents public grants\"**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:37:53.059Z",
+      "confidence": 0.8666666666666667,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320273059-eqcq54",
+      "text": "**\"Public access block all enabled\"**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:37:53.059Z",
+      "confidence": 0.8666666666666667,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 6,
+    "total": 6,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:37:47.832Z",
+  "updatedAt": "2026-02-05T19:37:53.059Z"
+}

@@ -1,0 +1,60 @@
+{
+  "missionId": "mission_20260205_213547_in7y6q",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770327352545-iip8ar",
+      "text": "Encryption enabled using AES256 or KMS algorithm",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:35:52.546Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327352546-m5syhr",
+      "text": "Default encryption applied to all bucket objects",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:35:52.546Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327352546-1bckbd",
+      "text": "KMS key rotation enabled for managed keys",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:35:52.546Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327352546-rjyk1m",
+      "text": "Bucket denies unencrypted object uploads",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:35:52.546Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327352546-8ye4kh",
+      "text": "Encryption headers required in PUT requests",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:35:52.546Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 5,
+    "total": 5,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T21:35:47.324Z",
+  "updatedAt": "2026-02-05T21:35:52.546Z"
+}

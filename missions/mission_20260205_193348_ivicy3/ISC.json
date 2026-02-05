@@ -1,0 +1,87 @@
+{
+  "missionId": "mission_20260205_193348_ivicy3",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770320035020-2piaak",
+      "text": "Public access blocked at bucket level",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:33:55.020Z",
+      "confidence": 0.9874999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320035020-4m07ic",
+      "text": "Encryption enabled using AES256 algorithm",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:33:55.020Z",
+      "confidence": 0.9874999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320035020-qs72uz",
+      "text": "Versioning enabled for data protection",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:33:55.020Z",
+      "confidence": 0.9874999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320035020-txqr7z",
+      "text": "Server access logging enabled completely",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:33:55.020Z",
+      "confidence": 0.9874999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320035020-fcgjxw",
+      "text": "Block public access on all objects",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:33:55.020Z",
+      "confidence": 0.9874999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320035020-6at6ya",
+      "text": "Bucket policies restrict unauthorized access",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:33:55.020Z",
+      "confidence": 0.9874999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320035020-sepac9",
+      "text": "CloudTrail logging enabled for audit",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:33:55.020Z",
+      "confidence": 0.9874999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320035020-jm1fj3",
+      "text": "MFA delete protection enabled for objects",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:33:55.020Z",
+      "confidence": 0.9874999999999999,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 8,
+    "total": 8,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:33:48.248Z",
+  "updatedAt": "2026-02-05T19:33:55.020Z"
+}

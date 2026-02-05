@@ -1,0 +1,69 @@
+{
+  "missionId": "mission_20260205_200004_t9xjq7",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770321608589-cvdmn1",
+      "text": "Public access block enabled at bucket level",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T20:00:08.589Z",
+      "confidence": 0.9666666666666666,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321608589-13w661",
+      "text": "Block public access to bucket objects enabled",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T20:00:08.589Z",
+      "confidence": 0.9666666666666666,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321608589-yen7jp",
+      "text": "Block public access to bucket ACLs enabled",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T20:00:08.589Z",
+      "confidence": 0.9666666666666666,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321608589-ounzdi",
+      "text": "Ignore existing public access ACLs enforced",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T20:00:08.589Z",
+      "confidence": 0.9666666666666666,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321608589-tbbtg7",
+      "text": "Restrict public access via bucket policies enforced",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T20:00:08.589Z",
+      "confidence": 0.9666666666666666,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321608589-6ek8yu",
+      "text": "Default bucket ACL is private not public",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T20:00:08.589Z",
+      "confidence": 0.9666666666666666,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 6,
+    "total": 6,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T20:00:04.658Z",
+  "updatedAt": "2026-02-05T20:00:08.589Z"
+}

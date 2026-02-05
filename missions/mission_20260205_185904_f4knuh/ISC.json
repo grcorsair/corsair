@@ -1,0 +1,60 @@
+{
+  "missionId": "mission_20260205_185904_f4knuh",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770317950140-qllljv",
+      "text": "Encryption enabled using AES256 or KMS algorithm",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:59:10.140Z",
+      "confidence": 0.94,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317950140-y2wpds",
+      "text": "Default encryption applies to all objects uploaded",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:59:10.140Z",
+      "confidence": 0.94,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317950140-8dos98",
+      "text": "KMS key rotation enabled for customer managed keys",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:59:10.140Z",
+      "confidence": 0.94,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317950140-d6cmyw",
+      "text": "Bucket policy denies unencrypted object uploads",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:59:10.140Z",
+      "confidence": 0.94,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317950140-hnkqod",
+      "text": "Server-side encryption enforced at bucket level",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:59:10.140Z",
+      "confidence": 0.94,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 5,
+    "total": 5,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T18:59:04.726Z",
+  "updatedAt": "2026-02-05T18:59:10.140Z"
+}

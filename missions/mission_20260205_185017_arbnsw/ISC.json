@@ -1,0 +1,51 @@
+{
+  "missionId": "mission_20260205_185017_arbnsw",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770317422080-ubpi7x",
+      "text": "Unencrypted data at rest",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:50:22.080Z",
+      "confidence": 0.8250000000000001,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317422080-wznlkc",
+      "text": "Key compromise via disabled rotation",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:50:22.080Z",
+      "confidence": 0.8250000000000001,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317422080-9ar2ld",
+      "text": "Policy bypass via object-level overrides",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:50:22.080Z",
+      "confidence": 0.8250000000000001,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317422080-6b97hj",
+      "text": "Downgrade attacks",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:50:22.080Z",
+      "confidence": 0.8250000000000001,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 4,
+    "total": 4,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T18:50:17.719Z",
+  "updatedAt": "2026-02-05T18:50:22.080Z"
+}

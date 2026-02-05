@@ -1,0 +1,60 @@
+{
+  "missionId": "mission_20260205_192657_t3e4zg",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770319624044-7dvd9k",
+      "text": "Encryption enabled using AES256 or KMS algorithm",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:27:04.044Z",
+      "confidence": 0.94,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319624044-i3xxng",
+      "text": "Default encryption applies to all new objects",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:27:04.044Z",
+      "confidence": 0.94,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319624044-4v8nc6",
+      "text": "KMS key rotation enabled for key management",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:27:04.044Z",
+      "confidence": 0.94,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319624044-6ojvhn",
+      "text": "Bucket policy denies unencrypted object uploads",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:27:04.044Z",
+      "confidence": 0.94,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319624044-08xg0y",
+      "text": "Encryption headers present in all object metadata",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:27:04.044Z",
+      "confidence": 0.94,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 5,
+    "total": 5,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:26:57.535Z",
+  "updatedAt": "2026-02-05T19:27:04.044Z"
+}

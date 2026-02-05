@@ -1,0 +1,60 @@
+{
+  "missionId": "mission_20260205_194929_luiqiu",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770320974802-1bpmkr",
+      "text": "Encryption enabled using AES256 or KMS algorithm",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:49:34.802Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320974802-b6wg4b",
+      "text": "Default encryption configured at bucket level",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:49:34.802Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320974802-cpryef",
+      "text": "KMS key rotation enabled for key management",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:49:34.802Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320974802-uyf628",
+      "text": "Bucket blocks unencrypted object uploads",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:49:34.802Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320974802-q5o9ub",
+      "text": "Encryption applies to all existing objects",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:49:34.802Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 5,
+    "total": 5,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:49:29.551Z",
+  "updatedAt": "2026-02-05T19:49:34.802Z"
+}

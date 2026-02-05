@@ -1,0 +1,78 @@
+{
+  "missionId": "mission_20260205_185642_yxqk0q",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770317818460-11yez9",
+      "text": "**Public access blocked at bucket level**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:56:58.460Z",
+      "confidence": 0.8714285714285714,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317818460-k6bbj7",
+      "text": "**Encryption enabled using AES256 algorithm**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:56:58.460Z",
+      "confidence": 0.8714285714285714,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317818460-0zr2jt",
+      "text": "**Versioning enabled for data protection**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:56:58.460Z",
+      "confidence": 0.8714285714285714,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317818460-6cas8h",
+      "text": "**Server access logging enabled completely**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:56:58.460Z",
+      "confidence": 0.8714285714285714,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317818460-gm4jk9",
+      "text": "**Block public access settings enforced**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:56:58.460Z",
+      "confidence": 0.8714285714285714,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317818460-ntyosp",
+      "text": "**Default encryption configured for uploads**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:56:58.460Z",
+      "confidence": 0.8714285714285714,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317818460-rxtdjo",
+      "text": "**Bucket policy restricts unauthorized access**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:56:58.460Z",
+      "confidence": 0.8714285714285714,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 7,
+    "total": 7,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T18:56:42.695Z",
+  "updatedAt": "2026-02-05T18:56:58.460Z"
+}

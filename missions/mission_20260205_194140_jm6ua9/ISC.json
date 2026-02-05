@@ -1,0 +1,69 @@
+{
+  "missionId": "mission_20260205_194140_jm6ua9",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770320505546-madkoa",
+      "text": "Maximum 8 words per criterion ✓",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:41:45.546Z",
+      "confidence": 0.8,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320505546-15lz62",
+      "text": "Binary testable (PASS/FAIL) ✓",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:41:45.546Z",
+      "confidence": 0.8,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320505546-8w51jt",
+      "text": "State-based (describes configuration state) ✓",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:41:45.546Z",
+      "confidence": 0.8,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320505546-zkc755",
+      "text": "Granular (specific S3 settings) ✓",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:41:45.546Z",
+      "confidence": 0.8,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320505546-t5x848",
+      "text": "Observable from RECON data ✓",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:41:45.546Z",
+      "confidence": 0.8,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320505546-11alvo",
+      "text": "No action verbs ✓",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:41:45.546Z",
+      "confidence": 0.8,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 6,
+    "total": 6,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:41:40.547Z",
+  "updatedAt": "2026-02-05T19:41:45.546Z"
+}

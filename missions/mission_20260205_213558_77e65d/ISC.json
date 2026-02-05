@@ -1,0 +1,87 @@
+{
+  "missionId": "mission_20260205_213558_77e65d",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770327366849-0gisfe",
+      "text": "Encryption enabled using AES256 algorithm",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:36:06.849Z",
+      "confidence": 0.9999999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327366849-4vkko6",
+      "text": "Versioning enabled for data protection",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:36:06.849Z",
+      "confidence": 0.9999999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327366849-ink9l2",
+      "text": "Public access blocked at bucket level",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:36:06.849Z",
+      "confidence": 0.9999999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327366849-64og4k",
+      "text": "Server access logging enabled completely",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:36:06.849Z",
+      "confidence": 0.9999999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327366849-xecjgs",
+      "text": "Block public ACL policies on bucket",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:36:06.849Z",
+      "confidence": 0.9999999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327366849-hw6kwx",
+      "text": "MFA delete protection enabled for objects",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:36:06.849Z",
+      "confidence": 0.9999999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327366849-rs71xq",
+      "text": "SSL/TLS required for all connections",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:36:06.849Z",
+      "confidence": 0.9999999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327366849-8oum5g",
+      "text": "CloudWatch metrics enabled for monitoring",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:36:06.849Z",
+      "confidence": 0.9999999999999999,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 8,
+    "total": 8,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T21:35:58.608Z",
+  "updatedAt": "2026-02-05T21:36:06.849Z"
+}

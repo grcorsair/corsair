@@ -1,0 +1,14 @@
+{
+  "missionId": "mission_20260205_193831_m7lc9a",
+  "status": "COMPLETED",
+  "criteria": [],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 0,
+    "total": 0,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:38:31.341Z",
+  "updatedAt": "2026-02-05T19:38:36.983Z"
+}

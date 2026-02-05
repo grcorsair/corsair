@@ -1,0 +1,60 @@
+{
+  "missionId": "mission_20260205_194400_p0t7b4",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770320645055-rsnqi1",
+      "text": "Encryption enabled using AES256 or KMS algorithm",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:44:05.055Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320645055-3d3czh",
+      "text": "Server-side encryption configured at bucket level",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:44:05.055Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320645055-9xhpp4",
+      "text": "KMS key rotation enabled for managed keys",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:44:05.055Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320645055-rnwwsq",
+      "text": "Bucket default encryption applies to all objects",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:44:05.055Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320645055-bprps4",
+      "text": "Encryption key access restricted via IAM policies",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:44:05.055Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 5,
+    "total": 5,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:44:00.892Z",
+  "updatedAt": "2026-02-05T19:44:05.055Z"
+}

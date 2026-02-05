@@ -1,0 +1,14 @@
+{
+  "missionId": "mission_20260205_200226_g55on4",
+  "status": "COMPLETED",
+  "criteria": [],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 0,
+    "total": 0,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T20:02:26.055Z",
+  "updatedAt": "2026-02-05T20:02:31.591Z"
+}

@@ -1,0 +1,33 @@
+{
+  "missionId": "mission_20260205_185916_zzx1w5",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770317961097-b1cim5",
+      "text": "Target bucket name",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:59:21.097Z",
+      "confidence": 0.8,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317961097-ndabnm",
+      "text": "Any additional security domains you want covered",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:59:21.097Z",
+      "confidence": 0.8,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 2,
+    "total": 2,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T18:59:16.184Z",
+  "updatedAt": "2026-02-05T18:59:21.097Z"
+}

@@ -1,0 +1,14 @@
+{
+  "missionId": "mission_20260205_213531_qiy0pu",
+  "status": "COMPLETED",
+  "criteria": [],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 0,
+    "total": 0,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T21:35:31.856Z",
+  "updatedAt": "2026-02-05T21:35:36.765Z"
+}

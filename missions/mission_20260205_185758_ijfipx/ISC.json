@@ -1,0 +1,14 @@
+{
+  "missionId": "mission_20260205_185758_ijfipx",
+  "status": "COMPLETED",
+  "criteria": [],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 0,
+    "total": 0,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T18:57:58.348Z",
+  "updatedAt": "2026-02-05T18:58:05.835Z"
+}

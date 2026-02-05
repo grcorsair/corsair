@@ -1,0 +1,42 @@
+{
+  "missionId": "mission_20260205_193537_gpie02",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770320142751-6kslh9",
+      "text": "Encryption enabled using AES256 or KMS algorithm",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:35:42.751Z",
+      "confidence": 0.7666666666666666,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320142751-tkaw7c",
+      "text": "Default encryption rule applies to all objects",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:35:42.751Z",
+      "confidence": 0.7666666666666666,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320142751-w53zcc",
+      "text": "KMS key rotation enabled for managed keys",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:35:42.751Z",
+      "confidence": 0.7666666666666666,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 3,
+    "total": 3,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:35:37.965Z",
+  "updatedAt": "2026-02-05T19:35:42.751Z"
+}

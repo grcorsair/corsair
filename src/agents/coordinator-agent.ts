@@ -20,6 +20,7 @@
  */
 
 import * as fs from "node:fs";
+import * as fsp from "node:fs/promises";
 import * as path from "node:path";
 import type {
   AgentType,
@@ -38,6 +39,7 @@ import type {
 } from "../types/coordination";
 import type { ISCCriterion } from "../types/isc";
 import type { DriftFinding } from "../types";
+import { extractDateFromMissionId } from "../utils/mission-utils";
 
 /**
  * Default configuration values.
@@ -82,18 +84,22 @@ export class CorsairCoordinator {
    */
   async initialize(missionId: string): Promise<void> {
     // Extract date from mission ID
-    const dateDir = this.extractDateFromMissionId(missionId);
+    const dateDir = extractDateFromMissionId(missionId);
 
     // Create mission directory
     this.missionPath = path.join(this.options.workDir, "WORK", dateDir, missionId);
     this.agentsDir = path.join(this.missionPath, "agents");
 
-    if (!fs.existsSync(this.missionPath)) {
-      fs.mkdirSync(this.missionPath, { recursive: true });
+    try {
+      await fsp.access(this.missionPath);
+    } catch {
+      await fsp.mkdir(this.missionPath, { recursive: true });
     }
 
-    if (!fs.existsSync(this.agentsDir)) {
-      fs.mkdirSync(this.agentsDir, { recursive: true });
+    try {
+      await fsp.access(this.agentsDir);
+    } catch {
+      await fsp.mkdir(this.agentsDir, { recursive: true });
     }
 
     // Initialize state
@@ -148,8 +154,10 @@ export class CorsairCoordinator {
       const agentDir = path.join(this.agentsDir, agentId);
 
       // Create agent directory
-      if (!fs.existsSync(agentDir)) {
-        fs.mkdirSync(agentDir, { recursive: true });
+      try {
+        await fsp.access(agentDir);
+      } catch {
+        await fsp.mkdir(agentDir, { recursive: true });
       }
 
       // Create agent metadata
@@ -200,7 +208,7 @@ export class CorsairCoordinator {
         assignedAt: new Date().toISOString(),
       };
 
-      fs.writeFileSync(assignmentPath, JSON.stringify(assignment, null, 2), "utf-8");
+      await fsp.writeFile(assignmentPath, JSON.stringify(assignment, null, 2), "utf-8");
 
       // Update agent metadata
       const agent = this.state.agents.find(a => a.agentId === agentId);
@@ -253,7 +261,7 @@ export class CorsairCoordinator {
         assignedAt: new Date().toISOString(),
       };
 
-      fs.writeFileSync(assignmentPath, JSON.stringify(assignment, null, 2), "utf-8");
+      await fsp.writeFile(assignmentPath, JSON.stringify(assignment, null, 2), "utf-8");
 
       // Update agent metadata
       const agent = this.state.agents.find(a => a.agentId === split.agentId);
@@ -389,24 +397,22 @@ export class CorsairCoordinator {
       const agentDir = path.join(this.agentsDir, agentId);
       const snapshotPath = path.join(agentDir, "snapshot-partial.json");
 
-      if (fs.existsSync(snapshotPath)) {
-        try {
-          const partial: PartialSnapshot = JSON.parse(
-            fs.readFileSync(snapshotPath, "utf-8")
-          );
+      try {
+        await fsp.access(snapshotPath);
+        const content = await fsp.readFile(snapshotPath, "utf-8");
+        const partial: PartialSnapshot = JSON.parse(content);
 
-          // Merge snapshots
-          for (const [resourceId, snapshot] of Object.entries(partial.snapshots)) {
-            snapshots.set(resourceId, snapshot);
-            totalResources++;
-          }
-
-          agentCount++;
-        } catch (error) {
-          this.log(`Error reading snapshot from ${agentId}: ${error}`);
-          failedAgents++;
+        // Merge snapshots
+        for (const [resourceId, snapshot] of Object.entries(partial.snapshots)) {
+          snapshots.set(resourceId, snapshot);
+          totalResources++;
         }
-      } else {
+
+        agentCount++;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+          this.log(`Error reading snapshot from ${agentId}: ${error}`);
+        }
         failedAgents++;
       }
     }
@@ -449,22 +455,20 @@ export class CorsairCoordinator {
       const agentDir = path.join(this.agentsDir, agentId);
       const findingsPath = path.join(agentDir, "drift-findings.json");
 
-      if (fs.existsSync(findingsPath)) {
-        try {
-          const agentFindings: AgentDriftFindings = JSON.parse(
-            fs.readFileSync(findingsPath, "utf-8")
-          );
+      try {
+        await fsp.access(findingsPath);
+        const content = await fsp.readFile(findingsPath, "utf-8");
+        const agentFindings: AgentDriftFindings = JSON.parse(content);
 
-          // Merge findings
-          findings.push(...agentFindings.findings);
-          evaluatedCriteria.push(...agentFindings.evaluatedCriteria);
-          totalResources++;
-          agentCount++;
-        } catch (error) {
+        // Merge findings
+        findings.push(...agentFindings.findings);
+        evaluatedCriteria.push(...agentFindings.evaluatedCriteria);
+        totalResources++;
+        agentCount++;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
           this.log(`Error reading findings from ${agentId}: ${error}`);
-          failedAgents++;
         }
-      } else {
         failedAgents++;
       }
     }
@@ -498,7 +502,7 @@ export class CorsairCoordinator {
     }
 
     const statePath = path.join(this.missionPath, "coordinator-state.json");
-    fs.writeFileSync(statePath, JSON.stringify(this.state, null, 2), "utf-8");
+    await fsp.writeFile(statePath, JSON.stringify(this.state, null, 2), "utf-8");
 
     this.log("Coordinator state saved");
   }
@@ -511,18 +515,18 @@ export class CorsairCoordinator {
   async loadState(missionPath: string): Promise<CoordinatorState | null> {
     const statePath = path.join(missionPath, "coordinator-state.json");
 
-    if (!fs.existsSync(statePath)) {
-      return null;
-    }
-
     try {
-      const state: CoordinatorState = JSON.parse(fs.readFileSync(statePath, "utf-8"));
+      await fsp.access(statePath);
+      const content = await fsp.readFile(statePath, "utf-8");
+      const state: CoordinatorState = JSON.parse(content);
       this.state = state;
       this.missionPath = missionPath;
       this.agentsDir = path.join(missionPath, "agents");
       return state;
     } catch (error) {
-      this.log(`Error loading coordinator state: ${error}`);
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        this.log(`Error loading coordinator state: ${error}`);
+      }
       return null;
     }
   }
@@ -598,7 +602,7 @@ export class CorsairCoordinator {
     const agentDir = path.join(this.agentsDir, agentId);
     const statusPath = path.join(agentDir, "agent-status.json");
 
-    fs.writeFileSync(statusPath, JSON.stringify(metadata, null, 2), "utf-8");
+    await fsp.writeFile(statusPath, JSON.stringify(metadata, null, 2), "utf-8");
   }
 
   /**
@@ -608,27 +612,13 @@ export class CorsairCoordinator {
     const agentDir = path.join(this.agentsDir, agentId);
     const statusPath = path.join(agentDir, "agent-status.json");
 
-    if (!fs.existsSync(statusPath)) {
-      return null;
-    }
-
     try {
-      return JSON.parse(fs.readFileSync(statusPath, "utf-8"));
+      await fsp.access(statusPath);
+      const content = await fsp.readFile(statusPath, "utf-8");
+      return JSON.parse(content);
     } catch {
       return null;
     }
-  }
-
-  /**
-   * Extract date from mission ID.
-   */
-  private extractDateFromMissionId(missionId: string): string {
-    const match = missionId.match(/_(\d{4})(\d{2})(\d{2})_/);
-    if (match) {
-      const [, year, month, day] = match;
-      return `${year}-${month}-${day}`;
-    }
-    return new Date().toISOString().split("T")[0];
   }
 
   /**

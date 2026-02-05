@@ -1,0 +1,87 @@
+{
+  "missionId": "mission_20260205_194940_15nyro",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770320985801-xumepl",
+      "text": "Public access blocked at bucket level",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:49:45.801Z",
+      "confidence": 0.9749999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320985801-3kmdl8",
+      "text": "Encryption enabled using AES256 algorithm",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:49:45.801Z",
+      "confidence": 0.9749999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320985801-qyqe5l",
+      "text": "Versioning enabled for data protection",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:49:45.801Z",
+      "confidence": 0.9749999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320985801-qg6xwo",
+      "text": "Server access logging enabled completely",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:49:45.801Z",
+      "confidence": 0.9749999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320985801-ypgehf",
+      "text": "Object lock enabled for immutability",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:49:45.801Z",
+      "confidence": 0.9749999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320985801-1fzb3h",
+      "text": "IAM policies restrict access appropriately",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:49:45.801Z",
+      "confidence": 0.9749999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320985801-jl02c4",
+      "text": "CloudTrail logging enabled for audits",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:49:45.801Z",
+      "confidence": 0.9749999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320985801-xqjurd",
+      "text": "Bucket policies deny unencrypted uploads",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:49:45.801Z",
+      "confidence": 0.9749999999999999,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 8,
+    "total": 8,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:49:40.694Z",
+  "updatedAt": "2026-02-05T19:49:45.801Z"
+}

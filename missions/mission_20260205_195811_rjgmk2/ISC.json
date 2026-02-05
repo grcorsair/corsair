@@ -1,0 +1,60 @@
+{
+  "missionId": "mission_20260205_195811_rjgmk2",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770321497842-hzi9ny",
+      "text": "Encryption enabled using AES256 or KMS algorithm",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:58:17.842Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321497842-bdjgym",
+      "text": "Default encryption applied to all new objects",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:58:17.842Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321497842-ridl9o",
+      "text": "Bucket encryption not null and fully configured",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:58:17.842Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321497842-br144n",
+      "text": "KMS key rotation enabled for managed encryption",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:58:17.842Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321497842-lsthio",
+      "text": "Server-side encryption enforced without client-side gaps",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:58:17.842Z",
+      "confidence": 0.96,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 5,
+    "total": 5,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:58:11.908Z",
+  "updatedAt": "2026-02-05T19:58:17.842Z"
+}

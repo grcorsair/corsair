@@ -1,0 +1,78 @@
+{
+  "missionId": "mission_20260205_214103_bb1ue6",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770327670633-duewh5",
+      "text": "**Public access blocked at bucket level completely**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:41:10.633Z",
+      "confidence": 0.8857142857142858,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327670633-ii8eix",
+      "text": "**Encryption enabled using AES256 or KMS**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:41:10.633Z",
+      "confidence": 0.8857142857142858,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327670633-hdjmy8",
+      "text": "**Versioning enabled for data protection always**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:41:10.633Z",
+      "confidence": 0.8857142857142858,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327670633-l10wlj",
+      "text": "**Server access logging enabled for audit trail**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:41:10.633Z",
+      "confidence": 0.8857142857142858,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327670633-yq8v18",
+      "text": "**Block public access to objects enforced**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:41:10.633Z",
+      "confidence": 0.8857142857142858,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327670633-ajl6aa",
+      "text": "**ACL set to private bucket access only**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:41:10.633Z",
+      "confidence": 0.8857142857142858,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327670633-rf4qaz",
+      "text": "**SSL/TLS required for all bucket connections**",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:41:10.633Z",
+      "confidence": 0.8857142857142858,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 7,
+    "total": 7,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T21:41:03.804Z",
+  "updatedAt": "2026-02-05T21:41:10.633Z"
+}

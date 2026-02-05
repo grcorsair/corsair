@@ -1,0 +1,60 @@
+{
+  "missionId": "mission_20260205_193123_dmkfwh",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770319889556-bdyt37",
+      "text": "✅ Binary testable",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:31:29.556Z",
+      "confidence": 0.8,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319889556-hz0wmq",
+      "text": "✅ Observable",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:31:29.556Z",
+      "confidence": 0.8,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319889556-1eegc4",
+      "text": "✅ Specific",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:31:29.556Z",
+      "confidence": 0.8,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319889556-vtymlo",
+      "text": "✅ 8 words or fewer",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:31:29.556Z",
+      "confidence": 0.8,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319889556-iworen",
+      "text": "✅ State-based",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:31:29.556Z",
+      "confidence": 0.8,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 5,
+    "total": 5,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:31:23.719Z",
+  "updatedAt": "2026-02-05T19:31:29.557Z"
+}

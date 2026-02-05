@@ -1,0 +1,69 @@
+{
+  "missionId": "mission_20260205_213948_4z2ha3",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770327594650-g21ymn",
+      "text": "Public access blocked at bucket level",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:39:54.650Z",
+      "confidence": 0.95,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327594650-oq89r6",
+      "text": "Block public access to objects enabled",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:39:54.650Z",
+      "confidence": 0.95,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327594650-17mtsv",
+      "text": "IAM policies prevent unauthenticated access",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:39:54.650Z",
+      "confidence": 0.95,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327594650-0d6on3",
+      "text": "Bucket policy denies unencrypted uploads",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:39:54.650Z",
+      "confidence": 0.95,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327594651-uu7s6t",
+      "text": "ACLs disabled or set to private",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:39:54.651Z",
+      "confidence": 0.95,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770327594651-pafkg8",
+      "text": "CloudFront requires signed URLs always",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:39:54.651Z",
+      "confidence": 0.95,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 6,
+    "total": 6,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T21:39:48.519Z",
+  "updatedAt": "2026-02-05T21:39:54.651Z"
+}

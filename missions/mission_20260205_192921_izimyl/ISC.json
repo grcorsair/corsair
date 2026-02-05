@@ -1,0 +1,60 @@
+{
+  "missionId": "mission_20260205_192921_izimyl",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770319766369-hlm2fd",
+      "text": "Public access blocked at bucket level",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:29:26.369Z",
+      "confidence": 0.98,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319766369-afrs2l",
+      "text": "Block public access enabled for objects",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:29:26.369Z",
+      "confidence": 0.98,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319766369-u69df8",
+      "text": "Ignore public access lists completely",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:29:26.369Z",
+      "confidence": 0.98,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319766369-k0f6yg",
+      "text": "Block public ACLs on bucket",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:29:26.369Z",
+      "confidence": 0.98,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319766369-oirr8b",
+      "text": "Public access block status is true",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:29:26.369Z",
+      "confidence": 0.98,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 5,
+    "total": 5,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:29:21.304Z",
+  "updatedAt": "2026-02-05T19:29:26.369Z"
+}

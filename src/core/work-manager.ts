@@ -22,6 +22,7 @@
  */
 
 import * as fs from "node:fs";
+import * as fsp from "node:fs/promises";
 import * as path from "node:path";
 import type {
   MissionMetadata,
@@ -31,6 +32,7 @@ import type {
   WorkDirectory,
 } from "../types/work";
 import type { ISCState } from "../types/isc";
+import { extractDateFromMissionId } from "../utils/mission-utils";
 
 export class WorkManager {
   private basePath: string;
@@ -57,12 +59,16 @@ export class WorkManager {
     if (this.initialized) return;
 
     // Create base directories
-    if (!fs.existsSync(this.workPath)) {
-      fs.mkdirSync(this.workPath, { recursive: true });
+    try {
+      await fsp.access(this.workPath);
+    } catch {
+      await fsp.mkdir(this.workPath, { recursive: true });
     }
 
-    if (!fs.existsSync(this.learningPath)) {
-      fs.mkdirSync(this.learningPath, { recursive: true });
+    try {
+      await fsp.access(this.learningPath);
+    } catch {
+      await fsp.mkdir(this.learningPath, { recursive: true });
     }
 
     this.initialized = true;
@@ -90,15 +96,7 @@ export class WorkManager {
    * @returns Date string in YYYY-MM-DD format
    */
   extractDateFromMissionId(missionId: string): string {
-    // Match pattern: prefix_YYYYMMDD_...
-    const match = missionId.match(/_(\d{4})(\d{2})(\d{2})_/);
-    if (match) {
-      const [, year, month, day] = match;
-      return `${year}-${month}-${day}`;
-    }
-
-    // Fallback to current date
-    return new Date().toISOString().split("T")[0];
+    return extractDateFromMissionId(missionId);
   }
 
   /**
@@ -113,8 +111,10 @@ export class WorkManager {
     const dateDir = this.extractDateFromMissionId(missionId);
     const missionDir = path.join(this.workPath, dateDir, missionId);
 
-    if (!fs.existsSync(missionDir)) {
-      fs.mkdirSync(missionDir, { recursive: true });
+    try {
+      await fsp.access(missionDir);
+    } catch {
+      await fsp.mkdir(missionDir, { recursive: true });
     }
 
     return missionDir;
@@ -142,12 +142,14 @@ export class WorkManager {
     const missionDir = this.getMissionPath(metadata.missionId);
     const metadataPath = path.join(missionDir, "mission-metadata.json");
 
-    fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), "utf-8");
+    await fsp.writeFile(metadataPath, JSON.stringify(metadata, null, 2), "utf-8");
 
     // Initialize empty log file
     const logPath = path.join(missionDir, "mission.log");
-    if (!fs.existsSync(logPath)) {
-      fs.writeFileSync(logPath, "", "utf-8");
+    try {
+      await fsp.access(logPath);
+    } catch {
+      await fsp.writeFile(logPath, "", "utf-8");
     }
   }
 
@@ -161,18 +163,21 @@ export class WorkManager {
     const missionDir = this.getMissionPath(missionId);
     const metadataPath = path.join(missionDir, "mission-metadata.json");
 
-    if (!fs.existsSync(metadataPath)) {
+    try {
+      await fsp.access(metadataPath);
+    } catch {
       throw new Error(`Mission not found: ${missionId}`);
     }
 
-    const metadata: MissionMetadata = JSON.parse(fs.readFileSync(metadataPath, "utf-8"));
+    const content = await fsp.readFile(metadataPath, "utf-8");
+    const metadata: MissionMetadata = JSON.parse(content);
     metadata.status = status;
 
     if (status === "COMPLETED" || status === "FAILED") {
       metadata.completedAt = new Date().toISOString();
     }
 
-    fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), "utf-8");
+    await fsp.writeFile(metadataPath, JSON.stringify(metadata, null, 2), "utf-8");
   }
 
   /**
@@ -189,8 +194,8 @@ export class WorkManager {
 
     const logLine = JSON.stringify(logEntry) + "\n";
 
-    // Use appendFileSync for atomic append (handles concurrency better)
-    fs.appendFileSync(logPath, logLine, "utf-8");
+    // Use appendFile for atomic append (handles concurrency better)
+    await fsp.appendFile(logPath, logLine, "utf-8");
   }
 
   /**
@@ -203,11 +208,13 @@ export class WorkManager {
     const missionDir = this.getMissionPath(missionId);
     const metadataPath = path.join(missionDir, "mission-metadata.json");
 
-    if (!fs.existsSync(metadataPath)) {
+    try {
+      await fsp.access(metadataPath);
+      const content = await fsp.readFile(metadataPath, "utf-8");
+      return JSON.parse(content);
+    } catch {
       return null;
     }
-
-    return JSON.parse(fs.readFileSync(metadataPath, "utf-8"));
   }
 
   /**
@@ -219,12 +226,14 @@ export class WorkManager {
   async listMissionsByDate(date: string): Promise<MissionSummary[]> {
     const datePath = path.join(this.workPath, date);
 
-    if (!fs.existsSync(datePath)) {
+    try {
+      await fsp.access(datePath);
+    } catch {
       return [];
     }
 
     const missions: MissionSummary[] = [];
-    const entries = fs.readdirSync(datePath, { withFileTypes: true });
+    const entries = await fsp.readdir(datePath, { withFileTypes: true });
 
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
@@ -233,37 +242,35 @@ export class WorkManager {
       const missionDir = path.join(datePath, missionId);
       const metadataPath = path.join(missionDir, "mission-metadata.json");
 
-      if (fs.existsSync(metadataPath)) {
+      try {
+        await fsp.access(metadataPath);
+        const metadataContent = await fsp.readFile(metadataPath, "utf-8");
+        const metadata: MissionMetadata = JSON.parse(metadataContent);
+
+        // Try to load ISC for satisfaction rate
+        let satisfactionRate: number | undefined;
+        const iscPath = path.join(missionDir, "ISC.json");
         try {
-          const metadata: MissionMetadata = JSON.parse(
-            fs.readFileSync(metadataPath, "utf-8")
-          );
-
-          // Try to load ISC for satisfaction rate
-          let satisfactionRate: number | undefined;
-          const iscPath = path.join(missionDir, "ISC.json");
-          if (fs.existsSync(iscPath)) {
-            try {
-              const isc: ISCState = JSON.parse(fs.readFileSync(iscPath, "utf-8"));
-              satisfactionRate = isc.satisfaction.rate;
-            } catch {
-              // Ignore ISC parse errors
-            }
-          }
-
-          missions.push({
-            missionId: metadata.missionId,
-            target: metadata.target,
-            service: metadata.service,
-            status: metadata.status,
-            startedAt: metadata.startedAt,
-            completedAt: metadata.completedAt,
-            satisfactionRate,
-            path: missionDir,
-          });
+          await fsp.access(iscPath);
+          const iscContent = await fsp.readFile(iscPath, "utf-8");
+          const isc: ISCState = JSON.parse(iscContent);
+          satisfactionRate = isc.satisfaction.rate;
         } catch {
-          // Skip malformed metadata files
+          // Ignore ISC access/parse errors
         }
+
+        missions.push({
+          missionId: metadata.missionId,
+          target: metadata.target,
+          service: metadata.service,
+          status: metadata.status,
+          startedAt: metadata.startedAt,
+          completedAt: metadata.completedAt,
+          satisfactionRate,
+          path: missionDir,
+        });
+      } catch {
+        // Skip malformed metadata files
       }
     }
 
@@ -280,7 +287,7 @@ export class WorkManager {
     const missionDir = this.getMissionPath(missionId);
     const iscPath = path.join(missionDir, "ISC.json");
 
-    fs.writeFileSync(iscPath, JSON.stringify(iscState, null, 2), "utf-8");
+    await fsp.writeFile(iscPath, JSON.stringify(iscState, null, 2), "utf-8");
   }
 
   /**
@@ -293,12 +300,10 @@ export class WorkManager {
     const missionDir = this.getMissionPath(missionId);
     const iscPath = path.join(missionDir, "ISC.json");
 
-    if (!fs.existsSync(iscPath)) {
-      return null;
-    }
-
     try {
-      return JSON.parse(fs.readFileSync(iscPath, "utf-8"));
+      await fsp.access(iscPath);
+      const content = await fsp.readFile(iscPath, "utf-8");
+      return JSON.parse(content);
     } catch {
       return null;
     }
@@ -310,11 +315,13 @@ export class WorkManager {
    * @returns Array of date strings in YYYY-MM-DD format
    */
   async getActiveDates(): Promise<string[]> {
-    if (!fs.existsSync(this.workPath)) {
+    try {
+      await fsp.access(this.workPath);
+    } catch {
       return [];
     }
 
-    const entries = fs.readdirSync(this.workPath, { withFileTypes: true });
+    const entries = await fsp.readdir(this.workPath, { withFileTypes: true });
     const dates: string[] = [];
 
     for (const entry of entries) {
@@ -337,7 +344,7 @@ export class WorkManager {
     const missionDir = this.getMissionPath(missionId);
     const filePath = path.join(missionDir, filename);
 
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
+    await fsp.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
   }
 
   /**
@@ -351,12 +358,10 @@ export class WorkManager {
     const missionDir = this.getMissionPath(missionId);
     const filePath = path.join(missionDir, filename);
 
-    if (!fs.existsSync(filePath)) {
-      return null;
-    }
-
     try {
-      return JSON.parse(fs.readFileSync(filePath, "utf-8"));
+      await fsp.access(filePath);
+      const content = await fsp.readFile(filePath, "utf-8");
+      return JSON.parse(content);
     } catch {
       return null;
     }

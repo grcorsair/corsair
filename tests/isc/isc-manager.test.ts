@@ -332,9 +332,19 @@ describe("ISCManager - Edge Cases", () => {
   test("handles updating nonexistent criterion gracefully", () => {
     const manager = new ISCManager("mission_nonexistent");
 
-    // Should not throw, just log warning or no-op
-    expect(() => manager.updateSatisfaction("nonexistent", "SATISFIED")).not.toThrow();
+    // Should not throw, returns false to indicate failure
+    const updateResult = manager.updateSatisfaction("nonexistent", "SATISFIED");
+    expect(updateResult).toBe(false);
     expect(() => manager.verifyCriterion("nonexistent", true, "evidence")).not.toThrow();
+  });
+
+  test("updateSatisfaction returns true when criterion exists", () => {
+    const manager = new ISCManager("mission_test_return");
+    const id = manager.addCriterion("Test criterion");
+
+    const result = manager.updateSatisfaction(id, "SATISFIED");
+    expect(result).toBe(true);
+    expect(manager.getCriterion(id)?.satisfaction).toBe("SATISFIED");
   });
 
   test("handles loading from nonexistent file gracefully", async () => {

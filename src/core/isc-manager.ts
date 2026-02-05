@@ -13,6 +13,7 @@
  */
 
 import * as fs from "node:fs";
+import * as fsp from "node:fs/promises";
 import * as path from "node:path";
 import type {
   ISCCriterion,
@@ -149,16 +150,18 @@ export class ISCManager {
 
   /**
    * Update the satisfaction status of a criterion.
+   * @returns true if criterion was found and updated, false if criterion doesn't exist
    */
-  updateSatisfaction(id: string, satisfaction: ISCSatisfactionStatus): void {
+  updateSatisfaction(id: string, satisfaction: ISCSatisfactionStatus): boolean {
     const criterion = this.criteria.get(id);
     if (!criterion) {
-      // Gracefully handle nonexistent criterion
-      return;
+      // Criterion not found - return false to indicate failure
+      return false;
     }
 
     criterion.satisfaction = satisfaction;
     this.updatedAt = new Date().toISOString();
+    return true;
   }
 
   /**
@@ -270,13 +273,15 @@ export class ISCManager {
    */
   async persist(filePath: string): Promise<void> {
     const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+    try {
+      await fsp.access(dir);
+    } catch {
+      await fsp.mkdir(dir, { recursive: true });
     }
 
     const state = this.getState();
     const content = JSON.stringify(state, null, 2);
-    fs.writeFileSync(filePath, content, "utf-8");
+    await fsp.writeFile(filePath, content, "utf-8");
   }
 
   /**
@@ -284,11 +289,13 @@ export class ISCManager {
    * Returns a new ISCManager instance with the loaded state.
    */
   static async load(filePath: string): Promise<ISCManager> {
-    if (!fs.existsSync(filePath)) {
+    try {
+      await fsp.access(filePath);
+    } catch {
       throw new Error(`ISC file not found: ${filePath}`);
     }
 
-    const content = fs.readFileSync(filePath, "utf-8");
+    const content = await fsp.readFile(filePath, "utf-8");
     const state: ISCState = JSON.parse(content);
 
     const manager = new ISCManager(state.missionId);

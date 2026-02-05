@@ -1,0 +1,51 @@
+{
+  "missionId": "mission_20260205_192704_hhjmln",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770319630691-19zb9g",
+      "text": "BlockPublicAcls`: true",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:27:10.691Z",
+      "confidence": 0.8250000000000001,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319630691-wz3xcr",
+      "text": "BlockPublicPolicy`: true",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:27:10.691Z",
+      "confidence": 0.8250000000000001,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319630691-mgx41m",
+      "text": "S3 Account Public Access Block settings",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:27:10.691Z",
+      "confidence": 0.8250000000000001,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319630691-czk80o",
+      "text": "ACL permissions set to PRIVATE",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:27:10.691Z",
+      "confidence": 0.8250000000000001,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 4,
+    "total": 4,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:27:04.046Z",
+  "updatedAt": "2026-02-05T19:27:10.691Z"
+}

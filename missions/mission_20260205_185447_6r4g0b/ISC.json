@@ -1,0 +1,51 @@
+{
+  "missionId": "mission_20260205_185447_6r4g0b",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770317695740-kkcmpi",
+      "text": "Server-side encryption enabled using AES256 or aws:kms",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:54:55.740Z",
+      "confidence": 0.9249999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317695740-wavxhn",
+      "text": "Default encryption applies to all new objects automatically",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:54:55.740Z",
+      "confidence": 0.9249999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317695740-x0i0m4",
+      "text": "Encryption cannot be overridden by object-level headers",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:54:55.740Z",
+      "confidence": 0.9249999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770317695740-al2kcs",
+      "text": "Bucket denies unencrypted PUT requests with explicit policy",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:54:55.740Z",
+      "confidence": 0.9249999999999999,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 4,
+    "total": 4,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T18:54:47.810Z",
+  "updatedAt": "2026-02-05T18:54:55.740Z"
+}

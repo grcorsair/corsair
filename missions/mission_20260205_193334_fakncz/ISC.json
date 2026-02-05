@@ -1,0 +1,14 @@
+{
+  "missionId": "mission_20260205_193334_fakncz",
+  "status": "COMPLETED",
+  "criteria": [],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 0,
+    "total": 0,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:33:34.396Z",
+  "updatedAt": "2026-02-05T19:33:38.548Z"
+}

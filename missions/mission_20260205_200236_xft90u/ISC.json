@@ -1,0 +1,87 @@
+{
+  "missionId": "mission_20260205_200236_xft90u",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770321762673-fjxhl8",
+      "text": "Public access blocked at bucket level",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T20:02:42.673Z",
+      "confidence": 0.9624999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321762673-202zgg",
+      "text": "Encryption enabled using AES256 algorithm",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T20:02:42.673Z",
+      "confidence": 0.9624999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321762673-8slx1p",
+      "text": "Versioning enabled for data protection",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T20:02:42.673Z",
+      "confidence": 0.9624999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321762673-83j9mp",
+      "text": "Server access logging enabled completely",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T20:02:42.673Z",
+      "confidence": 0.9624999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321762673-84vpg9",
+      "text": "Object lock enabled for immutability",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T20:02:42.673Z",
+      "confidence": 0.9624999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321762673-kdufni",
+      "text": "Bucket policies restrict access appropriately",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T20:02:42.673Z",
+      "confidence": 0.9624999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321762673-in9jor",
+      "text": "CloudTrail logging captures all activities",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T20:02:42.673Z",
+      "confidence": 0.9624999999999999,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321762673-3tn4pw",
+      "text": "MFA delete protection enforces verification",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T20:02:42.673Z",
+      "confidence": 0.9624999999999999,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 8,
+    "total": 8,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T20:02:36.415Z",
+  "updatedAt": "2026-02-05T20:02:42.673Z"
+}

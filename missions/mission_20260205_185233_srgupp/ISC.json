@@ -1,0 +1,24 @@
+{
+  "missionId": "mission_20260205_185233_srgupp",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770317561701-9lbnkt",
+      "text": "Follows principle of \"deny by default",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T18:52:41.701Z",
+      "confidence": 0.8,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 1,
+    "total": 1,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T18:52:33.928Z",
+  "updatedAt": "2026-02-05T18:52:41.701Z"
+}

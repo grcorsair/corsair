@@ -1,0 +1,60 @@
+{
+  "missionId": "mission_20260205_193129_1w9oyy",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770319896136-9j4ics",
+      "text": "Encryption enabled using AES256 or KMS algorithm",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:31:36.136Z",
+      "confidence": 0.94,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319896136-iu50ig",
+      "text": "Default encryption bucket policy enforced for uploads",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:31:36.136Z",
+      "confidence": 0.94,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319896136-8zolql",
+      "text": "KMS key rotation enabled for key management",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:31:36.136Z",
+      "confidence": 0.94,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319896136-ft9lv3",
+      "text": "Bucket blocks unencrypted object uploads always",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:31:36.136Z",
+      "confidence": 0.94,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770319896136-68ct15",
+      "text": "Encryption key access restricted to minimum principals",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:31:36.136Z",
+      "confidence": 0.94,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 5,
+    "total": 5,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:31:29.558Z",
+  "updatedAt": "2026-02-05T19:31:36.136Z"
+}

@@ -1,0 +1,24 @@
+{
+  "missionId": "mission_20260205_213134_giwm45",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770327098937-ota04d",
+      "text": "all enabled",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T21:31:38.937Z",
+      "confidence": 0.7999999999999999,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 1,
+    "total": 1,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T21:31:34.904Z",
+  "updatedAt": "2026-02-05T21:31:38.937Z"
+}

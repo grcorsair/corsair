@@ -1,0 +1,69 @@
+{
+  "missionId": "mission_20260205_195508_np442i",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770321313646-ed84pd",
+      "text": "Public access blocked at bucket level",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:55:13.646Z",
+      "confidence": 0.95,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321313646-120tzb",
+      "text": "Block public access to all objects",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:55:13.646Z",
+      "confidence": 0.95,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321313646-7jk90l",
+      "text": "Account-level public access blocked",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:55:13.646Z",
+      "confidence": 0.95,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321313646-6uteg4",
+      "text": "Public ACLs prevented on new uploads",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:55:13.646Z",
+      "confidence": 0.95,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321313646-9k8idt",
+      "text": "Public bucket policies explicitly denied",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:55:13.646Z",
+      "confidence": 0.95,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321313646-nxnq98",
+      "text": "Unauthorized access logged and monitored",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:55:13.646Z",
+      "confidence": 0.95,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 6,
+    "total": 6,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:55:08.982Z",
+  "updatedAt": "2026-02-05T19:55:13.646Z"
+}

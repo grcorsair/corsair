@@ -1,0 +1,69 @@
+{
+  "missionId": "mission_20260205_193542_qgnpiv",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770320146792-qkqcs7",
+      "text": "Public access blocked at bucket level",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:35:46.792Z",
+      "confidence": 0.9666666666666666,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320146792-cubwb7",
+      "text": "Block public access setting enabled completely",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:35:46.792Z",
+      "confidence": 0.9666666666666666,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320146792-4nekh9",
+      "text": "Public ACLs prevented from bucket access",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:35:46.792Z",
+      "confidence": 0.9666666666666666,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320146792-gtokc3",
+      "text": "Public bucket policies denied in entirety",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:35:46.792Z",
+      "confidence": 0.9666666666666666,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320146792-9dxyd4",
+      "text": "Object public access blocked by default",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:35:46.792Z",
+      "confidence": 0.9666666666666666,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770320146792-tq651z",
+      "text": "Account-level public access fully blocked",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:35:46.792Z",
+      "confidence": 0.9666666666666666,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 6,
+    "total": 6,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:35:42.753Z",
+  "updatedAt": "2026-02-05T19:35:46.792Z"
+}

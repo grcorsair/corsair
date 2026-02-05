@@ -1,0 +1,14 @@
+{
+  "missionId": "mission_20260205_185241_47umjp",
+  "status": "COMPLETED",
+  "criteria": [],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 0,
+    "total": 0,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T18:52:41.703Z",
+  "updatedAt": "2026-02-05T18:52:46.872Z"
+}

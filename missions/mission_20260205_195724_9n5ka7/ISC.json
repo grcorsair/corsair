@@ -1,0 +1,60 @@
+{
+  "missionId": "mission_20260205_195724_9n5ka7",
+  "status": "COMPLETED",
+  "criteria": [
+    {
+      "id": "ISC-1770321450761-se5kls",
+      "text": "✅ All are ≤ 8 words",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:57:30.761Z",
+      "confidence": 0.9,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321450761-srg9bf",
+      "text": "✅ All are binary testable",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:57:30.761Z",
+      "confidence": 0.9,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321450761-lq38ks",
+      "text": "✅ All are state-based",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:57:30.761Z",
+      "confidence": 0.9,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321450761-5aip9n",
+      "text": "✅ All are granular",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:57:30.761Z",
+      "confidence": 0.9,
+      "source": "agent_response"
+    },
+    {
+      "id": "ISC-1770321450761-xdskqc",
+      "text": "✅ All are observable from S3 API",
+      "satisfaction": "PENDING",
+      "evidenceRefs": [],
+      "createdAt": "2026-02-05T19:57:30.761Z",
+      "confidence": 0.9,
+      "source": "agent_response"
+    }
+  ],
+  "satisfaction": {
+    "satisfied": 0,
+    "failed": 0,
+    "pending": 5,
+    "total": 5,
+    "rate": 0
+  },
+  "createdAt": "2026-02-05T19:57:24.699Z",
+  "updatedAt": "2026-02-05T19:57:30.762Z"
+}
