@@ -123,6 +123,19 @@ body {
   image-rendering: pixelated;
 }
 
+/* ── Pixel art card hover effect ────────────────────────── */
+.pixel-card-hover {
+  transition: all 0.3s ease;
+}
+
+.pixel-card-hover:hover {
+  border-color: var(--glow-color, rgba(0, 207, 255, 0.4));
+  box-shadow:
+    0 0 12px var(--glow-color, rgba(0, 207, 255, 0.15)),
+    0 0 24px var(--glow-color, rgba(0, 207, 255, 0.05));
+  transform: translateY(-2px);
+}
+
 /* ── Animations ────────────────────────────────────────── */
 @keyframes fadeIn {
   from {

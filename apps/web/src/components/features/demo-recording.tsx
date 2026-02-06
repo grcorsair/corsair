@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { SwordLoader } from "@/components/pixel-art/pixel-loader";
 
 const AscinemaDemo = dynamic(
   () =>
@@ -11,9 +12,7 @@ const AscinemaDemo = dynamic(
     ssr: false,
     loading: () => (
       <div className="flex h-[400px] items-center justify-center rounded-xl border border-corsair-border bg-[#080c18]">
-        <span className="font-mono text-sm text-corsair-text-dim animate-pulse">
-          Loading recording...
-        </span>
+        <SwordLoader size={40} label="LOADING RECORDING" />
       </div>
     ),
   }

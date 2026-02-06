@@ -5,14 +5,18 @@ import { FrameworkGrid } from "@/components/features/framework-grid";
 import { QuickStart } from "@/components/features/quick-start";
 import { DisruptionSection } from "@/components/features/disruption-section";
 import { FadeIn } from "@/components/motion/fade-in";
+import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 
 export default function Home() {
   return (
     <main>
       <HeroSection />
 
+      {/* Sword divider */}
+      <PixelDivider variant="swords" className="py-4" />
+
       {/* Pipeline Visualization */}
-      <section className="section-divider-pixel px-6 py-20">
+      <section className="px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
             <p className="mb-3 text-center font-pixel text-[8px] tracking-widest text-corsair-cyan/60">
@@ -31,8 +35,11 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Diamond divider */}
+      <PixelDivider variant="diamond" className="py-4" />
+
       {/* Value Props */}
-      <section className="section-divider px-6 py-20">
+      <section className="px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
             <ValueProps />
@@ -40,8 +47,11 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Sword divider */}
+      <PixelDivider variant="swords" className="py-4" />
+
       {/* Disruption */}
-      <section className="section-divider px-6 py-20">
+      <section className="px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
             <DisruptionSection />
@@ -49,8 +59,11 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Diamond divider */}
+      <PixelDivider variant="diamond" className="py-4" />
+
       {/* Framework Grid */}
-      <section className="section-divider-pixel px-6 py-20">
+      <section className="px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
             <p className="mb-3 text-center font-pixel text-[8px] tracking-widest text-corsair-gold/60">
@@ -70,10 +83,16 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Sword divider */}
+      <PixelDivider variant="swords" className="py-4" />
+
       {/* Quick Start */}
-      <section className="section-divider px-6 py-20">
+      <section className="px-6 py-16">
         <div className="mx-auto max-w-3xl">
           <FadeIn>
+            <p className="mb-3 text-center font-pixel text-[8px] tracking-widest text-corsair-green/60">
+              GET STARTED
+            </p>
             <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
               Quick Start
             </h2>
