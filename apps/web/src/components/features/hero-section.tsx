@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "motion/react";
+import { Button } from "@/components/ui/button";
 import { TerminalDemo } from "./terminal-demo";
 
 export function HeroSection() {
@@ -63,31 +64,30 @@ export function HeroSection() {
           transition={{ duration: 0.5, delay: 0.7 }}
           className="mb-16 flex flex-wrap justify-center gap-4"
         >
-          <a
-            href="https://github.com/Arudjreis/corsair"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group relative rounded-lg bg-corsair-cyan px-6 py-3 font-display text-sm font-semibold text-corsair-deep transition-all hover:shadow-[0_0_30px_rgba(0,207,255,0.3)]"
-          >
-            <span className="relative z-10">Get Started</span>
-          </a>
-          <a
-            href="#demo"
-            className="rounded-lg border border-corsair-border bg-corsair-surface px-6 py-3 font-display text-sm font-semibold text-corsair-text transition-colors hover:border-corsair-gold hover:text-corsair-gold"
-          >
-            Watch Demo
-          </a>
-          <a
-            href="https://github.com/Arudjreis/corsair"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-lg border border-corsair-border bg-corsair-surface px-6 py-3 font-display text-sm font-semibold text-corsair-text-dim transition-colors hover:border-corsair-text-dim hover:text-corsair-text"
-          >
-            <svg viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4">
-              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
-            </svg>
-            Star on GitHub
-          </a>
+          <Button size="lg" className="font-display font-semibold shadow-[0_0_20px_rgba(0,207,255,0.2)] hover:shadow-[0_0_30px_rgba(0,207,255,0.3)]" asChild>
+            <a
+              href="https://github.com/Arudjreis/corsair"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Get Started
+            </a>
+          </Button>
+          <Button variant="outline" size="lg" className="font-display font-semibold hover:border-corsair-gold hover:text-corsair-gold" asChild>
+            <a href="#demo">Watch Demo</a>
+          </Button>
+          <Button variant="secondary" size="lg" className="font-display font-semibold gap-2" asChild>
+            <a
+              href="https://github.com/Arudjreis/corsair"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <svg viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+              </svg>
+              Star on GitHub
+            </a>
+          </Button>
         </motion.div>
 
         {/* Terminal Demo */}

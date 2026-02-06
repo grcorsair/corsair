@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
@@ -17,12 +18,9 @@ export default function NotFound() {
           <p className="mb-8 text-corsair-text-dim">
             This page has drifted beyond the charted waters.
           </p>
-          <Link
-            href="/"
-            className="rounded-lg bg-corsair-cyan px-6 py-3 font-display text-sm font-semibold text-corsair-deep transition-all hover:shadow-[0_0_20px_rgba(0,207,255,0.3)]"
-          >
-            Return to Port
-          </Link>
+          <Button size="lg" className="font-display font-semibold" asChild>
+            <Link href="/">Return to Port</Link>
+          </Button>
         </div>
       </main>
       <Footer />

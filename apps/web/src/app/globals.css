@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 /* ═══════════════════════════════════════════════════════════
    CORSAIR Design System — "Pixel Art Meets Terminal"
@@ -229,4 +231,99 @@ body {
   padding: 0.75rem;
   border-bottom: 1px solid var(--color-corsair-border);
   color: var(--color-corsair-text-dim);
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* ── shadcn semantic tokens → Corsair brand mapping ────── */
+/* Always dark — Corsair is a dark-first design system     */
+:root {
+  --radius: 0.625rem;
+  /* Background → Corsair deep ocean */
+  --background: #0B1022;
+  --foreground: #E2DFD6;
+  /* Cards → Corsair surface */
+  --card: #111833;
+  --card-foreground: #E2DFD6;
+  /* Popovers → same as card */
+  --popover: #111833;
+  --popover-foreground: #E2DFD6;
+  /* Primary → Corsair cyan (action color) */
+  --primary: #00CFFF;
+  --primary-foreground: #0B1022;
+  /* Secondary → Corsair navy */
+  --secondary: #1B2A4A;
+  --secondary-foreground: #E2DFD6;
+  /* Muted → dimmed surface */
+  --muted: #1B2A4A;
+  --muted-foreground: #8B92A8;
+  /* Accent → Corsair gold */
+  --accent: #D4A853;
+  --accent-foreground: #0B1022;
+  /* Destructive → Corsair crimson */
+  --destructive: #C0392B;
+  /* Borders → Corsair border */
+  --border: #1E3055;
+  --input: #1E3055;
+  --ring: #00CFFF;
+  /* Charts → Corsair palette spread */
+  --chart-1: #00CFFF;
+  --chart-2: #D4A853;
+  --chart-3: #2ECC71;
+  --chart-4: #7FDBCA;
+  --chart-5: #C0392B;
+  /* Sidebar → Corsair deep */
+  --sidebar: #0B1022;
+  --sidebar-foreground: #E2DFD6;
+  --sidebar-primary: #00CFFF;
+  --sidebar-primary-foreground: #0B1022;
+  --sidebar-accent: #1B2A4A;
+  --sidebar-accent-foreground: #E2DFD6;
+  --sidebar-border: #1E3055;
+  --sidebar-ring: #00CFFF;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
 }

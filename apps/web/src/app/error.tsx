@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { Button } from "@/components/ui/button";
 
 export default function Error({
   reset,
@@ -25,18 +26,16 @@ export default function Error({
             Something went wrong. The crew is working on repairs.
           </p>
           <div className="flex justify-center gap-4">
-            <button
+            <Button
+              size="lg"
               onClick={reset}
-              className="rounded-lg bg-corsair-cyan px-6 py-3 font-display text-sm font-semibold text-corsair-deep transition-all hover:shadow-[0_0_20px_rgba(0,207,255,0.3)]"
+              className="font-display font-semibold"
             >
               Try Again
-            </button>
-            <Link
-              href="/"
-              className="rounded-lg border border-corsair-border bg-corsair-surface px-6 py-3 font-display text-sm font-semibold text-corsair-text transition-colors hover:border-corsair-cyan hover:text-corsair-cyan"
-            >
-              Return to Port
-            </Link>
+            </Button>
+            <Button variant="outline" size="lg" className="font-display font-semibold" asChild>
+              <Link href="/">Return to Port</Link>
+            </Button>
           </div>
         </div>
       </main>

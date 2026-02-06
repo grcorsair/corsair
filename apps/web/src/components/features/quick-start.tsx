@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { CopyIcon, CheckIcon } from "lucide-react";
 
 const code = `# Install Bun (if you don't have it)
 curl -fsSL https://bun.sh/install | bash
@@ -22,30 +25,43 @@ export function QuickStart() {
   };
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-corsair-border bg-corsair-surface">
+    <Card className="relative overflow-hidden bg-corsair-surface">
       {/* Copy button */}
-      <button
+      <Button
+        variant="outline"
+        size="sm"
         onClick={handleCopy}
-        className="absolute right-3 top-3 rounded-md border border-corsair-border bg-corsair-deep px-3 py-1 font-mono text-xs text-corsair-text-dim transition-colors hover:border-corsair-cyan hover:text-corsair-cyan"
+        className="absolute right-3 top-3 gap-1.5 font-mono text-xs"
       >
-        {copied ? "Copied!" : "Copy"}
-      </button>
+        {copied ? (
+          <>
+            <CheckIcon className="h-3 w-3 text-corsair-green" />
+            Copied!
+          </>
+        ) : (
+          <>
+            <CopyIcon className="h-3 w-3" />
+            Copy
+          </>
+        )}
+      </Button>
 
-      {/* Code */}
-      <pre className="overflow-x-auto p-6 font-mono text-sm leading-relaxed">
-        {code.split("\n").map((line, i) => (
-          <div
-            key={i}
-            className={
-              line.startsWith("#")
-                ? "text-corsair-text-dim"
-                : "text-corsair-cyan"
-            }
-          >
-            {line}
-          </div>
-        ))}
-      </pre>
-    </div>
+      <CardContent className="p-0">
+        <pre className="overflow-x-auto p-6 font-mono text-sm leading-relaxed">
+          {code.split("\n").map((line, i) => (
+            <div
+              key={i}
+              className={
+                line.startsWith("#")
+                  ? "text-corsair-text-dim"
+                  : "text-corsair-cyan"
+              }
+            >
+              {line}
+            </div>
+          ))}
+        </pre>
+      </CardContent>
+    </Card>
   );
 }

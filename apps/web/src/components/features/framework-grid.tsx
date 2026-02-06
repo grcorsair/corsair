@@ -1,3 +1,5 @@
+import { Badge } from "@/components/ui/badge";
+
 const frameworks = [
   { name: "MITRE ATT&CK", source: "CTID" },
   { name: "NIST 800-53", source: "CTID" },
@@ -18,14 +20,13 @@ export function FrameworkGrid() {
   return (
     <div className="flex flex-wrap justify-center gap-3">
       {frameworks.map((fw) => (
-        <div
+        <Badge
           key={fw.name}
-          className="group rounded-lg border border-corsair-border bg-corsair-surface px-4 py-3 transition-all hover:border-corsair-cyan hover:shadow-[0_0_10px_rgba(0,207,255,0.1)]"
+          variant="outline"
+          className="cursor-default rounded-lg border-corsair-border bg-corsair-surface px-4 py-3 font-mono text-sm font-semibold text-corsair-text transition-all hover:border-corsair-cyan hover:text-corsair-cyan hover:shadow-[0_0_10px_rgba(0,207,255,0.1)]"
         >
-          <span className="font-mono text-sm font-semibold text-corsair-text group-hover:text-corsair-cyan">
-            {fw.name}
-          </span>
-        </div>
+          {fw.name}
+        </Badge>
       ))}
     </div>
   );

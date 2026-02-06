@@ -1,5 +1,13 @@
 import type { Metadata } from "next";
 import { FadeIn } from "@/components/motion/fade-in";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
   title: "Community",
@@ -118,20 +126,26 @@ export default function CommunityPage() {
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group rounded-xl border border-corsair-border bg-corsair-surface p-6 transition-all hover:border-corsair-cyan/40"
+                className="group block"
               >
-                <div className="mb-3">
-                  <CommunityIcon name={link.icon} />
-                </div>
-                <div className="mb-1 font-display text-lg font-bold text-corsair-text group-hover:text-corsair-cyan">
-                  {link.name}
-                </div>
-                <p className="mb-4 text-sm text-corsair-text-dim">
-                  {link.description}
-                </p>
-                <span className="font-mono text-xs text-corsair-cyan">
-                  {link.cta} →
-                </span>
+                <Card className="h-full bg-corsair-surface transition-all group-hover:border-corsair-cyan/40">
+                  <CardHeader>
+                    <div className="mb-1">
+                      <CommunityIcon name={link.icon} />
+                    </div>
+                    <CardTitle className="font-display text-lg text-corsair-text group-hover:text-corsair-cyan">
+                      {link.name}
+                    </CardTitle>
+                    <CardDescription className="text-sm text-corsair-text-dim">
+                      {link.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Badge variant="outline" className="font-mono text-xs text-corsair-cyan">
+                      {link.cta} →
+                    </Badge>
+                  </CardContent>
+                </Card>
               </a>
             ))}
           </div>
@@ -146,17 +160,18 @@ export default function CommunityPage() {
         <FadeIn delay={0.1}>
           <div className="grid gap-4 sm:grid-cols-2">
             {contributions.map((item) => (
-              <div
-                key={item.title}
-                className="rounded-xl border border-corsair-border bg-corsair-surface p-6"
-              >
-                <div className="mb-2 font-display font-bold text-corsair-gold">
-                  {item.title}
-                </div>
-                <p className="text-sm text-corsair-text-dim">
-                  {item.description}
-                </p>
-              </div>
+              <Card key={item.title} className="bg-corsair-surface">
+                <CardHeader>
+                  <CardTitle className="font-display text-corsair-gold">
+                    {item.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-sm text-corsair-text-dim">
+                    {item.description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </FadeIn>

@@ -1,8 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { MenuIcon } from "lucide-react";
 
 const navLinks = [
   { href: "/demo", label: "Demo" },
@@ -13,8 +22,6 @@ const navLinks = [
 ];
 
 export function Header() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-
   return (
     <header className="sticky top-0 z-50 border-b border-corsair-border bg-corsair-deep/80 backdrop-blur-md">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -43,61 +50,68 @@ export function Header() {
               {link.label}
             </Link>
           ))}
-          <a
-            href="https://github.com/Arudjreis/corsair"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-lg border border-corsair-border bg-corsair-surface px-4 py-2 text-sm text-corsair-text-dim transition-colors hover:border-corsair-cyan hover:text-corsair-cyan"
-          >
-            <GitHubIcon />
-            <span>GitHub</span>
-          </a>
-        </div>
-
-        {/* Mobile hamburger */}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-corsair-border text-corsair-text-dim md:hidden"
-          aria-label="Toggle menu"
-        >
-          {mobileOpen ? (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-5 w-5" strokeWidth={2}>
-              <path d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          ) : (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-5 w-5" strokeWidth={2}>
-              <path d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          )}
-        </button>
-      </nav>
-
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="border-t border-corsair-border bg-corsair-deep px-6 py-4 md:hidden">
-          <div className="flex flex-col gap-4">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMobileOpen(false)}
-                className="text-sm text-corsair-text-dim transition-colors hover:text-corsair-cyan"
-              >
-                {link.label}
-              </Link>
-            ))}
+          <Button variant="outline" size="sm" asChild>
             <a
               href="https://github.com/Arudjreis/corsair"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-corsair-text-dim transition-colors hover:text-corsair-cyan"
+              className="gap-2"
             >
               <GitHubIcon />
-              GitHub
+              <span>GitHub</span>
             </a>
-          </div>
+          </Button>
         </div>
-      )}
+
+        {/* Mobile nav — shadcn Sheet */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="md:hidden"
+              aria-label="Toggle menu"
+            >
+              <MenuIcon className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-72 bg-corsair-deep border-corsair-border">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2 text-corsair-text">
+                <Image
+                  src="/assets/corsair-logo.png"
+                  alt="CORSAIR"
+                  width={24}
+                  height={24}
+                />
+                CORSAIR
+              </SheetTitle>
+            </SheetHeader>
+            <Separator className="bg-corsair-border" />
+            <nav className="flex flex-col gap-1 px-4">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="rounded-md px-3 py-2 text-sm text-corsair-text-dim transition-colors hover:bg-corsair-surface hover:text-corsair-cyan"
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <Separator className="my-2 bg-corsair-border" />
+              <a
+                href="https://github.com/Arudjreis/corsair"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-corsair-text-dim transition-colors hover:bg-corsair-surface hover:text-corsair-cyan"
+              >
+                <GitHubIcon />
+                GitHub
+              </a>
+            </nav>
+          </SheetContent>
+        </Sheet>
+      </nav>
     </header>
   );
 }
