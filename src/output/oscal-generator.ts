@@ -16,6 +16,7 @@ import type {
   ChartResult,
   RaidResult,
   Framework,
+  ThreatModelResult,
 } from "../types";
 
 import type {
@@ -44,6 +45,7 @@ export interface OSCALGeneratorOptions {
   raidResults?: RaidResult[];
   iscCriteria?: { text: string; satisfaction: string }[];
   metadata?: { title?: string; description?: string };
+  threatModel?: ThreatModelResult;
 }
 
 // ===============================================================================
@@ -67,8 +69,32 @@ export class OSCALGenerator {
     const docUuid = crypto.randomUUID();
     const resultUuid = crypto.randomUUID();
 
+    const threatModel = options.threatModel;
+
     const metadata = this.buildMetadata(customMetadata, now);
     const observations = this.buildObservations(findings);
+
+    // Add threat model findings as additional observations
+    if (threatModel) {
+      for (const threat of threatModel.threats) {
+        observations.push({
+          uuid: crypto.randomUUID(),
+          title: `STRIDE Threat: ${threat.stride} - ${threat.affectedField}`,
+          description: threat.description,
+          methods: ["EXAMINE" as const],
+          collected: threatModel.analyzedAt,
+          props: [
+            { name: "stride-category", value: threat.stride },
+            { name: "mitre-technique", value: threat.mitreTechnique },
+            { name: "mitre-name", value: threat.mitreName },
+            { name: "severity", value: threat.severity },
+            { name: "affected-field", value: threat.affectedField },
+            { name: "methodology", value: "STRIDE-automated" },
+          ],
+        });
+      }
+    }
+
     const risks = this.buildRisks(raidResults);
     const oscalFindings = this.buildFindings(iscCriteria, observations, risks);
     const reviewedControls = this.buildReviewedControls(chartResult);

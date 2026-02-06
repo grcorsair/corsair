@@ -242,6 +242,46 @@ Returns: Rollback verification showing what was restored and final state validat
 };
 
 /**
+ * THREAT MODEL - Analyze a snapshot using STRIDE threat modeling
+ */
+export const threatModelTool: Tool = {
+  name: "threat_model",
+  description: `Analyze a recon snapshot using STRIDE threat modeling to identify threats and attack vectors.
+
+This primitive performs automated STRIDE analysis (Spoofing, Tampering, Repudiation,
+Information Disclosure, Denial of Service, Elevation of Privilege) on a provider snapshot.
+
+It maps each identified threat to MITRE ATT&CK techniques and suggests attack vectors,
+making it ideal for driving MARK expectations and RAID planning.
+
+Supported providers:
+- **aws-cognito**: MFA, password policy, risk configuration, device settings
+- **aws-s3**: Public access, encryption, versioning, logging
+- **aws-iam**: MFA, overprivileged policies, unused credentials, key rotation
+- **aws-lambda**: Env var encryption, VPC, layer integrity, timeout
+- **aws-rds**: Public endpoint, storage encryption, IAM auth, audit logging
+
+Use this after RECON to drive threat-informed expectations and attack planning.
+
+Returns: STRIDE threat findings with severity, MITRE technique mappings, and suggested attack vectors.`,
+  input_schema: {
+    type: "object",
+    properties: {
+      snapshotId: {
+        type: "string",
+        description: "ID of the recon snapshot to analyze (the targetId from RECON)"
+      },
+      provider: {
+        type: "string",
+        enum: ["aws-cognito", "aws-s3", "aws-iam", "aws-lambda", "aws-rds"],
+        description: "Provider type for STRIDE rule selection"
+      },
+    },
+    required: ["snapshotId", "provider"],
+  },
+};
+
+/**
  * All Corsair tools exported as array for easy registration with Anthropic
  */
 export const corsairTools: Tool[] = [
@@ -250,5 +290,6 @@ export const corsairTools: Tool[] = [
   raidTool,
   plunderTool,
   chartTool,
-  escapeTool
+  escapeTool,
+  threatModelTool,
 ];

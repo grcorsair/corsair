@@ -41,6 +41,30 @@ export interface ProviderSnapshot {
 }
 
 // ===============================================================================
+// IAM TYPES (Re-exported from aws-iam plugin)
+// ===============================================================================
+
+export type {
+  IAMSnapshot,
+} from "../plugins/aws-iam/aws-iam-plugin";
+
+// ===============================================================================
+// LAMBDA TYPES (Re-exported from aws-lambda plugin)
+// ===============================================================================
+
+export type {
+  LambdaSnapshot,
+} from "../plugins/aws-lambda/aws-lambda-plugin";
+
+// ===============================================================================
+// RDS TYPES (Re-exported from aws-rds plugin)
+// ===============================================================================
+
+export type {
+  RDSSnapshot,
+} from "../plugins/aws-rds/aws-rds-plugin";
+
+// ===============================================================================
 // S3 TYPES
 // ===============================================================================
 
@@ -81,7 +105,7 @@ export interface ReconMetadata {
 
 export interface ReconResult {
   snapshotId: string;
-  snapshot: CognitoSnapshot | S3Snapshot;
+  snapshot: CognitoSnapshot | S3Snapshot | IAMSnapshot | LambdaSnapshot | RDSSnapshot;
   metadata: ReconMetadata;
   stateModified: boolean;
   durationMs: number;
@@ -106,6 +130,8 @@ export interface DriftFinding {
   severity: Severity;
   description: string;
   timestamp: string;
+  /** Optional reference to originating threat ID from STRIDE analysis */
+  threatRef?: string;
 }
 
 export interface MarkResult {
@@ -218,6 +244,8 @@ export interface ChartResult {
   frameworks?: Record<Framework, {
     controls: { controlId: string; controlName: string; status: string }[];
   }>;
+  /** Threat model result if STRIDE analysis was used */
+  threatModel?: ThreatModelResult;
 }
 
 // ===============================================================================
@@ -563,6 +591,56 @@ export interface InitializeResult {
   plugins: string[];
   invalidManifests?: string[];
   error?: string;
+}
+
+// ===============================================================================
+// STRIDE THREAT MODEL TYPES
+// ===============================================================================
+
+/**
+ * STRIDE threat categories — the 6 classical threat dimensions.
+ */
+export type STRIDECategory =
+  | "Spoofing"
+  | "Tampering"
+  | "Repudiation"
+  | "InformationDisclosure"
+  | "DenialOfService"
+  | "ElevationOfPrivilege";
+
+/**
+ * A single threat finding from STRIDE analysis.
+ */
+export interface ThreatFinding {
+  id: string;
+  stride: STRIDECategory;
+  description: string;
+  mitreTechnique: string;
+  mitreName: string;
+  affectedField: string;
+  severity: Severity;
+  attackVectors: AttackVector[];
+}
+
+/**
+ * Result of STRIDE threat model analysis.
+ */
+export interface ThreatModelResult {
+  threats: ThreatFinding[];
+  methodology: "STRIDE-automated";
+  provider: string;
+  analyzedAt: string;
+  threatCount: number;
+  riskDistribution: Record<string, number>;
+}
+
+/**
+ * Options for threat model generation.
+ */
+export interface ThreatModelOptions {
+  provider?: string;
+  frameworks?: Framework[];
+  includeRemediations?: boolean;
 }
 
 // ===============================================================================

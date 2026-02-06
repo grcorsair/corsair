@@ -19,15 +19,33 @@
  */
 
 import { CorsairAgent } from "./src/agents/corsair-agent";
-import { existsSync, mkdirSync, readFileSync } from "fs";
-import { dirname, resolve, join } from "path";
+import { Corsair } from "./src/engine/index";
+import type { MarkResult, RaidResult, ThreatModelResult } from "./src/types";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { dirname, resolve, join, basename, extname } from "path";
 import type { ISCState } from "./src/types/isc";
+import { ReportGenerator } from "./src/output/report-generator";
+import { OSCALGenerator } from "./src/output/oscal-generator";
+
+export type OutputFormat = "jsonl" | "html" | "oscal" | "md" | "all";
+
+/**
+ * Result from running demo mode. Contains all pipeline outputs for verification.
+ */
+export interface DemoResult {
+  providersRun: string[];
+  threatModels: ThreatModelResult[];
+  markResults: MarkResult[];
+  raidResults: RaidResult[];
+  totalEvidenceRecords: number;
+}
 
 interface CLIOptions {
   target?: string;
   service?: "cognito" | "s3";
   source?: "fixture" | "aws";
   output?: string;
+  format?: OutputFormat;
   model?: "sonnet" | "haiku" | "auto";
   maxTurns?: number;
   verbose?: boolean;
@@ -38,6 +56,7 @@ function parseArgs(): CLIOptions {
   const args = process.argv.slice(2);
   const options: CLIOptions = {
     source: "aws",
+    format: "jsonl",
     model: "sonnet",
     maxTurns: 20,
     verbose: true,
@@ -77,6 +96,18 @@ function parseArgs(): CLIOptions {
         options.output = next;
         i++;
         break;
+      case "--format":
+      case "-f": {
+        const validFormats: OutputFormat[] = ["jsonl", "html", "oscal", "md", "all"];
+        if (validFormats.includes(next as OutputFormat)) {
+          options.format = next as OutputFormat;
+        } else {
+          console.error(`❌ Invalid format: ${next}. Must be one of: ${validFormats.join(", ")}`);
+          process.exit(1);
+        }
+        i++;
+        break;
+      }
       case "--model":
       case "-m":
         if (next === "sonnet" || next === "haiku" || next === "auto") {
@@ -129,6 +160,7 @@ OPTIONS:
   -s, --service <TYPE>    Service type: cognito | s3
       --source <SOURCE>   Data source: aws | fixture (default: aws)
   -o, --output <PATH>     Custom evidence output path (default: ./evidence/corsair-{timestamp}.jsonl)
+  -f, --format <FORMAT>   Output format: jsonl | html | oscal | md | all (default: jsonl)
   -m, --model <MODEL>     Model selection: sonnet | haiku | auto (default: sonnet)
       --max-turns <NUM>   Maximum agent turns (default: 20)
   -q, --quiet             Suppress verbose output
@@ -235,6 +267,193 @@ function formatISCSummary(iscPath: string): string {
   }
 }
 
+/**
+ * Generate reports in the specified format(s) after mission completes.
+ */
+function generateReports(
+  format: OutputFormat,
+  basePath: string,
+  agent: CorsairAgent
+): string[] {
+  const context = agent.getContext();
+  const reportGen = new ReportGenerator();
+  const oscalGen = new OSCALGenerator();
+  const generatedFiles: string[] = [];
+
+  // Collect data from agent context
+  const findings = Array.from(context.markResults.values()).flatMap((m) => m.findings);
+  const raidResults = Array.from(context.raidResults.values());
+  const chartResults = Array.from(context.chartResults.values());
+
+  // Use first chart result or create a placeholder
+  const chartResult = chartResults[0] || {
+    mitre: { technique: "N/A", name: "N/A", tactic: "N/A", description: "No chart result" },
+    nist: { function: "N/A", category: "N/A", controls: [] },
+    soc2: { principle: "N/A", criteria: [], description: "No chart result" },
+  };
+
+  // Load ISC criteria if available
+  let iscCriteria: { text: string; satisfaction: string }[] = [];
+  const missionId = agent.getMissionId();
+  if (missionId) {
+    const iscPath = agent.getISCPath();
+    if (existsSync(iscPath)) {
+      try {
+        const state: ISCState = JSON.parse(readFileSync(iscPath, "utf-8"));
+        iscCriteria = state.criteria.map((c) => ({
+          text: c.text,
+          satisfaction: c.satisfaction,
+        }));
+      } catch {}
+    }
+  }
+
+  const plunderResults = Array.from(context.plunderResults.values());
+  const plunderResult = plunderResults[0];
+
+  // Base path without extension
+  const dir = dirname(basePath);
+  const base = basename(basePath, extname(basePath));
+  const pathFor = (ext: string) => join(dir, `${base}.${ext}`);
+
+  const reportOptions = {
+    title: "Corsair Assessment Report",
+    findings,
+    chartResult,
+    raidResults,
+    plunderResult,
+    iscCriteria,
+  };
+
+  const formats: OutputFormat[] = format === "all" ? ["jsonl", "html", "oscal", "md"] : [format];
+
+  for (const fmt of formats) {
+    switch (fmt) {
+      case "html": {
+        const html = reportGen.generateHTML(reportOptions);
+        const htmlPath = pathFor("html");
+        mkdirSync(dirname(htmlPath), { recursive: true });
+        writeFileSync(htmlPath, html, "utf-8");
+        generatedFiles.push(htmlPath);
+        break;
+      }
+      case "oscal": {
+        const oscalResult = oscalGen.generate({
+          findings,
+          chartResult,
+          raidResults,
+          iscCriteria,
+        });
+        const oscalPath = pathFor("oscal.json");
+        mkdirSync(dirname(oscalPath), { recursive: true });
+        writeFileSync(oscalPath, oscalGen.toJSON(oscalResult), "utf-8");
+        generatedFiles.push(oscalPath);
+        break;
+      }
+      case "md": {
+        const md = reportGen.generateMarkdown(reportOptions);
+        const mdPath = pathFor("md");
+        mkdirSync(dirname(mdPath), { recursive: true });
+        writeFileSync(mdPath, md, "utf-8");
+        generatedFiles.push(mdPath);
+        break;
+      }
+      case "jsonl":
+        // JSONL is already written by PLUNDER — just note the path
+        generatedFiles.push(basePath);
+        break;
+    }
+  }
+
+  return generatedFiles;
+}
+
+/**
+ * Demo provider configurations.
+ * Each entry maps a provider ID to the service type and a fixture target ID
+ * used by the ReconEngine's fixture mode.
+ */
+const DEMO_PROVIDERS: { provider: string; service: "cognito" | "s3" | "iam" | "lambda" | "rds"; targetId: string }[] = [
+  { provider: "aws-cognito", service: "cognito", targetId: "demo-user-pool" },
+  { provider: "aws-s3", service: "s3", targetId: "demo-bucket" },
+  { provider: "aws-iam", service: "iam", targetId: "demo-account" },
+  { provider: "aws-lambda", service: "lambda", targetId: "demo-function" },
+  { provider: "aws-rds", service: "rds", targetId: "demo-db" },
+];
+
+/**
+ * Run the full CORSAIR demo pipeline on fixture data for all providers.
+ * No ANTHROPIC_API_KEY or LLM agent required.
+ *
+ * For each provider: recon (fixture) -> threatModel -> autoMark -> raid (dryRun) -> plunder -> chart
+ */
+export async function runDemo(options: {
+  outputPath: string;
+  format: OutputFormat;
+}): Promise<DemoResult> {
+  const { outputPath, format } = options;
+
+  // Ensure output directory exists
+  const dir = dirname(resolve(outputPath));
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+
+  const corsair = new Corsair({ evidencePath: outputPath });
+
+  const providersRun: string[] = [];
+  const threatModels: ThreatModelResult[] = [];
+  const allMarkResults: MarkResult[] = [];
+  const allRaidResults: RaidResult[] = [];
+  let totalEvidenceRecords = 0;
+
+  // Reset evidence engine so all providers write to the same file cleanly
+  corsair.resetEvidence();
+
+  for (const { provider, service, targetId } of DEMO_PROVIDERS) {
+    // 1. RECON (fixture mode)
+    const reconResult = await corsair.recon(targetId, { source: "fixture", service });
+    const snapshot = reconResult.snapshot as Record<string, unknown>;
+
+    // 2. THREAT MODEL (STRIDE)
+    const tm = await corsair.threatModel(snapshot, provider);
+    threatModels.push(tm);
+
+    // 3. AUTO MARK (threat-driven expectations -> drift detection)
+    const markResult = await corsair.autoMark(snapshot, provider);
+    allMarkResults.push(markResult);
+
+    // 4. RAID (dryRun for each attack vector from threat model)
+    const raidOptionsList = corsair.autoRaid(snapshot, tm);
+    for (const raidOpts of raidOptionsList) {
+      const raidResult = await corsair.raid(snapshot, {
+        ...raidOpts,
+        dryRun: true,
+      });
+      allRaidResults.push(raidResult);
+
+      // 5. PLUNDER (extract evidence)
+      const plunderResult = await corsair.plunder(raidResult, outputPath);
+      totalEvidenceRecords += plunderResult.eventCount;
+    }
+
+    // 6. CHART (map findings to compliance frameworks)
+    if (markResult.findings.length > 0) {
+      await corsair.chart(markResult.findings, { providerId: provider });
+    }
+
+    providersRun.push(provider);
+  }
+
+  return {
+    providersRun,
+    threatModels,
+    markResults: allMarkResults,
+    raidResults: allRaidResults,
+    totalEvidenceRecords,
+  };
+}
+
 async function main() {
   const options = parseArgs();
 
@@ -274,6 +493,7 @@ async function main() {
   console.log(`📦 Service: ${options.service}`);
   console.log(`📊 Source:  ${options.source}`);
   console.log(`📁 Output:  ${outputPath}`);
+  console.log(`📄 Format:  ${options.format}`);
   console.log(`🤖 Model:   ${options.model}`);
   console.log("");
 
@@ -360,6 +580,16 @@ Execute your mission with professional precision, pirate! 🏴‍☠️
       console.log("\n📋 " + formatISCSummary(iscPath));
     }
 
+    // Generate reports based on --format flag
+    if (options.format && options.format !== "jsonl") {
+      console.log("\n" + "=".repeat(80));
+      console.log("\n📄 GENERATING REPORTS:\n");
+      const reportFiles = generateReports(options.format, outputPath, agent);
+      for (const file of reportFiles) {
+        console.log(`  📝 ${file}`);
+      }
+    }
+
     console.log("\n" + "=".repeat(80));
     console.log(`\n✅ Evidence written to: ${outputPath}`);
     console.log("\n🏴‍☠️ Mission successful! Fair winds and following seas.");
@@ -375,4 +605,4 @@ if (import.meta.main) {
   main();
 }
 
-export { main, parseArgs };
+export { main, parseArgs, generateReports };

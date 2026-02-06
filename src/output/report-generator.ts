@@ -18,6 +18,7 @@ import type {
   ChartResult,
   RaidResult,
   PlunderResult,
+  ThreatModelResult,
 } from "../types";
 
 // ===============================================================================
@@ -31,6 +32,7 @@ export interface ReportOptions {
   raidResults?: RaidResult[];
   plunderResult?: PlunderResult;
   iscCriteria?: { text: string; satisfaction: string }[];
+  threatModel?: ThreatModelResult;
 }
 
 // ===============================================================================
@@ -92,6 +94,7 @@ export class ReportGenerator {
 
     const severityCounts = countBySeverity(findings);
     const driftFindings = findings.filter((f) => f.drift);
+    const threatModel = options.threatModel;
     const now = new Date().toISOString();
 
     return `<!DOCTYPE html>
@@ -203,6 +206,8 @@ export class ReportGenerator {
 
 ${this.renderExecutiveSummaryHTML(driftFindings, severityCounts, raidResults, iscCriteria)}
 
+${threatModel ? this.renderThreatModelHTML(threatModel) : ""}
+
 ${this.renderFrameworkCoverageHTML(chartResult)}
 
 ${this.renderFindingDetailsHTML(findings)}
@@ -236,6 +241,7 @@ ${iscCriteria.length > 0 ? this.renderISCTableHTML(iscCriteria) : ""}
 
     const severityCounts = countBySeverity(findings);
     const driftFindings = findings.filter((f) => f.drift);
+    const threatModel = options.threatModel;
     const now = new Date().toISOString();
 
     const sections: string[] = [];
@@ -246,6 +252,11 @@ ${iscCriteria.length > 0 ? this.renderISCTableHTML(iscCriteria) : ""}
     sections.push("");
 
     sections.push(this.renderExecutiveSummaryMD(driftFindings, severityCounts, raidResults, iscCriteria));
+
+    if (threatModel) {
+      sections.push(this.renderThreatModelMD(threatModel));
+    }
+
     sections.push(this.renderFrameworkCoverageMD(chartResult));
     sections.push(this.renderFindingDetailsMD(findings));
 
@@ -488,6 +499,58 @@ ${frameworksHTML}`;
 </div>`;
   }
 
+  private renderThreatModelHTML(threatModel: ThreatModelResult): string {
+    if (threatModel.threats.length === 0) {
+      return `
+<h2>Threat Model (STRIDE)</h2>
+<div class="card"><p>No threats identified by STRIDE analysis.</p></div>`;
+    }
+
+    const riskBars = Object.entries(threatModel.riskDistribution)
+      .sort((a, b) => (SEVERITY_ORDER[a[0]] ?? 99) - (SEVERITY_ORDER[b[0]] ?? 99))
+      .map(([sev, count]) => {
+        const pct = Math.round((count / threatModel.threatCount) * 100);
+        const color = SEVERITY_COLORS[sev] || "#94a3b8";
+        return `<div style="display:flex;align-items:center;gap:0.5rem;margin:0.25rem 0">
+          <span style="width:80px;font-size:0.75rem;font-weight:600">${escapeHTML(sev)}</span>
+          <div style="flex:1;background:#f1f5f9;border-radius:4px;height:20px;overflow:hidden">
+            <div style="width:${pct}%;background:${color};height:100%;border-radius:4px;min-width:2px"></div>
+          </div>
+          <span style="font-size:0.75rem;color:#64748b">${count} (${pct}%)</span>
+        </div>`;
+      })
+      .join("");
+
+    const rows = threatModel.threats
+      .map(
+        (t) => `
+    <tr>
+      <td><span class="badge badge-${t.severity.toLowerCase()}">${escapeHTML(t.stride)}</span></td>
+      <td>${escapeHTML(t.description)}</td>
+      <td><span class="framework-tag">${escapeHTML(t.mitreTechnique)}</span></td>
+      <td><span class="badge badge-${t.severity.toLowerCase()}">${escapeHTML(t.severity)}</span></td>
+      <td>${escapeHTML(t.affectedField)}</td>
+    </tr>`
+      )
+      .join("");
+
+    return `
+<h2>Threat Model (STRIDE)</h2>
+<div class="card">
+  <h3>Risk Distribution</h3>
+  ${riskBars}
+</div>
+<div class="card">
+  <table>
+    <thead>
+      <tr><th>Category</th><th>Description</th><th>ATT&amp;CK</th><th>Severity</th><th>Affected Field</th></tr>
+    </thead>
+    <tbody>${rows}
+    </tbody>
+  </table>
+</div>`;
+  }
+
   // ===============================================================================
   // MARKDOWN SECTION RENDERERS
   // ===============================================================================
@@ -630,6 +693,34 @@ ${frameworksHTML}`;
     lines.push(`- **Chain Integrity:** ${chainStatus}`);
     lines.push(`- **Immutable:** ${plunderResult.immutable ? "Yes" : "No"}`);
     lines.push(`- **Audit Ready:** ${plunderResult.auditReady ? "Yes" : "No"}`);
+    lines.push("");
+    return lines.join("\n");
+  }
+
+  private renderThreatModelMD(threatModel: ThreatModelResult): string {
+    const lines: string[] = [];
+    lines.push("## Threat Model (STRIDE)");
+    lines.push("");
+
+    if (threatModel.threats.length === 0) {
+      lines.push("No threats identified by STRIDE analysis.");
+      lines.push("");
+      return lines.join("\n");
+    }
+
+    lines.push(`**Provider:** ${threatModel.provider} | **Threats Found:** ${threatModel.threatCount}`);
+    lines.push("");
+    lines.push("**Risk Distribution:**");
+    for (const [sev, count] of Object.entries(threatModel.riskDistribution)) {
+      const pct = Math.round((count / threatModel.threatCount) * 100);
+      lines.push(`- ${sev}: ${count} (${pct}%)`);
+    }
+    lines.push("");
+    lines.push("| Category | Description | ATT&CK | Severity | Affected Field |");
+    lines.push("| --- | --- | --- | --- | --- |");
+    for (const t of threatModel.threats) {
+      lines.push(`| ${t.stride} | ${t.description} | ${t.mitreTechnique} | **${t.severity}** | ${t.affectedField} |`);
+    }
     lines.push("");
     return lines.join("\n");
   }

@@ -29,6 +29,7 @@ import type {
   DriftFinding,
   Expectation,
   Framework,
+  ThreatModelResult,
 } from "../types";
 
 /**
@@ -248,6 +249,9 @@ export class CorsairAgent {
 
       case "escape":
         return this.handleEscape(input);
+
+      case "threat_model":
+        return this.handleThreatModel(input);
 
       default:
         throw new Error(`Unknown tool: ${toolName}`);
@@ -477,6 +481,28 @@ export class CorsairAgent {
     return {
       status: "Escape successful - state restored",
     };
+  }
+
+  /**
+   * Handle THREAT MODEL primitive — STRIDE analysis on a recon snapshot.
+   * Gets the snapshot from context.reconResults using snapshotId and
+   * delegates to corsair.threatModel().
+   */
+  private async handleThreatModel(input: Record<string, unknown>): Promise<ThreatModelResult> {
+    const snapshotId = input.snapshotId as string;
+    const provider = input.provider as string;
+
+    const snapshot = this.context.snapshots.get(snapshotId);
+    if (!snapshot) {
+      throw new Error(`Snapshot not found: ${snapshotId}. Run RECON first.`);
+    }
+
+    const result = await this.corsair.threatModel(
+      snapshot as Record<string, unknown>,
+      provider,
+    );
+
+    return result;
   }
 
   /**

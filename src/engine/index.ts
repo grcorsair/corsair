@@ -21,6 +21,9 @@ import type {
   RiskConfiguration,
   CognitoSnapshot,
   S3Snapshot,
+  IAMSnapshot,
+  LambdaSnapshot,
+  RDSSnapshot,
   ProviderSnapshot,
   ControlRef,
   ReconMetadata,
@@ -66,6 +69,10 @@ import type {
   CorsairOptions,
   FrameworkMappingEntry,
   PluginFrameworkMappings,
+  STRIDECategory,
+  ThreatFinding,
+  ThreatModelResult,
+  ThreatModelOptions,
 } from "../types";
 
 // Import engines
@@ -77,6 +84,7 @@ import { ChartEngine } from "./chart-engine";
 import { EscapeEngine } from "./escape-engine";
 import { EventEngine } from "./event-engine";
 import { PluginEngine } from "./plugin-engine";
+import { StrideEngine } from "./stride-engine";
 
 // Import delegated engines (already extracted before this refactor)
 import { EvidenceEngine } from "../evidence";
@@ -103,6 +111,7 @@ export class Corsair extends EventEmitter {
   private escapeEngine: EscapeEngine;
   private eventEngine: EventEngine;
   private pluginEngine: PluginEngine;
+  private strideEngine: StrideEngine;
 
   constructor(options: CorsairOptions = {}) {
     super();
@@ -118,6 +127,7 @@ export class Corsair extends EventEmitter {
     this.chartEngine = new ChartEngine((id) => this.pluginEngine.get(id));
     this.escapeEngine = new EscapeEngine();
     this.eventEngine = new EventEngine(this, this.events);
+    this.strideEngine = new StrideEngine();
   }
 
   // ===============================================================================
@@ -267,6 +277,67 @@ export class Corsair extends EventEmitter {
   }
 
   // ===============================================================================
+  // THREAT MODEL (STRIDE)
+  // ===============================================================================
+
+  async threatModel(
+    snapshot: Record<string, unknown>,
+    provider: string,
+    options?: ThreatModelOptions
+  ): Promise<ThreatModelResult> {
+    return this.strideEngine.strideAnalyze(snapshot, provider, options);
+  }
+
+  threatToExpectations(threats: ThreatFinding[]): (Expectation & { threatRef?: string })[] {
+    return this.strideEngine.threatToExpectations(threats);
+  }
+
+  /**
+   * Auto-generate expectations from threat model and run MARK drift detection.
+   * Combines threatModel → threatToExpectations → mark in one call.
+   */
+  async autoMark(
+    snapshot: Record<string, unknown>,
+    provider: string,
+    options?: ThreatModelOptions
+  ): Promise<MarkResult & { threatModel: ThreatModelResult }> {
+    const tm = this.strideEngine.strideAnalyze(snapshot, provider, options);
+    const expectations = this.strideEngine.threatToExpectations(tm.threats);
+    const markResult = await this.markEngine.mark(snapshot, expectations);
+    // Add threatRef to findings that match threat expectations
+    for (const finding of markResult.findings) {
+      const matchingExp = expectations.find((e) => e.field === finding.field);
+      if (matchingExp?.threatRef) {
+        (finding as DriftFinding).threatRef = matchingExp.threatRef;
+      }
+    }
+    return { ...markResult, threatModel: tm };
+  }
+
+  /**
+   * Auto-generate raid options from threat model attack vectors.
+   */
+  autoRaid(
+    snapshot: Record<string, unknown>,
+    threatModelResult: ThreatModelResult
+  ): RaidOptions[] {
+    const seenVectors = new Set<string>();
+    const raidOptions: RaidOptions[] = [];
+    for (const threat of threatModelResult.threats) {
+      for (const vector of threat.attackVectors) {
+        if (seenVectors.has(vector)) continue;
+        seenVectors.add(vector);
+        raidOptions.push({
+          vector,
+          intensity: threat.severity === "CRITICAL" ? 8 : threat.severity === "HIGH" ? 6 : 4,
+          dryRun: true,
+        });
+      }
+    }
+    return raidOptions;
+  }
+
+  // ===============================================================================
   // EVENT SYSTEM
   // ===============================================================================
 
@@ -297,6 +368,9 @@ export type {
   RiskConfiguration,
   CognitoSnapshot,
   S3Snapshot,
+  IAMSnapshot,
+  LambdaSnapshot,
+  RDSSnapshot,
   ProviderSnapshot,
   ControlRef,
   ReconMetadata,
@@ -342,6 +416,10 @@ export type {
   CorsairOptions,
   FrameworkMappingEntry,
   PluginFrameworkMappings,
+  STRIDECategory,
+  ThreatFinding,
+  ThreatModelResult,
+  ThreatModelOptions,
   ReconOptions,
 };
 
@@ -353,3 +431,4 @@ export { ChartEngine } from "./chart-engine";
 export { EscapeEngine } from "./escape-engine";
 export { EventEngine } from "./event-engine";
 export { PluginEngine, PluginEngine as PluginRegistry } from "./plugin-engine";
+export { StrideEngine } from "./stride-engine";

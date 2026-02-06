@@ -9,12 +9,15 @@ import { readFileSync } from "fs";
 import type {
   CognitoSnapshot,
   S3Snapshot,
+  IAMSnapshot,
+  LambdaSnapshot,
+  RDSSnapshot,
   ReconResult,
 } from "../types";
 
 export interface ReconOptions {
   source?: "fixture" | "aws" | "file";
-  service?: "cognito" | "s3";
+  service?: "cognito" | "s3" | "iam" | "lambda" | "rds";
 }
 
 export class ReconEngine {
@@ -30,12 +33,18 @@ export class ReconEngine {
     const service = options.service || "cognito";
     const startTime = Date.now();
 
-    let snapshot: CognitoSnapshot | S3Snapshot;
+    let snapshot: CognitoSnapshot | S3Snapshot | IAMSnapshot | LambdaSnapshot | RDSSnapshot;
 
     if (source === "aws") {
       // Dynamically import AWS SDK to avoid requiring it when not needed
       if (service === "s3") {
         snapshot = await this.fetchAwsS3Snapshot(targetId);
+      } else if (service === "iam") {
+        snapshot = await this.fetchAwsIAMSnapshot(targetId);
+      } else if (service === "lambda") {
+        snapshot = await this.fetchAwsLambdaSnapshot(targetId);
+      } else if (service === "rds") {
+        snapshot = await this.fetchAwsRDSSnapshot(targetId);
       } else if (service === "cognito") {
         snapshot = await this.fetchAwsCognitoSnapshot(targetId);
       } else {
@@ -47,6 +56,12 @@ export class ReconEngine {
       // Fixture mode: hardcoded defaults
       if (service === "s3") {
         snapshot = this.createFixtureS3Snapshot(targetId);
+      } else if (service === "iam") {
+        snapshot = this.createFixtureIAMSnapshot(targetId);
+      } else if (service === "lambda") {
+        snapshot = this.createFixtureLambdaSnapshot(targetId);
+      } else if (service === "rds") {
+        snapshot = this.createFixtureRDSSnapshot(targetId);
       } else {
         snapshot = this.createFixtureCognitoSnapshot(targetId);
       }
@@ -145,6 +160,73 @@ export class ReconEngine {
       versioning: "Disabled",
       logging: false,
     };
+  }
+
+  private createFixtureIAMSnapshot(accountId: string): IAMSnapshot {
+    return {
+      accountId,
+      mfaEnabled: false,
+      hasOverprivilegedPolicies: false,
+      unusedCredentialsExist: false,
+      accessKeysRotated: true,
+      rootAccountMfaEnabled: false,
+      users: 10,
+      roles: 5,
+      policies: 15,
+      observedAt: new Date().toISOString(),
+    };
+  }
+
+  private createFixtureLambdaSnapshot(functionName: string): LambdaSnapshot {
+    return {
+      functionName,
+      runtime: "nodejs20.x",
+      memorySize: 128,
+      timeout: 30,
+      environmentVariablesEncrypted: false,
+      vpcConfigured: false,
+      layerIntegrityVerified: false,
+      codeSigningEnabled: false,
+      reservedConcurrency: null,
+      deadLetterQueueConfigured: false,
+      tracingEnabled: false,
+      observedAt: new Date().toISOString(),
+    };
+  }
+
+  private createFixtureRDSSnapshot(instanceId: string): RDSSnapshot {
+    return {
+      instanceId,
+      engine: "postgres",
+      engineVersion: "15.4",
+      publiclyAccessible: false,
+      storageEncrypted: false,
+      iamAuthEnabled: false,
+      auditLogging: false,
+      multiAZ: false,
+      backupRetentionDays: 7,
+      deletionProtection: false,
+      performanceInsightsEnabled: false,
+      observedAt: new Date().toISOString(),
+    };
+  }
+
+  private async fetchAwsIAMSnapshot(accountId: string): Promise<IAMSnapshot> {
+    // IAM AWS live fetch is a placeholder for now.
+    // Real implementation would use @aws-sdk/client-iam for GetCredentialReport, etc.
+    throw new Error(`AWS IAM live fetch not yet implemented for account: ${accountId}`);
+  }
+
+  private async fetchAwsLambdaSnapshot(functionName: string): Promise<LambdaSnapshot> {
+    // Lambda AWS live fetch is a placeholder for now.
+    // Real implementation would use @aws-sdk/client-lambda for GetFunctionConfiguration, etc.
+    throw new Error(`AWS Lambda live fetch not yet implemented for function: ${functionName}`);
+  }
+
+  private async fetchAwsRDSSnapshot(instanceId: string): Promise<RDSSnapshot> {
+    // RDS AWS live fetch is a placeholder for now.
+    // Real implementation would use @aws-sdk/client-rds for DescribeDBInstances, etc.
+    throw new Error(`AWS RDS live fetch not yet implemented for instance: ${instanceId}`);
   }
 
   private async fetchAwsCognitoSnapshot(userPoolId: string): Promise<CognitoSnapshot> {

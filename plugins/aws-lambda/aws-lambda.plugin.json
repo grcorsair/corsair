@@ -1,0 +1,173 @@
+{
+  "providerId": "aws-lambda",
+  "providerName": "AWS Lambda",
+  "version": "1.0.0",
+  "description": "Corsair plugin for AWS Lambda - enables chaos engineering and security testing of Lambda function configurations, layers, and runtime security",
+  "attackVectors": [
+    {
+      "id": "cold-start-injection",
+      "name": "Cold Start Injection",
+      "description": "Tests for Lambda functions vulnerable to code injection during cold start initialization, especially when running outside VPC",
+      "severity": "HIGH",
+      "mitreMapping": ["T1190"],
+      "preconditions": ["Lambda function without VPC configuration"],
+      "remediations": ["Configure VPC for Lambda functions", "Use provisioned concurrency to minimize cold starts"]
+    },
+    {
+      "id": "layer-tampering",
+      "name": "Layer Tampering",
+      "description": "Tests for Lambda layers without integrity verification, enabling supply chain attacks through tampered dependencies",
+      "severity": "HIGH",
+      "mitreMapping": ["T1195.002"],
+      "preconditions": ["Lambda layers without integrity verification"],
+      "remediations": ["Enable code signing for Lambda functions", "Verify layer checksums before deployment"]
+    },
+    {
+      "id": "env-var-secrets",
+      "name": "Environment Variable Secrets",
+      "description": "Tests for Lambda functions with unencrypted environment variables that may expose secrets, API keys, and credentials",
+      "severity": "CRITICAL",
+      "mitreMapping": ["T1552.001"],
+      "preconditions": ["Lambda environment variables not encrypted with KMS"],
+      "remediations": ["Encrypt environment variables with KMS", "Use AWS Secrets Manager or Parameter Store instead"]
+    },
+    {
+      "id": "timeout-abuse",
+      "name": "Timeout Abuse",
+      "description": "Tests for Lambda functions with maximum timeout configuration that enables resource exhaustion and denial of service",
+      "severity": "MEDIUM",
+      "mitreMapping": ["T1499"],
+      "preconditions": ["Lambda timeout set to maximum (900 seconds)"],
+      "remediations": ["Set appropriate timeout limits", "Configure reserved concurrency to limit blast radius"]
+    }
+  ],
+  "capabilities": {
+    "recon": true,
+    "raid": true,
+    "escape": true,
+    "realTimeAPI": false
+  },
+  "requiredPermissions": [
+    "lambda:GetFunction",
+    "lambda:GetFunctionConfiguration",
+    "lambda:ListFunctions",
+    "lambda:ListLayers",
+    "lambda:GetLayerVersion",
+    "lambda:GetPolicy"
+  ],
+  "documentation": {
+    "readme": "README.md",
+    "examples": "examples/",
+    "api": "docs/api.md"
+  },
+  "frameworkMappings": {
+    "drift": {
+      "environmentVariablesEncrypted": {
+        "mitre": "T1552.001",
+        "mitreName": "Credentials In Files",
+        "controls": {
+          "NIST-800-53": [{"controlId": "SC-28", "controlName": "Protection of Information at Rest"}, {"controlId": "SC-12", "controlName": "Cryptographic Key Establishment and Management"}],
+          "NIST-CSF": [{"controlId": "PR.DS-1", "controlName": "Data-at-rest is protected"}],
+          "SOC2": [{"controlId": "CC6.1", "controlName": "Logical access security"}],
+          "CIS": [{"controlId": "2.8", "controlName": "Ensure Lambda environment variables are encrypted"}],
+          "ISO27001": [{"controlId": "A.10.1.1", "controlName": "Policy on the use of cryptographic controls"}],
+          "PCI-DSS": [{"controlId": "3.4", "controlName": "Render PAN unreadable anywhere it is stored"}]
+        },
+        "nist": "PR.DS-1",
+        "nistFunction": "Protect - Data Security",
+        "soc2": "CC6.1",
+        "soc2Description": "Logical access security",
+        "description": "Unencrypted environment variables may expose secrets and API keys"
+      },
+      "vpcConfigured": {
+        "mitre": "T1190",
+        "mitreName": "Exploit Public-Facing Application",
+        "controls": {
+          "NIST-800-53": [{"controlId": "SC-7", "controlName": "Boundary Protection"}, {"controlId": "AC-4", "controlName": "Information Flow Enforcement"}],
+          "NIST-CSF": [{"controlId": "PR.AC-5", "controlName": "Network integrity is protected"}],
+          "SOC2": [{"controlId": "CC6.6", "controlName": "System boundaries"}],
+          "CIS": [{"controlId": "2.9", "controlName": "Ensure Lambda functions are deployed within a VPC"}],
+          "ISO27001": [{"controlId": "A.13.1.1", "controlName": "Network controls"}],
+          "PCI-DSS": [{"controlId": "1.3", "controlName": "Prohibit direct public access"}]
+        },
+        "nist": "PR.AC-5",
+        "nistFunction": "Protect - Access Control",
+        "soc2": "CC6.6",
+        "soc2Description": "System boundaries",
+        "description": "Lambda without VPC runs in shared AWS network, increasing attack surface"
+      },
+      "layerIntegrityVerified": {
+        "mitre": "T1195.002",
+        "mitreName": "Compromise Software Supply Chain",
+        "controls": {
+          "NIST-800-53": [{"controlId": "SA-12", "controlName": "Supply Chain Protection"}, {"controlId": "SI-7", "controlName": "Software and Information Integrity"}],
+          "NIST-CSF": [{"controlId": "PR.IP-2", "controlName": "Configuration change control processes"}],
+          "SOC2": [{"controlId": "CC8.1", "controlName": "Change management"}],
+          "CIS": [{"controlId": "2.10", "controlName": "Ensure Lambda layer integrity is verified"}],
+          "ISO27001": [{"controlId": "A.14.2.7", "controlName": "Outsourced development"}],
+          "PCI-DSS": [{"controlId": "6.3", "controlName": "Develop software applications securely"}]
+        },
+        "nist": "PR.IP-2",
+        "nistFunction": "Protect - Information Protection",
+        "soc2": "CC8.1",
+        "soc2Description": "Change management",
+        "description": "Unverified Lambda layers could contain tampered code"
+      },
+      "timeoutConfigured": {
+        "mitre": "T1499",
+        "mitreName": "Endpoint Denial of Service",
+        "controls": {
+          "NIST-800-53": [{"controlId": "SC-5", "controlName": "Denial of Service Protection"}],
+          "NIST-CSF": [{"controlId": "DE.CM-1", "controlName": "Network monitoring"}],
+          "SOC2": [{"controlId": "A1.2", "controlName": "System availability"}],
+          "CIS": [{"controlId": "2.11", "controlName": "Ensure Lambda timeout is appropriately configured"}],
+          "ISO27001": [{"controlId": "A.17.2.1", "controlName": "Availability of information processing facilities"}],
+          "PCI-DSS": [{"controlId": "6.6", "controlName": "Address threats and vulnerabilities"}]
+        },
+        "nist": "DE.CM-1",
+        "nistFunction": "Detect - Continuous Monitoring",
+        "soc2": "A1.2",
+        "soc2Description": "System availability",
+        "description": "Maximum timeout configuration enables resource exhaustion attacks"
+      }
+    },
+    "attackVectors": {
+      "cold-start-injection": {
+        "mitre": "T1190",
+        "mitreName": "Exploit Public-Facing Application",
+        "nist": "PR.AC-5",
+        "nistFunction": "Protect - Access Control",
+        "soc2": "CC6.6",
+        "soc2Description": "System boundaries",
+        "description": "Cold start injection exploits unprotected Lambda initialization in shared network"
+      },
+      "layer-tampering": {
+        "mitre": "T1195.002",
+        "mitreName": "Compromise Software Supply Chain",
+        "nist": "PR.IP-2",
+        "nistFunction": "Protect - Information Protection",
+        "soc2": "CC8.1",
+        "soc2Description": "Change management",
+        "description": "Layer tampering test identifies Lambda layers without integrity verification"
+      },
+      "env-var-secrets": {
+        "mitre": "T1552.001",
+        "mitreName": "Credentials In Files",
+        "nist": "PR.DS-1",
+        "nistFunction": "Protect - Data Security",
+        "soc2": "CC6.1",
+        "soc2Description": "Logical access security",
+        "description": "Environment variable secrets test identifies unencrypted sensitive configuration"
+      },
+      "timeout-abuse": {
+        "mitre": "T1499",
+        "mitreName": "Endpoint Denial of Service",
+        "nist": "DE.CM-1",
+        "nistFunction": "Detect - Continuous Monitoring",
+        "soc2": "A1.2",
+        "soc2Description": "System availability",
+        "description": "Timeout abuse test identifies Lambda functions vulnerable to resource exhaustion"
+      }
+    }
+  }
+}

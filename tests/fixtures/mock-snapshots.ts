@@ -8,7 +8,9 @@
  *   import { compliantSnapshot, nonCompliantSnapshot } from "../fixtures/mock-snapshots";
  */
 
-import type { CognitoSnapshot, S3Snapshot } from "../../src/corsair-mvp";
+import type { CognitoSnapshot, S3Snapshot, IAMSnapshot } from "../../src/corsair-mvp";
+import type { LambdaSnapshot } from "../../plugins/aws-lambda/aws-lambda-plugin";
+import type { RDSSnapshot } from "../../plugins/aws-rds/aws-rds-plugin";
 
 /**
  * Compliant snapshot - MFA ON, strong password policy, risk config enabled
@@ -228,6 +230,183 @@ export function createMockSnapshot(overrides: Partial<CognitoSnapshot> = {}): Co
       challengeRequiredOnNewDevice: false,
       deviceOnlyRememberedOnUserPrompt: false,
     },
+    observedAt: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+// ===============================================================================
+// IAM SNAPSHOTS
+// ===============================================================================
+
+/**
+ * Compliant IAM snapshot - MFA enabled, least privilege, rotated keys, no unused creds
+ */
+export const compliantIAMSnapshot: IAMSnapshot = {
+  accountId: "123456789012",
+  mfaEnabled: true,
+  hasOverprivilegedPolicies: false,
+  unusedCredentialsExist: false,
+  accessKeysRotated: true,
+  rootAccountMfaEnabled: true,
+  users: 25,
+  roles: 15,
+  policies: 40,
+  observedAt: new Date().toISOString(),
+};
+
+/**
+ * Non-compliant IAM snapshot - No MFA, overprivileged, stale keys, unused creds
+ */
+export const nonCompliantIAMSnapshot: IAMSnapshot = {
+  accountId: "987654321098",
+  mfaEnabled: false,
+  hasOverprivilegedPolicies: true,
+  unusedCredentialsExist: true,
+  accessKeysRotated: false,
+  rootAccountMfaEnabled: false,
+  users: 50,
+  roles: 30,
+  policies: 120,
+  observedAt: new Date().toISOString(),
+};
+
+/**
+ * Factory function to create custom IAM snapshot for specific test cases
+ */
+export function createMockIAMSnapshot(overrides: Partial<IAMSnapshot> = {}): IAMSnapshot {
+  return {
+    accountId: `test-account-${Date.now()}`,
+    mfaEnabled: false,
+    hasOverprivilegedPolicies: false,
+    unusedCredentialsExist: false,
+    accessKeysRotated: true,
+    rootAccountMfaEnabled: false,
+    users: 10,
+    roles: 5,
+    policies: 15,
+    observedAt: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+// ===============================================================================
+// LAMBDA SNAPSHOTS
+// ===============================================================================
+
+/**
+ * Compliant Lambda snapshot - encrypted env vars, VPC, verified layers, code signing
+ */
+export const compliantLambdaSnapshot: LambdaSnapshot = {
+  functionName: "compliant-production-handler",
+  runtime: "nodejs20.x",
+  memorySize: 256,
+  timeout: 30,
+  environmentVariablesEncrypted: true,
+  vpcConfigured: true,
+  layerIntegrityVerified: true,
+  codeSigningEnabled: true,
+  reservedConcurrency: 100,
+  deadLetterQueueConfigured: true,
+  tracingEnabled: true,
+  observedAt: new Date().toISOString(),
+};
+
+/**
+ * Non-compliant Lambda snapshot - unencrypted env vars, no VPC, unverified layers
+ */
+export const nonCompliantLambdaSnapshot: LambdaSnapshot = {
+  functionName: "legacy-dev-handler",
+  runtime: "nodejs18.x",
+  memorySize: 128,
+  timeout: 900,
+  environmentVariablesEncrypted: false,
+  vpcConfigured: false,
+  layerIntegrityVerified: false,
+  codeSigningEnabled: false,
+  reservedConcurrency: null,
+  deadLetterQueueConfigured: false,
+  tracingEnabled: false,
+  observedAt: new Date().toISOString(),
+};
+
+/**
+ * Factory function to create custom Lambda snapshot for specific test cases
+ */
+export function createMockLambdaSnapshot(overrides: Partial<LambdaSnapshot> = {}): LambdaSnapshot {
+  return {
+    functionName: `test-function-${Date.now()}`,
+    runtime: "nodejs20.x",
+    memorySize: 128,
+    timeout: 30,
+    environmentVariablesEncrypted: false,
+    vpcConfigured: false,
+    layerIntegrityVerified: false,
+    codeSigningEnabled: false,
+    reservedConcurrency: null,
+    deadLetterQueueConfigured: false,
+    tracingEnabled: false,
+    observedAt: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+// ===============================================================================
+// RDS SNAPSHOTS
+// ===============================================================================
+
+/**
+ * Compliant RDS snapshot - private, encrypted, IAM auth, audit logging, multi-AZ
+ */
+export const compliantRDSSnapshot: RDSSnapshot = {
+  instanceId: "compliant-production-db",
+  engine: "postgres",
+  engineVersion: "15.4",
+  publiclyAccessible: false,
+  storageEncrypted: true,
+  iamAuthEnabled: true,
+  auditLogging: true,
+  multiAZ: true,
+  backupRetentionDays: 30,
+  deletionProtection: true,
+  performanceInsightsEnabled: true,
+  observedAt: new Date().toISOString(),
+};
+
+/**
+ * Non-compliant RDS snapshot - public, unencrypted, password auth, no logging
+ */
+export const nonCompliantRDSSnapshot: RDSSnapshot = {
+  instanceId: "legacy-dev-db",
+  engine: "mysql",
+  engineVersion: "5.7.44",
+  publiclyAccessible: true,
+  storageEncrypted: false,
+  iamAuthEnabled: false,
+  auditLogging: false,
+  multiAZ: false,
+  backupRetentionDays: 1,
+  deletionProtection: false,
+  performanceInsightsEnabled: false,
+  observedAt: new Date().toISOString(),
+};
+
+/**
+ * Factory function to create custom RDS snapshot for specific test cases
+ */
+export function createMockRDSSnapshot(overrides: Partial<RDSSnapshot> = {}): RDSSnapshot {
+  return {
+    instanceId: `test-db-${Date.now()}`,
+    engine: "postgres",
+    engineVersion: "15.4",
+    publiclyAccessible: false,
+    storageEncrypted: false,
+    iamAuthEnabled: false,
+    auditLogging: false,
+    multiAZ: false,
+    backupRetentionDays: 7,
+    deletionProtection: false,
+    performanceInsightsEnabled: false,
     observedAt: new Date().toISOString(),
     ...overrides,
   };

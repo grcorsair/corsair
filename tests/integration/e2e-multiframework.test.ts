@@ -232,15 +232,39 @@ describe("E2E Multi-Framework - Cross-Provider Plugin Discovery", () => {
     await corsair.initialize();
   });
 
-  test("discovers all 3 plugins", () => {
+  test("discovers all 6 plugins", () => {
     expect(corsair.hasPlugin("aws-cognito")).toBe(true);
     expect(corsair.hasPlugin("aws-s3")).toBe(true);
     expect(corsair.hasPlugin("azure-entra")).toBe(true);
+    expect(corsair.hasPlugin("aws-iam")).toBe(true);
+    expect(corsair.hasPlugin("aws-lambda")).toBe(true);
+    expect(corsair.hasPlugin("aws-rds")).toBe(true);
   });
 
   test("total attack vectors across plugins >= 10", () => {
     const plugins = corsair.getPlugins();
     const totalVectors = plugins.reduce((sum, p) => sum + p.manifest.attackVectors.length, 0);
     expect(totalVectors).toBeGreaterThanOrEqual(10);
+  });
+
+  test("threat model available after RECON", async () => {
+    const recon = await corsair.recon("test-pool", { source: "fixture" });
+    const tm = await corsair.threatModel(
+      recon.snapshot as Record<string, unknown>,
+      "aws-cognito"
+    );
+    expect(tm.threats).toBeInstanceOf(Array);
+    expect(tm.threats.length).toBeGreaterThanOrEqual(1);
+    expect(tm.methodology).toBe("STRIDE-automated");
+  });
+
+  test("chart result includes threatModel field when threat model was used", async () => {
+    const recon = await corsair.recon("test-pool", { source: "fixture" });
+    const autoMarkResult = await corsair.autoMark(
+      recon.snapshot as Record<string, unknown>,
+      "aws-cognito"
+    );
+    expect(autoMarkResult.threatModel).toBeDefined();
+    expect(autoMarkResult.threatModel.methodology).toBe("STRIDE-automated");
   });
 });
