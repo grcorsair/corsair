@@ -98,6 +98,31 @@ body {
   opacity: 0.5;
 }
 
+/* ── Pixel art stepped divider (alternate) ── */
+.section-divider-pixel {
+  position: relative;
+  overflow: hidden;
+}
+
+.section-divider-pixel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-corsair-cyan) 0px,
+    var(--color-corsair-cyan) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  opacity: 0.4;
+  image-rendering: pixelated;
+}
+
 /* ── Animations ────────────────────────────────────────── */
 @keyframes fadeIn {
   from {

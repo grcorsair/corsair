@@ -12,9 +12,12 @@ export default function Home() {
       <HeroSection />
 
       {/* Pipeline Visualization */}
-      <section className="section-divider px-6 py-20">
+      <section className="section-divider-pixel px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
+            <p className="mb-3 text-center font-pixel text-[8px] tracking-widest text-corsair-cyan/60">
+              THE PIPELINE
+            </p>
             <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
               The Corsair Pipeline
             </h2>
@@ -47,9 +50,12 @@ export default function Home() {
       </section>
 
       {/* Framework Grid */}
-      <section className="section-divider px-6 py-20">
+      <section className="section-divider-pixel px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
+            <p className="mb-3 text-center font-pixel text-[8px] tracking-widest text-corsair-gold/60">
+              FRAMEWORKS
+            </p>
             <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
               13+ Compliance Frameworks
             </h2>

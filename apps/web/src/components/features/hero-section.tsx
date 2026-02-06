@@ -46,6 +46,18 @@ export function HeroSection() {
           </span>
         </motion.h1>
 
+        {/* Version badge — pixel font accent */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mb-4 flex justify-center"
+        >
+          <span className="inline-block rounded border border-corsair-cyan/30 bg-corsair-cyan/5 px-3 py-1 font-pixel text-[8px] tracking-wider text-corsair-cyan">
+            v0.2.0 &middot; OPEN SOURCE
+          </span>
+        </motion.div>
+
         {/* Subheadline */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}

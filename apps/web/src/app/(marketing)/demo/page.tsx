@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { TerminalDemo } from "@/components/features/terminal-demo";
+import { DemoRecording } from "@/components/features/demo-recording";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion/fade-in";
 
 export const metadata: Metadata = {
@@ -13,31 +17,43 @@ const demoScenarios = [
     provider: "AWS Cognito",
     description: "MFA bypass, password spray, session hijack assessment",
     findings: "4 threats, 2 CRITICAL",
+    badge: "CRITICAL",
+    badgeColor: "bg-corsair-crimson/10 text-corsair-crimson border-corsair-crimson/30",
   },
   {
     provider: "AWS S3",
     description: "Public access, encryption, versioning controls",
     findings: "3 threats, 1 CRITICAL",
+    badge: "CRITICAL",
+    badgeColor: "bg-corsair-crimson/10 text-corsair-crimson border-corsair-crimson/30",
   },
   {
     provider: "AWS IAM",
     description: "Privilege escalation, policy drift, unused credentials",
     findings: "5 threats, 3 HIGH",
+    badge: "HIGH",
+    badgeColor: "bg-corsair-gold/10 text-corsair-gold border-corsair-gold/30",
   },
   {
     provider: "AWS Lambda",
     description: "Runtime security, environment variable exposure",
     findings: "2 threats, 1 HIGH",
+    badge: "HIGH",
+    badgeColor: "bg-corsair-gold/10 text-corsair-gold border-corsair-gold/30",
   },
   {
     provider: "AWS RDS",
     description: "Encryption at rest, public accessibility, backup retention",
     findings: "3 threats, 1 CRITICAL",
+    badge: "CRITICAL",
+    badgeColor: "bg-corsair-crimson/10 text-corsair-crimson border-corsair-crimson/30",
   },
   {
     provider: "GitLab",
     description: "Branch protection, secret scanning, merge request rules",
     findings: "4 threats, 2 HIGH",
+    badge: "HIGH",
+    badgeColor: "bg-corsair-gold/10 text-corsair-gold border-corsair-gold/30",
   },
 ];
 
@@ -71,6 +87,9 @@ export default function DemoPage() {
         {/* Header */}
         <FadeIn>
           <div className="mb-12 text-center">
+            <p className="mb-3 font-pixel text-[8px] tracking-widest text-corsair-cyan/60">
+              LIVE DEMO
+            </p>
             <h1 className="mb-4 font-display text-4xl font-bold text-corsair-text">
               Watch Corsair in Action
             </h1>
@@ -81,10 +100,31 @@ export default function DemoPage() {
           </div>
         </FadeIn>
 
-        {/* Live terminal demo */}
+        {/* Animated terminal demo */}
         <FadeIn delay={0.2}>
-          <div className="mb-16">
+          <div className="mb-8">
+            <h2 className="mb-4 font-display text-xl font-bold text-corsair-text">
+              Quick Preview
+            </h2>
             <TerminalDemo />
+          </div>
+        </FadeIn>
+
+        {/* Full asciinema recording */}
+        <FadeIn delay={0.3}>
+          <div className="mb-16">
+            <h2 className="mb-4 font-display text-xl font-bold text-corsair-text">
+              Full Mission Recording
+            </h2>
+            <p className="mb-4 text-sm text-corsair-text-dim">
+              Scrub through the full pipeline output. Copy any line.
+            </p>
+            <DemoRecording
+              castFile="/demo/corsair-cognito-demo.cast"
+              cols={120}
+              rows={30}
+              speed={1.5}
+            />
           </div>
         </FadeIn>
 
@@ -97,20 +137,30 @@ export default function DemoPage() {
         <FadeIn delay={0.1}>
           <div className="mb-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {demoScenarios.map((scenario) => (
-              <div
+              <Card
                 key={scenario.provider}
-                className="rounded-xl border border-corsair-border bg-corsair-surface p-5 transition-all hover:border-corsair-cyan/40"
+                className="bg-corsair-surface transition-all hover:border-corsair-cyan/40"
               >
-                <div className="mb-2 font-display text-lg font-bold text-corsair-text">
-                  {scenario.provider}
-                </div>
-                <p className="mb-3 text-sm text-corsair-text-dim">
-                  {scenario.description}
-                </p>
-                <div className="font-mono text-xs text-corsair-crimson">
-                  {scenario.findings}
-                </div>
-              </div>
+                <CardContent className="p-5">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="font-display text-lg font-bold text-corsair-text">
+                      {scenario.provider}
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] ${scenario.badgeColor}`}
+                    >
+                      {scenario.badge}
+                    </Badge>
+                  </div>
+                  <p className="mb-3 text-sm text-corsair-text-dim">
+                    {scenario.description}
+                  </p>
+                  <div className="font-mono text-xs text-corsair-crimson">
+                    {scenario.findings}
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </FadeIn>
@@ -124,22 +174,21 @@ export default function DemoPage() {
         <FadeIn delay={0.1}>
           <div className="grid gap-4 sm:grid-cols-2">
             {sampleOutputs.map((output) => (
-              <div
-                key={output.name}
-                className="flex items-center gap-4 rounded-xl border border-corsair-border bg-corsair-surface p-5"
-              >
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-corsair-deep font-mono text-xs font-bold text-corsair-cyan">
-                  {output.format}
-                </div>
-                <div>
-                  <div className="font-display text-sm font-bold text-corsair-text">
-                    {output.name}
+              <Card key={output.name} className="bg-corsair-surface">
+                <CardContent className="flex items-center gap-4 p-5">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-corsair-deep font-mono text-xs font-bold text-corsair-cyan">
+                    {output.format}
                   </div>
-                  <div className="text-xs text-corsair-text-dim">
-                    {output.description}
+                  <div>
+                    <div className="font-display text-sm font-bold text-corsair-text">
+                      {output.name}
+                    </div>
+                    <div className="text-xs text-corsair-text-dim">
+                      {output.description}
+                    </div>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </FadeIn>
@@ -150,14 +199,15 @@ export default function DemoPage() {
             <p className="mb-6 text-corsair-text-dim">
               Ready to run your own mission?
             </p>
-            <a
-              href="https://github.com/Arudjreis/corsair"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block rounded-lg bg-corsair-cyan px-8 py-3 font-display text-sm font-semibold text-corsair-deep transition-all hover:shadow-[0_0_30px_rgba(0,207,255,0.3)]"
-            >
-              Get Started on GitHub
-            </a>
+            <Button size="lg" className="font-display font-semibold shadow-[0_0_20px_rgba(0,207,255,0.2)]" asChild>
+              <a
+                href="https://github.com/Arudjreis/corsair"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Get Started on GitHub
+              </a>
+            </Button>
           </div>
         </FadeIn>
       </div>

@@ -36,7 +36,7 @@ export function Footer() {
             <p className="mt-2 text-sm leading-relaxed text-corsair-text-dim">
               Agentic GRC chaos engineering. Attack first. Discover reality. Evidence emerges.
             </p>
-            <p className="mt-3 font-mono text-xs text-corsair-text-dim/60">
+            <p className="mt-3 font-pixel text-[7px] tracking-wider text-corsair-text-dim/60">
               v0.2.0 &middot; MIT License
             </p>
           </div>

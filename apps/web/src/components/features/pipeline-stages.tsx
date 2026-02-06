@@ -1,3 +1,6 @@
+"use client";
+
+import { motion } from "motion/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -12,6 +15,7 @@ const stages = [
       </svg>
     ),
     color: "text-corsair-cyan",
+    glowColor: "rgba(0,207,255,0.2)",
   },
   {
     name: "SPYGLASS",
@@ -22,6 +26,7 @@ const stages = [
       </svg>
     ),
     color: "text-corsair-turquoise",
+    glowColor: "rgba(127,219,202,0.2)",
   },
   {
     name: "MARK",
@@ -32,6 +37,7 @@ const stages = [
       </svg>
     ),
     color: "text-corsair-gold",
+    glowColor: "rgba(212,168,83,0.2)",
   },
   {
     name: "RAID",
@@ -42,6 +48,7 @@ const stages = [
       </svg>
     ),
     color: "text-corsair-crimson",
+    glowColor: "rgba(192,57,43,0.2)",
   },
   {
     name: "PLUNDER",
@@ -52,6 +59,7 @@ const stages = [
       </svg>
     ),
     color: "text-corsair-cyan",
+    glowColor: "rgba(0,207,255,0.2)",
   },
   {
     name: "CHART",
@@ -62,6 +70,7 @@ const stages = [
       </svg>
     ),
     color: "text-corsair-turquoise",
+    glowColor: "rgba(127,219,202,0.2)",
   },
   {
     name: "QUARTER",
@@ -72,6 +81,7 @@ const stages = [
       </svg>
     ),
     color: "text-corsair-gold",
+    glowColor: "rgba(212,168,83,0.2)",
   },
   {
     name: "MARQUE",
@@ -82,14 +92,42 @@ const stages = [
       </svg>
     ),
     color: "text-corsair-green",
+    glowColor: "rgba(46,204,113,0.2)",
   },
 ];
 
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.1 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.4, ease: "easeOut" as const },
+  },
+};
+
 export function PipelineStages() {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
+    <motion.div
+      className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8"
+      variants={containerVariants}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-80px" }}
+    >
       {stages.map((stage, i) => (
-        <div key={stage.name} className="group flex flex-col items-center">
+        <motion.div
+          key={stage.name}
+          variants={itemVariants}
+          className="group flex flex-col items-center"
+        >
           <Card className="mb-3 flex h-14 w-14 items-center justify-center bg-corsair-surface transition-all group-hover:border-corsair-cyan group-hover:shadow-[0_0_15px_rgba(0,207,255,0.15)]">
             <CardContent className={`p-0 ${stage.color}`}>
               {stage.icon}
@@ -113,8 +151,8 @@ export function PipelineStages() {
               →
             </span>
           )}
-        </div>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 }

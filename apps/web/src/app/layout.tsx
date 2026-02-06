@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Inter, JetBrains_Mono, Press_Start_2P } from "next/font/google";
-import { FirebaseAnalytics } from "@/components/analytics/firebase-analytics";
+
 import "./globals.css";
 
 const inter = Inter({
@@ -87,7 +87,6 @@ export default function RootLayout({
     >
       <body className="min-h-screen bg-corsair-deep text-corsair-text antialiased">
         {children}
-        <FirebaseAnalytics />
       </body>
     </html>
   );
