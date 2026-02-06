@@ -1,0 +1,59 @@
+---
+title: "AWS Lambda"
+description: "Function URL authentication, runtime version, environment variable exposure, and concurrency limit tests for AWS Lambda."
+section: "plugins"
+order: 23
+---
+
+## Overview
+
+The AWS Lambda plugin tests serverless function security — unauthenticated function URLs, outdated runtimes, exposed secrets in environment variables, and missing concurrency guardrails.
+
+## Attack Vectors
+
+### Unauthenticated Function URL (`unauthenticated-function-url`)
+
+**Severity:** CRITICAL
+**MITRE ATT&CK:** T1190 (Exploit Public-Facing Application)
+
+Detects Lambda function URLs configured with `AuthType: NONE`, exposing the function to unauthenticated invocations from the internet.
+
+### Outdated Runtime (`outdated-runtime`)
+
+**Severity:** HIGH
+**MITRE ATT&CK:** T1203 (Exploitation for Client Execution)
+
+Checks whether the function uses a deprecated or end-of-life runtime version (e.g., Node.js 14.x, Python 3.7) that no longer receives security patches.
+
+### Environment Variable Exposure (`env-var-exposure`)
+
+**Severity:** HIGH
+**MITRE ATT&CK:** T1552 (Unsecured Credentials)
+
+Scans environment variable names for patterns that suggest embedded secrets (API keys, database passwords, tokens) that should be stored in Secrets Manager or SSM Parameter Store instead.
+
+### Missing Concurrency Limit (`missing-concurrency-limit`)
+
+**Severity:** MEDIUM
+**MITRE ATT&CK:** T1499 (Endpoint Denial of Service)
+
+Checks whether reserved concurrency is configured to prevent a single function from consuming the entire account's Lambda concurrency pool during a denial-of-service attack.
+
+## Usage
+
+```bash
+# Demo mode
+bun corsair.ts --target demo --service lambda
+
+# Live mode
+bun corsair.ts --target my-function-name --service lambda
+```
+
+## Required Permissions
+
+```
+lambda:GetFunction
+lambda:GetFunctionConfiguration
+lambda:GetFunctionUrlConfig
+lambda:ListFunctions
+```

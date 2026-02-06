@@ -1,0 +1,106 @@
+---
+title: "CI/CD Integration"
+description: "Run Corsair in your CI/CD pipeline for continuous adversarial compliance testing."
+section: "integrations"
+order: 32
+---
+
+## Overview
+
+Corsair runs in any CI/CD pipeline that supports Bun. Use it for continuous adversarial testing — validate that security controls are operating on every deployment.
+
+## GitHub Actions
+
+```yaml
+name: Corsair Security Assessment
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly Monday 6am UTC
+  workflow_dispatch:
+
+jobs:
+  corsair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Corsair
+        run: |
+          git clone https://github.com/Arudjreis/corsair.git /tmp/corsair
+          cd /tmp/corsair && bun install
+
+      - name: Run Assessment
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-west-2
+        run: |
+          cd /tmp/corsair
+          bun corsair.ts \
+            --target ${{ vars.COGNITO_POOL_ID }} \
+            --service cognito \
+            --format oscal \
+            --output /tmp/evidence.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: corsair-evidence
+          path: /tmp/evidence.json
+```
+
+## GitLab CI
+
+```yaml
+corsair:
+  image: oven/bun:latest
+  stage: test
+  only:
+    - schedules
+  script:
+    - git clone https://github.com/Arudjreis/corsair.git /tmp/corsair
+    - cd /tmp/corsair && bun install
+    - bun corsair.ts --target $COGNITO_POOL_ID --service cognito --format oscal --output evidence.json
+  artifacts:
+    paths:
+      - evidence.json
+    expire_in: 90 days
+```
+
+## Jenkins
+
+```groovy
+pipeline {
+    agent any
+    triggers { cron('H 6 * * 1') }
+    stages {
+        stage('Corsair Assessment') {
+            steps {
+                sh '''
+                    bun corsair.ts \
+                        --target ${COGNITO_POOL_ID} \
+                        --service cognito \
+                        --output evidence/corsair-${BUILD_ID}.jsonl \
+                        --quiet
+                '''
+            }
+        }
+    }
+    post {
+        always {
+            archiveArtifacts artifacts: 'evidence/*.jsonl'
+        }
+    }
+}
+```
+
+## Best Practices
+
+1. **Schedule weekly** — Run assessments on a recurring schedule, not just on deploys
+2. **Use demo mode in PRs** — Run `--target demo` in pull request checks to validate Corsair itself
+3. **Archive evidence** — Store OSCAL/JSONL artifacts for audit trail
+4. **Alert on failures** — Send Slack/email notifications when ISC criteria fail
+5. **Rotate credentials** — Use short-lived AWS credentials (OIDC) instead of static keys

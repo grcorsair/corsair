@@ -1,0 +1,61 @@
+---
+title: "AWS S3"
+description: "Public access testing, encryption verification, and versioning checks for AWS S3 buckets."
+section: "plugins"
+order: 21
+---
+
+## Overview
+
+The AWS S3 plugin provides three attack vectors targeting bucket security configuration, encryption, and data protection.
+
+## Attack Vectors
+
+### Public Access Test (`public-access-test`)
+
+**Severity:** CRITICAL
+**MITRE ATT&CK:** T1530 (Data from Cloud Storage Object)
+
+Tests whether the S3 bucket's public access block is properly configured. Detects misconfigured `BlockPublicAcls`, `BlockPublicPolicy`, `IgnorePublicAcls`, and `RestrictPublicBuckets` settings.
+
+### Encryption Test (`encryption-test`)
+
+**Severity:** HIGH
+**MITRE ATT&CK:** T1530 (Data from Cloud Storage Object)
+
+Validates server-side encryption configuration. Checks for AES-256 or AWS KMS encryption, and verifies that bucket-level default encryption is enabled.
+
+### Versioning Test (`versioning-test`)
+
+**Severity:** MEDIUM
+**MITRE ATT&CK:** T1485 (Data Destruction)
+
+Tests whether versioning is enabled to protect against accidental or malicious data deletion. Checks MFA Delete configuration for additional protection.
+
+## Framework Mappings
+
+| Finding | MITRE | NIST 800-53 | SOC2 |
+|---------|-------|-------------|------|
+| Public access not blocked | T1530 | AC-3 | CC6.1 |
+| No server-side encryption | T1530 | SC-28 | CC6.1 |
+| Versioning disabled | T1485 | CP-9 | CC6.6 |
+
+## Usage
+
+```bash
+# Demo mode
+bun corsair.ts --target demo --service s3
+
+# Live mode
+bun corsair.ts --target my-bucket-name --service s3
+```
+
+## Required Permissions
+
+```
+s3:GetBucketPublicAccessBlock
+s3:GetBucketEncryption
+s3:GetBucketVersioning
+s3:GetBucketPolicy
+s3:GetBucketLogging
+```
