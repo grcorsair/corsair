@@ -1,7 +1,7 @@
 /**
- * Admiral Agent — Governance Verification Layer
+ * Quartermaster Agent — Governance Verification Layer
  *
- * The Admiral is an adversarial evaluator that reviews Corsair assessment
+ * The Quartermaster is an adversarial evaluator that reviews Corsair assessment
  * results for integrity, completeness, methodology, and bias.
  *
  * Architecture:
@@ -19,12 +19,12 @@ import { createHash } from "crypto";
 import { existsSync, readFileSync } from "fs";
 
 import type {
-  AdmiralConfig,
-  AdmiralInput,
-  AdmiralGovernanceReport,
-  AdmiralDimensionScore,
-  AdmiralFinding,
-} from "./admiral-types";
+  QuartermasterConfig,
+  QuartermasterInput,
+  QuartermasterGovernanceReport,
+  QuartermasterDimensionScore,
+  QuartermasterFinding,
+} from "./quartermaster-types";
 
 // =============================================================================
 // DIMENSION CHECK RESULT (internal)
@@ -32,7 +32,7 @@ import type {
 
 export interface DimensionCheckResult {
   score: number;
-  findings: AdmiralFinding[];
+  findings: QuartermasterFinding[];
 }
 
 // =============================================================================
@@ -55,12 +55,12 @@ const DEFAULT_TRUST_THRESHOLDS = {
 // ADMIRAL AGENT
 // =============================================================================
 
-export class AdmiralAgent {
-  private config: AdmiralConfig;
+export class QuartermasterAgent {
+  private config: QuartermasterConfig;
   private weights: Record<string, number>;
   private trustThresholds: { aiVerified: number; auditorVerified: number };
 
-  constructor(config: AdmiralConfig) {
+  constructor(config: QuartermasterConfig) {
     this.config = config;
     this.weights = { ...DEFAULT_WEIGHTS, ...config.weights };
     this.trustThresholds = {
@@ -73,7 +73,7 @@ export class AdmiralAgent {
   // PUBLIC: Full evaluation (deterministic only — LLM phase is opt-in)
   // ===========================================================================
 
-  async evaluate(input: AdmiralInput): Promise<AdmiralGovernanceReport> {
+  async evaluate(input: QuartermasterInput): Promise<QuartermasterGovernanceReport> {
     const startTime = Date.now();
 
     // Phase 1: Deterministic checks
@@ -86,7 +86,7 @@ export class AdmiralAgent {
     const biasResult = this.checkBias(input);
 
     // Phase 3: Build dimensions
-    const dimensions: AdmiralDimensionScore[] = [
+    const dimensions: QuartermasterDimensionScore[] = [
       {
         dimension: "methodology",
         score: methodologyResult.score,
@@ -137,8 +137,8 @@ export class AdmiralAgent {
     const durationMs = Date.now() - startTime;
 
     // Build report
-    const report: Omit<AdmiralGovernanceReport, "reportHash"> = {
-      reportId: `admiral-${Date.now()}`,
+    const report: Omit<QuartermasterGovernanceReport, "reportHash"> = {
+      reportId: `quartermaster-${Date.now()}`,
       confidenceScore,
       dimensions,
       trustTier,
@@ -166,8 +166,8 @@ export class AdmiralAgent {
   /**
    * Check evidence hash chain integrity across all evidence files.
    */
-  checkEvidenceIntegrity(input: AdmiralInput): DimensionCheckResult {
-    const findings: AdmiralFinding[] = [];
+  checkEvidenceIntegrity(input: QuartermasterInput): DimensionCheckResult {
+    const findings: QuartermasterFinding[] = [];
 
     if (input.evidencePaths.length === 0) {
       findings.push({
@@ -221,8 +221,8 @@ export class AdmiralAgent {
   /**
    * Check timestamp consistency across evidence records.
    */
-  checkTimestampConsistency(input: AdmiralInput): DimensionCheckResult {
-    const findings: AdmiralFinding[] = [];
+  checkTimestampConsistency(input: QuartermasterInput): DimensionCheckResult {
+    const findings: QuartermasterFinding[] = [];
     let score = 100;
 
     for (const path of input.evidencePaths) {
@@ -281,8 +281,8 @@ export class AdmiralAgent {
   /**
    * Check that every RAID result has corresponding PLUNDER evidence.
    */
-  checkRaidPlunderCorrelation(input: AdmiralInput): DimensionCheckResult {
-    const findings: AdmiralFinding[] = [];
+  checkRaidPlunderCorrelation(input: QuartermasterInput): DimensionCheckResult {
+    const findings: QuartermasterFinding[] = [];
 
     if (input.raidResults.length === 0) {
       return { score: 100, findings };
@@ -327,8 +327,8 @@ export class AdmiralAgent {
   // PRIVATE: Additional deterministic checks
   // ===========================================================================
 
-  private checkMethodology(input: AdmiralInput): DimensionCheckResult {
-    const findings: AdmiralFinding[] = [];
+  private checkMethodology(input: QuartermasterInput): DimensionCheckResult {
+    const findings: QuartermasterFinding[] = [];
     let score = 100;
 
     // Check: Were MARK results produced?
@@ -399,8 +399,8 @@ export class AdmiralAgent {
     return { score: Math.max(0, Math.min(100, score)), findings };
   }
 
-  private checkBias(input: AdmiralInput): DimensionCheckResult {
-    const findings: AdmiralFinding[] = [];
+  private checkBias(input: QuartermasterInput): DimensionCheckResult {
+    const findings: QuartermasterFinding[] = [];
     let score = 100;
 
     // Check: Are all RAID results successful (too good to be true)?
@@ -519,7 +519,7 @@ export class AdmiralAgent {
     return Math.round((timestampResult.score + correlationResult.score) / 2);
   }
 
-  private computeWeightedScore(dimensions: AdmiralDimensionScore[]): number {
+  private computeWeightedScore(dimensions: QuartermasterDimensionScore[]): number {
     let weighted = 0;
     for (const dim of dimensions) {
       weighted += dim.score * dim.weight;

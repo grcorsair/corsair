@@ -14,7 +14,7 @@ import type {
   Severity,
 } from "../../src/corsair-mvp";
 
-describe("STRIDE Threat Model Types", () => {
+describe("SPYGLASS Threat Model Types", () => {
   test("STRIDECategory type includes all 6 categories", () => {
     const categories: STRIDECategory[] = [
       "Spoofing",
@@ -96,9 +96,9 @@ describe("STRIDE Threat Model Types", () => {
 
   test("Empty snapshot produces empty threat model", async () => {
     // Import engine directly to test with empty snapshot
-    const { StrideEngine } = await import("../../src/corsair-mvp");
-    const engine = new StrideEngine();
-    const result = engine.strideAnalyze({}, "aws-cognito");
+    const { SpyglassEngine } = await import("../../src/corsair-mvp");
+    const engine = new SpyglassEngine();
+    const result = engine.spyglassAnalyze({}, "aws-cognito");
 
     // Empty snapshot = no field values match conditions = no threats
     // (conditions check for specific values like "OFF", null, etc.)

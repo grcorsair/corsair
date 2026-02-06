@@ -1,8 +1,8 @@
 /**
- * CPOE Key Manager Test Contract
+ * MARQUE Key Manager Test Contract
  *
  * Validates Ed25519 key generation, storage, signing, verification,
- * and key rotation for CPOE document signing.
+ * and key rotation for MARQUE document signing.
  *
  * Uses os.tmpdir() for test isolation. Cleans up after tests.
  */
@@ -11,9 +11,9 @@ import { describe, test, expect, beforeEach, afterAll } from "bun:test";
 import * as os from "os";
 import * as path from "path";
 import * as fs from "fs";
-import { CPOEKeyManager } from "../../src/parley/cpoe-key-manager";
+import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
 
-describe("CPOE Key Manager - Ed25519 Signing", () => {
+describe("MARQUE Key Manager - Ed25519 Signing", () => {
   const testDirs: string[] = [];
 
   function createTestDir(): string {
@@ -35,7 +35,7 @@ describe("CPOE Key Manager - Ed25519 Signing", () => {
 
   test("generateKeypair creates Ed25519 keypair", async () => {
     const keyDir = createTestDir();
-    const manager = new CPOEKeyManager(keyDir);
+    const manager = new MarqueKeyManager(keyDir);
 
     const keypair = await manager.generateKeypair();
 
@@ -48,7 +48,7 @@ describe("CPOE Key Manager - Ed25519 Signing", () => {
 
   test("generateKeypair stores keys at specified directory", async () => {
     const keyDir = createTestDir();
-    const manager = new CPOEKeyManager(keyDir);
+    const manager = new MarqueKeyManager(keyDir);
 
     await manager.generateKeypair();
 
@@ -58,7 +58,7 @@ describe("CPOE Key Manager - Ed25519 Signing", () => {
 
   test("loadKeypair reads existing keys", async () => {
     const keyDir = createTestDir();
-    const manager = new CPOEKeyManager(keyDir);
+    const manager = new MarqueKeyManager(keyDir);
 
     const original = await manager.generateKeypair();
     const loaded = await manager.loadKeypair();
@@ -70,7 +70,7 @@ describe("CPOE Key Manager - Ed25519 Signing", () => {
 
   test("loadKeypair returns null when no keys exist", async () => {
     const keyDir = createTestDir();
-    const manager = new CPOEKeyManager(keyDir);
+    const manager = new MarqueKeyManager(keyDir);
 
     const loaded = await manager.loadKeypair();
 
@@ -79,10 +79,10 @@ describe("CPOE Key Manager - Ed25519 Signing", () => {
 
   test("sign produces valid Ed25519 signature", async () => {
     const keyDir = createTestDir();
-    const manager = new CPOEKeyManager(keyDir);
+    const manager = new MarqueKeyManager(keyDir);
     const keypair = await manager.generateKeypair();
 
-    const data = "test-cpoe-document-content";
+    const data = "test-marque-document-content";
     const signature = manager.sign(data, keypair.privateKey);
 
     expect(signature).toBeDefined();
@@ -93,10 +93,10 @@ describe("CPOE Key Manager - Ed25519 Signing", () => {
 
   test("verify validates correct signature", async () => {
     const keyDir = createTestDir();
-    const manager = new CPOEKeyManager(keyDir);
+    const manager = new MarqueKeyManager(keyDir);
     const keypair = await manager.generateKeypair();
 
-    const data = "test-cpoe-document-content";
+    const data = "test-marque-document-content";
     const signature = manager.sign(data, keypair.privateKey);
     const isValid = manager.verify(data, signature, keypair.publicKey);
 
@@ -105,7 +105,7 @@ describe("CPOE Key Manager - Ed25519 Signing", () => {
 
   test("verify rejects tampered data", async () => {
     const keyDir = createTestDir();
-    const manager = new CPOEKeyManager(keyDir);
+    const manager = new MarqueKeyManager(keyDir);
     const keypair = await manager.generateKeypair();
 
     const data = "original-data";
@@ -117,11 +117,11 @@ describe("CPOE Key Manager - Ed25519 Signing", () => {
 
   test("verify rejects wrong public key", async () => {
     const keyDir = createTestDir();
-    const manager1 = new CPOEKeyManager(keyDir);
+    const manager1 = new MarqueKeyManager(keyDir);
     const keypair1 = await manager1.generateKeypair();
 
     const keyDir2 = createTestDir();
-    const manager2 = new CPOEKeyManager(keyDir2);
+    const manager2 = new MarqueKeyManager(keyDir2);
     const keypair2 = await manager2.generateKeypair();
 
     const data = "test-data";
@@ -133,7 +133,7 @@ describe("CPOE Key Manager - Ed25519 Signing", () => {
 
   test("rotateKey generates new keypair and retires old", async () => {
     const keyDir = createTestDir();
-    const manager = new CPOEKeyManager(keyDir);
+    const manager = new MarqueKeyManager(keyDir);
     const original = await manager.generateKeypair();
 
     const rotation = await manager.rotateKey();
@@ -150,7 +150,7 @@ describe("CPOE Key Manager - Ed25519 Signing", () => {
 
   test("getRetiredKeys returns list of previous public keys", async () => {
     const keyDir = createTestDir();
-    const manager = new CPOEKeyManager(keyDir);
+    const manager = new MarqueKeyManager(keyDir);
 
     await manager.generateKeypair();
     await manager.rotateKey();
@@ -166,7 +166,7 @@ describe("CPOE Key Manager - Ed25519 Signing", () => {
 
   test("Retired keys can still verify old signatures", async () => {
     const keyDir = createTestDir();
-    const manager = new CPOEKeyManager(keyDir);
+    const manager = new MarqueKeyManager(keyDir);
     const original = await manager.generateKeypair();
 
     const data = "signed-before-rotation";

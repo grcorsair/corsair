@@ -502,7 +502,7 @@ ${frameworksHTML}`;
   private renderThreatModelHTML(threatModel: ThreatModelResult): string {
     if (threatModel.threats.length === 0) {
       return `
-<h2>Threat Model (STRIDE)</h2>
+<h2>Threat Model (SPYGLASS)</h2>
 <div class="card"><p>No threats identified by STRIDE analysis.</p></div>`;
     }
 
@@ -535,7 +535,7 @@ ${frameworksHTML}`;
       .join("");
 
     return `
-<h2>Threat Model (STRIDE)</h2>
+<h2>Threat Model (SPYGLASS)</h2>
 <div class="card">
   <h3>Risk Distribution</h3>
   ${riskBars}
@@ -699,7 +699,7 @@ ${frameworksHTML}`;
 
   private renderThreatModelMD(threatModel: ThreatModelResult): string {
     const lines: string[] = [];
-    lines.push("## Threat Model (STRIDE)");
+    lines.push("## Threat Model (SPYGLASS)");
     lines.push("");
 
     if (threatModel.threats.length === 0) {

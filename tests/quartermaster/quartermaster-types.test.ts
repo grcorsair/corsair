@@ -1,21 +1,21 @@
 /**
- * Admiral Types Tests
+ * Quartermaster Types Tests
  *
- * Validates the structure and constraints of Admiral governance types.
+ * Validates the structure and constraints of Quartermaster governance types.
  */
 
 import { describe, test, expect } from "bun:test";
 import type {
-  AdmiralGovernanceReport,
-  AdmiralDimensionScore,
-  AdmiralFinding,
-  AdmiralInput,
-  AdmiralConfig,
-} from "../../src/admiral/admiral-types";
+  QuartermasterGovernanceReport,
+  QuartermasterDimensionScore,
+  QuartermasterFinding,
+  QuartermasterInput,
+  QuartermasterConfig,
+} from "../../src/quartermaster/quartermaster-types";
 
-describe("Admiral Types", () => {
-  test("AdmiralGovernanceReport has all required fields", () => {
-    const report: AdmiralGovernanceReport = {
+describe("Quartermaster Types", () => {
+  test("QuartermasterGovernanceReport has all required fields", () => {
+    const report: QuartermasterGovernanceReport = {
       reportId: "rpt-001",
       confidenceScore: 85,
       dimensions: [],
@@ -41,8 +41,8 @@ describe("Admiral Types", () => {
     expect(report.reportHash).toBe("abc123");
   });
 
-  test("AdmiralDimensionScore has dimension, score, rationale, findings", () => {
-    const dimension: AdmiralDimensionScore = {
+  test("QuartermasterDimensionScore has dimension, score, rationale, findings", () => {
+    const dimension: QuartermasterDimensionScore = {
       dimension: "methodology",
       score: 90,
       weight: 0.3,
@@ -57,8 +57,8 @@ describe("Admiral Types", () => {
     expect(dimension.findings).toEqual([]);
   });
 
-  test("AdmiralFinding has severity, category, description, evidence, remediation", () => {
-    const finding: AdmiralFinding = {
+  test("QuartermasterFinding has severity, category, description, evidence, remediation", () => {
+    const finding: QuartermasterFinding = {
       id: "ADM-001",
       severity: "critical",
       category: "evidence_integrity",
@@ -75,8 +75,8 @@ describe("Admiral Types", () => {
     expect(finding.remediation).toContain("Re-run");
   });
 
-  test("AdmiralInput has all required artifact fields", () => {
-    const input: AdmiralInput = {
+  test("QuartermasterInput has all required artifact fields", () => {
+    const input: QuartermasterInput = {
       evidencePaths: ["evidence/test.jsonl"],
       markResults: [],
       raidResults: [],

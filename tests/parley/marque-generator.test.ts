@@ -1,7 +1,7 @@
 /**
- * CPOE Generator Test Contract
+ * MARQUE Generator Test Contract
  *
- * Validates that CPOEGenerator produces valid, signed, sanitized CPOE documents
+ * Validates that MarqueGenerator produces valid, signed, sanitized MARQUE documents
  * from Corsair assessment results (MarkResult, RaidResult, ChartResult, PlunderResult).
  *
  * TDD Phase: RED — these tests must fail before implementation.
@@ -11,10 +11,10 @@ import { describe, test, expect, afterAll } from "bun:test";
 import * as os from "os";
 import * as path from "path";
 import * as fs from "fs";
-import { CPOEKeyManager } from "../../src/parley/cpoe-key-manager";
-import { CPOEGenerator, sortKeysDeep } from "../../src/parley/cpoe-generator";
-import type { CPOEGeneratorInput } from "../../src/parley/cpoe-generator";
-import type { CPOEAdmiralAttestation } from "../../src/parley/cpoe-types";
+import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
+import { MarqueGenerator, sortKeysDeep } from "../../src/parley/marque-generator";
+import type { MarqueGeneratorInput } from "../../src/parley/marque-generator";
+import type { MarqueQuartermasterAttestation } from "../../src/parley/marque-types";
 import type {
   MarkResult,
   RaidResult,
@@ -30,7 +30,7 @@ import { EvidenceEngine } from "../../src/evidence";
 function createTestDir(): string {
   return path.join(
     os.tmpdir(),
-    `corsair-cpoe-gen-test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    `corsair-marque-gen-test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
   );
 }
 
@@ -158,7 +158,7 @@ async function createEvidenceFile(dir: string): Promise<string> {
 // TESTS
 // =============================================================================
 
-describe("CPOE Generator - Document Generation", () => {
+describe("MARQUE Generator - Document Generation", () => {
   const testDirs: string[] = [];
 
   function trackDir(dir: string): string {
@@ -179,20 +179,20 @@ describe("CPOE Generator - Document Generation", () => {
   async function setupGenerator(
     options?: { expiryDays?: number },
   ): Promise<{
-    generator: CPOEGenerator;
-    keyManager: CPOEKeyManager;
+    generator: MarqueGenerator;
+    keyManager: MarqueKeyManager;
     publicKey: Buffer;
     keyDir: string;
   }> {
     const keyDir = trackDir(createTestDir());
-    const keyManager = new CPOEKeyManager(keyDir);
+    const keyManager = new MarqueKeyManager(keyDir);
     await keyManager.generateKeypair();
     const keypair = (await keyManager.loadKeypair())!;
-    const generator = new CPOEGenerator(keyManager, options);
+    const generator = new MarqueGenerator(keyManager, options);
     return { generator, keyManager, publicKey: keypair.publicKey, keyDir };
   }
 
-  async function buildInput(keyDir: string): Promise<CPOEGeneratorInput> {
+  async function buildInput(keyDir: string): Promise<MarqueGeneratorInput> {
     const evidencePath = await createEvidenceFile(keyDir);
     return {
       markResults: [mockMarkResult()],
@@ -204,22 +204,22 @@ describe("CPOE Generator - Document Generation", () => {
     };
   }
 
-  test("generate produces valid CPOEDocument with all required fields", async () => {
+  test("generate produces valid MarqueDocument with all required fields", async () => {
     const { generator, keyDir } = await setupGenerator();
     const input = await buildInput(keyDir);
 
     const doc = await generator.generate(input);
 
     expect(doc.parley).toBe("1.0");
-    expect(doc.cpoe.id).toBeDefined();
-    expect(doc.cpoe.version).toBe("1.0.0");
-    expect(doc.cpoe.issuer).toBeDefined();
-    expect(doc.cpoe.generatedAt).toBeDefined();
-    expect(doc.cpoe.expiresAt).toBeDefined();
-    expect(doc.cpoe.scope).toBeDefined();
-    expect(doc.cpoe.summary).toBeDefined();
-    expect(doc.cpoe.evidenceChain).toBeDefined();
-    expect(doc.cpoe.frameworks).toBeDefined();
+    expect(doc.marque.id).toBeDefined();
+    expect(doc.marque.version).toBe("1.0.0");
+    expect(doc.marque.issuer).toBeDefined();
+    expect(doc.marque.generatedAt).toBeDefined();
+    expect(doc.marque.expiresAt).toBeDefined();
+    expect(doc.marque.scope).toBeDefined();
+    expect(doc.marque.summary).toBeDefined();
+    expect(doc.marque.evidenceChain).toBeDefined();
+    expect(doc.marque.frameworks).toBeDefined();
     expect(doc.signature).toBeDefined();
     expect(doc.signature.length).toBeGreaterThan(0);
   });
@@ -235,34 +235,34 @@ describe("CPOE Generator - Document Generation", () => {
     expect(doc.signature.length).toBeGreaterThan(0);
 
     // Verify the signature is valid with the public key
-    const cpoePayload = JSON.stringify(sortKeysDeep(doc.cpoe));
-    const isValid = keyManager.verify(cpoePayload, doc.signature, publicKey);
+    const marquePayload = JSON.stringify(sortKeysDeep(doc.marque));
+    const isValid = keyManager.verify(marquePayload, doc.signature, publicKey);
     expect(isValid).toBe(true);
   });
 
-  test("generated CPOE has correct issuer info", async () => {
+  test("generated MARQUE has correct issuer info", async () => {
     const { generator, keyDir } = await setupGenerator();
     const input = await buildInput(keyDir);
 
     const doc = await generator.generate(input);
 
-    expect(doc.cpoe.issuer.id).toBe("corsair-test");
-    expect(doc.cpoe.issuer.name).toBe("Corsair Test Engine");
+    expect(doc.marque.issuer.id).toBe("corsair-test");
+    expect(doc.marque.issuer.name).toBe("Corsair Test Engine");
   });
 
-  test("generated CPOE scope reflects input providers", async () => {
+  test("generated MARQUE scope reflects input providers", async () => {
     const { generator, keyDir } = await setupGenerator();
     const input = await buildInput(keyDir);
 
     const doc = await generator.generate(input);
 
-    expect(doc.cpoe.scope.providers).toContain("aws-cognito");
-    expect(doc.cpoe.scope.providers).toHaveLength(1);
-    expect(doc.cpoe.scope.frameworksCovered.length).toBeGreaterThan(0);
-    expect(doc.cpoe.scope.resourceCount).toBeGreaterThan(0);
+    expect(doc.marque.scope.providers).toContain("aws-cognito");
+    expect(doc.marque.scope.providers).toHaveLength(1);
+    expect(doc.marque.scope.frameworksCovered.length).toBeGreaterThan(0);
+    expect(doc.marque.scope.resourceCount).toBeGreaterThan(0);
   });
 
-  test("generated CPOE summary has correct control counts", async () => {
+  test("generated MARQUE summary has correct control counts", async () => {
     const { generator, keyDir } = await setupGenerator();
     const input = await buildInput(keyDir);
 
@@ -270,68 +270,68 @@ describe("CPOE Generator - Document Generation", () => {
 
     // From mockChartResult: NIST-800-53 has 3 controls (2 passed, 1 failed),
     // SOC2 has 2 controls (1 passed, 1 failed) = 5 total, 3 passed, 2 failed
-    expect(doc.cpoe.summary.controlsTested).toBe(5);
-    expect(doc.cpoe.summary.controlsPassed).toBe(3);
-    expect(doc.cpoe.summary.controlsFailed).toBe(2);
-    expect(doc.cpoe.summary.overallScore).toBe(60); // 3/5 = 60%
+    expect(doc.marque.summary.controlsTested).toBe(5);
+    expect(doc.marque.summary.controlsPassed).toBe(3);
+    expect(doc.marque.summary.controlsFailed).toBe(2);
+    expect(doc.marque.summary.overallScore).toBe(60); // 3/5 = 60%
   });
 
-  test("generated CPOE frameworks section has per-framework breakdowns", async () => {
+  test("generated MARQUE frameworks section has per-framework breakdowns", async () => {
     const { generator, keyDir } = await setupGenerator();
     const input = await buildInput(keyDir);
 
     const doc = await generator.generate(input);
 
-    expect(doc.cpoe.frameworks["NIST-800-53"]).toBeDefined();
-    expect(doc.cpoe.frameworks["SOC2"]).toBeDefined();
+    expect(doc.marque.frameworks["NIST-800-53"]).toBeDefined();
+    expect(doc.marque.frameworks["SOC2"]).toBeDefined();
 
-    const nist = doc.cpoe.frameworks["NIST-800-53"];
+    const nist = doc.marque.frameworks["NIST-800-53"];
     expect(nist.controlsMapped).toBe(3);
     expect(nist.passed).toBe(2);
     expect(nist.failed).toBe(1);
     expect(nist.controls).toHaveLength(3);
 
-    const soc2 = doc.cpoe.frameworks["SOC2"];
+    const soc2 = doc.marque.frameworks["SOC2"];
     expect(soc2.controlsMapped).toBe(2);
     expect(soc2.passed).toBe(1);
     expect(soc2.failed).toBe(1);
     expect(soc2.controls).toHaveLength(2);
   });
 
-  test("generated CPOE evidence chain references hash chain root", async () => {
+  test("generated MARQUE evidence chain references hash chain root", async () => {
     const { generator, keyDir } = await setupGenerator();
     const input = await buildInput(keyDir);
 
     const doc = await generator.generate(input);
 
-    expect(doc.cpoe.evidenceChain.hashChainRoot).toBeDefined();
-    expect(doc.cpoe.evidenceChain.hashChainRoot.length).toBeGreaterThan(0);
-    expect(doc.cpoe.evidenceChain.recordCount).toBeGreaterThan(0);
-    expect(doc.cpoe.evidenceChain.chainVerified).toBe(true);
+    expect(doc.marque.evidenceChain.hashChainRoot).toBeDefined();
+    expect(doc.marque.evidenceChain.hashChainRoot.length).toBeGreaterThan(0);
+    expect(doc.marque.evidenceChain.recordCount).toBeGreaterThan(0);
+    expect(doc.marque.evidenceChain.chainVerified).toBe(true);
   });
 
-  test("generated CPOE threat model summary reflects input when provided", async () => {
+  test("generated MARQUE threat model summary reflects input when provided", async () => {
     const { generator, keyDir } = await setupGenerator();
     const input = await buildInput(keyDir);
     input.threatModel = mockThreatModel();
 
     const doc = await generator.generate(input);
 
-    expect(doc.cpoe.threatModel).toBeDefined();
-    expect(doc.cpoe.threatModel!.methodology).toBe("STRIDE-automated");
-    expect(doc.cpoe.threatModel!.providersAnalyzed).toContain("aws-cognito");
-    expect(doc.cpoe.threatModel!.totalThreats).toBe(1);
-    expect(doc.cpoe.threatModel!.riskDistribution).toBeDefined();
+    expect(doc.marque.threatModel).toBeDefined();
+    expect(doc.marque.threatModel!.methodology).toBe("STRIDE-automated");
+    expect(doc.marque.threatModel!.providersAnalyzed).toContain("aws-cognito");
+    expect(doc.marque.threatModel!.totalThreats).toBe(1);
+    expect(doc.marque.threatModel!.riskDistribution).toBeDefined();
   });
 
-  test("generated CPOE expiresAt is 7 days after generatedAt (default)", async () => {
+  test("generated MARQUE expiresAt is 7 days after generatedAt (default)", async () => {
     const { generator, keyDir } = await setupGenerator();
     const input = await buildInput(keyDir);
 
     const doc = await generator.generate(input);
 
-    const generatedAt = new Date(doc.cpoe.generatedAt).getTime();
-    const expiresAt = new Date(doc.cpoe.expiresAt).getTime();
+    const generatedAt = new Date(doc.marque.generatedAt).getTime();
+    const expiresAt = new Date(doc.marque.expiresAt).getTime();
     const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
 
     // Allow 1 second tolerance for test execution time
@@ -344,17 +344,17 @@ describe("CPOE Generator - Document Generation", () => {
 
     const doc = await generator.generate(input);
 
-    const generatedAt = new Date(doc.cpoe.generatedAt).getTime();
-    const expiresAt = new Date(doc.cpoe.expiresAt).getTime();
+    const generatedAt = new Date(doc.marque.generatedAt).getTime();
+    const expiresAt = new Date(doc.marque.expiresAt).getTime();
     const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
 
     expect(Math.abs(expiresAt - generatedAt - thirtyDaysMs)).toBeLessThan(1000);
   });
 
-  test("admiral attestation embedded when provided", async () => {
+  test("quartermaster attestation embedded when provided", async () => {
     const { generator, keyDir } = await setupGenerator();
     const input = await buildInput(keyDir);
-    input.admiralAttestation = {
+    input.quartermasterAttestation = {
       confidenceScore: 0.92,
       dimensions: [
         { dimension: "evidence-quality", score: 0.95 },
@@ -367,9 +367,9 @@ describe("CPOE Generator - Document Generation", () => {
 
     const doc = await generator.generate(input);
 
-    expect(doc.cpoe.admiralAttestation).toBeDefined();
-    expect(doc.cpoe.admiralAttestation!.confidenceScore).toBe(0.92);
-    expect(doc.cpoe.admiralAttestation!.dimensions).toHaveLength(2);
-    expect(doc.cpoe.admiralAttestation!.trustTier).toBe("ai-verified");
+    expect(doc.marque.quartermasterAttestation).toBeDefined();
+    expect(doc.marque.quartermasterAttestation!.confidenceScore).toBe(0.92);
+    expect(doc.marque.quartermasterAttestation!.dimensions).toHaveLength(2);
+    expect(doc.marque.quartermasterAttestation!.trustTier).toBe("ai-verified");
   });
 });

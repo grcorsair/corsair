@@ -1,7 +1,7 @@
 /**
- * Admiral Integrity Tests
+ * Quartermaster Integrity Tests
  *
- * Tests deterministic checks in the Admiral agent:
+ * Tests deterministic checks in the Quartermaster agent:
  * - Evidence hash chain verification
  * - Timestamp consistency
  * - RAID-PLUNDER correlation
@@ -10,11 +10,11 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { existsSync, mkdirSync, writeFileSync, unlinkSync, rmSync } from "fs";
 import { createHash } from "crypto";
-import { AdmiralAgent } from "../../src/admiral/admiral-agent";
-import type { AdmiralInput, AdmiralConfig } from "../../src/admiral/admiral-types";
+import { QuartermasterAgent } from "../../src/quartermaster/quartermaster-agent";
+import type { QuartermasterInput, QuartermasterConfig } from "../../src/quartermaster/quartermaster-types";
 import type { MarkResult, RaidResult, ChartResult } from "../../src/corsair-mvp";
 
-const TEST_DIR = "/tmp/admiral-integrity-test";
+const TEST_DIR = "/tmp/quartermaster-integrity-test";
 const TEST_EVIDENCE = `${TEST_DIR}/evidence.jsonl`;
 
 function makeHash(record: Record<string, unknown>): string {
@@ -75,7 +75,7 @@ function writeBrokenEvidence(path: string): void {
   writeFileSync(path, lines.join("\n") + "\n");
 }
 
-function makeMinimalInput(overrides: Partial<AdmiralInput> = {}): AdmiralInput {
+function makeMinimalInput(overrides: Partial<QuartermasterInput> = {}): QuartermasterInput {
   return {
     evidencePaths: [TEST_EVIDENCE],
     markResults: [],
@@ -117,15 +117,15 @@ function makeMarkResult(): MarkResult {
   };
 }
 
-describe("Admiral Deterministic Integrity Checks", () => {
-  let admiral: AdmiralAgent;
-  const config: AdmiralConfig = {
+describe("Quartermaster Deterministic Integrity Checks", () => {
+  let quartermaster: QuartermasterAgent;
+  const config: QuartermasterConfig = {
     apiKey: "test-key",
     model: "claude-sonnet-4-5-20250929",
   };
 
   beforeEach(() => {
-    admiral = new AdmiralAgent(config);
+    quartermaster = new QuartermasterAgent(config);
     if (!existsSync(TEST_DIR)) mkdirSync(TEST_DIR, { recursive: true });
   });
 
@@ -138,7 +138,7 @@ describe("Admiral Deterministic Integrity Checks", () => {
   test("Valid hash chain scores 100 for evidence integrity", () => {
     writeValidEvidence(TEST_EVIDENCE, 6);
     const input = makeMinimalInput();
-    const result = admiral.checkEvidenceIntegrity(input);
+    const result = quartermaster.checkEvidenceIntegrity(input);
 
     expect(result.score).toBe(100);
     expect(result.findings.filter((f) => f.severity === "critical")).toHaveLength(0);
@@ -147,7 +147,7 @@ describe("Admiral Deterministic Integrity Checks", () => {
   test("Broken hash chain scores <= 70 and generates critical finding", () => {
     writeBrokenEvidence(TEST_EVIDENCE);
     const input = makeMinimalInput();
-    const result = admiral.checkEvidenceIntegrity(input);
+    const result = quartermaster.checkEvidenceIntegrity(input);
 
     expect(result.score).toBeLessThanOrEqual(70);
     const criticals = result.findings.filter((f) => f.severity === "critical");
@@ -159,7 +159,7 @@ describe("Admiral Deterministic Integrity Checks", () => {
     const input = makeMinimalInput({
       evidencePaths: ["/nonexistent/path/evidence.jsonl"],
     });
-    const result = admiral.checkEvidenceIntegrity(input);
+    const result = quartermaster.checkEvidenceIntegrity(input);
 
     const criticals = result.findings.filter((f) => f.severity === "critical");
     expect(criticals.length).toBeGreaterThanOrEqual(1);
@@ -172,7 +172,7 @@ describe("Admiral Deterministic Integrity Checks", () => {
       raidResults: [makeRaidResult("raid-1")],
       markResults: [makeMarkResult()],
     });
-    const result = admiral.checkTimestampConsistency(input);
+    const result = quartermaster.checkTimestampConsistency(input);
 
     expect(result.score).toBeGreaterThanOrEqual(80);
   });
@@ -211,7 +211,7 @@ describe("Admiral Deterministic Integrity Checks", () => {
     writeFileSync(TEST_EVIDENCE, lines.join("\n") + "\n");
 
     const input = makeMinimalInput();
-    const result = admiral.checkTimestampConsistency(input);
+    const result = quartermaster.checkTimestampConsistency(input);
 
     const warnings = result.findings.filter((f) => f.severity === "warning");
     expect(warnings.length).toBeGreaterThanOrEqual(1);
@@ -222,7 +222,7 @@ describe("Admiral Deterministic Integrity Checks", () => {
     const input = makeMinimalInput({
       raidResults: [makeRaidResult("raid-0")],
     });
-    const result = admiral.checkRaidPlunderCorrelation(input);
+    const result = quartermaster.checkRaidPlunderCorrelation(input);
 
     // Raid-0 exists in both raidResults and evidence
     expect(result.score).toBeGreaterThanOrEqual(50);
@@ -236,7 +236,7 @@ describe("Admiral Deterministic Integrity Checks", () => {
         makeRaidResult("raid-missing"),  // Not in evidence
       ],
     });
-    const result = admiral.checkRaidPlunderCorrelation(input);
+    const result = quartermaster.checkRaidPlunderCorrelation(input);
 
     const findings = result.findings.filter(
       (f) => f.description.includes("raid-missing")
@@ -246,7 +246,7 @@ describe("Admiral Deterministic Integrity Checks", () => {
 
   test("Empty evidence paths scores 0", () => {
     const input = makeMinimalInput({ evidencePaths: [] });
-    const result = admiral.checkEvidenceIntegrity(input);
+    const result = quartermaster.checkEvidenceIntegrity(input);
 
     expect(result.score).toBe(0);
     const criticals = result.findings.filter((f) => f.severity === "critical");
@@ -260,7 +260,7 @@ describe("Admiral Deterministic Integrity Checks", () => {
     writeValidEvidence(path2, 3);
 
     const input = makeMinimalInput({ evidencePaths: [path1, path2] });
-    const result = admiral.checkEvidenceIntegrity(input);
+    const result = quartermaster.checkEvidenceIntegrity(input);
 
     expect(result.score).toBe(100);
     expect(result.findings.filter((f) => f.severity === "critical")).toHaveLength(0);
@@ -301,7 +301,7 @@ describe("Admiral Deterministic Integrity Checks", () => {
     writeFileSync(TEST_EVIDENCE, lines.join("\n") + "\n");
 
     const input = makeMinimalInput();
-    const result = admiral.checkTimestampConsistency(input);
+    const result = quartermaster.checkTimestampConsistency(input);
 
     const infoFindings = result.findings.filter((f) => f.severity === "info");
     expect(infoFindings.length).toBeGreaterThanOrEqual(1);

@@ -1,35 +1,35 @@
 /**
- * Admiral Eval Harness Tests
+ * Quartermaster Eval Harness Tests
  *
  * Tests the adversarial evaluation harness that runs scenarios
- * against the Admiral agent.
+ * against the Quartermaster agent.
  */
 
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { rmSync, existsSync } from "fs";
-import { AdmiralAgent } from "../../../src/admiral/admiral-agent";
-import { AdmiralEvalHarness } from "../../../src/admiral/evals/eval-harness";
+import { QuartermasterAgent } from "../../../src/quartermaster/quartermaster-agent";
+import { QuartermasterEvalHarness } from "../../../src/quartermaster/evals/eval-harness";
 import {
   brokenHashChainScenario,
   skippedMFAControlsScenario,
   severityBiasScenario,
   getAllScenarios,
-} from "../../../src/admiral/evals/scenarios";
-import type { AdmiralConfig } from "../../../src/admiral/admiral-types";
+} from "../../../src/quartermaster/evals/scenarios";
+import type { QuartermasterConfig } from "../../../src/quartermaster/quartermaster-types";
 
-const SCENARIO_DIR = "/tmp/admiral-eval-scenarios";
+const SCENARIO_DIR = "/tmp/quartermaster-eval-scenarios";
 
-describe("Admiral Eval Harness", () => {
-  let admiral: AdmiralAgent;
-  let harness: AdmiralEvalHarness;
-  const config: AdmiralConfig = {
+describe("Quartermaster Eval Harness", () => {
+  let quartermaster: QuartermasterAgent;
+  let harness: QuartermasterEvalHarness;
+  const config: QuartermasterConfig = {
     apiKey: "test-key",
     model: "claude-sonnet-4-5-20250929",
   };
 
   beforeEach(() => {
-    admiral = new AdmiralAgent(config);
-    harness = new AdmiralEvalHarness(admiral);
+    quartermaster = new QuartermasterAgent(config);
+    harness = new QuartermasterEvalHarness(quartermaster);
   });
 
   afterEach(() => {
@@ -38,7 +38,7 @@ describe("Admiral Eval Harness", () => {
     }
   });
 
-  test("runScenario returns AdmiralEvalResult with all fields", async () => {
+  test("runScenario returns QuartermasterEvalResult with all fields", async () => {
     const scenario = brokenHashChainScenario();
     const result = await harness.runScenario(scenario);
 
@@ -122,7 +122,7 @@ describe("Admiral Eval Harness", () => {
   });
 
   test("Failed scenario has detailed comparison showing missing categories", async () => {
-    // Create a scenario that expects a category the Admiral can't detect deterministically
+    // Create a scenario that expects a category the Quartermaster can't detect deterministically
     const scenario = brokenHashChainScenario();
     const result = await harness.runScenario(scenario);
 

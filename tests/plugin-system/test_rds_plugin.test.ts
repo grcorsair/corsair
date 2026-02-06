@@ -6,7 +6,7 @@
  */
 
 import { describe, test, expect, beforeAll } from "bun:test";
-import { Corsair, StrideEngine } from "../../src/corsair-mvp";
+import { Corsair, SpyglassEngine } from "../../src/corsair-mvp";
 import {
   isRDSSnapshot,
   createRDSSnapshot,
@@ -190,13 +190,13 @@ describe("AWS RDS Plugin - Mark Engine Integration", () => {
 });
 
 // =============================================================================
-// STRIDE INTEGRATION
+// SPYGLASS INTEGRATION
 // =============================================================================
 
-describe("AWS RDS Plugin - STRIDE Integration", () => {
-  test("STRIDE rules exist for aws-rds provider (>= 3 threats)", () => {
-    const engine = new StrideEngine();
-    const result = engine.strideAnalyze(
+describe("AWS RDS Plugin - SPYGLASS Integration", () => {
+  test("SPYGLASS rules exist for aws-rds provider (>= 3 threats)", () => {
+    const engine = new SpyglassEngine();
+    const result = engine.spyglassAnalyze(
       nonCompliantRDSSnapshot as unknown as Record<string, unknown>,
       "aws-rds"
     );

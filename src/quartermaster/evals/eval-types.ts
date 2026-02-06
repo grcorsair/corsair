@@ -1,16 +1,16 @@
 /**
- * Admiral Eval Types
+ * Quartermaster Eval Types
  *
  * Type definitions for adversarial evaluation scenarios that test
- * whether the Admiral correctly detects corruption, bias, and gaps.
+ * whether the Quartermaster correctly detects corruption, bias, and gaps.
  */
 
-import type { AdmiralInput, AdmiralGovernanceReport, AdmiralFinding } from "../admiral-types";
+import type { QuartermasterInput, QuartermasterGovernanceReport, QuartermasterFinding } from "../quartermaster-types";
 
 /**
- * An adversarial scenario designed to test the Admiral's detection capabilities.
+ * An adversarial scenario designed to test the Quartermaster's detection capabilities.
  */
-export interface AdmiralEvalScenario {
+export interface QuartermasterEvalScenario {
   /** Unique scenario identifier */
   id: string;
 
@@ -20,10 +20,10 @@ export interface AdmiralEvalScenario {
   /** Description of what this scenario tests */
   description: string;
 
-  /** The corrupted/biased input to feed to the Admiral */
-  input: AdmiralInput;
+  /** The corrupted/biased input to feed to the Quartermaster */
+  input: QuartermasterInput;
 
-  /** Finding categories the Admiral should detect */
+  /** Finding categories the Quartermaster should detect */
   expectedFindingCategories: string[];
 
   /** Minimum number of findings expected */
@@ -39,15 +39,15 @@ export interface AdmiralEvalScenario {
 /**
  * Result of running a single adversarial scenario.
  */
-export interface AdmiralEvalResult {
+export interface QuartermasterEvalResult {
   /** The scenario that was tested */
   scenarioId: string;
 
-  /** Whether the Admiral detected the expected issues */
+  /** Whether the Quartermaster detected the expected issues */
   passed: boolean;
 
-  /** The Admiral's actual report */
-  report: AdmiralGovernanceReport;
+  /** The Quartermaster's actual report */
+  report: QuartermasterGovernanceReport;
 
   /** Which expected categories were detected */
   detectedCategories: string[];
@@ -69,11 +69,11 @@ export interface AdmiralEvalResult {
 /**
  * Aggregate benchmark result across all scenarios.
  */
-export interface AdmiralBenchmarkResult {
+export interface QuartermasterBenchmarkResult {
   /** Total scenarios run */
   totalScenarios: number;
 
-  /** Scenarios where Admiral correctly detected issues */
+  /** Scenarios where Quartermaster correctly detected issues */
   passedScenarios: number;
 
   /** Pass rate as percentage (0-100) */
@@ -83,7 +83,7 @@ export interface AdmiralBenchmarkResult {
   detectionRatesByCategory: Record<string, { detected: number; total: number; rate: number }>;
 
   /** Individual scenario results */
-  results: AdmiralEvalResult[];
+  results: QuartermasterEvalResult[];
 
   /** Benchmark run timestamp */
   runAt: string;

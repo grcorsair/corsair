@@ -2,13 +2,13 @@
  * Parley Protocol Types
  *
  * Types for the Parley trust exchange protocol: publishing, subscribing,
- * and auto-bundling CPOE documents.
+ * and auto-bundling MARQUE documents.
  */
 
-import type { CPOEIssuer } from "./cpoe-types";
+import type { MarqueIssuer } from "./marque-types";
 
 /**
- * A Parley exchange endpoint for publishing/receiving CPOEs.
+ * A Parley exchange endpoint for publishing/receiving MARQUEs.
  */
 export interface ParleyEndpoint {
   /** Base URL of the Parley exchange server */
@@ -19,18 +19,18 @@ export interface ParleyEndpoint {
 }
 
 /**
- * Request to publish a CPOE to the exchange.
+ * Request to publish a MARQUE to the exchange.
  */
 export interface ParleyPublishRequest {
-  /** The CPOE document to publish */
-  cpoe: unknown;
+  /** The MARQUE document to publish */
+  marque: unknown;
 
   /** Whether to send notifications to subscribers */
   notify?: boolean;
 }
 
 /**
- * Webhook subscription for receiving new CPOEs.
+ * Webhook subscription for receiving new MARQUEs.
  */
 export interface ParleySubscription {
   /** Unique subscriber identifier */
@@ -42,7 +42,7 @@ export interface ParleySubscription {
   /** HMAC secret for webhook verification */
   hmacSecret: string;
 
-  /** Optional framework filters (only receive CPOEs covering these) */
+  /** Optional framework filters (only receive MARQUEs covering these) */
   frameworks?: string[];
 }
 
@@ -53,7 +53,7 @@ export interface ParleyConfig {
   /** Optional exchange endpoint for publishing */
   endpoint?: ParleyEndpoint;
 
-  /** Local output directory for CPOE files */
+  /** Local output directory for MARQUE files */
   localOutputDir?: string;
 
   /** Providers to assess */
@@ -63,13 +63,13 @@ export interface ParleyConfig {
     source: "fixture" | "aws";
   }[];
 
-  /** CPOE issuer identity */
-  issuer: CPOEIssuer;
+  /** MARQUE issuer identity */
+  issuer: MarqueIssuer;
 
-  /** Whether to run Admiral evaluation */
-  admiralEnabled?: boolean;
+  /** Whether to run Quartermaster evaluation */
+  quartermasterEnabled?: boolean;
 
-  /** CPOE expiry in days (default: 7) */
+  /** MARQUE expiry in days (default: 7) */
   expiryDays?: number;
 }
 
@@ -86,13 +86,13 @@ export interface BundleResult {
   /** Number of controls passed */
   controlsPassed: number;
 
-  /** Whether a new CPOE was generated (false if no changes detected) */
-  cpoeGenerated: boolean;
+  /** Whether a new MARQUE was generated (false if no changes detected) */
+  marqueGenerated: boolean;
 
-  /** Path to the local CPOE file (if saved locally) */
+  /** Path to the local MARQUE file (if saved locally) */
   localPath?: string;
 
-  /** Whether the CPOE was published to the exchange */
+  /** Whether the MARQUE was published to the exchange */
   published: boolean;
 
   /** Overall assessment score */

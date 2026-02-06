@@ -84,7 +84,7 @@ import { ChartEngine } from "./chart-engine";
 import { EscapeEngine } from "./escape-engine";
 import { EventEngine } from "./event-engine";
 import { PluginEngine } from "./plugin-engine";
-import { StrideEngine } from "./stride-engine";
+import { SpyglassEngine } from "./spyglass-engine";
 
 // Import delegated engines (already extracted before this refactor)
 import { EvidenceEngine } from "../evidence";
@@ -111,7 +111,7 @@ export class Corsair extends EventEmitter {
   private escapeEngine: EscapeEngine;
   private eventEngine: EventEngine;
   private pluginEngine: PluginEngine;
-  private strideEngine: StrideEngine;
+  private spyglassEngine: SpyglassEngine;
 
   constructor(options: CorsairOptions = {}) {
     super();
@@ -127,7 +127,7 @@ export class Corsair extends EventEmitter {
     this.chartEngine = new ChartEngine((id) => this.pluginEngine.get(id));
     this.escapeEngine = new EscapeEngine();
     this.eventEngine = new EventEngine(this, this.events);
-    this.strideEngine = new StrideEngine();
+    this.spyglassEngine = new SpyglassEngine();
   }
 
   // ===============================================================================
@@ -277,7 +277,7 @@ export class Corsair extends EventEmitter {
   }
 
   // ===============================================================================
-  // THREAT MODEL (STRIDE)
+  // THREAT MODEL (SPYGLASS)
   // ===============================================================================
 
   async threatModel(
@@ -285,11 +285,11 @@ export class Corsair extends EventEmitter {
     provider: string,
     options?: ThreatModelOptions
   ): Promise<ThreatModelResult> {
-    return this.strideEngine.strideAnalyze(snapshot, provider, options);
+    return this.spyglassEngine.spyglassAnalyze(snapshot, provider, options);
   }
 
   threatToExpectations(threats: ThreatFinding[]): (Expectation & { threatRef?: string })[] {
-    return this.strideEngine.threatToExpectations(threats);
+    return this.spyglassEngine.threatToExpectations(threats);
   }
 
   /**
@@ -301,8 +301,8 @@ export class Corsair extends EventEmitter {
     provider: string,
     options?: ThreatModelOptions
   ): Promise<MarkResult & { threatModel: ThreatModelResult }> {
-    const tm = this.strideEngine.strideAnalyze(snapshot, provider, options);
-    const expectations = this.strideEngine.threatToExpectations(tm.threats);
+    const tm = this.spyglassEngine.spyglassAnalyze(snapshot, provider, options);
+    const expectations = this.spyglassEngine.threatToExpectations(tm.threats);
     const markResult = await this.markEngine.mark(snapshot, expectations);
     // Add threatRef to findings that match threat expectations
     for (const finding of markResult.findings) {
@@ -431,4 +431,4 @@ export { ChartEngine } from "./chart-engine";
 export { EscapeEngine } from "./escape-engine";
 export { EventEngine } from "./event-engine";
 export { PluginEngine, PluginEngine as PluginRegistry } from "./plugin-engine";
-export { StrideEngine } from "./stride-engine";
+export { SpyglassEngine } from "./spyglass-engine";

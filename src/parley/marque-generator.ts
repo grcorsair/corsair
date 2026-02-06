@@ -1,26 +1,26 @@
 /**
- * CPOE Generator - Corsair Proof of Operational Effectiveness
+ * MARQUE Generator - Corsair Proof of Operational Effectiveness
  *
- * Generates cryptographically signed CPOE documents from Corsair assessment
+ * Generates cryptographically signed MARQUE documents from Corsair assessment
  * results. Sanitizes all sensitive information (ARNs, IPs, file paths,
- * account IDs, API keys) before embedding into the CPOE.
+ * account IDs, API keys) before embedding into the MARQUE.
  *
- * Uses Ed25519 via CPOEKeyManager for document signing.
+ * Uses Ed25519 via MarqueKeyManager for document signing.
  */
 
 import * as crypto from "crypto";
 import { readFileSync, existsSync } from "fs";
 
-import { CPOEKeyManager } from "./cpoe-key-manager";
+import { MarqueKeyManager } from "./marque-key-manager";
 import type {
-  CPOEDocument,
-  CPOEEvidenceChain,
-  CPOEFrameworkResult,
-  CPOEControlResult,
-  CPOEThreatModelSummary,
-  CPOEAdmiralAttestation,
-  CPOEIssuer,
-} from "./cpoe-types";
+  MarqueDocument,
+  MarqueEvidenceChain,
+  MarqueFrameworkResult,
+  MARQUEControlResult,
+  MarqueThreatModelSummary,
+  MarqueQuartermasterAttestation,
+  MarqueIssuer,
+} from "./marque-types";
 import type {
   MarkResult,
   RaidResult,
@@ -34,14 +34,14 @@ import { EvidenceEngine } from "../evidence";
 // INPUT TYPE
 // =============================================================================
 
-export interface CPOEGeneratorInput {
+export interface MarqueGeneratorInput {
   markResults: MarkResult[];
   raidResults: RaidResult[];
   chartResults: ChartResult[];
   evidencePaths: string[];
   threatModel?: ThreatModelResult;
-  admiralAttestation?: CPOEAdmiralAttestation;
-  issuer: CPOEIssuer;
+  quartermasterAttestation?: MarqueQuartermasterAttestation;
+  issuer: MarqueIssuer;
   providers: string[];
 }
 
@@ -80,19 +80,19 @@ const COGNITO_POOL_PATTERN = /\b(us|eu|ap|sa|ca|me|af)-[a-z]+-\d+_[A-Za-z0-9]+\b
 // GENERATOR
 // =============================================================================
 
-export class CPOEGenerator {
-  private keyManager: CPOEKeyManager;
+export class MarqueGenerator {
+  private keyManager: MarqueKeyManager;
   private expiryDays: number;
 
-  constructor(keyManager: CPOEKeyManager, options?: { expiryDays?: number }) {
+  constructor(keyManager: MarqueKeyManager, options?: { expiryDays?: number }) {
     this.keyManager = keyManager;
     this.expiryDays = options?.expiryDays ?? 7;
   }
 
   /**
-   * Generate a complete, signed CPOE document from assessment results.
+   * Generate a complete, signed MARQUE document from assessment results.
    */
-  async generate(input: CPOEGeneratorInput): Promise<CPOEDocument> {
+  async generate(input: MarqueGeneratorInput): Promise<MarqueDocument> {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + this.expiryDays * 24 * 60 * 60 * 1000);
 
@@ -103,9 +103,9 @@ export class CPOEGenerator {
     const scope = this.buildScope(input.providers, input.chartResults, input.markResults);
     const threatModel = this.buildThreatModelSummary(input.raidResults, input.threatModel);
 
-    // Build the cpoe payload
-    const cpoe: CPOEDocument["cpoe"] = {
-      id: `cpoe-${crypto.randomUUID()}`,
+    // Build the marque payload
+    const marque: MarqueDocument["marque"] = {
+      id: `marque-${crypto.randomUUID()}`,
       version: "1.0.0",
       issuer: input.issuer,
       generatedAt: now.toISOString(),
@@ -117,15 +117,15 @@ export class CPOEGenerator {
     };
 
     if (threatModel) {
-      cpoe.threatModel = threatModel;
+      marque.threatModel = threatModel;
     }
 
-    if (input.admiralAttestation) {
-      cpoe.admiralAttestation = input.admiralAttestation;
+    if (input.quartermasterAttestation) {
+      marque.quartermasterAttestation = input.quartermasterAttestation;
     }
 
-    // Sanitize the entire cpoe payload as a safety net
-    const sanitizedCpoe = this.sanitize(cpoe) as CPOEDocument["cpoe"];
+    // Sanitize the entire marque payload as a safety net
+    const sanitizedCpoe = this.sanitize(marque) as MarqueDocument["marque"];
 
     // Canonicalize and sign the sanitized payload
     const canonical = this.canonicalize(sanitizedCpoe);
@@ -133,7 +133,7 @@ export class CPOEGenerator {
 
     return {
       parley: "1.0",
-      cpoe: sanitizedCpoe,
+      marque: sanitizedCpoe,
       signature,
     };
   }
@@ -146,8 +146,8 @@ export class CPOEGenerator {
    * Build per-framework compliance results from ChartResult data.
    * Extracts from the `frameworks` field of each ChartResult.
    */
-  private buildFrameworks(chartResults: ChartResult[]): Record<string, CPOEFrameworkResult> {
-    const result: Record<string, CPOEFrameworkResult> = {};
+  private buildFrameworks(chartResults: ChartResult[]): Record<string, MarqueFrameworkResult> {
+    const result: Record<string, MarqueFrameworkResult> = {};
 
     for (const chart of chartResults) {
       if (!chart.frameworks) continue;
@@ -186,7 +186,7 @@ export class CPOEGenerator {
   /**
    * Compute summary from framework results.
    */
-  private buildSummary(frameworks: Record<string, CPOEFrameworkResult>): {
+  private buildSummary(frameworks: Record<string, MarqueFrameworkResult>): {
     controlsTested: number;
     controlsPassed: number;
     controlsFailed: number;
@@ -216,7 +216,7 @@ export class CPOEGenerator {
    * Build evidence chain metadata from evidence files.
    * Reads the first record hash as the chain root.
    */
-  private buildEvidenceChain(evidencePaths: string[]): CPOEEvidenceChain {
+  private buildEvidenceChain(evidencePaths: string[]): MarqueEvidenceChain {
     let totalRecords = 0;
     let hashChainRoot = "";
     let allVerified = true;
@@ -294,7 +294,7 @@ export class CPOEGenerator {
   private buildThreatModelSummary(
     raidResults: RaidResult[],
     threatModel?: ThreatModelResult,
-  ): CPOEThreatModelSummary | undefined {
+  ): MarqueThreatModelSummary | undefined {
     if (!threatModel) return undefined;
 
     return {
@@ -310,11 +310,11 @@ export class CPOEGenerator {
   // ===========================================================================
 
   /**
-   * Canonicalize a CPOE payload for signing.
+   * Canonicalize a MARQUE payload for signing.
    * Recursively sorts all object keys for deterministic JSON output.
    */
-  private canonicalize(cpoe: CPOEDocument["cpoe"]): string {
-    return JSON.stringify(sortKeysDeep(cpoe));
+  private canonicalize(marque: MarqueDocument["marque"]): string {
+    return JSON.stringify(sortKeysDeep(marque));
   }
 
   // ===========================================================================

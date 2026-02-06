@@ -1,13 +1,13 @@
 /**
- * Auto-Bundler — Automated CPOE Generation Pipeline
+ * Auto-Bundler — Automated MARQUE Generation Pipeline
  *
  * Runs the full Corsair assessment pipeline for configured providers,
- * generates a signed CPOE document, and optionally publishes it.
+ * generates a signed MARQUE document, and optionally publishes it.
  *
  * Pipeline per provider:
  *   RECON → Threat Model → MARK → RAID → PLUNDER → CHART
  *
- * Then: Combine results → Admiral (optional) → Generate CPOE → Publish/Save
+ * Then: Combine results → Quartermaster (optional) → Generate MARQUE → Publish/Save
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
@@ -15,10 +15,10 @@ import { join, dirname } from "path";
 import { createHash } from "crypto";
 
 import { Corsair } from "../engine/index";
-import { CPOEGenerator, type CPOEGeneratorInput } from "./cpoe-generator";
-import { CPOEKeyManager } from "./cpoe-key-manager";
+import { MarqueGenerator, type MarqueGeneratorInput } from "./marque-generator";
+import { MarqueKeyManager } from "./marque-key-manager";
 import { ParleyClient } from "./parley-client";
-import type { CPOEDocument } from "./cpoe-types";
+import type { MarqueDocument } from "./marque-types";
 import type { ParleyConfig, BundleResult } from "./parley-types";
 import type {
   MarkResult,
@@ -30,20 +30,20 @@ import type {
 export class AutoBundler {
   private config: ParleyConfig;
   private corsair: Corsair;
-  private keyManager: CPOEKeyManager;
-  private generator: CPOEGenerator;
+  private keyManager: MarqueKeyManager;
+  private generator: MarqueGenerator;
 
-  constructor(config: ParleyConfig, corsair: Corsair, keyManager: CPOEKeyManager) {
+  constructor(config: ParleyConfig, corsair: Corsair, keyManager: MarqueKeyManager) {
     this.config = config;
     this.corsair = corsair;
     this.keyManager = keyManager;
-    this.generator = new CPOEGenerator(keyManager, {
+    this.generator = new MarqueGenerator(keyManager, {
       expiryDays: config.expiryDays ?? 7,
     });
   }
 
   /**
-   * Run the full assessment pipeline and generate a CPOE.
+   * Run the full assessment pipeline and generate a MARQUE.
    */
   async bundle(): Promise<BundleResult> {
     const allMarkResults: MarkResult[] = [];
@@ -76,8 +76,8 @@ export class AutoBundler {
       }
     }
 
-    // Build CPOE input
-    const input: CPOEGeneratorInput = {
+    // Build MARQUE input
+    const input: MarqueGeneratorInput = {
       markResults: allMarkResults,
       raidResults: allRaidResults,
       chartResults: allChartResults,
@@ -96,19 +96,19 @@ export class AutoBundler {
         providersRun,
         controlsTested: 0,
         controlsPassed: 0,
-        cpoeGenerated: false,
+        marqueGenerated: false,
         published: false,
         overallScore: 0,
       };
     }
 
-    // Generate CPOE
-    const cpoe = await this.generator.generate(input);
+    // Generate MARQUE
+    const marque = await this.generator.generate(input);
 
     // Save locally
     let localPath: string | undefined;
     if (this.config.localOutputDir) {
-      localPath = this.saveCPOELocally(cpoe);
+      localPath = this.saveMARQUELocally(marque);
       this.saveHash(currentHash);
     }
 
@@ -117,7 +117,7 @@ export class AutoBundler {
     if (this.config.endpoint) {
       try {
         const client = new ParleyClient(this.config.endpoint);
-        await client.publish(cpoe);
+        await client.publish(marque);
         published = true;
       } catch (error) {
         console.warn(
@@ -128,13 +128,13 @@ export class AutoBundler {
     }
 
     // Compute summary stats
-    const summary = cpoe.cpoe.summary;
+    const summary = marque.marque.summary;
 
     return {
       providersRun,
       controlsTested: summary.controlsTested,
       controlsPassed: summary.controlsPassed,
-      cpoeGenerated: true,
+      marqueGenerated: true,
       localPath,
       published,
       overallScore: summary.overallScore,
@@ -214,7 +214,7 @@ export class AutoBundler {
   /**
    * Check if results have changed since last bundle.
    */
-  private hashResults(input: CPOEGeneratorInput): string {
+  private hashResults(input: MarqueGeneratorInput): string {
     const data = JSON.stringify({
       providers: input.providers.sort(),
       markFindings: input.markResults
@@ -240,13 +240,13 @@ export class AutoBundler {
     writeFileSync(join(hashDir, ".last-hash"), hash);
   }
 
-  private saveCPOELocally(cpoe: CPOEDocument): string {
+  private saveMARQUELocally(marque: MarqueDocument): string {
     const dir = this.config.localOutputDir!;
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const filePath = join(dir, `cpoe-${timestamp}.json`);
-    writeFileSync(filePath, JSON.stringify(cpoe, null, 2));
+    const filePath = join(dir, `marque-${timestamp}.json`);
+    writeFileSync(filePath, JSON.stringify(marque, null, 2));
     return filePath;
   }
 }

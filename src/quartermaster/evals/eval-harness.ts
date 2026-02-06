@@ -1,30 +1,30 @@
 /**
- * Admiral Eval Harness
+ * Quartermaster Eval Harness
  *
- * Runs adversarial scenarios against the Admiral agent and evaluates
+ * Runs adversarial scenarios against the Quartermaster agent and evaluates
  * whether it correctly detects corruption, bias, and other integrity issues.
  */
 
-import { AdmiralAgent } from "../admiral-agent";
-import type { AdmiralGovernanceReport } from "../admiral-types";
+import { QuartermasterAgent } from "../quartermaster-agent";
+import type { QuartermasterGovernanceReport } from "../quartermaster-types";
 import type {
-  AdmiralEvalScenario,
-  AdmiralEvalResult,
-  AdmiralBenchmarkResult,
+  QuartermasterEvalScenario,
+  QuartermasterEvalResult,
+  QuartermasterBenchmarkResult,
 } from "./eval-types";
 
-export class AdmiralEvalHarness {
-  private admiral: AdmiralAgent;
+export class QuartermasterEvalHarness {
+  private quartermaster: QuartermasterAgent;
 
-  constructor(admiral: AdmiralAgent) {
-    this.admiral = admiral;
+  constructor(quartermaster: QuartermasterAgent) {
+    this.quartermaster = quartermaster;
   }
 
   /**
    * Run a single adversarial scenario and check results.
    */
-  async runScenario(scenario: AdmiralEvalScenario): Promise<AdmiralEvalResult> {
-    const report = await this.admiral.evaluate(scenario.input);
+  async runScenario(scenario: QuartermasterEvalScenario): Promise<QuartermasterEvalResult> {
+    const report = await this.quartermaster.evaluate(scenario.input);
 
     const { detectedCategories, missedCategories } = this.checkFindings(
       report,
@@ -57,9 +57,9 @@ export class AdmiralEvalHarness {
   /**
    * Run all scenarios and produce an aggregate benchmark.
    */
-  async runBenchmark(scenarios: AdmiralEvalScenario[]): Promise<AdmiralBenchmarkResult> {
+  async runBenchmark(scenarios: QuartermasterEvalScenario[]): Promise<QuartermasterBenchmarkResult> {
     const startTime = Date.now();
-    const results: AdmiralEvalResult[] = [];
+    const results: QuartermasterEvalResult[] = [];
 
     for (const scenario of scenarios) {
       const result = await this.runScenario(scenario);
@@ -112,7 +112,7 @@ export class AdmiralEvalHarness {
    * Check which expected finding categories were detected vs missed.
    */
   private checkFindings(
-    report: AdmiralGovernanceReport,
+    report: QuartermasterGovernanceReport,
     expectedCategories: string[]
   ): { detectedCategories: string[]; missedCategories: string[] } {
     const allFindings = report.dimensions.flatMap((d) => d.findings);

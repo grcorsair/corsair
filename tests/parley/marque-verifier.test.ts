@@ -1,7 +1,7 @@
 /**
- * CPOE Verifier Test Contract
+ * MARQUE Verifier Test Contract
  *
- * Validates that CPOEVerifier correctly verifies CPOE document signatures,
+ * Validates that MarqueVerifier correctly verifies MARQUE document signatures,
  * freshness, schema validity, and evidence chain integrity.
  *
  * TDD Phase: RED -- these tests must fail before implementation.
@@ -11,11 +11,11 @@ import { describe, test, expect, afterAll } from "bun:test";
 import * as os from "os";
 import * as path from "path";
 import * as fs from "fs";
-import { CPOEKeyManager } from "../../src/parley/cpoe-key-manager";
-import { CPOEGenerator } from "../../src/parley/cpoe-generator";
-import { CPOEVerifier } from "../../src/parley/cpoe-verifier";
-import type { CPOEGeneratorInput } from "../../src/parley/cpoe-generator";
-import type { CPOEDocument } from "../../src/parley/cpoe-types";
+import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
+import { MarqueGenerator } from "../../src/parley/marque-generator";
+import { MarqueVerifier } from "../../src/parley/marque-verifier";
+import type { MarqueGeneratorInput } from "../../src/parley/marque-generator";
+import type { MarqueDocument } from "../../src/parley/marque-types";
 import type { RaidResult, ChartResult, MarkResult } from "../../src/types";
 import { EvidenceEngine } from "../../src/evidence";
 
@@ -26,7 +26,7 @@ import { EvidenceEngine } from "../../src/evidence";
 function createTestDir(): string {
   return path.join(
     os.tmpdir(),
-    `corsair-cpoe-ver-test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    `corsair-marque-ver-test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
   );
 }
 
@@ -99,21 +99,21 @@ function mockChartResult(): ChartResult {
   };
 }
 
-async function generateValidCPOE(keyDir: string): Promise<{
-  doc: CPOEDocument;
+async function generateValidMARQUE(keyDir: string): Promise<{
+  doc: MarqueDocument;
   publicKey: Buffer;
-  keyManager: CPOEKeyManager;
+  keyManager: MarqueKeyManager;
 }> {
-  const keyManager = new CPOEKeyManager(keyDir);
+  const keyManager = new MarqueKeyManager(keyDir);
   await keyManager.generateKeypair();
   const keypair = (await keyManager.loadKeypair())!;
-  const generator = new CPOEGenerator(keyManager);
+  const generator = new MarqueGenerator(keyManager);
 
   const evidencePath = path.join(keyDir, "evidence.jsonl");
   const engine = new EvidenceEngine(evidencePath);
   await engine.plunder(mockRaidResult(), evidencePath);
 
-  const input: CPOEGeneratorInput = {
+  const input: MarqueGeneratorInput = {
     markResults: [mockMarkResult()],
     raidResults: [mockRaidResult()],
     chartResults: [mockChartResult()],
@@ -130,7 +130,7 @@ async function generateValidCPOE(keyDir: string): Promise<{
 // TESTS
 // =============================================================================
 
-describe("CPOE Verifier - Document Verification", () => {
+describe("MARQUE Verifier - Document Verification", () => {
   const testDirs: string[] = [];
 
   function trackDir(): string {
@@ -149,11 +149,11 @@ describe("CPOE Verifier - Document Verification", () => {
     }
   });
 
-  test("verify valid CPOE returns { valid: true }", async () => {
+  test("verify valid MARQUE returns { valid: true }", async () => {
     const keyDir = trackDir();
-    const { doc, publicKey } = await generateValidCPOE(keyDir);
+    const { doc, publicKey } = await generateValidMARQUE(keyDir);
 
-    const verifier = new CPOEVerifier([publicKey]);
+    const verifier = new MarqueVerifier([publicKey]);
     const result = verifier.verify(doc);
 
     expect(result.valid).toBe(true);
@@ -162,36 +162,36 @@ describe("CPOE Verifier - Document Verification", () => {
     expect(result.expiresAt).toBeDefined();
   });
 
-  test("verify tampered CPOE returns { valid: false, reason: signature_invalid }", async () => {
+  test("verify tampered MARQUE returns { valid: false, reason: signature_invalid }", async () => {
     const keyDir = trackDir();
-    const { doc, publicKey } = await generateValidCPOE(keyDir);
+    const { doc, publicKey } = await generateValidMARQUE(keyDir);
 
     // Tamper with the document (change score to something different)
     const tampered = structuredClone(doc);
-    tampered.cpoe.summary.overallScore = 42;
+    tampered.marque.summary.overallScore = 42;
 
-    const verifier = new CPOEVerifier([publicKey]);
+    const verifier = new MarqueVerifier([publicKey]);
     const result = verifier.verify(tampered);
 
     expect(result.valid).toBe(false);
     expect(result.reason).toBe("signature_invalid");
   });
 
-  test("verify expired CPOE returns { valid: false, reason: expired }", async () => {
+  test("verify expired MARQUE returns { valid: false, reason: expired }", async () => {
     const keyDir = trackDir();
-    const { doc, publicKey } = await generateValidCPOE(keyDir);
+    const { doc, publicKey } = await generateValidMARQUE(keyDir);
 
     // Forge an expired document by modifying expiresAt and re-signing
     // Since we can't re-sign, we create a doc with expired time directly
-    const keyManager = new CPOEKeyManager(keyDir);
+    const keyManager = new MarqueKeyManager(keyDir);
     const keypair = (await keyManager.loadKeypair())!;
-    const generator = new CPOEGenerator(keyManager, { expiryDays: -1 });
+    const generator = new MarqueGenerator(keyManager, { expiryDays: -1 });
 
     const evidencePath = path.join(keyDir, "evidence2.jsonl");
     const engine = new EvidenceEngine(evidencePath);
     await engine.plunder(mockRaidResult(), evidencePath);
 
-    const input: CPOEGeneratorInput = {
+    const input: MarqueGeneratorInput = {
       markResults: [mockMarkResult()],
       raidResults: [mockRaidResult()],
       chartResults: [mockChartResult()],
@@ -202,47 +202,47 @@ describe("CPOE Verifier - Document Verification", () => {
 
     const expiredDoc = await generator.generate(input);
 
-    const verifier = new CPOEVerifier([publicKey]);
+    const verifier = new MarqueVerifier([publicKey]);
     const result = verifier.verify(expiredDoc);
 
     expect(result.valid).toBe(false);
     expect(result.reason).toBe("expired");
   });
 
-  test("verify CPOE with invalid schema returns { valid: false, reason: schema_invalid }", async () => {
+  test("verify MARQUE with invalid schema returns { valid: false, reason: schema_invalid }", async () => {
     const keyDir = trackDir();
-    const { publicKey } = await generateValidCPOE(keyDir);
+    const { publicKey } = await generateValidMARQUE(keyDir);
 
     // Create a document missing required fields
     const invalidDoc = {
       parley: "1.0",
-      cpoe: {
-        id: "cpoe-invalid",
+      marque: {
+        id: "marque-invalid",
         // Missing: version, issuer, generatedAt, expiresAt, scope, summary, evidenceChain, frameworks
       },
       signature: "invalid-sig",
-    } as unknown as CPOEDocument;
+    } as unknown as MarqueDocument;
 
-    const verifier = new CPOEVerifier([publicKey]);
+    const verifier = new MarqueVerifier([publicKey]);
     const result = verifier.verify(invalidDoc);
 
     expect(result.valid).toBe(false);
     expect(result.reason).toBe("schema_invalid");
   });
 
-  test("verify CPOE signed with retired key returns { valid: true } when retired keys provided", async () => {
+  test("verify MARQUE signed with retired key returns { valid: true } when retired keys provided", async () => {
     const keyDir = trackDir();
 
     // Generate initial keypair and sign a document
-    const keyManager = new CPOEKeyManager(keyDir);
+    const keyManager = new MarqueKeyManager(keyDir);
     const originalKeypair = await keyManager.generateKeypair();
-    const generator = new CPOEGenerator(keyManager);
+    const generator = new MarqueGenerator(keyManager);
 
     const evidencePath = path.join(keyDir, "evidence.jsonl");
     const engine = new EvidenceEngine(evidencePath);
     await engine.plunder(mockRaidResult(), evidencePath);
 
-    const input: CPOEGeneratorInput = {
+    const input: MarqueGeneratorInput = {
       markResults: [mockMarkResult()],
       raidResults: [mockRaidResult()],
       chartResults: [mockChartResult()],
@@ -260,30 +260,30 @@ describe("CPOE Verifier - Document Verification", () => {
     // Verify with new key + retired keys
     const retiredKeys = keyManager.getRetiredKeys();
     const allKeys = [newKeypair.publicKey, ...retiredKeys];
-    const verifier = new CPOEVerifier(allKeys);
+    const verifier = new MarqueVerifier(allKeys);
     const result = verifier.verify(doc);
 
     expect(result.valid).toBe(true);
   });
 
-  test("verify CPOE with broken evidence chain reference returns { valid: false }", async () => {
+  test("verify MARQUE with broken evidence chain reference returns { valid: false }", async () => {
     const keyDir = trackDir();
-    const { doc, publicKey } = await generateValidCPOE(keyDir);
+    const { doc, publicKey } = await generateValidMARQUE(keyDir);
 
     // Tamper evidence chain metadata and re-sign to make signature valid
     // but evidence chain integrity check should still catch it
-    const keyManager = new CPOEKeyManager(keyDir);
+    const keyManager = new MarqueKeyManager(keyDir);
     const keypair = (await keyManager.loadKeypair())!;
 
     // Create a clone with bad evidence chain
     const badDoc = structuredClone(doc);
-    badDoc.cpoe.evidenceChain.chainVerified = false;
+    badDoc.marque.evidenceChain.chainVerified = false;
 
     // Re-sign the tampered content so signature passes
-    const cpoePayload = JSON.stringify(badDoc.cpoe, Object.keys(badDoc.cpoe).sort());
-    badDoc.signature = keyManager.sign(cpoePayload, keypair.privateKey);
+    const marquePayload = JSON.stringify(badDoc.marque, Object.keys(badDoc.marque).sort());
+    badDoc.signature = keyManager.sign(marquePayload, keypair.privateKey);
 
-    const verifier = new CPOEVerifier([publicKey]);
+    const verifier = new MarqueVerifier([publicKey]);
     const result = verifier.verify(badDoc);
 
     expect(result.valid).toBe(false);
@@ -292,28 +292,28 @@ describe("CPOE Verifier - Document Verification", () => {
 
   test("standalone verifier works without Corsair installed (just needs public key)", async () => {
     const keyDir = trackDir();
-    const { doc, publicKey } = await generateValidCPOE(keyDir);
+    const { doc, publicKey } = await generateValidMARQUE(keyDir);
 
     // Simulate standalone verification: only a public key buffer, no key manager
-    const verifier = new CPOEVerifier([publicKey]);
+    const verifier = new MarqueVerifier([publicKey]);
     const result = verifier.verify(doc);
 
     expect(result.valid).toBe(true);
     // The verifier should work with just the public key -- no Corsair dependency
-    expect(result.generatedAt).toBe(doc.cpoe.generatedAt);
-    expect(result.expiresAt).toBe(doc.cpoe.expiresAt);
+    expect(result.generatedAt).toBe(doc.marque.generatedAt);
+    expect(result.expiresAt).toBe(doc.marque.expiresAt);
   });
 
-  test("verifyFromFile reads CPOE from disk and verifies", async () => {
+  test("verifyFromFile reads MARQUE from disk and verifies", async () => {
     const keyDir = trackDir();
-    const { doc, publicKey } = await generateValidCPOE(keyDir);
+    const { doc, publicKey } = await generateValidMARQUE(keyDir);
 
-    // Write CPOE to disk
-    const cpoePath = path.join(keyDir, "test-cpoe.json");
-    fs.writeFileSync(cpoePath, JSON.stringify(doc, null, 2));
+    // Write MARQUE to disk
+    const marquePath = path.join(keyDir, "test-marque.json");
+    fs.writeFileSync(marquePath, JSON.stringify(doc, null, 2));
 
-    const verifier = new CPOEVerifier([publicKey]);
-    const result = verifier.verifyFromFile(cpoePath);
+    const verifier = new MarqueVerifier([publicKey]);
+    const result = verifier.verifyFromFile(marquePath);
 
     expect(result.valid).toBe(true);
     expect(result.signedBy).toBeDefined();

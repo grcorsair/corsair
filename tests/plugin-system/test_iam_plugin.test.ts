@@ -6,7 +6,7 @@
  */
 
 import { describe, test, expect, beforeAll } from "bun:test";
-import { Corsair, StrideEngine } from "../../src/corsair-mvp";
+import { Corsair, SpyglassEngine } from "../../src/corsair-mvp";
 import type { IAMSnapshot } from "../../src/corsair-mvp";
 import {
   isIAMSnapshot,
@@ -218,13 +218,13 @@ describe("AWS IAM Plugin - Mark Engine Integration", () => {
 });
 
 // =============================================================================
-// STRIDE INTEGRATION
+// SPYGLASS INTEGRATION
 // =============================================================================
 
-describe("AWS IAM Plugin - STRIDE Integration", () => {
-  test("STRIDE rules exist for aws-iam provider (>= 4 threats)", () => {
-    const engine = new StrideEngine();
-    const result = engine.strideAnalyze(
+describe("AWS IAM Plugin - SPYGLASS Integration", () => {
+  test("SPYGLASS rules exist for aws-iam provider (>= 4 threats)", () => {
+    const engine = new SpyglassEngine();
+    const result = engine.spyglassAnalyze(
       nonCompliantIAMSnapshot as unknown as Record<string, unknown>,
       "aws-iam"
     );

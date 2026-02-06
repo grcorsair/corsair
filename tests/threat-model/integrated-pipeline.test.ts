@@ -147,7 +147,7 @@ describe("Integrated Pipeline - Threat Model → MARK → RAID → CHART", () =>
       threatModel: tm,
     });
 
-    expect(html).toContain("Threat Model (STRIDE)");
+    expect(html).toContain("Threat Model (SPYGLASS)");
     expect(html).toContain("Risk Distribution");
     expect(html).toContain("Spoofing");
   });

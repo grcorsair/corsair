@@ -88,7 +88,7 @@ The Algorithm's secret weapon: **ISC (Ideal State Criteria)** - granular, binary
 
 **Output**: Detailed reconnaissance snapshot of target configuration
 
-## 🧭 Phase 2: THREAT MODEL (STRIDE ANALYSIS)
+## 🧭 Phase 2: THREAT MODEL (SPYGLASS ANALYSIS)
 *"Know thy enemy's methods before engaging"*
 
 - **THREAT MODEL primitive**: Run STRIDE analysis on the RECON snapshot

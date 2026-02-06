@@ -1,7 +1,7 @@
 /**
- * CPOE Types Test Contract
+ * MARQUE Types Test Contract
  *
- * Validates that all CPOE (Corsair Proof of Operational Effectiveness) types
+ * Validates that all MARQUE (Corsair Proof of Operational Effectiveness) types
  * are properly defined and can be instantiated with correct field structure.
  *
  * These are pure type validation tests -- create instances and verify fields.
@@ -9,22 +9,22 @@
 
 import { describe, test, expect } from "bun:test";
 import type {
-  CPOEDocument,
-  CPOEScope,
-  CPOESummary,
-  CPOEEvidenceChain,
-  CPOEFrameworkResult,
-  CPOEAdmiralAttestation,
-  CPOEIssuer,
-  CPOEThreatModelSummary,
-} from "../../src/parley/cpoe-types";
+  MarqueDocument,
+  MarqueScope,
+  MarqueSummary,
+  MarqueEvidenceChain,
+  MarqueFrameworkResult,
+  MarqueQuartermasterAttestation,
+  MarqueIssuer,
+  MarqueThreatModelSummary,
+} from "../../src/parley/marque-types";
 
-describe("CPOE Types - Proof of Operational Effectiveness", () => {
-  test("CPOEDocument has all required fields (parley, cpoe, signature)", () => {
-    const doc: CPOEDocument = {
+describe("MARQUE Types - Proof of Operational Effectiveness", () => {
+  test("MarqueDocument has all required fields (parley, marque, signature)", () => {
+    const doc: MarqueDocument = {
       parley: "1.0",
-      cpoe: {
-        id: "cpoe-001",
+      marque: {
+        id: "marque-001",
         version: "1.0.0",
         issuer: { id: "issuer-1", name: "Corsair Engine" },
         generatedAt: new Date().toISOString(),
@@ -38,16 +38,16 @@ describe("CPOE Types - Proof of Operational Effectiveness", () => {
     };
 
     expect(doc.parley).toBe("1.0");
-    expect(doc.cpoe.id).toBe("cpoe-001");
-    expect(doc.cpoe.version).toBe("1.0.0");
-    expect(doc.cpoe.issuer.id).toBe("issuer-1");
-    expect(doc.cpoe.generatedAt).toBeDefined();
-    expect(doc.cpoe.expiresAt).toBeDefined();
+    expect(doc.marque.id).toBe("marque-001");
+    expect(doc.marque.version).toBe("1.0.0");
+    expect(doc.marque.issuer.id).toBe("issuer-1");
+    expect(doc.marque.generatedAt).toBeDefined();
+    expect(doc.marque.expiresAt).toBeDefined();
     expect(doc.signature).toBe("sig-placeholder");
   });
 
-  test("CPOEScope has providers, resourceCount, frameworksCovered", () => {
-    const scope: CPOEScope = {
+  test("MarqueScope has providers, resourceCount, frameworksCovered", () => {
+    const scope: MarqueScope = {
       providers: ["aws-cognito", "aws-s3"],
       resourceCount: 12,
       frameworksCovered: ["SOC2", "NIST-800-53", "MITRE-ATT&CK"],
@@ -60,8 +60,8 @@ describe("CPOE Types - Proof of Operational Effectiveness", () => {
     expect(scope.frameworksCovered).toContain("NIST-800-53");
   });
 
-  test("CPOESummary has controlsTested, controlsPassed, controlsFailed, overallScore", () => {
-    const summary: CPOESummary = {
+  test("MarqueSummary has controlsTested, controlsPassed, controlsFailed, overallScore", () => {
+    const summary: MarqueSummary = {
       controlsTested: 25,
       controlsPassed: 20,
       controlsFailed: 5,
@@ -75,8 +75,8 @@ describe("CPOE Types - Proof of Operational Effectiveness", () => {
     expect(summary.controlsPassed + summary.controlsFailed).toBe(summary.controlsTested);
   });
 
-  test("CPOEEvidenceChain has hashChainRoot, recordCount, chainVerified", () => {
-    const chain: CPOEEvidenceChain = {
+  test("MarqueEvidenceChain has hashChainRoot, recordCount, chainVerified", () => {
+    const chain: MarqueEvidenceChain = {
       hashChainRoot: "e3b0c44298fc1c149afbf4c8996fb924",
       recordCount: 42,
       chainVerified: true,
@@ -87,8 +87,8 @@ describe("CPOE Types - Proof of Operational Effectiveness", () => {
     expect(chain.chainVerified).toBe(true);
   });
 
-  test("CPOEFrameworkResult has controlsMapped, passed, failed, controls array", () => {
-    const result: CPOEFrameworkResult = {
+  test("MarqueFrameworkResult has controlsMapped, passed, failed, controls array", () => {
+    const result: MarqueFrameworkResult = {
       controlsMapped: 3,
       passed: 2,
       failed: 1,
@@ -108,8 +108,8 @@ describe("CPOE Types - Proof of Operational Effectiveness", () => {
     expect(result.controls[2].status).toBe("failed");
   });
 
-  test("CPOEAdmiralAttestation has confidenceScore, dimensions, trustTier", () => {
-    const attestation: CPOEAdmiralAttestation = {
+  test("MarqueQuartermasterAttestation has confidenceScore, dimensions, trustTier", () => {
+    const attestation: MarqueQuartermasterAttestation = {
       confidenceScore: 0.87,
       dimensions: [
         { dimension: "evidence-quality", score: 0.9 },

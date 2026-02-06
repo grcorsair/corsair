@@ -1,21 +1,21 @@
 #!/usr/bin/env bun
 /**
- * Standalone CPOE Verifier CLI
+ * Standalone MARQUE Verifier CLI
  *
- * Verifies CPOE document integrity without requiring the full Corsair installation.
- * Only needs the CPOE JSON file and the issuer's public key.
+ * Verifies MARQUE document integrity without requiring the full Corsair installation.
+ * Only needs the MARQUE JSON file and the issuer's public key.
  *
  * Usage:
- *   bun run bin/corsair-verify.ts --cpoe ./path.json --pubkey ./key.pub
- *   bun run bin/corsair-verify.ts --cpoe ./path.json --pubkey ./key.pub --verbose
+ *   bun run bin/corsair-verify.ts --marque ./path.json --pubkey ./key.pub
+ *   bun run bin/corsair-verify.ts --marque ./path.json --pubkey ./key.pub --verbose
  */
 
 import { readFileSync, existsSync } from "fs";
-import { CPOEVerifier } from "../src/parley/cpoe-verifier";
-import type { CPOEDocument } from "../src/parley/cpoe-types";
+import { MarqueVerifier } from "../src/parley/marque-verifier";
+import type { MarqueDocument } from "../src/parley/marque-types";
 
 interface VerifyArgs {
-  cpoePath?: string;
+  marquePath?: string;
   pubkeyPath?: string;
   verbose?: boolean;
   help?: boolean;
@@ -27,8 +27,8 @@ function parseArgs(): VerifyArgs {
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
-      case "--cpoe":
-        result.cpoePath = args[++i];
+      case "--marque":
+        result.marquePath = args[++i];
         break;
       case "--pubkey":
         result.pubkeyPath = args[++i];
@@ -49,20 +49,20 @@ function parseArgs(): VerifyArgs {
 
 function printHelp(): void {
   console.log(`
-CORSAIR CPOE Verifier
+CORSAIR MARQUE Verifier
 
 USAGE:
-  bun run bin/corsair-verify.ts --cpoe <path> --pubkey <path>
+  bun run bin/corsair-verify.ts --marque <path> --pubkey <path>
 
 OPTIONS:
-  --cpoe <PATH>     Path to the CPOE JSON document
+  --marque <PATH>     Path to the MARQUE JSON document
   --pubkey <PATH>   Path to the issuer's Ed25519 public key (PEM)
   -v, --verbose     Show detailed verification output
   -h, --help        Show this help message
 
 EXIT CODES:
-  0  CPOE is valid
-  1  CPOE is invalid or verification failed
+  0  MARQUE is valid
+  1  MARQUE is invalid or verification failed
   2  Missing arguments or file not found
 `);
 }
@@ -75,14 +75,14 @@ function main(): void {
     process.exit(0);
   }
 
-  if (!args.cpoePath || !args.pubkeyPath) {
-    console.error("Error: Both --cpoe and --pubkey are required");
+  if (!args.marquePath || !args.pubkeyPath) {
+    console.error("Error: Both --marque and --pubkey are required");
     console.error("Run with --help for usage information");
     process.exit(2);
   }
 
-  if (!existsSync(args.cpoePath)) {
-    console.error(`Error: CPOE file not found: ${args.cpoePath}`);
+  if (!existsSync(args.marquePath)) {
+    console.error(`Error: MARQUE file not found: ${args.marquePath}`);
     process.exit(2);
   }
 
@@ -92,17 +92,17 @@ function main(): void {
   }
 
   try {
-    const cpoeContent = readFileSync(args.cpoePath, "utf-8");
-    const cpoe: CPOEDocument = JSON.parse(cpoeContent);
+    const marqueContent = readFileSync(args.marquePath, "utf-8");
+    const marque: MarqueDocument = JSON.parse(marqueContent);
     const publicKey = readFileSync(args.pubkeyPath);
 
-    const verifier = new CPOEVerifier([Buffer.from(publicKey)]);
-    const result = verifier.verify(cpoe);
+    const verifier = new MarqueVerifier([Buffer.from(publicKey)]);
+    const result = verifier.verify(marque);
 
     if (args.verbose) {
-      console.log("CPOE Verification Report");
+      console.log("MARQUE Verification Report");
       console.log("========================");
-      console.log(`Document ID: ${cpoe.cpoe.id}`);
+      console.log(`Document ID: ${marque.marque.id}`);
       console.log(`Issuer:      ${result.signedBy || "unknown"}`);
       console.log(`Generated:   ${result.generatedAt || "unknown"}`);
       console.log(`Expires:     ${result.expiresAt || "unknown"}`);
@@ -114,7 +114,7 @@ function main(): void {
     }
 
     if (result.valid) {
-      console.log(`VALID: CPOE ${cpoe.cpoe.id} verified successfully`);
+      console.log(`VALID: MARQUE ${marque.marque.id} verified successfully`);
       process.exit(0);
     } else {
       console.error(`INVALID: ${result.reason}`);

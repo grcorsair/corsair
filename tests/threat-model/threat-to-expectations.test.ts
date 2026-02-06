@@ -1,23 +1,23 @@
 /**
  * Threat-to-Expectations Conversion Test Contract
  *
- * Tests the StrideEngine's ability to convert STRIDE threats
+ * Tests the SpyglassEngine's ability to convert STRIDE threats
  * back into MARK expectations for drift detection.
  */
 
 import { describe, test, expect, beforeAll } from "bun:test";
-import { StrideEngine } from "../../src/corsair-mvp";
+import { SpyglassEngine } from "../../src/corsair-mvp";
 import type { ThreatFinding } from "../../src/corsair-mvp";
 import {
   nonCompliantSnapshot,
   nonCompliantS3Snapshot,
 } from "../fixtures/mock-snapshots";
 
-describe("STRIDE Engine - threatToExpectations", () => {
-  let engine: StrideEngine;
+describe("SPYGLASS Engine - threatToExpectations", () => {
+  let engine: SpyglassEngine;
 
   beforeAll(() => {
-    engine = new StrideEngine();
+    engine = new SpyglassEngine();
   });
 
   test("threatToExpectations converts Spoofing/MFA threat to mfaConfiguration eq ON expectation", () => {
@@ -119,7 +119,7 @@ describe("STRIDE Engine - threatToExpectations", () => {
 
   test("threatToExpectations for Cognito covers all 5 drift fields", () => {
     // Run full analysis to get all threats, then convert
-    const result = engine.strideAnalyze(
+    const result = engine.spyglassAnalyze(
       nonCompliantSnapshot as unknown as Record<string, unknown>,
       "aws-cognito"
     );
@@ -136,7 +136,7 @@ describe("STRIDE Engine - threatToExpectations", () => {
   });
 
   test("threatToExpectations for S3 covers all 4 drift fields", () => {
-    const result = engine.strideAnalyze(
+    const result = engine.spyglassAnalyze(
       nonCompliantS3Snapshot as unknown as Record<string, unknown>,
       "aws-s3"
     );

@@ -1,27 +1,27 @@
 /**
- * CPOE-OSCAL Mapper Tests
+ * MARQUE-OSCAL Mapper Tests
  *
- * Tests conversion from CPOEDocument to OSCALAssessmentResult.
+ * Tests conversion from MarqueDocument to OSCALAssessmentResult.
  */
 
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { existsSync, mkdirSync, rmSync } from "fs";
-import { mapToOSCAL } from "../../src/parley/cpoe-oscal-mapper";
-import { CPOEKeyManager } from "../../src/parley/cpoe-key-manager";
-import { CPOEGenerator } from "../../src/parley/cpoe-generator";
-import type { CPOEDocument } from "../../src/parley/cpoe-types";
+import { mapToOSCAL } from "../../src/parley/marque-oscal-mapper";
+import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
+import { MarqueGenerator } from "../../src/parley/marque-generator";
+import type { MarqueDocument } from "../../src/parley/marque-types";
 import type { ChartResult } from "../../src/corsair-mvp";
 
-const TEST_DIR = "/tmp/cpoe-oscal-mapper-test";
-let testCPOE: CPOEDocument;
+const TEST_DIR = "/tmp/marque-oscal-mapper-test";
+let testMarque: MarqueDocument;
 
-async function createTestCPOE(): Promise<CPOEDocument> {
+async function createTestMarque(): Promise<MarqueDocument> {
   const keyDir = `${TEST_DIR}/keys`;
   if (!existsSync(keyDir)) mkdirSync(keyDir, { recursive: true });
 
-  const keyManager = new CPOEKeyManager(keyDir);
+  const keyManager = new MarqueKeyManager(keyDir);
   await keyManager.generateKeypair();
-  const generator = new CPOEGenerator(keyManager);
+  const generator = new MarqueGenerator(keyManager);
 
   const chartResult: ChartResult = {
     mitre: { technique: "T1556", name: "MFA Bypass", tactic: "Credential Access", description: "Test" },
@@ -68,16 +68,16 @@ async function createTestCPOE(): Promise<CPOEDocument> {
 
 beforeAll(async () => {
   if (!existsSync(TEST_DIR)) mkdirSync(TEST_DIR, { recursive: true });
-  testCPOE = await createTestCPOE();
+  testMarque = await createTestMarque();
 });
 
 afterAll(() => {
   if (existsSync(TEST_DIR)) rmSync(TEST_DIR, { recursive: true, force: true });
 });
 
-describe("CPOE-OSCAL Mapper", () => {
-  test("mapToOSCAL converts CPOEDocument to OSCALAssessmentResult", () => {
-    const oscal = mapToOSCAL(testCPOE);
+describe("MARQUE-OSCAL Mapper", () => {
+  test("mapToOSCAL converts MarqueDocument to OSCALAssessmentResult", () => {
+    const oscal = mapToOSCAL(testMarque);
 
     expect(oscal["assessment-results"]).toBeDefined();
     expect(oscal["assessment-results"].uuid).toBeDefined();
@@ -85,23 +85,23 @@ describe("CPOE-OSCAL Mapper", () => {
     expect(oscal["assessment-results"].results).toHaveLength(1);
   });
 
-  test("CPOE frameworks map to OSCAL reviewed controls", () => {
-    const oscal = mapToOSCAL(testCPOE);
+  test("MARQUE frameworks map to OSCAL reviewed controls", () => {
+    const oscal = mapToOSCAL(testMarque);
     const result = oscal["assessment-results"].results[0];
 
     expect(result["reviewed-controls"]).toBeDefined();
     const controlSelections = result["reviewed-controls"]["control-selections"];
     expect(controlSelections.length).toBeGreaterThanOrEqual(1);
 
-    // Should have frameworks from the CPOE
+    // Should have frameworks from the MARQUE
     const frameworkNames = controlSelections.flatMap((cs) =>
       cs.props?.map((p) => p.value) || []
     );
     expect(frameworkNames.some((f) => f.includes("NIST") || f.includes("SOC2"))).toBe(true);
   });
 
-  test("CPOE evidence chain maps to OSCAL observations", () => {
-    const oscal = mapToOSCAL(testCPOE);
+  test("MARQUE evidence chain maps to OSCAL observations", () => {
+    const oscal = mapToOSCAL(testMarque);
     const result = oscal["assessment-results"].results[0];
 
     expect(result.observations.length).toBeGreaterThanOrEqual(1);
@@ -113,18 +113,18 @@ describe("CPOE-OSCAL Mapper", () => {
     expect(chainObs).toBeDefined();
   });
 
-  test("CPOE summary maps to OSCAL result metadata", () => {
-    const oscal = mapToOSCAL(testCPOE);
+  test("MARQUE summary maps to OSCAL result metadata", () => {
+    const oscal = mapToOSCAL(testMarque);
     const result = oscal["assessment-results"].results[0];
 
-    expect(result.title).toContain("CPOE Assessment");
-    expect(result.description).toContain("CPOE");
+    expect(result.title).toContain("MARQUE Assessment");
+    expect(result.description).toContain("MARQUE");
     expect(result.start).toBeDefined();
     expect(result.end).toBeDefined();
   });
 
-  test("Round-trip: Corsair results to CPOE to OSCAL preserves key data", () => {
-    const oscal = mapToOSCAL(testCPOE);
+  test("Round-trip: Corsair results to MARQUE to OSCAL preserves key data", () => {
+    const oscal = mapToOSCAL(testMarque);
     const result = oscal["assessment-results"].results[0];
 
     // Controls should be present

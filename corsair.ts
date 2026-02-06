@@ -415,7 +415,7 @@ export async function runDemo(options: {
     const reconResult = await corsair.recon(targetId, { source: "fixture", service });
     const snapshot = reconResult.snapshot as Record<string, unknown>;
 
-    // 2. THREAT MODEL (STRIDE)
+    // 2. THREAT MODEL (SPYGLASS)
     const tm = await corsair.threatModel(snapshot, provider);
     threatModels.push(tm);
 

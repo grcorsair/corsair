@@ -1,13 +1,13 @@
 /**
- * STRIDE Engine Test Contract
+ * SPYGLASS Engine Test Contract
  *
- * Tests the StrideEngine's ability to generate STRIDE threat models
+ * Tests the SpyglassEngine's ability to generate STRIDE threat models
  * from provider snapshots. Validates per-provider rules, MITRE mapping,
  * severity distribution, and deduplication.
  */
 
 import { describe, test, expect, beforeAll } from "bun:test";
-import { StrideEngine } from "../../src/corsair-mvp";
+import { SpyglassEngine } from "../../src/corsair-mvp";
 import type { ThreatModelResult, STRIDECategory } from "../../src/corsair-mvp";
 import {
   compliantSnapshot,
@@ -16,7 +16,7 @@ import {
   nonCompliantS3Snapshot,
 } from "../fixtures/mock-snapshots";
 
-const VALID_STRIDE_CATEGORIES: STRIDECategory[] = [
+const VALID_SPYGLASS_CATEGORIES: STRIDECategory[] = [
   "Spoofing",
   "Tampering",
   "Repudiation",
@@ -25,15 +25,15 @@ const VALID_STRIDE_CATEGORIES: STRIDECategory[] = [
   "ElevationOfPrivilege",
 ];
 
-describe("STRIDE Engine - strideAnalyze", () => {
-  let engine: StrideEngine;
+describe("SPYGLASS Engine - spyglassAnalyze", () => {
+  let engine: SpyglassEngine;
 
   beforeAll(() => {
-    engine = new StrideEngine();
+    engine = new SpyglassEngine();
   });
 
-  test("strideAnalyze with non-compliant Cognito snapshot generates >= 3 threats", () => {
-    const result = engine.strideAnalyze(
+  test("spyglassAnalyze with non-compliant Cognito snapshot generates >= 3 threats", () => {
+    const result = engine.spyglassAnalyze(
       nonCompliantSnapshot as unknown as Record<string, unknown>,
       "aws-cognito"
     );
@@ -44,8 +44,8 @@ describe("STRIDE Engine - strideAnalyze", () => {
     expect(result.provider).toBe("aws-cognito");
   });
 
-  test("strideAnalyze with compliant Cognito snapshot generates 0 CRITICAL threats", () => {
-    const result = engine.strideAnalyze(
+  test("spyglassAnalyze with compliant Cognito snapshot generates 0 CRITICAL threats", () => {
+    const result = engine.spyglassAnalyze(
       compliantSnapshot as unknown as Record<string, unknown>,
       "aws-cognito"
     );
@@ -54,8 +54,8 @@ describe("STRIDE Engine - strideAnalyze", () => {
     expect(criticalThreats.length).toBe(0);
   });
 
-  test("strideAnalyze with non-compliant S3 snapshot generates >= 3 threats", () => {
-    const result = engine.strideAnalyze(
+  test("spyglassAnalyze with non-compliant S3 snapshot generates >= 3 threats", () => {
+    const result = engine.spyglassAnalyze(
       nonCompliantS3Snapshot as unknown as Record<string, unknown>,
       "aws-s3"
     );
@@ -64,18 +64,18 @@ describe("STRIDE Engine - strideAnalyze", () => {
   });
 
   test("Each threat has valid STRIDE category (S/T/R/I/D/E)", () => {
-    const result = engine.strideAnalyze(
+    const result = engine.spyglassAnalyze(
       nonCompliantSnapshot as unknown as Record<string, unknown>,
       "aws-cognito"
     );
 
     for (const threat of result.threats) {
-      expect(VALID_STRIDE_CATEGORIES).toContain(threat.stride);
+      expect(VALID_SPYGLASS_CATEGORIES).toContain(threat.stride);
     }
   });
 
   test("Each threat maps to a valid ATT&CK technique (T-prefixed)", () => {
-    const result = engine.strideAnalyze(
+    const result = engine.spyglassAnalyze(
       nonCompliantSnapshot as unknown as Record<string, unknown>,
       "aws-cognito"
     );
@@ -87,7 +87,7 @@ describe("STRIDE Engine - strideAnalyze", () => {
   });
 
   test("Cognito MFA=OFF generates Spoofing + Elevation of Privilege threats", () => {
-    const result = engine.strideAnalyze(
+    const result = engine.spyglassAnalyze(
       nonCompliantSnapshot as unknown as Record<string, unknown>,
       "aws-cognito"
     );
@@ -100,7 +100,7 @@ describe("STRIDE Engine - strideAnalyze", () => {
   });
 
   test("S3 publicAccessBlock=false generates Information Disclosure threat", () => {
-    const result = engine.strideAnalyze(
+    const result = engine.spyglassAnalyze(
       nonCompliantS3Snapshot as unknown as Record<string, unknown>,
       "aws-s3"
     );
@@ -120,7 +120,7 @@ describe("STRIDE Engine - strideAnalyze", () => {
       mfaConfiguration: "OFF",
     };
 
-    const result = engine.strideAnalyze(azureSnapshot, "azure-entra");
+    const result = engine.spyglassAnalyze(azureSnapshot, "azure-entra");
 
     expect(result.threats.length).toBeGreaterThanOrEqual(3);
     const caThreats = result.threats.filter(
@@ -130,7 +130,7 @@ describe("STRIDE Engine - strideAnalyze", () => {
   });
 
   test("Threats include affectedField matching snapshot field paths", () => {
-    const result = engine.strideAnalyze(
+    const result = engine.spyglassAnalyze(
       nonCompliantSnapshot as unknown as Record<string, unknown>,
       "aws-cognito"
     );
@@ -141,7 +141,7 @@ describe("STRIDE Engine - strideAnalyze", () => {
   });
 
   test("Threat severity distribution follows risk model (not all CRITICAL)", () => {
-    const result = engine.strideAnalyze(
+    const result = engine.spyglassAnalyze(
       nonCompliantSnapshot as unknown as Record<string, unknown>,
       "aws-cognito"
     );
@@ -153,8 +153,8 @@ describe("STRIDE Engine - strideAnalyze", () => {
     expect(Object.keys(result.riskDistribution).length).toBeGreaterThan(1);
   });
 
-  test("strideAnalyze accepts optional frameworks filter", () => {
-    const result = engine.strideAnalyze(
+  test("spyglassAnalyze accepts optional frameworks filter", () => {
+    const result = engine.spyglassAnalyze(
       nonCompliantSnapshot as unknown as Record<string, unknown>,
       "aws-cognito",
       { frameworks: ["MITRE", "NIST-800-53"] }
@@ -164,8 +164,8 @@ describe("STRIDE Engine - strideAnalyze", () => {
     expect(result.threats.length).toBeGreaterThan(0);
   });
 
-  test("strideAnalyze returns unique threats (no duplicates)", () => {
-    const result = engine.strideAnalyze(
+  test("spyglassAnalyze returns unique threats (no duplicates)", () => {
+    const result = engine.spyglassAnalyze(
       nonCompliantSnapshot as unknown as Record<string, unknown>,
       "aws-cognito"
     );
@@ -176,7 +176,7 @@ describe("STRIDE Engine - strideAnalyze", () => {
   });
 
   test("Unknown provider returns empty threats", () => {
-    const result = engine.strideAnalyze({}, "unknown-provider");
+    const result = engine.spyglassAnalyze({}, "unknown-provider");
 
     expect(result.threats).toHaveLength(0);
     expect(result.threatCount).toBe(0);

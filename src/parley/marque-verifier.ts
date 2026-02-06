@@ -1,7 +1,7 @@
 /**
- * CPOE Verifier - Standalone Document Verification
+ * MARQUE Verifier - Standalone Document Verification
  *
- * Verifies CPOE document integrity: schema, freshness, Ed25519 signature,
+ * Verifies MARQUE document integrity: schema, freshness, Ed25519 signature,
  * and evidence chain consistency.
  *
  * Designed to work standalone with just a public key -- no Corsair installation required.
@@ -11,14 +11,14 @@
 import * as crypto from "crypto";
 import { readFileSync } from "fs";
 
-import type { CPOEDocument } from "./cpoe-types";
-import { sortKeysDeep } from "./cpoe-generator";
+import type { MarqueDocument } from "./marque-types";
+import { sortKeysDeep } from "./marque-generator";
 
 // =============================================================================
 // VERIFICATION RESULT
 // =============================================================================
 
-export interface CPOEVerificationResult {
+export interface MarqueVerificationResult {
   valid: boolean;
   reason?: "signature_invalid" | "expired" | "schema_invalid" | "evidence_mismatch";
   signedBy?: string;
@@ -27,10 +27,10 @@ export interface CPOEVerificationResult {
 }
 
 // =============================================================================
-// REQUIRED CPOE FIELDS
+// REQUIRED MARQUE FIELDS
 // =============================================================================
 
-const REQUIRED_CPOE_FIELDS = [
+const REQUIRED_MARQUE_FIELDS = [
   "id",
   "version",
   "issuer",
@@ -46,7 +46,7 @@ const REQUIRED_CPOE_FIELDS = [
 // VERIFIER
 // =============================================================================
 
-export class CPOEVerifier {
+export class MarqueVerifier {
   private trustedPublicKeys: Buffer[];
 
   /**
@@ -58,7 +58,7 @@ export class CPOEVerifier {
   }
 
   /**
-   * Verify a CPOE document.
+   * Verify a MARQUE document.
    *
    * Checks (in order):
    * 1. Schema validation (all required fields present)
@@ -66,64 +66,64 @@ export class CPOEVerifier {
    * 3. Freshness (expiresAt > now)
    * 4. Signature (Ed25519 verify against trusted keys)
    */
-  verify(cpoe: CPOEDocument): CPOEVerificationResult {
+  verify(marque: MarqueDocument): MarqueVerificationResult {
     // Step 1: Schema validation
-    if (!this.validateSchema(cpoe)) {
+    if (!this.validateSchema(marque)) {
       return { valid: false, reason: "schema_invalid" };
     }
 
     // Step 2: Evidence chain integrity
-    if (!cpoe.cpoe.evidenceChain.chainVerified) {
+    if (!marque.marque.evidenceChain.chainVerified) {
       return {
         valid: false,
         reason: "evidence_mismatch",
-        signedBy: cpoe.cpoe.issuer?.name,
-        generatedAt: cpoe.cpoe.generatedAt,
-        expiresAt: cpoe.cpoe.expiresAt,
+        signedBy: marque.marque.issuer?.name,
+        generatedAt: marque.marque.generatedAt,
+        expiresAt: marque.marque.expiresAt,
       };
     }
 
     // Step 3: Freshness check
     const now = new Date();
-    const expiresAt = new Date(cpoe.cpoe.expiresAt);
+    const expiresAt = new Date(marque.marque.expiresAt);
     if (expiresAt <= now) {
       return {
         valid: false,
         reason: "expired",
-        signedBy: cpoe.cpoe.issuer?.name,
-        generatedAt: cpoe.cpoe.generatedAt,
-        expiresAt: cpoe.cpoe.expiresAt,
+        signedBy: marque.marque.issuer?.name,
+        generatedAt: marque.marque.generatedAt,
+        expiresAt: marque.marque.expiresAt,
       };
     }
 
     // Step 4: Signature verification
-    const canonical = this.canonicalize(cpoe.cpoe);
-    const signatureValid = this.verifySignature(canonical, cpoe.signature);
+    const canonical = this.canonicalize(marque.marque);
+    const signatureValid = this.verifySignature(canonical, marque.signature);
 
     if (!signatureValid) {
       return {
         valid: false,
         reason: "signature_invalid",
-        signedBy: cpoe.cpoe.issuer?.name,
-        generatedAt: cpoe.cpoe.generatedAt,
-        expiresAt: cpoe.cpoe.expiresAt,
+        signedBy: marque.marque.issuer?.name,
+        generatedAt: marque.marque.generatedAt,
+        expiresAt: marque.marque.expiresAt,
       };
     }
 
     return {
       valid: true,
-      signedBy: cpoe.cpoe.issuer?.name,
-      generatedAt: cpoe.cpoe.generatedAt,
-      expiresAt: cpoe.cpoe.expiresAt,
+      signedBy: marque.marque.issuer?.name,
+      generatedAt: marque.marque.generatedAt,
+      expiresAt: marque.marque.expiresAt,
     };
   }
 
   /**
-   * Read a CPOE document from disk and verify it.
+   * Read a MARQUE document from disk and verify it.
    */
-  verifyFromFile(filePath: string): CPOEVerificationResult {
+  verifyFromFile(filePath: string): MarqueVerificationResult {
     const content = readFileSync(filePath, "utf-8");
-    const doc: CPOEDocument = JSON.parse(content);
+    const doc: MarqueDocument = JSON.parse(content);
     return this.verify(doc);
   }
 
@@ -132,43 +132,43 @@ export class CPOEVerifier {
   // ===========================================================================
 
   /**
-   * Validate that all required CPOE fields are present.
+   * Validate that all required MARQUE fields are present.
    */
-  private validateSchema(doc: CPOEDocument): boolean {
-    if (!doc || !doc.parley || !doc.cpoe || !doc.signature) {
+  private validateSchema(doc: MarqueDocument): boolean {
+    if (!doc || !doc.parley || !doc.marque || !doc.signature) {
       return false;
     }
 
-    const cpoe = doc.cpoe;
+    const marque = doc.marque;
 
-    for (const field of REQUIRED_CPOE_FIELDS) {
-      if (cpoe[field] === undefined || cpoe[field] === null) {
+    for (const field of REQUIRED_MARQUE_FIELDS) {
+      if (marque[field] === undefined || marque[field] === null) {
         return false;
       }
     }
 
     // Validate nested required structures
-    if (!cpoe.issuer?.id || !cpoe.issuer?.name) {
+    if (!marque.issuer?.id || !marque.issuer?.name) {
       return false;
     }
 
-    if (!cpoe.scope?.providers || !cpoe.scope?.frameworksCovered) {
+    if (!marque.scope?.providers || !marque.scope?.frameworksCovered) {
       return false;
     }
 
     if (
-      cpoe.summary?.controlsTested === undefined ||
-      cpoe.summary?.controlsPassed === undefined ||
-      cpoe.summary?.controlsFailed === undefined ||
-      cpoe.summary?.overallScore === undefined
+      marque.summary?.controlsTested === undefined ||
+      marque.summary?.controlsPassed === undefined ||
+      marque.summary?.controlsFailed === undefined ||
+      marque.summary?.overallScore === undefined
     ) {
       return false;
     }
 
     if (
-      !cpoe.evidenceChain?.hashChainRoot ||
-      cpoe.evidenceChain?.recordCount === undefined ||
-      cpoe.evidenceChain?.chainVerified === undefined
+      !marque.evidenceChain?.hashChainRoot ||
+      marque.evidenceChain?.recordCount === undefined ||
+      marque.evidenceChain?.chainVerified === undefined
     ) {
       return false;
     }
@@ -177,11 +177,11 @@ export class CPOEVerifier {
   }
 
   /**
-   * Canonicalize cpoe payload for signature verification.
+   * Canonicalize marque payload for signature verification.
    * Must match the generator's canonicalization.
    */
-  private canonicalize(cpoe: CPOEDocument["cpoe"]): string {
-    return JSON.stringify(sortKeysDeep(cpoe));
+  private canonicalize(marque: MarqueDocument["marque"]): string {
+    return JSON.stringify(sortKeysDeep(marque));
   }
 
   /**

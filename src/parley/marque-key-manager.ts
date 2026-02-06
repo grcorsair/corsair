@@ -1,7 +1,7 @@
 /**
- * CPOE Key Manager - Ed25519 Signing Infrastructure
+ * MARQUE Key Manager - Ed25519 Signing Infrastructure
  *
- * Manages Ed25519 keypairs for signing CPOE documents.
+ * Manages Ed25519 keypairs for signing MARQUE documents.
  * Supports key generation, storage, rotation, and retired key tracking.
  *
  * Uses Node.js built-in crypto module -- no external dependencies.
@@ -15,7 +15,7 @@ const PRIVATE_KEY_FILENAME = "corsair-signing.key";
 const PUBLIC_KEY_FILENAME = "corsair-signing.pub";
 const RETIRED_DIR = "retired";
 
-export class CPOEKeyManager {
+export class MarqueKeyManager {
   private keyDir: string;
 
   constructor(keyDir?: string) {

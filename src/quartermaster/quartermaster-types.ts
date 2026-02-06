@@ -1,7 +1,7 @@
 /**
- * Admiral Agent Types — Governance Verification Layer
+ * Quartermaster Agent Types — Governance Verification Layer
  *
- * The Admiral is an adversarial evaluator that reviews Corsair assessment
+ * The Quartermaster is an adversarial evaluator that reviews Corsair assessment
  * results for integrity, completeness, methodology, and bias.
  *
  * Architecture: Separate Claude API call from the Corsair agent to prevent
@@ -23,9 +23,9 @@ import type { ISCCriterion } from "../types/isc";
 // =============================================================================
 
 /**
- * A specific finding from the Admiral's analysis.
+ * A specific finding from the Quartermaster's analysis.
  */
-export interface AdmiralFinding {
+export interface QuartermasterFinding {
   /** Unique finding identifier */
   id: string;
 
@@ -52,7 +52,7 @@ export interface AdmiralFinding {
 /**
  * Score for a single evaluation dimension.
  */
-export interface AdmiralDimensionScore {
+export interface QuartermasterDimensionScore {
   /** Dimension name */
   dimension: "methodology" | "evidence_integrity" | "completeness" | "bias_detection";
 
@@ -66,7 +66,7 @@ export interface AdmiralDimensionScore {
   rationale: string;
 
   /** Findings that contributed to this dimension's score */
-  findings: AdmiralFinding[];
+  findings: QuartermasterFinding[];
 }
 
 // =============================================================================
@@ -74,9 +74,9 @@ export interface AdmiralDimensionScore {
 // =============================================================================
 
 /**
- * Complete governance report from the Admiral agent.
+ * Complete governance report from the Quartermaster agent.
  */
-export interface AdmiralGovernanceReport {
+export interface QuartermasterGovernanceReport {
   /** Unique report identifier */
   reportId: string;
 
@@ -84,7 +84,7 @@ export interface AdmiralGovernanceReport {
   confidenceScore: number;
 
   /** Per-dimension breakdown */
-  dimensions: AdmiralDimensionScore[];
+  dimensions: QuartermasterDimensionScore[];
 
   /** Trust tier derived from confidence score */
   trustTier: "self-assessed" | "ai-verified" | "auditor-verified";
@@ -105,13 +105,13 @@ export interface AdmiralGovernanceReport {
   /** ISO-8601 timestamp of evaluation */
   evaluatedAt: string;
 
-  /** Duration of Admiral evaluation in milliseconds */
+  /** Duration of Quartermaster evaluation in milliseconds */
   durationMs: number;
 
   /** Model used for evaluation */
   model: string;
 
-  /** SHA-256 hash of this report (for CPOE embedding) */
+  /** SHA-256 hash of this report (for MARQUE embedding) */
   reportHash: string;
 }
 
@@ -120,9 +120,9 @@ export interface AdmiralGovernanceReport {
 // =============================================================================
 
 /**
- * Everything the Admiral needs to evaluate a Corsair run.
+ * Everything the Quartermaster needs to evaluate a Corsair run.
  */
-export interface AdmiralInput {
+export interface QuartermasterInput {
   /** Evidence file paths for chain verification */
   evidencePaths: string[];
 
@@ -153,9 +153,9 @@ export interface AdmiralInput {
 // =============================================================================
 
 /**
- * Configuration for the Admiral agent.
+ * Configuration for the Quartermaster agent.
  */
-export interface AdmiralConfig {
+export interface QuartermasterConfig {
   /** Anthropic API key */
   apiKey: string;
 

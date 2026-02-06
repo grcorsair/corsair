@@ -1,18 +1,18 @@
 /**
- * Admiral Adversarial Scenarios
+ * Quartermaster Adversarial Scenarios
  *
- * 8 built-in scenarios that test whether the Admiral correctly detects
+ * 8 built-in scenarios that test whether the Quartermaster correctly detects
  * corruption, cherry-picking, bias, and other integrity issues.
  *
- * Each scenario provides a deliberately corrupted AdmiralInput and specifies
- * what the Admiral should flag.
+ * Each scenario provides a deliberately corrupted QuartermasterInput and specifies
+ * what the Quartermaster should flag.
  */
 
 import { createHash } from "crypto";
 import { mkdirSync, writeFileSync, existsSync } from "fs";
 import { dirname } from "path";
-import type { AdmiralInput } from "../admiral-types";
-import type { AdmiralEvalScenario } from "./eval-types";
+import type { QuartermasterInput } from "../quartermaster-types";
+import type { QuartermasterEvalScenario } from "./eval-types";
 import type { MarkResult, RaidResult, ChartResult } from "../../types";
 
 // =============================================================================
@@ -121,7 +121,7 @@ function makeChart(): ChartResult {
 // SCENARIO DIRECTORY (temp dir for evidence files)
 // =============================================================================
 
-const SCENARIO_DIR = "/tmp/admiral-eval-scenarios";
+const SCENARIO_DIR = "/tmp/quartermaster-eval-scenarios";
 
 // =============================================================================
 // SCENARIOS
@@ -130,7 +130,7 @@ const SCENARIO_DIR = "/tmp/admiral-eval-scenarios";
 /**
  * Scenario 1: Broken hash chain — evidence has been tampered with.
  */
-export function brokenHashChainScenario(): AdmiralEvalScenario {
+export function brokenHashChainScenario(): QuartermasterEvalScenario {
   const evidencePath = `${SCENARIO_DIR}/broken-chain/evidence.jsonl`;
   writeBrokenEvidenceFile(evidencePath);
 
@@ -155,7 +155,7 @@ export function brokenHashChainScenario(): AdmiralEvalScenario {
 /**
  * Scenario 2: Skipped MFA controls — cherry-picked easy tests.
  */
-export function skippedMFAControlsScenario(): AdmiralEvalScenario {
+export function skippedMFAControlsScenario(): QuartermasterEvalScenario {
   const evidencePath = `${SCENARIO_DIR}/skipped-mfa/evidence.jsonl`;
   writeEvidenceFile(evidencePath, [
     { operation: "raid_executed", data: { raidId: "raid-1", success: false } },
@@ -182,7 +182,7 @@ export function skippedMFAControlsScenario(): AdmiralEvalScenario {
 /**
  * Scenario 3: Severity bias — all findings are LOW severity.
  */
-export function severityBiasScenario(): AdmiralEvalScenario {
+export function severityBiasScenario(): QuartermasterEvalScenario {
   const evidencePath = `${SCENARIO_DIR}/severity-bias/evidence.jsonl`;
   writeEvidenceFile(evidencePath, [
     { operation: "raid_executed", data: { raidId: "raid-1", success: false } },
@@ -225,7 +225,7 @@ export function severityBiasScenario(): AdmiralEvalScenario {
 /**
  * Scenario 4: Timestamp manipulation — out-of-order timestamps.
  */
-export function timestampManipulationScenario(): AdmiralEvalScenario {
+export function timestampManipulationScenario(): QuartermasterEvalScenario {
   const evidencePath = `${SCENARIO_DIR}/timestamp-manip/evidence.jsonl`;
   const dir = dirname(evidencePath);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
@@ -272,7 +272,7 @@ export function timestampManipulationScenario(): AdmiralEvalScenario {
 /**
  * Scenario 5: Phantom coverage — framework claims without evidence.
  */
-export function phantomCoverageScenario(): AdmiralEvalScenario {
+export function phantomCoverageScenario(): QuartermasterEvalScenario {
   const evidencePath = `${SCENARIO_DIR}/phantom-coverage/evidence.jsonl`;
   writeEvidenceFile(evidencePath, [
     { operation: "raid_executed", data: { raidId: "raid-1", success: false } },
@@ -299,7 +299,7 @@ export function phantomCoverageScenario(): AdmiralEvalScenario {
 /**
  * Scenario 6: Perfect score — all RAIDs blocked (too good to be true).
  */
-export function perfectScoreScenario(): AdmiralEvalScenario {
+export function perfectScoreScenario(): QuartermasterEvalScenario {
   const evidencePath = `${SCENARIO_DIR}/perfect-score/evidence.jsonl`;
   writeEvidenceFile(evidencePath, [
     { operation: "raid_executed", data: { raidId: "raid-1", success: false } },
@@ -334,7 +334,7 @@ export function perfectScoreScenario(): AdmiralEvalScenario {
 /**
  * Scenario 7: Selective testing — RECON targets not covered by RAID.
  */
-export function selectiveTestingScenario(): AdmiralEvalScenario {
+export function selectiveTestingScenario(): QuartermasterEvalScenario {
   const evidencePath = `${SCENARIO_DIR}/selective-testing/evidence.jsonl`;
   writeEvidenceFile(evidencePath, [
     { operation: "raid_executed", data: { raidId: "raid-1", success: false } },
@@ -365,7 +365,7 @@ export function selectiveTestingScenario(): AdmiralEvalScenario {
 /**
  * Scenario 8: Trivial ISC — superficially satisfiable criteria.
  */
-export function trivialISCScenario(): AdmiralEvalScenario {
+export function trivialISCScenario(): QuartermasterEvalScenario {
   const evidencePath = `${SCENARIO_DIR}/trivial-isc/evidence.jsonl`;
   writeEvidenceFile(evidencePath, [
     { operation: "raid_executed", data: { raidId: "raid-1", success: false } },
@@ -396,7 +396,7 @@ export function trivialISCScenario(): AdmiralEvalScenario {
 /**
  * Get all 8 built-in adversarial scenarios.
  */
-export function getAllScenarios(): AdmiralEvalScenario[] {
+export function getAllScenarios(): QuartermasterEvalScenario[] {
   return [
     brokenHashChainScenario(),
     skippedMFAControlsScenario(),

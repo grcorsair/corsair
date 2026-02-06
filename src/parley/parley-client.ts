@@ -1,14 +1,14 @@
 /**
  * Parley Client — Trust Exchange Interface
  *
- * HTTP client for publishing and retrieving CPOE documents
+ * HTTP client for publishing and retrieving MARQUE documents
  * from a Parley exchange server.
  *
  * Uses Bun's built-in fetch — no external HTTP dependencies.
  */
 
-import type { CPOEDocument } from "./cpoe-types";
-import { CPOEVerifier, type CPOEVerificationResult } from "./cpoe-verifier";
+import type { MarqueDocument } from "./marque-types";
+import { MarqueVerifier, type MarqueVerificationResult } from "./marque-verifier";
 import type { ParleyEndpoint, ParleySubscription } from "./parley-types";
 
 export class ParleyClient {
@@ -19,10 +19,10 @@ export class ParleyClient {
   }
 
   /**
-   * Publish a CPOE document to the exchange.
+   * Publish a MARQUE document to the exchange.
    */
-  async publish(cpoe: CPOEDocument, notify: boolean = true): Promise<{ published: boolean; id: string }> {
-    const url = `${this.endpoint.baseUrl}/cpoe`;
+  async publish(marque: MarqueDocument, notify: boolean = true): Promise<{ published: boolean; id: string }> {
+    const url = `${this.endpoint.baseUrl}/marque`;
 
     const response = await fetch(url, {
       method: "POST",
@@ -30,7 +30,7 @@ export class ParleyClient {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${this.endpoint.apiKey}`,
       },
-      body: JSON.stringify({ cpoe, notify }),
+      body: JSON.stringify({ marque, notify }),
     });
 
     if (response.status === 401) {
@@ -46,14 +46,14 @@ export class ParleyClient {
     }
 
     const result = await response.json() as { id: string };
-    return { published: true, id: result.id || cpoe.cpoe.id };
+    return { published: true, id: result.id || marque.marque.id };
   }
 
   /**
-   * Get the latest CPOE from a specific issuer.
+   * Get the latest MARQUE from a specific issuer.
    */
-  async getLatest(issuerId: string): Promise<CPOEDocument | null> {
-    const url = `${this.endpoint.baseUrl}/cpoe/latest?issuer=${encodeURIComponent(issuerId)}`;
+  async getLatest(issuerId: string): Promise<MarqueDocument | null> {
+    const url = `${this.endpoint.baseUrl}/marque/latest?issuer=${encodeURIComponent(issuerId)}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -70,11 +70,11 @@ export class ParleyClient {
       throw new Error(`Parley: GetLatest failed with status ${response.status}`);
     }
 
-    return response.json() as Promise<CPOEDocument>;
+    return response.json() as Promise<MarqueDocument>;
   }
 
   /**
-   * Subscribe to receive CPOE updates via webhook.
+   * Subscribe to receive MARQUE updates via webhook.
    */
   async subscribe(subscription: ParleySubscription): Promise<{ subscribed: boolean }> {
     const url = `${this.endpoint.baseUrl}/subscriptions`;
@@ -96,10 +96,10 @@ export class ParleyClient {
   }
 
   /**
-   * Verify a CPOE document using the provided public keys.
+   * Verify a MARQUE document using the provided public keys.
    */
-  verify(cpoe: CPOEDocument, publicKeys: Buffer[]): CPOEVerificationResult {
-    const verifier = new CPOEVerifier(publicKeys);
-    return verifier.verify(cpoe);
+  verify(marque: MarqueDocument, publicKeys: Buffer[]): MarqueVerificationResult {
+    const verifier = new MarqueVerifier(publicKeys);
+    return verifier.verify(marque);
   }
 }

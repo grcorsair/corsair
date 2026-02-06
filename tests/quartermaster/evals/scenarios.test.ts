@@ -1,5 +1,5 @@
 /**
- * Admiral Adversarial Scenarios Tests
+ * Quartermaster Adversarial Scenarios Tests
  *
  * Tests that each scenario produces valid, well-structured inputs
  * and has reasonable expected outcomes.
@@ -17,9 +17,9 @@ import {
   selectiveTestingScenario,
   trivialISCScenario,
   getAllScenarios,
-} from "../../../src/admiral/evals/scenarios";
+} from "../../../src/quartermaster/evals/scenarios";
 
-const SCENARIO_DIR = "/tmp/admiral-eval-scenarios";
+const SCENARIO_DIR = "/tmp/quartermaster-eval-scenarios";
 
 afterAll(() => {
   if (existsSync(SCENARIO_DIR)) {
@@ -27,7 +27,7 @@ afterAll(() => {
   }
 });
 
-describe("Admiral Adversarial Scenarios", () => {
+describe("Quartermaster Adversarial Scenarios", () => {
   test("brokenHashChainScenario has corrupted evidence", () => {
     const scenario = brokenHashChainScenario();
     expect(scenario.id).toBe("broken-hash-chain");
@@ -111,7 +111,7 @@ describe("Admiral Adversarial Scenarios", () => {
     }
   });
 
-  test("Scenario inputs are valid AdmiralInput objects", () => {
+  test("Scenario inputs are valid QuartermasterInput objects", () => {
     const scenarios = getAllScenarios();
     for (const scenario of scenarios) {
       expect(scenario.input.evidencePaths).toBeInstanceOf(Array);

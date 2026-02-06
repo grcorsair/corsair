@@ -1,8 +1,8 @@
 /**
- * CPOE Sanitization Test Contract
+ * MARQUE Sanitization Test Contract
  *
- * Validates that the CPOEGenerator sanitizes all sensitive information from
- * generated CPOE documents. No ARNs, account IDs, IP addresses, file paths,
+ * Validates that the MarqueGenerator sanitizes all sensitive information from
+ * generated MARQUE documents. No ARNs, account IDs, IP addresses, file paths,
  * API keys, or verbatim attack details should appear in the output.
  *
  * TDD Phase: RED -- these tests must fail before implementation.
@@ -12,9 +12,9 @@ import { describe, test, expect, afterAll } from "bun:test";
 import * as os from "os";
 import * as path from "path";
 import * as fs from "fs";
-import { CPOEKeyManager } from "../../src/parley/cpoe-key-manager";
-import { CPOEGenerator } from "../../src/parley/cpoe-generator";
-import type { CPOEGeneratorInput } from "../../src/parley/cpoe-generator";
+import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
+import { MarqueGenerator } from "../../src/parley/marque-generator";
+import type { MarqueGeneratorInput } from "../../src/parley/marque-generator";
 import type {
   MarkResult,
   RaidResult,
@@ -29,7 +29,7 @@ import { EvidenceEngine } from "../../src/evidence";
 function createTestDir(): string {
   return path.join(
     os.tmpdir(),
-    `corsair-cpoe-san-test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    `corsair-marque-san-test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
   );
 }
 
@@ -117,7 +117,7 @@ async function createEvidenceFile(dir: string): Promise<string> {
 // TESTS
 // =============================================================================
 
-describe("CPOE Sanitization - Sensitive Data Removal", () => {
+describe("MARQUE Sanitization - Sensitive Data Removal", () => {
   const testDirs: string[] = [];
 
   function trackDir(dir: string): string {
@@ -135,15 +135,15 @@ describe("CPOE Sanitization - Sensitive Data Removal", () => {
     }
   });
 
-  async function generateSensitiveCPOE(): Promise<string> {
+  async function generateSensitiveMARQUE(): Promise<string> {
     const keyDir = trackDir(createTestDir());
-    const keyManager = new CPOEKeyManager(keyDir);
+    const keyManager = new MarqueKeyManager(keyDir);
     await keyManager.generateKeypair();
-    const generator = new CPOEGenerator(keyManager);
+    const generator = new MarqueGenerator(keyManager);
 
     const evidencePath = await createEvidenceFile(keyDir);
 
-    const input: CPOEGeneratorInput = {
+    const input: MarqueGeneratorInput = {
       markResults: [sensitiveMarkResult()],
       raidResults: [sensitiveRaidResult()],
       chartResults: [sensitiveChartResult()],
@@ -156,13 +156,13 @@ describe("CPOE Sanitization - Sensitive Data Removal", () => {
     return JSON.stringify(doc);
   }
 
-  test("no AWS ARNs appear in generated CPOE", async () => {
-    const json = await generateSensitiveCPOE();
+  test("no AWS ARNs appear in generated MARQUE", async () => {
+    const json = await generateSensitiveMARQUE();
     expect(json).not.toMatch(/arn:aws:/);
   });
 
   test("no AWS account IDs appear (12-digit sequences)", async () => {
-    const json = await generateSensitiveCPOE();
+    const json = await generateSensitiveMARQUE();
     // Check specifically for the 12-digit account ID pattern
     // Exclude fields that are legitimately numeric (like scores, counts)
     // The test targets account-id-like patterns in string values
@@ -170,58 +170,58 @@ describe("CPOE Sanitization - Sensitive Data Removal", () => {
   });
 
   test("no IP addresses appear", async () => {
-    const json = await generateSensitiveCPOE();
+    const json = await generateSensitiveMARQUE();
     // Should not contain any IPv4 addresses from our test data
     expect(json).not.toMatch(/192\.168\.1\.100/);
     expect(json).not.toMatch(/10\.0\.0\.1/);
   });
 
   test("no internal file paths appear", async () => {
-    const json = await generateSensitiveCPOE();
+    const json = await generateSensitiveMARQUE();
     expect(json).not.toMatch(/\/Users\//);
     expect(json).not.toMatch(/\/home\//);
     expect(json).not.toMatch(/C:\\/);
   });
 
   test("no API keys or tokens appear", async () => {
-    const json = await generateSensitiveCPOE();
+    const json = await generateSensitiveMARQUE();
     expect(json).not.toMatch(/sk-test-/);
     expect(json).not.toMatch(/AKIA/);
     expect(json).not.toMatch(/secret-key/);
   });
 
   test("resource IDs are hashed or anonymized", async () => {
-    const json = await generateSensitiveCPOE();
+    const json = await generateSensitiveMARQUE();
     // The original userPoolId should not appear
     expect(json).not.toMatch(/us-east-1_SensitivePool/);
   });
 
   test("attack details are summarized, not included verbatim", async () => {
-    const json = await generateSensitiveCPOE();
+    const json = await generateSensitiveMARQUE();
     // Verbatim finding strings should not appear
     expect(json).not.toMatch(/MFA bypass successful at IP/);
     expect(json).not.toMatch(/POST \/api\/v1\/auth\/mfa-bypass/);
   });
 
   test("timeline entries sanitized to timestamps and categories only", async () => {
-    const json = await generateSensitiveCPOE();
+    const json = await generateSensitiveMARQUE();
     // Raw action strings with sensitive details should not appear
     expect(json).not.toMatch(/POST \/api\/v1\/auth/);
     expect(json).not.toMatch(/bypassed at C:/);
   });
 
   test("sanitization of Cognito snapshot removes userPoolId format", async () => {
-    const json = await generateSensitiveCPOE();
+    const json = await generateSensitiveMARQUE();
     // User pool IDs follow the pattern: region_identifier
     expect(json).not.toMatch(/us-east-1_/);
   });
 
   test("sanitization of S3 snapshot removes bucket name", async () => {
-    // Create a CPOE with S3-related data
+    // Create a MARQUE with S3-related data
     const keyDir = trackDir(createTestDir());
-    const keyManager = new CPOEKeyManager(keyDir);
+    const keyManager = new MarqueKeyManager(keyDir);
     await keyManager.generateKeypair();
-    const generator = new CPOEGenerator(keyManager);
+    const generator = new MarqueGenerator(keyManager);
 
     const raidWithBucket: RaidResult = {
       raidId: "raid-s3",
@@ -247,7 +247,7 @@ describe("CPOE Sanitization - Sensitive Data Removal", () => {
     const engine = new EvidenceEngine(evidencePath);
     await engine.plunder(raidWithBucket, evidencePath);
 
-    const input: CPOEGeneratorInput = {
+    const input: MarqueGeneratorInput = {
       markResults: [],
       raidResults: [raidWithBucket],
       chartResults: [sensitiveChartResult()],

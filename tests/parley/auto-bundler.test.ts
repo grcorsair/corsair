@@ -1,14 +1,14 @@
 /**
  * Auto-Bundler Tests
  *
- * Tests the automated CPOE generation pipeline.
+ * Tests the automated MARQUE generation pipeline.
  */
 
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { existsSync, mkdirSync, rmSync, readdirSync, readFileSync } from "fs";
 import { AutoBundler } from "../../src/parley/auto-bundler";
 import { Corsair } from "../../src/corsair-mvp";
-import { CPOEKeyManager } from "../../src/parley/cpoe-key-manager";
+import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
 import type { ParleyConfig } from "../../src/parley/parley-types";
 
 const TEST_DIR = "/tmp/auto-bundler-test";
@@ -28,7 +28,7 @@ function makeConfig(overrides: Partial<ParleyConfig> = {}): ParleyConfig {
 
 describe("Auto-Bundler", () => {
   let corsair: Corsair;
-  let keyManager: CPOEKeyManager;
+  let keyManager: MarqueKeyManager;
 
   beforeEach(async () => {
     if (existsSync(TEST_DIR)) rmSync(TEST_DIR, { recursive: true, force: true });
@@ -38,7 +38,7 @@ describe("Auto-Bundler", () => {
     corsair = new Corsair();
     await corsair.initialize();
 
-    keyManager = new CPOEKeyManager(KEY_DIR);
+    keyManager = new MarqueKeyManager(KEY_DIR);
     await keyManager.generateKeypair();
   });
 
@@ -52,7 +52,7 @@ describe("Auto-Bundler", () => {
     const result = await bundler.bundle();
 
     expect(result.providersRun).toContain("aws-cognito");
-    expect(result.cpoeGenerated).toBe(true);
+    expect(result.marqueGenerated).toBe(true);
   });
 
   test("AutoBundler runs all configured providers", async () => {
@@ -69,21 +69,21 @@ describe("Auto-Bundler", () => {
     expect(result.providersRun).toContain("aws-s3");
   });
 
-  test("AutoBundler generates CPOE from combined results", async () => {
+  test("AutoBundler generates MARQUE from combined results", async () => {
     const config = makeConfig();
     const bundler = new AutoBundler(config, corsair, keyManager);
     const result = await bundler.bundle();
 
-    expect(result.cpoeGenerated).toBe(true);
+    expect(result.marqueGenerated).toBe(true);
     expect(result.localPath).toBeDefined();
 
-    // Verify the CPOE file exists
+    // Verify the MARQUE file exists
     expect(existsSync(result.localPath!)).toBe(true);
 
-    // Verify it's valid JSON with CPOE structure
+    // Verify it's valid JSON with MARQUE structure
     const content = JSON.parse(readFileSync(result.localPath!, "utf-8"));
     expect(content.parley).toBe("1.0");
-    expect(content.cpoe).toBeDefined();
+    expect(content.marque).toBeDefined();
     expect(content.signature).toBeDefined();
   });
 
@@ -93,21 +93,21 @@ describe("Auto-Bundler", () => {
 
     // First bundle
     const result1 = await bundler.bundle();
-    expect(result1.cpoeGenerated).toBe(true);
+    expect(result1.marqueGenerated).toBe(true);
 
     // Second bundle with same data — should skip
     const bundler2 = new AutoBundler(config, corsair, keyManager);
     const result2 = await bundler2.bundle();
-    expect(result2.cpoeGenerated).toBe(false);
+    expect(result2.marqueGenerated).toBe(false);
   });
 
-  test("AutoBundler writes CPOE to local file", async () => {
+  test("AutoBundler writes MARQUE to local file", async () => {
     const config = makeConfig();
     const bundler = new AutoBundler(config, corsair, keyManager);
     const result = await bundler.bundle();
 
     expect(result.localPath).toBeDefined();
-    const files = readdirSync(OUTPUT_DIR).filter((f) => f.startsWith("cpoe-"));
+    const files = readdirSync(OUTPUT_DIR).filter((f) => f.startsWith("marque-"));
     expect(files.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -130,7 +130,7 @@ describe("Auto-Bundler", () => {
 
     // Should still have cognito results
     expect(result.providersRun).toContain("aws-cognito");
-    expect(result.cpoeGenerated).toBe(true);
+    expect(result.marqueGenerated).toBe(true);
   });
 
   test("AutoBundler produces valid overallScore", async () => {

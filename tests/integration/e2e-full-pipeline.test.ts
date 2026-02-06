@@ -1,10 +1,10 @@
 /**
  * E2E Full Pipeline Integration Tests
  *
- * Validates the complete Corsair pipeline from RECON to signed CPOE.
+ * Validates the complete Corsair pipeline from RECON to signed MARQUE.
  * Covers all 5 AWS providers + azure-entra, threat modeling, drift detection,
- * attack simulation, evidence collection, compliance mapping, CPOE generation,
- * Admiral evaluation, OSCAL conversion, and report generation.
+ * attack simulation, evidence collection, compliance mapping, MARQUE generation,
+ * Quartermaster evaluation, OSCAL conversion, and report generation.
  *
  * This is the Phase 12 convergence test — depends on ALL previous phases.
  */
@@ -22,17 +22,17 @@ import type {
   ThreatModelResult,
 } from "../../src/corsair-mvp";
 
-// Parley / CPOE
-import { CPOEKeyManager } from "../../src/parley/cpoe-key-manager";
-import { CPOEGenerator } from "../../src/parley/cpoe-generator";
-import { CPOEVerifier } from "../../src/parley/cpoe-verifier";
-import { mapToOSCAL } from "../../src/parley/cpoe-oscal-mapper";
-import type { CPOEDocument } from "../../src/parley/cpoe-types";
+// Parley / MARQUE
+import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
+import { MarqueGenerator } from "../../src/parley/marque-generator";
+import { MarqueVerifier } from "../../src/parley/marque-verifier";
+import { mapToOSCAL } from "../../src/parley/marque-oscal-mapper";
+import type { MarqueDocument } from "../../src/parley/marque-types";
 
-// Admiral
-import { AdmiralAgent } from "../../src/admiral/admiral-agent";
-import { admiralReportToAttestation } from "../../src/admiral/admiral-cpoe-bridge";
-import type { AdmiralInput } from "../../src/admiral/admiral-types";
+// Quartermaster
+import { QuartermasterAgent } from "../../src/quartermaster/quartermaster-agent";
+import { quartermasterReportToAttestation } from "../../src/quartermaster/quartermaster-marque-bridge";
+import type { QuartermasterInput } from "../../src/quartermaster/quartermaster-types";
 
 // Reports
 import { ReportGenerator } from "../../src/output/report-generator";
@@ -51,7 +51,7 @@ const FIXTURE_PROVIDERS = [
 ];
 
 let corsair: Corsair;
-let keyManager: CPOEKeyManager;
+let keyManager: MarqueKeyManager;
 
 // Collected results across all providers
 const allThreatModels: Record<string, ThreatModelResult> = {};
@@ -60,7 +60,7 @@ const allRaidResults: RaidResult[] = [];
 const allChartResults: ChartResult[] = [];
 const allEvidencePaths: string[] = [];
 
-let generatedCPOE: CPOEDocument;
+let generatedMarque: MarqueDocument;
 let publicKey: Buffer;
 
 beforeAll(async () => {
@@ -71,7 +71,7 @@ beforeAll(async () => {
   corsair = new Corsair();
   await corsair.initialize();
 
-  keyManager = new CPOEKeyManager(KEY_DIR);
+  keyManager = new MarqueKeyManager(KEY_DIR);
   const keypair = await keyManager.generateKeypair();
   publicKey = keypair.publicKey;
 
@@ -118,27 +118,27 @@ beforeAll(async () => {
     }
   }
 
-  // Generate CPOE with Admiral attestation
-  const admiral = new AdmiralAgent({ apiKey: "test", model: "deterministic" });
-  const admiralInput: AdmiralInput = {
+  // Generate MARQUE with Quartermaster attestation
+  const quartermaster = new QuartermasterAgent({ apiKey: "test", model: "deterministic" });
+  const quartermasterInput: QuartermasterInput = {
     evidencePaths: allEvidencePaths,
     markResults: allMarkResults,
     raidResults: allRaidResults,
     chartResults: allChartResults,
     scope: { providers: FIXTURE_PROVIDERS, resourceCount: FIXTURE_PROVIDERS.length },
   };
-  const admiralReport = await admiral.evaluate(admiralInput);
-  const attestation = admiralReportToAttestation(admiralReport);
+  const quartermasterReport = await quartermaster.evaluate(quartermasterInput);
+  const attestation = quartermasterReportToAttestation(quartermasterReport);
 
-  // Generate signed CPOE
-  const generator = new CPOEGenerator(keyManager);
-  generatedCPOE = await generator.generate({
+  // Generate signed MARQUE
+  const generator = new MarqueGenerator(keyManager);
+  generatedMarque = await generator.generate({
     markResults: allMarkResults,
     raidResults: allRaidResults,
     chartResults: allChartResults,
     evidencePaths: allEvidencePaths,
     threatModel: allThreatModels["aws-cognito"],
-    admiralAttestation: attestation,
+    quartermasterAttestation: attestation,
     issuer: { id: "e2e-test", name: "E2E Test Issuer", organization: "Corsair" },
     providers: FIXTURE_PROVIDERS,
   });
@@ -200,45 +200,45 @@ describe("E2E Full Pipeline", () => {
   });
 
   // =========================================================================
-  // CPOE
+  // MARQUE
   // =========================================================================
 
-  test("CPOE generated from combined results", () => {
-    expect(generatedCPOE).toBeDefined();
-    expect(generatedCPOE.parley).toBe("1.0");
-    expect(generatedCPOE.cpoe.id).toBeDefined();
-    expect(generatedCPOE.cpoe.version).toBe("1.0.0");
-    expect(generatedCPOE.signature).toBeDefined();
-    expect(generatedCPOE.signature.length).toBeGreaterThan(0);
+  test("MARQUE generated from combined results", () => {
+    expect(generatedMarque).toBeDefined();
+    expect(generatedMarque.parley).toBe("1.0");
+    expect(generatedMarque.marque.id).toBeDefined();
+    expect(generatedMarque.marque.version).toBe("1.0.0");
+    expect(generatedMarque.signature).toBeDefined();
+    expect(generatedMarque.signature.length).toBeGreaterThan(0);
   });
 
-  test("CPOE signature valid", () => {
-    const verifier = new CPOEVerifier([publicKey]);
-    const result = verifier.verify(generatedCPOE);
+  test("MARQUE signature valid", () => {
+    const verifier = new MarqueVerifier([publicKey]);
+    const result = verifier.verify(generatedMarque);
     expect(result.valid).toBe(true);
   });
 
-  test("CPOE providers section reflects input", () => {
-    expect(generatedCPOE.cpoe.scope.providers).toEqual(FIXTURE_PROVIDERS);
+  test("MARQUE providers section reflects input", () => {
+    expect(generatedMarque.marque.scope.providers).toEqual(FIXTURE_PROVIDERS);
   });
 
-  test("CPOE threat model summary present", () => {
-    expect(generatedCPOE.cpoe.threatModel).toBeDefined();
-    expect(generatedCPOE.cpoe.threatModel!.methodology).toContain("STRIDE");
+  test("MARQUE threat model summary present", () => {
+    expect(generatedMarque.marque.threatModel).toBeDefined();
+    expect(generatedMarque.marque.threatModel!.methodology).toContain("STRIDE");
   });
 
   // =========================================================================
   // ADMIRAL
   // =========================================================================
 
-  test("Admiral evaluation produces governance report", () => {
-    expect(generatedCPOE.cpoe.admiralAttestation).toBeDefined();
-    expect(generatedCPOE.cpoe.admiralAttestation!.confidenceScore).toBeGreaterThan(0);
-    expect(generatedCPOE.cpoe.admiralAttestation!.dimensions.length).toBe(4);
+  test("Quartermaster evaluation produces governance report", () => {
+    expect(generatedMarque.marque.quartermasterAttestation).toBeDefined();
+    expect(generatedMarque.marque.quartermasterAttestation!.confidenceScore).toBeGreaterThan(0);
+    expect(generatedMarque.marque.quartermasterAttestation!.dimensions.length).toBe(4);
   });
 
-  test("Admiral trust tier reflects assessment quality", () => {
-    const tier = generatedCPOE.cpoe.admiralAttestation!.trustTier;
+  test("Quartermaster trust tier reflects assessment quality", () => {
+    const tier = generatedMarque.marque.quartermasterAttestation!.trustTier;
     expect(["self-assessed", "ai-verified", "auditor-verified"]).toContain(tier);
   });
 
@@ -246,8 +246,8 @@ describe("E2E Full Pipeline", () => {
   // OSCAL
   // =========================================================================
 
-  test("CPOE to OSCAL conversion produces valid OSCAL", () => {
-    const oscal = mapToOSCAL(generatedCPOE);
+  test("MARQUE to OSCAL conversion produces valid OSCAL", () => {
+    const oscal = mapToOSCAL(generatedMarque);
     expect(oscal["assessment-results"]).toBeDefined();
     expect(oscal["assessment-results"].uuid).toBeDefined();
     expect(oscal["assessment-results"].results).toHaveLength(1);
@@ -280,25 +280,25 @@ describe("E2E Full Pipeline", () => {
     });
 
     expect(html).toContain("E2E Test Report");
-    expect(html).toContain("STRIDE");
+    expect(html).toContain("SPYGLASS");
   });
 
   // =========================================================================
-  // CPOE VERIFIER
+  // MARQUE VERIFIER
   // =========================================================================
 
-  test("CPOE verifier validates generated CPOE", () => {
-    const verifier = new CPOEVerifier([publicKey]);
-    const result = verifier.verify(generatedCPOE);
+  test("MARQUE verifier validates generated MARQUE", () => {
+    const verifier = new MarqueVerifier([publicKey]);
+    const result = verifier.verify(generatedMarque);
     expect(result.valid).toBe(true);
     expect(result.signedBy).toBe("E2E Test Issuer");
   });
 
-  test("CPOE verifier rejects tampered CPOE", () => {
-    const tampered = JSON.parse(JSON.stringify(generatedCPOE)) as CPOEDocument;
-    tampered.cpoe.summary.overallScore = 999;
+  test("MARQUE verifier rejects tampered MARQUE", () => {
+    const tampered = JSON.parse(JSON.stringify(generatedMarque)) as MarqueDocument;
+    tampered.marque.summary.overallScore = 999;
 
-    const verifier = new CPOEVerifier([publicKey]);
+    const verifier = new MarqueVerifier([publicKey]);
     const result = verifier.verify(tampered);
     expect(result.valid).toBe(false);
     expect(result.reason).toBe("signature_invalid");
@@ -308,16 +308,16 @@ describe("E2E Full Pipeline", () => {
   // STANDALONE VERIFIER CLI
   // =========================================================================
 
-  test("Standalone corsair-verify CLI returns exit code 0 for valid CPOE", async () => {
-    // Write CPOE and pubkey to files
-    const cpoePath = join(TEST_DIR, "test-cpoe.json");
+  test("Standalone corsair-verify CLI returns exit code 0 for valid MARQUE", async () => {
+    // Write MARQUE and pubkey to files
+    const marquePath = join(TEST_DIR, "test-marque.json");
     const pubkeyPath = join(KEY_DIR, "corsair-signing.pub");
 
-    writeFileSync(cpoePath, JSON.stringify(generatedCPOE, null, 2));
+    writeFileSync(marquePath, JSON.stringify(generatedMarque, null, 2));
 
     // Run the CLI
     const proc = Bun.spawn(
-      ["bun", "run", "bin/corsair-verify.ts", "--cpoe", cpoePath, "--pubkey", pubkeyPath],
+      ["bun", "run", "bin/corsair-verify.ts", "--marque", marquePath, "--pubkey", pubkeyPath],
       { cwd: "/Users/ayoubfandi/projects/corsair" }
     );
     const exitCode = await proc.exited;
@@ -336,10 +336,10 @@ describe("E2E Full Pipeline", () => {
     expect(allChartResults.length).toBeGreaterThanOrEqual(3);
     expect(allEvidencePaths.length).toBeGreaterThanOrEqual(1);
 
-    // CPOE has all pieces
-    expect(generatedCPOE.cpoe.scope.providers.length).toBe(5);
-    expect(generatedCPOE.cpoe.threatModel).toBeDefined();
-    expect(generatedCPOE.cpoe.admiralAttestation).toBeDefined();
-    expect(generatedCPOE.cpoe.evidenceChain.recordCount).toBeGreaterThanOrEqual(1);
+    // MARQUE has all pieces
+    expect(generatedMarque.marque.scope.providers.length).toBe(5);
+    expect(generatedMarque.marque.threatModel).toBeDefined();
+    expect(generatedMarque.marque.quartermasterAttestation).toBeDefined();
+    expect(generatedMarque.marque.evidenceChain.recordCount).toBeGreaterThanOrEqual(1);
   });
 });

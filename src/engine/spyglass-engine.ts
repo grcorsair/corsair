@@ -1,13 +1,13 @@
 /**
- * STRIDE Engine — Automated Threat Modeling
+ * SPYGLASS Engine — Automated Threat Modeling
  *
  * Generates STRIDE threat models from RECON snapshots using
  * per-provider rule sets. Each rule maps a snapshot field condition
  * to a STRIDE category, MITRE ATT&CK technique, and severity.
  *
  * Usage:
- *   const engine = new StrideEngine();
- *   const result = engine.strideAnalyze(snapshot, "aws-cognito");
+ *   const engine = new SpyglassEngine();
+ *   const result = engine.spyglassAnalyze(snapshot, "aws-cognito");
  *   const expectations = engine.threatToExpectations(result.threats);
  */
 
@@ -22,10 +22,10 @@ import type {
 } from "../types";
 
 // ===============================================================================
-// STRIDE RULE DEFINITIONS
+// SPYGLASS RULE DEFINITIONS
 // ===============================================================================
 
-interface StrideRule {
+interface SpyglassRule {
   field: string;
   condition: (value: unknown) => boolean;
   stride: STRIDECategory;
@@ -43,10 +43,10 @@ interface ExpectationMapping {
 }
 
 /**
- * Per-provider STRIDE rules.
+ * Per-provider SPYGLASS rules.
  * Each rule checks a snapshot field and produces a threat if the condition is true.
  */
-const STRIDE_RULES: Record<string, StrideRule[]> = {
+const SPYGLASS_RULES: Record<string, SpyglassRule[]> = {
   "aws-cognito": [
     {
       field: "mfaConfiguration",
@@ -385,10 +385,10 @@ const THREAT_TO_EXPECTATION: Record<string, ExpectationMapping[]> = {
 };
 
 // ===============================================================================
-// STRIDE ENGINE
+// SPYGLASS ENGINE
 // ===============================================================================
 
-export class StrideEngine {
+export class SpyglassEngine {
   /**
    * Analyze a snapshot for STRIDE threats using provider-specific rules.
    *
@@ -397,12 +397,12 @@ export class StrideEngine {
    * @param options - Optional configuration
    * @returns ThreatModelResult with all identified threats
    */
-  strideAnalyze(
+  spyglassAnalyze(
     snapshot: Record<string, unknown>,
     provider: string,
     options?: ThreatModelOptions
   ): ThreatModelResult {
-    const rules = STRIDE_RULES[provider];
+    const rules = SPYGLASS_RULES[provider];
     if (!rules) {
       return {
         threats: [],
@@ -460,7 +460,7 @@ export class StrideEngine {
    * Convert STRIDE threats into MARK expectations.
    * Each threat's affected field maps to an expectation for the compliant state.
    *
-   * @param threats - Array of ThreatFinding from strideAnalyze
+   * @param threats - Array of ThreatFinding from spyglassAnalyze
    * @returns Deduplicated array of Expectations with optional threatRef
    */
   threatToExpectations(threats: ThreatFinding[]): (Expectation & { threatRef?: string })[] {
@@ -493,7 +493,7 @@ export class StrideEngine {
    * Get the list of supported providers.
    */
   getSupportedProviders(): string[] {
-    return Object.keys(STRIDE_RULES);
+    return Object.keys(SPYGLASS_RULES);
   }
 
   /**

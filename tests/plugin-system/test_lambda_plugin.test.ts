@@ -6,7 +6,7 @@
  */
 
 import { describe, test, expect, beforeAll } from "bun:test";
-import { Corsair, StrideEngine } from "../../src/corsair-mvp";
+import { Corsair, SpyglassEngine } from "../../src/corsair-mvp";
 import {
   isLambdaSnapshot,
   createLambdaSnapshot,
@@ -191,13 +191,13 @@ describe("AWS Lambda Plugin - Mark Engine Integration", () => {
 });
 
 // =============================================================================
-// STRIDE INTEGRATION
+// SPYGLASS INTEGRATION
 // =============================================================================
 
-describe("AWS Lambda Plugin - STRIDE Integration", () => {
-  test("STRIDE rules exist for aws-lambda provider (>= 3 threats)", () => {
-    const engine = new StrideEngine();
-    const result = engine.strideAnalyze(
+describe("AWS Lambda Plugin - SPYGLASS Integration", () => {
+  test("SPYGLASS rules exist for aws-lambda provider (>= 3 threats)", () => {
+    const engine = new SpyglassEngine();
+    const result = engine.spyglassAnalyze(
       nonCompliantLambdaSnapshot as unknown as Record<string, unknown>,
       "aws-lambda"
     );

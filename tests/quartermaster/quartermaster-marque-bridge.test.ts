@@ -1,15 +1,15 @@
 /**
- * Admiral CPOE Bridge Tests
+ * Quartermaster MARQUE Bridge Tests
  *
- * Tests the conversion from AdmiralGovernanceReport to CPOEAdmiralAttestation.
+ * Tests the conversion from QuartermasterGovernanceReport to MarqueQuartermasterAttestation.
  */
 
 import { describe, test, expect } from "bun:test";
-import { admiralReportToAttestation } from "../../src/admiral/admiral-cpoe-bridge";
-import type { AdmiralGovernanceReport } from "../../src/admiral/admiral-types";
-import type { CPOEAdmiralAttestation } from "../../src/parley/cpoe-types";
+import { quartermasterReportToAttestation } from "../../src/quartermaster/quartermaster-marque-bridge";
+import type { QuartermasterGovernanceReport } from "../../src/quartermaster/quartermaster-types";
+import type { MarqueQuartermasterAttestation } from "../../src/parley/marque-types";
 
-function makeReport(overrides: Partial<AdmiralGovernanceReport> = {}): AdmiralGovernanceReport {
+function makeReport(overrides: Partial<QuartermasterGovernanceReport> = {}): QuartermasterGovernanceReport {
   return {
     reportId: "rpt-001",
     confidenceScore: 82,
@@ -55,18 +55,18 @@ function makeReport(overrides: Partial<AdmiralGovernanceReport> = {}): AdmiralGo
   };
 }
 
-describe("Admiral CPOE Bridge", () => {
-  test("admiralReportToAttestation extracts correct confidence score", () => {
+describe("Quartermaster MARQUE Bridge", () => {
+  test("quartermasterReportToAttestation extracts correct confidence score", () => {
     const report = makeReport({ confidenceScore: 92 });
-    const attestation = admiralReportToAttestation(report);
+    const attestation = quartermasterReportToAttestation(report);
 
-    // CPOE attestation uses 0-1 scale, report uses 0-100
+    // MARQUE attestation uses 0-1 scale, report uses 0-100
     expect(attestation.confidenceScore).toBeCloseTo(0.92, 2);
   });
 
-  test("admiralReportToAttestation maps all 4 dimension scores", () => {
+  test("quartermasterReportToAttestation maps all 4 dimension scores", () => {
     const report = makeReport();
-    const attestation = admiralReportToAttestation(report);
+    const attestation = quartermasterReportToAttestation(report);
 
     expect(attestation.dimensions).toHaveLength(4);
 
@@ -83,27 +83,27 @@ describe("Admiral CPOE Bridge", () => {
     }
   });
 
-  test("admiralReportToAttestation sets correct trust tier", () => {
-    const selfAssessed = admiralReportToAttestation(makeReport({ trustTier: "self-assessed" }));
+  test("quartermasterReportToAttestation sets correct trust tier", () => {
+    const selfAssessed = quartermasterReportToAttestation(makeReport({ trustTier: "self-assessed" }));
     expect(selfAssessed.trustTier).toBe("self-assessed");
 
-    const aiVerified = admiralReportToAttestation(makeReport({ trustTier: "ai-verified" }));
+    const aiVerified = quartermasterReportToAttestation(makeReport({ trustTier: "ai-verified" }));
     expect(aiVerified.trustTier).toBe("ai-verified");
 
-    const auditorVerified = admiralReportToAttestation(makeReport({ trustTier: "auditor-verified" }));
+    const auditorVerified = quartermasterReportToAttestation(makeReport({ trustTier: "auditor-verified" }));
     expect(auditorVerified.trustTier).toBe("auditor-verified");
   });
 
-  test("admiralReportToAttestation includes report hash", () => {
+  test("quartermasterReportToAttestation includes report hash", () => {
     const report = makeReport({ reportHash: "sha256-deadbeef" });
-    const attestation = admiralReportToAttestation(report);
+    const attestation = quartermasterReportToAttestation(report);
 
     expect(attestation.reportHash).toBe("sha256-deadbeef");
   });
 
-  test("admiralReportToAttestation includes evaluatedAt timestamp", () => {
+  test("quartermasterReportToAttestation includes evaluatedAt timestamp", () => {
     const report = makeReport({ evaluatedAt: "2025-06-15T12:00:00.000Z" });
-    const attestation = admiralReportToAttestation(report);
+    const attestation = quartermasterReportToAttestation(report);
 
     expect(attestation.evaluatedAt).toBe("2025-06-15T12:00:00.000Z");
   });
@@ -118,7 +118,7 @@ describe("Admiral CPOE Bridge", () => {
       ],
     });
 
-    const attestation = admiralReportToAttestation(report);
+    const attestation = quartermasterReportToAttestation(report);
 
     const methodologyDim = attestation.dimensions.find((d) => d.dimension === "methodology");
     const integrityDim = attestation.dimensions.find((d) => d.dimension === "evidence_integrity");

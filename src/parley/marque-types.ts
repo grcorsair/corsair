@@ -1,11 +1,11 @@
 /**
- * CPOE Types - Corsair Proof of Operational Effectiveness
+ * MARQUE Types - Corsair Proof of Operational Effectiveness
  *
- * Defines the complete type system for CPOE documents, which serve as
+ * Defines the complete type system for MARQUE documents, which serve as
  * cryptographically signed attestations that security controls are
  * operationally effective (not just existing).
  *
- * The CPOE document format is versioned via the "parley" field (protocol version).
+ * The MARQUE document format is versioned via the "parley" field (protocol version).
  */
 
 // =============================================================================
@@ -13,50 +13,50 @@
 // =============================================================================
 
 /**
- * Top-level CPOE document. Contains the protocol version, the CPOE payload,
- * and a cryptographic signature over the cpoe field.
+ * Top-level MARQUE document. Contains the protocol version, the MARQUE payload,
+ * and a cryptographic signature over the marque field.
  */
-export interface CPOEDocument {
+export interface MarqueDocument {
   /** Protocol version identifier (e.g., "1.0") */
   parley: string;
 
-  /** The CPOE payload containing all assessment data */
-  cpoe: {
-    /** Unique identifier for this CPOE */
+  /** The MARQUE payload containing all assessment data */
+  marque: {
+    /** Unique identifier for this MARQUE */
     id: string;
 
     /** Document format version */
     version: string;
 
-    /** Entity that generated this CPOE */
-    issuer: CPOEIssuer;
+    /** Entity that generated this MARQUE */
+    issuer: MarqueIssuer;
 
-    /** ISO 8601 timestamp when this CPOE was generated */
+    /** ISO 8601 timestamp when this MARQUE was generated */
     generatedAt: string;
 
-    /** ISO 8601 timestamp when this CPOE expires */
+    /** ISO 8601 timestamp when this MARQUE expires */
     expiresAt: string;
 
     /** Scope of the assessment */
-    scope: CPOEScope;
+    scope: MarqueScope;
 
     /** High-level summary of assessment results */
-    summary: CPOESummary;
+    summary: MarqueSummary;
 
     /** Evidence chain metadata for auditability */
-    evidenceChain: CPOEEvidenceChain;
+    evidenceChain: MarqueEvidenceChain;
 
     /** Per-framework compliance results */
-    frameworks: Record<string, CPOEFrameworkResult>;
+    frameworks: Record<string, MarqueFrameworkResult>;
 
     /** Optional threat model summary (from STRIDE analysis) */
-    threatModel?: CPOEThreatModelSummary;
+    threatModel?: MarqueThreatModelSummary;
 
-    /** Optional admiral (AI) attestation of confidence */
-    admiralAttestation?: CPOEAdmiralAttestation;
+    /** Optional quartermaster (AI) attestation of confidence */
+    quartermasterAttestation?: MarqueQuartermasterAttestation;
   };
 
-  /** Base64-encoded Ed25519 signature over the serialized cpoe field */
+  /** Base64-encoded Ed25519 signature over the serialized marque field */
   signature: string;
 }
 
@@ -65,9 +65,9 @@ export interface CPOEDocument {
 // =============================================================================
 
 /**
- * Identifies the entity that generated the CPOE document.
+ * Identifies the entity that generated the MARQUE document.
  */
-export interface CPOEIssuer {
+export interface MarqueIssuer {
   /** Unique identifier for the issuer */
   id: string;
 
@@ -84,9 +84,9 @@ export interface CPOEIssuer {
 
 /**
  * Defines the assessment scope -- what providers, resources, and frameworks
- * were covered by this CPOE.
+ * were covered by this MARQUE.
  */
-export interface CPOEScope {
+export interface MarqueScope {
   /** Cloud/SaaS providers included in the assessment */
   providers: string[];
 
@@ -105,7 +105,7 @@ export interface CPOEScope {
  * High-level summary of the assessment results.
  * overallScore is a 0-100 percentage.
  */
-export interface CPOESummary {
+export interface MarqueSummary {
   /** Total controls tested */
   controlsTested: number;
 
@@ -124,10 +124,10 @@ export interface CPOESummary {
 // =============================================================================
 
 /**
- * Metadata about the cryptographic evidence chain backing this CPOE.
+ * Metadata about the cryptographic evidence chain backing this MARQUE.
  * Links to the JSONL evidence store with SHA-256 hash chains.
  */
-export interface CPOEEvidenceChain {
+export interface MarqueEvidenceChain {
   /** Root hash of the evidence chain */
   hashChainRoot: string;
 
@@ -146,7 +146,7 @@ export interface CPOEEvidenceChain {
  * Per-framework compliance assessment results.
  * Contains both aggregate counts and individual control statuses.
  */
-export interface CPOEFrameworkResult {
+export interface MarqueFrameworkResult {
   /** Total controls mapped from this framework */
   controlsMapped: number;
 
@@ -157,13 +157,13 @@ export interface CPOEFrameworkResult {
   failed: number;
 
   /** Individual control results */
-  controls: CPOEControlResult[];
+  controls: MARQUEControlResult[];
 }
 
 /**
  * Individual control assessment result within a framework.
  */
-export interface CPOEControlResult {
+export interface MARQUEControlResult {
   /** Framework-specific control identifier (e.g., "AC-2", "CC6.1") */
   controlId: string;
 
@@ -176,10 +176,10 @@ export interface CPOEControlResult {
 // =============================================================================
 
 /**
- * Summary of threat modeling analysis included in the CPOE.
+ * Summary of threat modeling analysis included in the MARQUE.
  * Typically generated from STRIDE analysis.
  */
-export interface CPOEThreatModelSummary {
+export interface MarqueThreatModelSummary {
   /** Threat modeling methodology used (e.g., "STRIDE") */
   methodology: string;
 
@@ -198,15 +198,15 @@ export interface CPOEThreatModelSummary {
 // =============================================================================
 
 /**
- * AI-generated attestation of confidence in the CPOE findings.
- * The "admiral" is the AI evaluator that reviews evidence quality.
+ * AI-generated attestation of confidence in the MARQUE findings.
+ * The "quartermaster" is the AI evaluator that reviews evidence quality.
  */
-export interface CPOEAdmiralAttestation {
+export interface MarqueQuartermasterAttestation {
   /** Overall confidence score (0.0 - 1.0) */
   confidenceScore: number;
 
   /** Individual evaluation dimensions with scores */
-  dimensions: CPOEAttestationDimension[];
+  dimensions: MARQUEAttestationDimension[];
 
   /** Trust tier classification */
   trustTier: "self-assessed" | "ai-verified" | "auditor-verified";
@@ -219,9 +219,9 @@ export interface CPOEAdmiralAttestation {
 }
 
 /**
- * A single dimension of the admiral attestation evaluation.
+ * A single dimension of the quartermaster attestation evaluation.
  */
-export interface CPOEAttestationDimension {
+export interface MARQUEAttestationDimension {
   /** Name of the evaluation dimension */
   dimension: string;
 
