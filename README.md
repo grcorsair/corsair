@@ -26,12 +26,7 @@ CORSAIR is an **agentic chaos engineering platform** that validates compliance t
 
 Unlike traditional GRC tools that check if you *documented* security controls, CORSAIR proves they *actually work under attack*.
 
-**Provider Scope:** Any system with a JSON-based API and testable controls:
-- **Identity providers** (AWS Cognito, Okta, Auth0, Azure AD)
-- **Endpoint security** (CrowdStrike, Microsoft Defender, SentinelOne)
-- **Device management** (JAMF Pro, Intune, Workspace ONE)
-- **Productivity suites** (Google Workspace, Microsoft 365, Slack)
-- **Cloud IAM, databases, secret managers, API gateways, custom enterprise systems**
+**Current Providers:** AWS Cognito, AWS S3, Azure Entra ID (skeleton). Provider-agnostic engine accepts any JSON snapshot — add new providers via the plugin system.
 
 Compliance evidence is generated as a **byproduct** of attacks, not as a goal.
 
@@ -48,7 +43,7 @@ graph TB
     subgraph "Phase 1: Primitives Layer"
         Primitives[6 Primitives<br/>RECON/MARK/RAID<br/>PLUNDER/CHART/ESCAPE]
         Evidence[Evidence Engine<br/>SHA-256 Hash Chain]
-        Plugins[Plugin System<br/>aws-cognito reference]
+        Plugins[Plugin System<br/>3 Providers + 12 Frameworks]
     end
 
     subgraph "Phase 2: Agentic Layer"
@@ -173,7 +168,7 @@ RECON → MARK → RAID → PLUNDER → CHART → ESCAPE
 - **MARK**: Drift detection (ISC evaluation)
 - **RAID**: Controlled chaos injection
 - **PLUNDER**: Evidence extraction
-- **CHART**: Framework mapping (SOC2, ISO27001, NIST, MITRE)
+- **CHART**: Framework mapping (12+ frameworks via CTID/SCF data)
 - **ESCAPE**: Cleanup and rollback
 
 ---
@@ -333,7 +328,15 @@ ls -la missions/mission_*
 
 ## Plugin Architecture
 
-CORSAIR follows a plugin-first architecture with auto-discovery.
+CORSAIR follows a plugin-first architecture with auto-discovery. Engines are provider-agnostic — any snapshot shape works with MARK, RAID, and ESCAPE.
+
+### Included Plugins
+
+| Plugin | Provider | Attack Vectors | Status |
+|--------|----------|---------------|--------|
+| **aws-cognito** | AWS Cognito | mfa-bypass, password-spray, token-replay, session-hijack | Full |
+| **aws-s3** | AWS S3 | public-access-test, encryption-test, versioning-test | Full |
+| **azure-entra** | Azure Entra ID | conditional-access-bypass, password-sync-exploit, mfa-fatigue | Skeleton |
 
 ### Plugin Discovery
 
@@ -343,65 +346,165 @@ Plugins are auto-discovered when you call `corsair.initialize()`:
 const corsair = new Corsair();
 await corsair.initialize();  // Scans plugins/ for *.plugin.json
 
-// Check what was discovered
 console.log(corsair.getPlugins().map(p => p.manifest.providerId));
-// Output: ["aws-cognito"]
+// Output: ["aws-cognito", "aws-s3", "azure-entra"]
 ```
 
 ### Plugin Manifest Schema
 
-Each plugin must provide a `*.plugin.json` manifest:
+Each plugin provides a `*.plugin.json` manifest with attack vectors and framework mappings:
 
 ```json
 {
-  "providerId": "aws-cognito",
-  "providerName": "AWS Cognito",
+  "providerId": "aws-s3",
+  "providerName": "AWS S3",
   "version": "1.0.0",
   "attackVectors": [
     {
-      "id": "mfa-bypass",
-      "name": "MFA Bypass",
-      "description": "Tests MFA bypass scenarios",
+      "id": "public-access-test",
+      "name": "Public Access Test",
+      "description": "Tests S3 public access block configuration",
       "severity": "CRITICAL",
-      "mitreMapping": ["T1556.006"]
+      "mitreMapping": ["T1530"]
     }
-  ]
+  ],
+  "frameworkMappings": {
+    "drift": {
+      "publicAccessBlock": {
+        "mitre": "T1530",
+        "controls": {
+          "NIST-800-53": [{ "controlId": "AC-3", "controlName": "Access Enforcement" }],
+          "SOC2": [{ "controlId": "CC6.1", "controlName": "Logical Access Security" }],
+          "PCI-DSS": [{ "controlId": "1.3.1", "controlName": "Restrict inbound traffic" }]
+        }
+      }
+    }
+  }
 }
 ```
 
 ### Creating a New Provider Plugin
 
 1. Create directory: `plugins/my-provider/`
-2. Create manifest: `my-provider.plugin.json` with required fields
-3. Implement `ProviderPlugin<T>` interface in TypeScript
-4. Export plugin types and factory functions
-5. Test: `await corsair.initialize()` should discover your plugin
+2. Create manifest: `my-provider.plugin.json` with `attackVectors` and `frameworkMappings`
+3. Create TypeScript module with snapshot type, type guard, and factory function
+4. Test: `await corsair.initialize()` should discover your plugin
 
-See `plugins/aws-cognito/` for reference implementation.
+See `plugins/aws-cognito/` for full reference or `plugins/azure-entra/` for a minimal skeleton.
 
 ---
 
 ## Evidence Auto-Generation
 
-Every attack automatically maps findings to compliance frameworks:
+Every attack automatically maps findings to compliance frameworks. You don't select a framework. You attack. The framework mappings happen in the background.
 
-- **SOC2**: CC6.1, CC6.2, CC6.3, CC6.6, CC7.2
-- **ISO27001**: A.9.2.3, A.9.4.2, A.12.4.1
-- **NIST-CSF**: PR.AC-7, PR.DS-2
-- **MITRE ATT&CK**: T1556.006, T1078
+CORSAIR uses a **3-tier mapping resolution**:
+1. **Plugin manifest** (highest priority) — plugin-specific control mappings
+2. **CTID/SCF data** — 6,300+ ATT&CK-to-NIST mappings + SCF crosswalk to 175+ frameworks
+3. **Legacy fallback** — hardcoded mappings as safety net
 
-You don't select a framework. You attack. The framework mappings happen in the background.
+### Framework Coverage (12+ Frameworks)
 
-### Framework Coverage
+| Framework | Source | Example Controls |
+|-----------|--------|-----------------|
+| MITRE ATT&CK | CTID | T1556.006, T1078, T1530 |
+| NIST 800-53 | CTID | AC-3, IA-2, IA-5, SC-12 |
+| NIST CSF | SCF | PR.AC-7, PR.DS-2, DE.CM-3 |
+| SOC 2 | SCF + Plugin | CC6.1, CC6.2, CC6.3, CC6.6 |
+| ISO 27001 | SCF + Plugin | A.9.2.3, A.9.4.2, A.12.4.1 |
+| CIS Controls | SCF + Plugin | 6.2, 6.3, 6.5, 8.2 |
+| PCI-DSS | SCF + Plugin | 1.3.1, 3.4, 8.3.1 |
+| HIPAA | SCF | 164.312(a)(1), 164.312(d) |
+| GDPR | SCF | Art. 32(1)(a), Art. 32(1)(b) |
+| CMMC | SCF | AC.L2-3.1.1, IA.L2-3.5.3 |
+| FedRAMP | SCF | AC-3, IA-2 (inherits NIST) |
+| SOX | SCF | IT-GC 4.1, IT-GC 4.2 |
+| COBIT | SCF | DSS05.04, DSS05.05 |
 
-| Framework | Controls Mapped | Coverage |
-|-----------|-----------------|----------|
-| SOC 2 | CC6.1, CC6.2, CC6.3, CC6.6, CC7.2 | Authentication, Authorization |
-| ISO 27001 | A.9.2.3, A.9.4.2, A.12.4.1 | Access Control, Logging |
-| NIST CSF | PR.AC-7, PR.DS-2 | Identity, Data Security |
-| MITRE ATT&CK | T1556.006, T1078 | Credential Access, Valid Accounts |
+> Data sources: [CTID ATT&CK Mappings](https://github.com/center-for-threat-informed-defense/attack-control-framework-mappings), [Secure Controls Framework](https://securecontrolsframework.com/)
 
-> Framework mappings are defined per-plugin. See plugin manifests for complete mappings.
+---
+
+## MCP Server
+
+CORSAIR exposes all primitives via the [Model Context Protocol](https://modelcontextprotocol.io/) for integration with Claude Code and other AI agents.
+
+### Setup
+
+```bash
+# Start the MCP server
+bun run mcp-server.ts
+```
+
+Add to your Claude Code configuration:
+
+```json
+{
+  "mcpServers": {
+    "corsair": {
+      "command": "bun",
+      "args": ["run", "/path/to/corsair/mcp-server.ts"]
+    }
+  }
+}
+```
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `corsair_recon` | Read-only reconnaissance on target systems |
+| `corsair_mark` | Detect configuration drift against baselines |
+| `corsair_raid` | Execute controlled chaos attacks |
+| `corsair_plunder` | Extract cryptographic evidence chains |
+| `corsair_chart` | Map findings to 12+ compliance frameworks |
+| `corsair_escape` | Rollback changes and restore state |
+| `corsair_strike` | Full cycle convenience (RECON → ESCAPE) |
+| `corsair_report` | Generate OSCAL/HTML/Markdown reports |
+
+### MCP Resources
+
+| Resource | Description |
+|----------|-------------|
+| `corsair://evidence/latest` | Most recent evidence chain |
+| `corsair://frameworks/supported` | List of supported frameworks |
+
+---
+
+## OSCAL Output & Reports
+
+CORSAIR generates machine-readable [OSCAL](https://pages.nist.gov/OSCAL/) Assessment Results and human-readable reports.
+
+### Output Formats
+
+```bash
+# Generate OSCAL JSON (machine-readable, NIST SP 800-53A compliant)
+bun run corsair --target my-pool --service cognito --format oscal
+
+# Generate HTML report (self-contained, no external dependencies)
+bun run corsair --target my-pool --service cognito --format html
+
+# Generate Markdown report
+bun run corsair --target my-pool --service cognito --format md
+```
+
+### OSCAL Mapping
+
+| Corsair Concept | OSCAL Element |
+|----------------|---------------|
+| ISC Criteria | Findings (satisfied/not-satisfied) |
+| MARK Drift Findings | Observations (TEST method) |
+| RAID Results | Risks (open/closed) |
+| CHART Frameworks | Reviewed Controls (control-selections) |
+
+### Report Sections
+
+HTML and Markdown reports include:
+- **Executive Summary**: Mission overview, ISC satisfaction rate, risk score
+- **Framework Coverage**: Which frameworks mapped, control counts
+- **Finding Details**: Per-finding severity, drift values, remediation context
+- **Evidence Chain**: Hash chain verification, record count, integrity status
+- **ISC Table**: Full criteria list with SATISFIED/FAILED status
 
 ---
 
@@ -417,14 +520,17 @@ The difference is existential. Compliance tools ask "are you compliant?" CORSAIR
 
 ## Technical Details
 
-- **Runtime**: Bun (TypeScript)
+- **Runtime**: Bun (TypeScript, no build step)
 - **AI Models**: Claude Sonnet 4.5 (complex reasoning), Haiku 4.5 (fast operations)
 - **Architecture**: 3-phase (Primitives → Agentic → Multi-Agent)
 - **ISC System**: Automatic criteria extraction and tracking
 - **Evidence**: JSONL with SHA-256 hash chain integrity
-- **Plugin System**: Provider-agnostic core with aws-cognito reference
+- **Plugin System**: Provider-agnostic core with 3 plugins (Cognito, S3, Azure Entra)
+- **Framework Mapping**: 12+ frameworks via CTID/SCF data (3-tier resolution)
+- **MCP Server**: 8 tools + 2 resources for AI agent integration
+- **Output**: OSCAL JSON, HTML reports, Markdown reports
 - **Event System**: Pub/sub events with aggregation and query support
-- **Tests**: 33 test files across primitives, patterns, ISC, coordination, integration
+- **Tests**: 561 tests across 41 files (primitives, patterns, ISC, coordination, MCP, output, E2E)
 
 ---
 
@@ -433,19 +539,32 @@ The difference is existential. Compliance tools ask "are you compliant?" CORSAIR
 ```
 src/
   corsair-mvp.ts         # Backwards-compat shim (re-exports from engine/)
-  types.ts               # Type definitions
+  types.ts               # Type definitions (extensible Framework/AttackVector unions)
   evidence.ts            # JSONL evidence engine with hash chain
   compaction.ts          # Evidence compaction (OpenClaw Pattern 1)
 
-  engine/                # Core engine modules (decomposed from corsair-mvp.ts)
+  engine/                # Core engine modules (provider-agnostic)
     index.ts             # Corsair facade class + barrel re-exports
     recon-engine.ts      # RECON: Read-only observation (fixture/aws/file modes)
-    mark-engine.ts       # MARK: Drift detection with event emission
-    raid-engine.ts       # RAID: Attack simulation + LaneSerializer
-    chart-engine.ts      # CHART: Framework mapping (MITRE→NIST→SOC2)
+    mark-engine.ts       # MARK: Drift detection (any snapshot shape)
+    raid-engine.ts       # RAID: Attack simulation (Cognito + S3 vectors)
+    chart-engine.ts      # CHART: 3-tier framework mapping (12+ frameworks)
     escape-engine.ts     # ESCAPE: Scope guards, rollback, RAII cleanup
     event-engine.ts      # Event querying and aggregation
     plugin-engine.ts     # Plugin discovery and registry
+
+  data/                  # Framework mapping data layer
+    mapping-loader.ts    # CTID/SCF loader with singleton cache
+    ctid-mappings.json   # ATT&CK → NIST 800-53 (6,300+ mappings)
+    scf-crosswalk.json   # NIST 800-53 → 175+ frameworks
+
+  mcp/                   # Model Context Protocol server
+    server.ts            # 8 tools + 2 resources
+
+  output/                # Report generation
+    oscal-types.ts       # OSCAL Assessment Results type definitions
+    oscal-generator.ts   # OSCAL JSON generator
+    report-generator.ts  # HTML + Markdown report generator
 
   core/
     isc-manager.ts       # ISC lifecycle tracking
@@ -460,7 +579,7 @@ src/
   agents/
     corsair-agent.ts     # Main CorsairAgent (Claude Sonnet 4.5)
     coordinator-agent.ts # Multi-agent coordinator
-    tool-definitions.ts  # Agent tool schemas
+    tool-definitions.ts  # Agent tool schemas (13 frameworks, 7 vectors)
     system-prompts.ts    # Agent system prompts
     agent-validator.ts   # Agent output validation
 
@@ -471,26 +590,30 @@ src/
     coordination.ts      # Multi-agent coordination types
 
 plugins/
-  aws-cognito/
-    aws-cognito.plugin.json   # Plugin manifest with framework mappings
-    aws-cognito-plugin.ts     # Plugin implementation
-    index.ts                  # Module exports
+  aws-cognito/           # Full plugin (4 attack vectors)
+    aws-cognito.plugin.json
+    aws-cognito-plugin.ts
+    index.ts
+  aws-s3/                # Full plugin (3 attack vectors)
+    aws-s3.plugin.json
+    aws-s3-plugin.ts
+  azure-entra/           # Skeleton plugin (3 attack vectors, fixture-only)
+    azure-entra.plugin.json
+    azure-entra-plugin.ts
 
-missions/                # Generated mission directories
-  mission_{timestamp}_{id}/
-    mission-metadata.json
-    mission.log
-    ISC.json
-    evidence/
+mcp-server.ts            # MCP server entry point (#!/usr/bin/env bun)
 
 tests/
   primitives/            # 6 primitive tests (RECON, MARK, RAID, PLUNDER, CHART, ESCAPE)
   patterns/              # OpenClaw pattern tests (events, compaction, hash chain)
-  plugin-system/         # Plugin discovery and type abstraction tests
+  plugin-system/         # Plugin discovery, S3, Azure Entra tests
+  data/                  # MappingLoader + framework coverage tests
+  mcp/                   # MCP server tool + resource tests
+  output/                # OSCAL generator + report generator tests
   isc/                   # ISC extraction, persistence, integration tests
   work/                  # Work directory and mission lifecycle tests
   coordination/          # Multi-agent coordination tests
-  integration/           # End-to-end integration tests
+  integration/           # E2E multi-framework pipeline tests
   learning/              # Learning system tests
   cli/                   # CLI tests
 ```
@@ -499,7 +622,7 @@ tests/
 
 ## Testing
 
-Run the full test suite:
+561 tests across 41 files:
 
 ```bash
 # All tests
@@ -507,14 +630,13 @@ bun test
 
 # By category
 bun test tests/primitives/       # Core primitive tests
+bun test tests/plugin-system/    # Plugin + provider tests
+bun test tests/data/             # Framework mapping tests
+bun test tests/mcp/              # MCP server tests
+bun test tests/output/           # OSCAL + report tests
 bun test tests/isc/              # ISC system tests
 bun test tests/coordination/     # Multi-agent tests
-bun test tests/integration/      # E2E tests
-
-# Individual primitives
-bun run test:recon
-bun run test:mark
-bun run test:raid
+bun test tests/integration/      # E2E multi-framework pipeline
 ```
 
 ---
