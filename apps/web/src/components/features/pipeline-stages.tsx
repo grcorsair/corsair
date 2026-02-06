@@ -18,58 +18,58 @@ const stages = [
   {
     name: "RECON",
     description: "Scout target configuration",
-    icon: <ReconIcon size={28} />,
-    color: "text-corsair-cyan",
-    glowColor: "rgba(0,207,255,0.15)",
+    icon: <ReconIcon size={40} />,
+    color: "text-corsair-gold",
+    glowColor: "rgba(212,168,83,0.15)",
   },
   {
     name: "SPYGLASS",
     description: "STRIDE threat modeling",
-    icon: <SpyglassIcon size={28} />,
+    icon: <SpyglassIcon size={40} />,
     color: "text-corsair-turquoise",
     glowColor: "rgba(127,219,202,0.15)",
   },
   {
     name: "MARK",
     description: "Drift detection",
-    icon: <MarkIcon size={28} />,
+    icon: <MarkIcon size={40} />,
     color: "text-corsair-gold",
     glowColor: "rgba(212,168,83,0.15)",
   },
   {
     name: "RAID",
     description: "Attack simulation",
-    icon: <RaidIcon size={28} />,
-    color: "text-corsair-crimson",
-    glowColor: "rgba(192,57,43,0.15)",
-  },
-  {
-    name: "PLUNDER",
-    description: "Evidence extraction",
-    icon: <PlunderIcon size={28} />,
+    icon: <RaidIcon size={40} />,
     color: "text-corsair-cyan",
     glowColor: "rgba(0,207,255,0.15)",
   },
   {
+    name: "PLUNDER",
+    description: "Evidence extraction",
+    icon: <PlunderIcon size={40} />,
+    color: "text-corsair-gold",
+    glowColor: "rgba(212,168,83,0.15)",
+  },
+  {
     name: "CHART",
     description: "Framework mapping",
-    icon: <ChartIcon size={28} />,
+    icon: <ChartIcon size={40} />,
     color: "text-corsair-turquoise",
     glowColor: "rgba(127,219,202,0.15)",
   },
   {
     name: "QUARTER",
     description: "Governance review",
-    icon: <QuarterIcon size={28} />,
+    icon: <QuarterIcon size={40} />,
     color: "text-corsair-gold",
     glowColor: "rgba(212,168,83,0.15)",
   },
   {
     name: "MARQUE",
     description: "Signed proof (Ed25519)",
-    icon: <MarqueIcon size={28} />,
-    color: "text-corsair-green",
-    glowColor: "rgba(46,204,113,0.15)",
+    icon: <MarqueIcon size={40} />,
+    color: "text-corsair-crimson",
+    glowColor: "rgba(192,57,43,0.15)",
   },
 ];
 
@@ -106,7 +106,7 @@ export function PipelineStages() {
           className="group flex flex-col items-center"
         >
           <Card
-            className="pixel-card-hover mb-3 flex h-16 w-16 items-center justify-center bg-corsair-surface transition-all"
+            className="pixel-card-hover mb-3 flex h-20 w-20 items-center justify-center bg-corsair-surface transition-all"
             style={{ "--glow-color": stage.glowColor } as React.CSSProperties}
           >
             <CardContent className="p-0">
@@ -116,12 +116,12 @@ export function PipelineStages() {
 
           <Badge
             variant="outline"
-            className={`mb-1 border-transparent font-pixel text-[7px] tracking-wider ${stage.color}`}
+            className={`mb-1 border-transparent font-pixel text-[9px] tracking-wider ${stage.color}`}
           >
             {stage.name}
           </Badge>
 
-          <span className="text-center text-xs text-corsair-text-dim">
+          <span className="text-center text-sm text-corsair-text-dim">
             {stage.description}
           </span>
 
