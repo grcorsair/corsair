@@ -1,9 +1,10 @@
 {
-  "name": "corsair-mvp",
+  "name": "corsair",
   "version": "0.2.0",
-  "description": "CORSAIR MVP - Atomic chaos engineering primitives for GRC security testing",
+  "description": "CORSAIR - Agentic GRC chaos engineering platform",
   "type": "module",
   "main": "src/corsair-mvp.ts",
+  "workspaces": ["apps/*"],
   "bin": {
     "corsair": "./corsair.ts"
   },
@@ -39,7 +40,8 @@
   "author": "GRC Engineer",
   "license": "MIT",
   "devDependencies": {
-    "bun-types": "latest"
+    "bun-types": "latest",
+    "turbo": "^2.8.3"
   },
   "exports": {
     ".": "./src/corsair-mvp.ts"

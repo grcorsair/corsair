@@ -1,0 +1,60 @@
+---
+title: "Quick Start"
+description: "Install Corsair, configure credentials, and run your first mission in under 5 minutes."
+section: "getting-started"
+order: 1
+---
+
+## Prerequisites
+
+- [Bun](https://bun.sh/) runtime (v1.0+)
+- An AWS account with appropriate permissions (for live testing), or use demo mode with no credentials
+
+## Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/Arudjreis/corsair.git
+cd corsair
+
+# Install dependencies
+bun install
+```
+
+## Demo Mode (No API Keys)
+
+Run a full Corsair mission against fixture data — no AWS credentials needed:
+
+```bash
+bun corsair.ts --target demo --service cognito --format html
+```
+
+This runs the complete pipeline: RECON → SPYGLASS → MARK → RAID → PLUNDER → CHART → QUARTER → MARQUE.
+
+## Live Mode (AWS Credentials)
+
+To test against real AWS resources:
+
+```bash
+# Set your AWS profile
+export AWS_PROFILE=your-profile
+
+# Run against a real Cognito User Pool
+bun corsair.ts --target us-west-2_ABC123 --service cognito
+```
+
+## CLI Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--target` | Target resource ID | Required |
+| `--service` | Service type (cognito, s3, iam, lambda, rds) | Required |
+| `--format` | Output format (html, oscal, md, json) | json |
+| `--source` | Data source (aws, fixture) | aws |
+| `--output` | Custom output path | ./evidence/ |
+
+## Next Steps
+
+- Learn about the [pipeline stages](/docs/concepts/pipeline)
+- Explore [available plugins](/docs/plugins/aws-cognito)
+- Understand [Marque signing](/docs/concepts/marque-signing)

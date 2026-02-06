@@ -1,0 +1,67 @@
+---
+title: "Core Concepts"
+description: "Understanding the Corsair pipeline, ISC system, evidence chain, and Marque signing."
+section: "getting-started"
+order: 2
+---
+
+## The Corsair Philosophy
+
+Corsair is built on a single insight: **compliance tools check if controls exist, but never test if they actually work under attack.**
+
+Traditional GRC tools ask: "Is MFA configured?"
+Corsair asks: "What happens when an attacker tries to bypass MFA?"
+
+The evidence that emerges from adversarial testing is fundamentally different from configuration scanning.
+
+## The Pipeline
+
+Every Corsair mission flows through eight stages:
+
+| Stage | Purpose | Output |
+|-------|---------|--------|
+| **RECON** | Read-only reconnaissance | Service snapshot (JSON) |
+| **SPYGLASS** | STRIDE threat modeling | Threat model with severity ratings |
+| **MARK** | Configuration drift detection | Drift findings (expected vs actual) |
+| **RAID** | Adversarial attack simulation | Attack results (DryRun=true by default) |
+| **PLUNDER** | Cryptographic evidence extraction | SHA-256 hash chain (JSONL) |
+| **CHART** | Compliance framework mapping | MITRE → NIST → SOC2 → 10+ frameworks |
+| **QUARTER** | AI governance review | Confidence score and trust tier |
+| **MARQUE** | Ed25519 signed attestation | Signed CPOE document |
+
+## ISC (Ideal State Criteria)
+
+ISC criteria define what "secure" looks like for a given target. Each criterion is:
+
+- **8 words maximum** — concise and actionable
+- **Binary testable** — SATISFIED or FAILED, nothing in between
+- **One concern per criterion** — granular and specific
+
+Example ISC criteria for a Cognito User Pool:
+
+```
+✅ "Multi-factor authentication enforced for all accounts"
+❌ "Password policy requires minimum fourteen characters"
+✅ "Advanced security features enabled and active"
+```
+
+## Evidence Chain
+
+Every finding in Corsair is backed by a cryptographic evidence chain:
+
+1. Each evidence record is hashed with SHA-256
+2. Each hash includes the previous record's hash (chain)
+3. The chain root is included in the Marque signature
+4. Tampering with any record breaks the chain
+
+This ensures evidence integrity without trusting any central authority.
+
+## Marque Signing
+
+A Marque is signed with Ed25519 (elliptic curve digital signature):
+
+- **Private key**: Used by the Corsair CLI to sign attestations
+- **Public key**: Shared with anyone who needs to verify
+- **Verification**: Runs client-side via Web Crypto API at [grcorsair.com/marque](/marque)
+
+No server, no account, no data sharing required for verification.

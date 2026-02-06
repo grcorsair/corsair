@@ -12,7 +12,7 @@
 ![Bun](https://img.shields.io/badge/runtime-Bun-f9f1e1.svg?logo=bun)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg?logo=typescript)
 
-**Chaos Operations for Resilience, Security Assessment & Incremental Reinforcement**
+**Chaos Operations for Resilience, Security Assurance & Incremental Reinforcement**
 
 > Agentic Pirate raiding your GRC program.
 

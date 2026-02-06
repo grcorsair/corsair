@@ -1,0 +1,14 @@
+# Next.js
+.next/
+out/
+
+# Vercel (if used)
+.vercel
+
+# Override root *.js ignore for web app config files
+!postcss.config.js
+!next.config.js
+!*.config.js
+
+# Override root *.d.ts ignore
+!next-env.d.ts

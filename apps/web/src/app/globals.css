@@ -1,0 +1,232 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════
+   CORSAIR Design System — "Pixel Art Meets Terminal"
+   Palette extracted from the pixel art Barbary corsair logo
+   ═══════════════════════════════════════════════════════════ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* ── Primary brand colors (from logo) ────────────────── */
+  --color-corsair-navy: #1B2A4A;
+  --color-corsair-cyan: #00CFFF;
+  --color-corsair-gold: #D4A853;
+
+  /* ── Semantic colors ─────────────────────────────────── */
+  --color-corsair-crimson: #C0392B;
+  --color-corsair-green: #2ECC71;
+
+  /* ── Neutral backgrounds ─────────────────────────────── */
+  --color-corsair-deep: #0B1022;
+  --color-corsair-surface: #111833;
+  --color-corsair-border: #1E3055;
+
+  /* ── Text colors ─────────────────────────────────────── */
+  --color-corsair-text: #E2DFD6;
+  --color-corsair-text-dim: #8B92A8;
+
+  /* ── Accent colors (from logo background + details) ─── */
+  --color-corsair-turquoise: #7FDBCA;
+  --color-corsair-desert: #C4A882;
+  --color-corsair-red-dark: #8B2232;
+
+  /* ── Typography ──────────────────────────────────────── */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Geist Mono", ui-monospace, monospace;
+  --font-pixel: "Press Start 2P", monospace;
+}
+
+/* ── Base styles ───────────────────────────────────────── */
+
+body {
+  background-color: var(--color-corsair-deep);
+  color: var(--color-corsair-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Selection highlight ───────────────────────────────── */
+::selection {
+  background-color: color-mix(in srgb, var(--color-corsair-cyan) 30%, transparent);
+  color: var(--color-corsair-text);
+}
+
+/* ── Scrollbar (Webkit) ────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-corsair-deep);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-corsair-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-corsair-navy);
+}
+
+/* ── Section divider (wave pattern from logo hexagonal motif) ── */
+.section-divider {
+  position: relative;
+  overflow: hidden;
+}
+
+.section-divider::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-corsair-border) 20%,
+    var(--color-corsair-cyan) 50%,
+    var(--color-corsair-border) 80%,
+    transparent
+  );
+  opacity: 0.5;
+}
+
+/* ── Animations ────────────────────────────────────────── */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(0, 207, 255, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 207, 255, 0.25);
+  }
+}
+
+/* ── MDX Content Styles ────────────────────────────────── */
+.mdx-content h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2.25rem;
+  margin-bottom: 1rem;
+  color: var(--color-corsair-text);
+}
+
+.mdx-content h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin-top: 2.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--color-corsair-text);
+}
+
+.mdx-content h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.25rem;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-corsair-text);
+}
+
+.mdx-content p {
+  margin-bottom: 1rem;
+  line-height: 1.75;
+  color: var(--color-corsair-text-dim);
+}
+
+.mdx-content a {
+  color: var(--color-corsair-cyan);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.mdx-content a:hover {
+  color: var(--color-corsair-turquoise);
+}
+
+.mdx-content code {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  background-color: var(--color-corsair-surface);
+  border: 1px solid var(--color-corsair-border);
+  border-radius: 4px;
+  padding: 0.125rem 0.375rem;
+}
+
+.mdx-content pre {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  background-color: var(--color-corsair-surface);
+  border: 1px solid var(--color-corsair-border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+}
+
+.mdx-content pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.mdx-content ul, .mdx-content ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+  color: var(--color-corsair-text-dim);
+}
+
+.mdx-content li {
+  margin-bottom: 0.25rem;
+  line-height: 1.75;
+}
+
+.mdx-content blockquote {
+  border-left: 3px solid var(--color-corsair-cyan);
+  padding-left: 1rem;
+  margin-bottom: 1rem;
+  font-style: italic;
+  color: var(--color-corsair-text-dim);
+}
+
+.mdx-content hr {
+  border-color: var(--color-corsair-border);
+  margin: 2rem 0;
+}
+
+.mdx-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+}
+
+.mdx-content th {
+  text-align: left;
+  padding: 0.75rem;
+  border-bottom: 2px solid var(--color-corsair-border);
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--color-corsair-text);
+}
+
+.mdx-content td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--color-corsair-border);
+  color: var(--color-corsair-text-dim);
+}

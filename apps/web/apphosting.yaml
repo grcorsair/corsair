@@ -1,0 +1,12 @@
+runConfig:
+  minInstances: 0
+  maxInstances: 10
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512
+
+env:
+  - variable: NEXT_PUBLIC_SITE_URL
+    value: https://grcorsair.com
+  - variable: NEXT_PUBLIC_SITE_NAME
+    value: CORSAIR

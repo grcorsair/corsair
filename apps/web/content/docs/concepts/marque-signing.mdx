@@ -1,0 +1,85 @@
+---
+title: "Marque & CPOE"
+description: "Ed25519 signing, verification flow, trust tiers, and the CPOE attestation format."
+section: "concepts"
+order: 11
+---
+
+## What is a Marque?
+
+A **Marque** is a cryptographically signed document that attests to the results of a Corsair adversarial assessment. Named after the historical Letter of Marque that authorized privateers, it serves as a **Certificate of Proof of Operational Effectiveness (CPOE)**.
+
+## Signing
+
+Corsair uses **Ed25519** (Edwards-curve Digital Signature Algorithm) for signing:
+
+- Zero external dependencies — uses Node.js built-in `crypto` module
+- 64-byte signatures, 32-byte keys
+- Deterministic — same input always produces same signature
+- Fast verification (important for client-side use)
+
+## Document Structure
+
+```json
+{
+  "marque": {
+    "id": "mrq_2026-02-06_abc123",
+    "version": "1.0.0",
+    "issuer": {
+      "name": "Security Engineering",
+      "organization": "Example Corp"
+    },
+    "generatedAt": "2026-02-06T10:30:00Z",
+    "expiresAt": "2026-02-13T10:30:00Z",
+    "scope": {
+      "providers": ["aws-cognito"],
+      "frameworksCovered": ["NIST 800-53", "SOC2", "ISO 27001"],
+      "servicesAssessed": ["us-west-2_ABC123"]
+    },
+    "summary": {
+      "controlsTested": 24,
+      "controlsPassed": 18,
+      "controlsFailed": 6,
+      "overallScore": 75
+    },
+    "evidenceChain": {
+      "hashChainRoot": "sha256:abc123...",
+      "recordCount": 12,
+      "algorithm": "SHA-256"
+    }
+  },
+  "signature": "base64-encoded-ed25519-signature"
+}
+```
+
+## Trust Tiers
+
+The Quartermaster assigns trust tiers based on the governance confidence score:
+
+| Score | Tier | Meaning |
+|-------|------|---------|
+| < 70 | Self-Assessed | Minimal governance review |
+| 70-89 | AI-Verified | Automated governance passed |
+| >= 90 | Auditor-Verified | Human auditor reviewed |
+
+## Verification
+
+Marque verification is **fully client-side** at [grcorsair.com/marque](/marque):
+
+1. Paste the Marque JSON and the issuer's public key
+2. Web Crypto API verifies the Ed25519 signature
+3. Evidence chain integrity is validated
+4. Expiry date is checked
+
+No data leaves the browser. No server calls. No Corsair account needed.
+
+## Sanitization
+
+Before signing, Corsair sanitizes sensitive data:
+- AWS Account IDs → redacted
+- ARNs → redacted
+- IP addresses → redacted
+- File paths → redacted
+- API keys → redacted
+
+The Marque contains assessment *results*, not raw infrastructure details.

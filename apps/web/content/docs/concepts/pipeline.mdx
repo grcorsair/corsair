@@ -1,0 +1,56 @@
+---
+title: "Pipeline Architecture"
+description: "Deep dive into the eight-stage Corsair pipeline from RECON to MARQUE."
+section: "concepts"
+order: 10
+---
+
+## Overview
+
+The Corsair pipeline processes security assessments through eight sequential stages. Each stage builds on the output of the previous one, creating a complete adversarial assessment with cryptographic evidence.
+
+```
+RECON → SPYGLASS → MARK → RAID → PLUNDER → CHART → QUARTER → MARQUE
+```
+
+## Stage Details
+
+### RECON — Reconnaissance
+
+Read-only observation of the target service. Produces a JSON snapshot of the current configuration without making any changes.
+
+**Supported sources:**
+- `aws` — Live AWS API calls (requires credentials)
+- `fixture` — Pre-built demo data (no credentials needed)
+- `file` — Load from a JSON file
+
+### SPYGLASS — Threat Modeling
+
+Applies STRIDE methodology to the RECON snapshot, identifying potential threats across six categories: Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, and Elevation of Privilege.
+
+### MARK — Drift Detection
+
+Compares the actual configuration against expected baselines. Detects drift in security-critical settings like MFA configuration, encryption status, and access policies.
+
+### RAID — Attack Simulation
+
+Executes adversarial test scenarios against the target. **DryRun=true by default** — RAID simulates attacks without making changes unless explicitly configured otherwise.
+
+### PLUNDER — Evidence Extraction
+
+Captures all findings into a SHA-256 hash chain (JSONL format). Each record is cryptographically linked to the previous one, creating a tamper-proof evidence trail.
+
+### CHART — Framework Mapping
+
+Maps findings to 13+ compliance frameworks using a 3-tier resolution system:
+1. Plugin manifest mappings (highest priority)
+2. CTID ATT&CK-to-NIST data (6,300+ mappings)
+3. SCF crosswalk to 175+ frameworks
+
+### QUARTER — Governance Review
+
+AI-powered governance assessment evaluating methodology quality, evidence integrity, completeness, and bias. Produces a confidence score and trust tier.
+
+### MARQUE — Signed Attestation
+
+Generates an Ed25519-signed Certificate of Proof of Operational Effectiveness (CPOE) — a tamper-proof document summarizing the entire assessment.

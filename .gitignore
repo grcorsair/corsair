@@ -2,12 +2,20 @@
 node_modules/
 bun.lockb
 
-# Build outputs
+# Build outputs (CLI — TypeScript compiled files)
 dist/
 build/
-*.js
-*.d.ts
-!demo-e2e.ts
+/src/**/*.js
+/src/**/*.d.ts
+/plugins/**/*.js
+/plugins/**/*.d.ts
+
+# Next.js
+apps/web/.next/
+apps/web/out/
+
+# Turbo
+.turbo/
 
 # Test outputs
 coverage/

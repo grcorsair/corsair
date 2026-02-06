@@ -1,0 +1,68 @@
+---
+title: "AWS Cognito"
+description: "MFA bypass, password spray, session hijack, and token replay attack vectors for AWS Cognito User Pools."
+section: "plugins"
+order: 20
+---
+
+## Overview
+
+The AWS Cognito plugin provides four attack vectors targeting authentication and session management in Cognito User Pools.
+
+## Attack Vectors
+
+### MFA Bypass (`mfa-bypass`)
+
+**Severity:** CRITICAL
+**MITRE ATT&CK:** T1556.006 (Multi-Factor Authentication Interception)
+
+Tests whether MFA can be bypassed when configured as OPTIONAL rather than REQUIRED. Detects configurations where users can authenticate without completing MFA challenges.
+
+### Password Spray (`password-spray`)
+
+**Severity:** HIGH
+**MITRE ATT&CK:** T1110.003 (Password Spraying)
+
+Simulates password spray attacks against the user pool. Tests account lockout policies, rate limiting, and advanced security feature detection.
+
+### Session Hijack (`session-hijack`)
+
+**Severity:** HIGH
+**MITRE ATT&CK:** T1539 (Steal Web Session Cookie)
+
+Tests token management and session security. Validates token expiration, refresh token rotation, and device tracking configurations.
+
+### Token Replay (`token-replay`)
+
+**Severity:** MEDIUM
+**MITRE ATT&CK:** T1550.001 (Application Access Token)
+
+Tests whether expired or revoked tokens can be replayed for unauthorized access. Validates token revocation mechanisms.
+
+## Framework Mappings
+
+| Finding | MITRE | NIST 800-53 | SOC2 |
+|---------|-------|-------------|------|
+| MFA not enforced | T1556 | IA-2 | CC6.1 |
+| Weak password policy | T1110 | IA-5 | CC6.1 |
+| No advanced security | T1078 | AC-7 | CC6.1 |
+| Token management gaps | T1539 | SC-12 | CC6.6 |
+
+## Usage
+
+```bash
+# Demo mode
+bun corsair.ts --target demo --service cognito
+
+# Live mode
+bun corsair.ts --target us-west-2_ABC123 --service cognito
+```
+
+## Required Permissions
+
+```
+cognito-idp:DescribeUserPool
+cognito-idp:GetUserPoolMfaConfig
+cognito-idp:DescribeUserPoolClient
+cognito-idp:ListUsers
+```

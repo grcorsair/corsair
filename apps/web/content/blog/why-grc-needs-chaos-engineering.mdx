@@ -1,0 +1,47 @@
+---
+title: "Why GRC Needs Chaos Engineering"
+description: "Compliance tools ask 'are you compliant?' Corsair asks 'what actually happens when things go wrong?' The difference is existential."
+date: "2026-02-06"
+tag: "Philosophy"
+published: true
+---
+
+The compliance industry has a dirty secret: most of what we call "security testing" isn't testing at all.
+
+It's checking boxes.
+
+## The Checkbox Problem
+
+When an auditor asks "do you have MFA enabled?", they're asking a **documentation question**, not a **security question**. The answer tells you what was *configured*. It tells you nothing about what *actually happens* when an attacker tries to bypass it.
+
+This is the fundamental gap that Corsair addresses.
+
+## Chaos Engineering for Controls
+
+Netflix pioneered chaos engineering for infrastructure with Chaos Monkey — randomly killing production instances to prove that redundancy actually works. The insight wasn't that redundancy was important (everyone knew that). The insight was that **you can't trust a control you haven't tested under adversarial conditions**.
+
+The same principle applies to GRC:
+
+- **Traditional approach**: Document that MFA is configured → check the box → move on
+- **Corsair approach**: Attempt to bypass MFA → discover it's set to OPTIONAL → generate cryptographic evidence of the gap
+
+The evidence chain that emerges from adversarial testing is fundamentally different from the evidence produced by configuration scanning. It's the difference between asking "is the door locked?" and actually trying to open it.
+
+## The CPOE: A New Unit of Trust
+
+When Corsair completes an adversarial assessment, it generates a **Certificate of Proof of Operational Effectiveness (CPOE)** — a cryptographically signed document that proves:
+
+1. Which controls were tested
+2. How they were tested (adversarial, not just scanned)
+3. Which controls held and which failed
+4. A tamper-proof evidence chain
+
+We call this a **Marque** — named after the historical Letter of Marque that authorized privateers. A Corsair Marque authorizes trust through proof, not promises.
+
+## What This Means for the Industry
+
+The $62B GRC market is built on a fundamental assumption: that compliance questionnaires and configuration scans are sufficient to assess security posture. Corsair challenges that assumption by introducing adversarial verification as the standard.
+
+The question isn't "are you compliant?" anymore.
+
+The question is: **prove it works.**

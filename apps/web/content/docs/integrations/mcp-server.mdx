@@ -1,0 +1,61 @@
+---
+title: "MCP Server"
+description: "Integrate Corsair with Claude Code and other AI agents via the Model Context Protocol."
+section: "integrations"
+order: 30
+---
+
+## Overview
+
+Corsair exposes all primitives via the [Model Context Protocol](https://modelcontextprotocol.io/) for integration with Claude Code and other AI agents.
+
+## Setup
+
+Start the MCP server:
+
+```bash
+bun run mcp-server.ts
+```
+
+Add to your Claude Code configuration (`.claude/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "corsair": {
+      "command": "bun",
+      "args": ["run", "/path/to/corsair/mcp-server.ts"]
+    }
+  }
+}
+```
+
+## Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `corsair_recon` | Read-only reconnaissance on target systems |
+| `corsair_mark` | Detect configuration drift against baselines |
+| `corsair_raid` | Execute controlled chaos attacks |
+| `corsair_plunder` | Extract cryptographic evidence chains |
+| `corsair_chart` | Map findings to 12+ compliance frameworks |
+| `corsair_escape` | Rollback changes and restore state |
+| `corsair_strike` | Full cycle convenience (RECON → ESCAPE) |
+| `corsair_report` | Generate OSCAL/HTML/Markdown reports |
+
+## Resources
+
+| Resource | Description |
+|----------|-------------|
+| `corsair://evidence/latest` | Most recent evidence chain |
+| `corsair://frameworks/supported` | List of supported frameworks |
+
+## Example Usage with Claude Code
+
+Once configured, Claude Code can use Corsair tools directly:
+
+```
+> Run a Corsair reconnaissance on my S3 bucket "my-app-assets"
+```
+
+Claude will call `corsair_recon` with the appropriate parameters and return the results.
