@@ -113,20 +113,33 @@ describe("SPYGLASS Engine - spyglassAnalyze", () => {
     expect(publicAccessThreats[0].severity).toBe("CRITICAL");
   });
 
-  test("Azure Entra non-compliant generates conditional-access threats", () => {
-    const azureSnapshot = {
-      conditionalAccessPolicies: [],
-      passwordHashSync: true,
-      mfaConfiguration: "OFF",
+  test("GitLab non-compliant generates branch protection and MFA threats", () => {
+    const gitlabSnapshot = {
+      visibility: "public",
+      branchProtection: {
+        forcePushDisabled: false,
+        requireApprovals: false,
+      },
+      cicdSecurity: {
+        sastEnabled: false,
+        secretDetectionEnabled: false,
+      },
+      accessControl: {
+        mfaEnforced: false,
+        guestAccessEnabled: true,
+      },
+      auditSettings: {
+        signedCommitsRequired: false,
+      },
     };
 
-    const result = engine.spyglassAnalyze(azureSnapshot, "azure-entra");
+    const result = engine.spyglassAnalyze(gitlabSnapshot, "gitlab");
 
     expect(result.threats.length).toBeGreaterThanOrEqual(3);
-    const caThreats = result.threats.filter(
-      (t) => t.affectedField === "conditionalAccessPolicies"
+    const visibilityThreats = result.threats.filter(
+      (t) => t.affectedField === "visibility"
     );
-    expect(caThreats.length).toBeGreaterThanOrEqual(1);
+    expect(visibilityThreats.length).toBeGreaterThanOrEqual(1);
   });
 
   test("Threats include affectedField matching snapshot field paths", () => {

@@ -235,7 +235,7 @@ describe("E2E Multi-Framework - Cross-Provider Plugin Discovery", () => {
   test("discovers all 6 plugins", () => {
     expect(corsair.hasPlugin("aws-cognito")).toBe(true);
     expect(corsair.hasPlugin("aws-s3")).toBe(true);
-    expect(corsair.hasPlugin("azure-entra")).toBe(true);
+    expect(corsair.hasPlugin("gitlab")).toBe(true);
     expect(corsair.hasPlugin("aws-iam")).toBe(true);
     expect(corsair.hasPlugin("aws-lambda")).toBe(true);
     expect(corsair.hasPlugin("aws-rds")).toBe(true);

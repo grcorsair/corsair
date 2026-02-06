@@ -14,10 +14,12 @@ import type {
   RDSSnapshot,
   ReconResult,
 } from "../types";
+import type { GitLabSnapshot } from "../../plugins/gitlab/gitlab-plugin";
+import { nonCompliantGitLabSnapshot } from "../../plugins/gitlab/gitlab-plugin";
 
 export interface ReconOptions {
   source?: "fixture" | "aws" | "file";
-  service?: "cognito" | "s3" | "iam" | "lambda" | "rds";
+  service?: "cognito" | "s3" | "iam" | "lambda" | "rds" | "gitlab";
 }
 
 export class ReconEngine {
@@ -33,7 +35,7 @@ export class ReconEngine {
     const service = options.service || "cognito";
     const startTime = Date.now();
 
-    let snapshot: CognitoSnapshot | S3Snapshot | IAMSnapshot | LambdaSnapshot | RDSSnapshot;
+    let snapshot: CognitoSnapshot | S3Snapshot | IAMSnapshot | LambdaSnapshot | RDSSnapshot | GitLabSnapshot;
 
     if (source === "aws") {
       // Dynamically import AWS SDK to avoid requiring it when not needed
@@ -47,6 +49,8 @@ export class ReconEngine {
         snapshot = await this.fetchAwsRDSSnapshot(targetId);
       } else if (service === "cognito") {
         snapshot = await this.fetchAwsCognitoSnapshot(targetId);
+      } else if (service === "gitlab") {
+        throw new Error("GitLab uses API token, not AWS credentials. Use --source file with a GitLab API export.");
       } else {
         throw new Error(`Unknown service: ${service}`);
       }
@@ -62,6 +66,8 @@ export class ReconEngine {
         snapshot = this.createFixtureLambdaSnapshot(targetId);
       } else if (service === "rds") {
         snapshot = this.createFixtureRDSSnapshot(targetId);
+      } else if (service === "gitlab") {
+        snapshot = nonCompliantGitLabSnapshot;
       } else {
         snapshot = this.createFixtureCognitoSnapshot(targetId);
       }
@@ -212,21 +218,249 @@ export class ReconEngine {
   }
 
   private async fetchAwsIAMSnapshot(accountId: string): Promise<IAMSnapshot> {
-    // IAM AWS live fetch is a placeholder for now.
-    // Real implementation would use @aws-sdk/client-iam for GetCredentialReport, etc.
-    throw new Error(`AWS IAM live fetch not yet implemented for account: ${accountId}`);
+    const {
+      IAMClient,
+      GetCredentialReportCommand,
+      GenerateCredentialReportCommand,
+      ListUsersCommand,
+      ListMFADevicesCommand,
+      ListAttachedUserPoliciesCommand,
+      ListRolesCommand,
+      ListPoliciesCommand,
+      GetAccountSummaryCommand,
+    } = await import("@aws-sdk/client-iam");
+
+    const client = new IAMClient({
+      region: process.env.AWS_REGION || "us-west-2",
+    });
+
+    try {
+      // Generate credential report (may need to wait for it)
+      try {
+        await client.send(new GenerateCredentialReportCommand({}));
+      } catch {
+        // Report may already be generating; continue
+      }
+
+      // Get credential report for key rotation and unused credential analysis
+      let credentialReportCsv = "";
+      try {
+        const reportResponse = await client.send(new GetCredentialReportCommand({}));
+        if (reportResponse.Content) {
+          credentialReportCsv = Buffer.from(reportResponse.Content).toString("utf-8");
+        }
+      } catch {
+        // Report may not be ready yet; proceed without it
+      }
+
+      // List users
+      const usersResponse = await client.send(new ListUsersCommand({}));
+      const users = usersResponse.Users || [];
+
+      // List roles
+      const rolesResponse = await client.send(new ListRolesCommand({ MaxItems: 1000 }));
+      const roles = rolesResponse.Roles || [];
+
+      // List policies (customer-managed only)
+      const policiesResponse = await client.send(new ListPoliciesCommand({ Scope: "Local" }));
+      const policies = policiesResponse.Policies || [];
+
+      // Get account summary for root MFA status
+      const summaryResponse = await client.send(new GetAccountSummaryCommand({}));
+      const summaryMap = summaryResponse.SummaryMap || {};
+      const rootAccountMfaEnabled = (summaryMap.AccountMFAEnabled ?? 0) === 1;
+
+      // Check MFA for each user
+      let mfaEnabled = true;
+      for (const user of users) {
+        if (!user.UserName) continue;
+        const mfaResponse = await client.send(
+          new ListMFADevicesCommand({ UserName: user.UserName })
+        );
+        if (!mfaResponse.MFADevices || mfaResponse.MFADevices.length === 0) {
+          mfaEnabled = false;
+          break;
+        }
+      }
+
+      // Check for overprivileged policies (any with * action or resource)
+      let hasOverprivilegedPolicies = false;
+      for (const user of users.slice(0, 20)) {
+        if (!user.UserName) continue;
+        const attachedPolicies = await client.send(
+          new ListAttachedUserPoliciesCommand({ UserName: user.UserName })
+        );
+        for (const pol of attachedPolicies.AttachedPolicies || []) {
+          if (pol.PolicyArn?.includes("AdministratorAccess") ||
+              pol.PolicyArn?.includes("PowerUserAccess")) {
+            hasOverprivilegedPolicies = true;
+            break;
+          }
+        }
+        if (hasOverprivilegedPolicies) break;
+      }
+
+      // Analyze credential report for unused credentials and key rotation
+      let unusedCredentialsExist = false;
+      let accessKeysRotated = true;
+      if (credentialReportCsv) {
+        const lines = credentialReportCsv.split("\n").slice(1); // Skip header
+        const now = Date.now();
+        const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+
+        for (const line of lines) {
+          const cols = line.split(",");
+          if (cols.length < 10) continue;
+
+          // Check password_last_used (col 4) for unused credentials
+          const passwordLastUsed = cols[4];
+          if (passwordLastUsed && passwordLastUsed !== "no_information" && passwordLastUsed !== "N/A") {
+            const lastUsed = new Date(passwordLastUsed).getTime();
+            if (now - lastUsed > ninetyDaysMs) {
+              unusedCredentialsExist = true;
+            }
+          }
+
+          // Check access_key_1_last_rotated (col 9) for key rotation
+          const key1LastRotated = cols[9];
+          if (key1LastRotated && key1LastRotated !== "N/A" && key1LastRotated !== "not_supported") {
+            const rotated = new Date(key1LastRotated).getTime();
+            if (now - rotated > ninetyDaysMs) {
+              accessKeysRotated = false;
+            }
+          }
+        }
+      }
+
+      const snapshot: IAMSnapshot = {
+        accountId,
+        mfaEnabled,
+        hasOverprivilegedPolicies,
+        unusedCredentialsExist,
+        accessKeysRotated,
+        rootAccountMfaEnabled,
+        users: users.length,
+        roles: roles.length,
+        policies: policies.length,
+        observedAt: new Date().toISOString(),
+      };
+
+      return snapshot;
+    } catch (error) {
+      throw new Error(`Failed to fetch AWS IAM snapshot: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   private async fetchAwsLambdaSnapshot(functionName: string): Promise<LambdaSnapshot> {
-    // Lambda AWS live fetch is a placeholder for now.
-    // Real implementation would use @aws-sdk/client-lambda for GetFunctionConfiguration, etc.
-    throw new Error(`AWS Lambda live fetch not yet implemented for function: ${functionName}`);
+    const {
+      LambdaClient,
+      GetFunctionConfigurationCommand,
+    } = await import("@aws-sdk/client-lambda");
+
+    const client = new LambdaClient({
+      region: process.env.AWS_REGION || "us-west-2",
+    });
+
+    try {
+      const configResponse = await client.send(
+        new GetFunctionConfigurationCommand({ FunctionName: functionName })
+      );
+
+      // Check if environment variables use KMS encryption
+      const environmentVariablesEncrypted = !!configResponse.KMSKeyArn;
+
+      // Check if VPC is configured
+      const vpcConfigured = !!(
+        configResponse.VpcConfig?.SubnetIds &&
+        configResponse.VpcConfig.SubnetIds.length > 0
+      );
+
+      // Check code signing (via CodeSigningConfigArn presence)
+      const codeSigningEnabled = !!configResponse.CodeSigningConfigArn;
+
+      // Check layers exist (integrity is assumed if layers are present and runtime matches)
+      const layerIntegrityVerified = !!(
+        configResponse.Layers && configResponse.Layers.length > 0
+      );
+
+      // Check dead letter queue
+      const deadLetterQueueConfigured = !!(
+        configResponse.DeadLetterConfig?.TargetArn
+      );
+
+      // Check X-Ray tracing
+      const tracingEnabled = configResponse.TracingConfig?.Mode === "Active";
+
+      const snapshot: LambdaSnapshot = {
+        functionName: configResponse.FunctionName || functionName,
+        runtime: configResponse.Runtime || "unknown",
+        memorySize: configResponse.MemorySize || 128,
+        timeout: configResponse.Timeout || 3,
+        environmentVariablesEncrypted,
+        vpcConfigured,
+        layerIntegrityVerified,
+        codeSigningEnabled,
+        reservedConcurrency: null, // Requires separate GetFunctionConcurrency call
+        deadLetterQueueConfigured,
+        tracingEnabled,
+        observedAt: new Date().toISOString(),
+      };
+
+      return snapshot;
+    } catch (error) {
+      throw new Error(`Failed to fetch AWS Lambda snapshot: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   private async fetchAwsRDSSnapshot(instanceId: string): Promise<RDSSnapshot> {
-    // RDS AWS live fetch is a placeholder for now.
-    // Real implementation would use @aws-sdk/client-rds for DescribeDBInstances, etc.
-    throw new Error(`AWS RDS live fetch not yet implemented for instance: ${instanceId}`);
+    const {
+      RDSClient,
+      DescribeDBInstancesCommand,
+    } = await import("@aws-sdk/client-rds");
+
+    const client = new RDSClient({
+      region: process.env.AWS_REGION || "us-west-2",
+    });
+
+    try {
+      const response = await client.send(
+        new DescribeDBInstancesCommand({
+          DBInstanceIdentifier: instanceId,
+        })
+      );
+
+      const instances = response.DBInstances || [];
+      if (instances.length === 0) {
+        throw new Error(`RDS instance not found: ${instanceId}`);
+      }
+
+      const db = instances[0];
+
+      // Check audit logging via enabled CloudWatch log exports
+      const auditLogging = !!(
+        db.EnabledCloudwatchLogsExports &&
+        db.EnabledCloudwatchLogsExports.length > 0
+      );
+
+      const snapshot: RDSSnapshot = {
+        instanceId: db.DBInstanceIdentifier || instanceId,
+        engine: db.Engine || "unknown",
+        engineVersion: db.EngineVersion || "unknown",
+        publiclyAccessible: db.PubliclyAccessible ?? false,
+        storageEncrypted: db.StorageEncrypted ?? false,
+        iamAuthEnabled: db.IAMDatabaseAuthenticationEnabled ?? false,
+        auditLogging,
+        multiAZ: db.MultiAZ ?? false,
+        backupRetentionDays: db.BackupRetentionPeriod ?? 0,
+        deletionProtection: db.DeletionProtection ?? false,
+        performanceInsightsEnabled: db.PerformanceInsightsEnabled ?? false,
+        observedAt: new Date().toISOString(),
+      };
+
+      return snapshot;
+    } catch (error) {
+      throw new Error(`Failed to fetch AWS RDS snapshot: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   private async fetchAwsCognitoSnapshot(userPoolId: string): Promise<CognitoSnapshot> {

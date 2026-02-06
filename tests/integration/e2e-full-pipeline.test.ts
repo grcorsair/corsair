@@ -2,7 +2,7 @@
  * E2E Full Pipeline Integration Tests
  *
  * Validates the complete Corsair pipeline from RECON to signed MARQUE.
- * Covers all 5 AWS providers + azure-entra, threat modeling, drift detection,
+ * Covers all 5 AWS providers + gitlab, threat modeling, drift detection,
  * attack simulation, evidence collection, compliance mapping, MARQUE generation,
  * Quartermaster evaluation, OSCAL conversion, and report generation.
  *

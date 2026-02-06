@@ -336,6 +336,7 @@ export class CorsairCoordinator {
     };
 
     const pending = new Set(agentIds);
+    let currentDelay = 50;
 
     while (pending.size > 0) {
       // Check timeout
@@ -348,6 +349,9 @@ export class CorsairCoordinator {
         break;
       }
 
+      // Track whether any agent completed in this poll cycle
+      let progressDetected = false;
+
       // Poll status for each pending agent
       for (const agentId of [...pending]) {
         const status = await this.readAgentStatus(agentId);
@@ -355,18 +359,27 @@ export class CorsairCoordinator {
         if (status?.status === "COMPLETED") {
           result.completed.push(agentId);
           pending.delete(agentId);
+          progressDetected = true;
         } else if (status?.status === "FAILED") {
           result.failed.push(agentId);
           pending.delete(agentId);
+          progressDetected = true;
         } else if (status?.status === "TIMEOUT") {
           result.timedOut.push(agentId);
           pending.delete(agentId);
+          progressDetected = true;
         }
       }
 
-      // Wait before next poll
+      // Reset backoff when progress detected so remaining agents are checked quickly
+      if (progressDetected) {
+        currentDelay = 50;
+      }
+
+      // Wait before next poll using exponential backoff capped at pollIntervalMs
       if (pending.size > 0) {
-        await this.sleep(this.options.pollIntervalMs);
+        await this.sleep(Math.min(currentDelay, this.options.pollIntervalMs));
+        currentDelay = Math.min(currentDelay * 2, this.options.pollIntervalMs);
       }
     }
 

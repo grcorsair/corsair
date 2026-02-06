@@ -47,6 +47,9 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.72.1",
     "@aws-sdk/client-cognito-identity-provider": "^3.983.0",
+    "@aws-sdk/client-iam": "^3.983.0",
+    "@aws-sdk/client-lambda": "^3.983.0",
+    "@aws-sdk/client-rds": "^3.983.0",
     "@aws-sdk/client-s3": "^3.983.0",
     "@modelcontextprotocol/sdk": "^1.26.0"
   }

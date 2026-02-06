@@ -403,6 +403,154 @@ describe("LearningManager", () => {
     });
   });
 
+  describe("Confidence Scoring", () => {
+    it("should return 0 confidence for 0 samples", async () => {
+      // With no missions, patterns should reflect 0 confidence
+      // calculateConfidence is private, but we can verify its behavior
+      // through the patterns it produces. With 0 samples: Math.min(0.95, log10(0+1)/1.5) = 0
+      const patterns = await learningManager.extractPatterns();
+
+      // No missions means no patterns at all
+      expect(patterns.missionCount).toBe(0);
+      expect(patterns.common.length).toBe(0);
+    });
+
+    it("should produce ~0.32 confidence for 2 samples", async () => {
+      // Create exactly 2 missions with identical criteria
+      const missions = [
+        createMockISC("mission_20250205_100000_conf2a", [
+          { text: "Confidence two sample test", satisfaction: "SATISFIED" },
+        ]),
+        createMockISC("mission_20250205_110000_conf2b", [
+          { text: "Confidence two sample test", satisfaction: "SATISFIED" },
+        ]),
+      ];
+
+      for (const isc of missions) {
+        await workManager.createMission({
+          missionId: isc.missionId,
+          target: "test-target",
+          service: "s3",
+          status: "COMPLETED",
+          startedAt: new Date().toISOString(),
+        });
+        await workManager.saveISC(isc.missionId, isc);
+      }
+
+      const patterns = await learningManager.extractPatterns();
+
+      // 2 samples: log10(3) / 1.5 = 0.477 / 1.5 = ~0.318
+      const pattern = patterns.common.find((p) => p.text.includes("Confidence two"));
+      expect(pattern).toBeDefined();
+      expect(pattern!.confidence).toBeGreaterThan(0.25);
+      expect(pattern!.confidence).toBeLessThan(0.40);
+    });
+
+    it("should cap confidence at 0.95 for 100+ samples", async () => {
+      // Create 100 missions with the same criterion
+      const missionPromises = [];
+      for (let i = 0; i < 100; i++) {
+        const paddedI = String(i).padStart(3, "0");
+        const isc = createMockISC(`mission_20250205_${100000 + i}_cap${paddedI}`, [
+          { text: "Confidence cap criterion", satisfaction: "SATISFIED" },
+        ]);
+        missionPromises.push(
+          (async () => {
+            await workManager.createMission({
+              missionId: isc.missionId,
+              target: "test-target",
+              service: "s3",
+              status: "COMPLETED",
+              startedAt: new Date().toISOString(),
+            });
+            await workManager.saveISC(isc.missionId, isc);
+          })()
+        );
+      }
+      await Promise.all(missionPromises);
+
+      const patterns = await learningManager.extractPatterns();
+
+      const pattern = patterns.common.find((p) => p.text.includes("Confidence cap"));
+      expect(pattern).toBeDefined();
+      // With 100 samples: min(0.95, log10(101)/1.5) = min(0.95, 2.004/1.5) = min(0.95, 1.336) = 0.95
+      expect(pattern!.confidence).toBe(0.95);
+    });
+  });
+
+  describe("Suggestions", () => {
+    it("should return service-specific suggestions based on patterns", async () => {
+      // Create missions where cognito has success patterns
+      const missions = [
+        createMockISC("mission_20250205_100000_sug1", [
+          { text: "MFA enabled for all users", satisfaction: "SATISFIED" },
+          { text: "Weak password allowed", satisfaction: "FAILED" },
+        ]),
+        createMockISC("mission_20250205_110000_sug2", [
+          { text: "MFA enabled for all users", satisfaction: "SATISFIED" },
+          { text: "Weak password allowed", satisfaction: "FAILED" },
+        ]),
+        createMockISC("mission_20250205_120000_sug3", [
+          { text: "MFA enabled for all users", satisfaction: "SATISFIED" },
+          { text: "Weak password allowed", satisfaction: "FAILED" },
+        ]),
+      ];
+
+      for (const isc of missions) {
+        await workManager.createMission({
+          missionId: isc.missionId,
+          target: "test-pool",
+          service: "cognito",
+          status: "COMPLETED",
+          startedAt: new Date().toISOString(),
+        });
+        await workManager.saveISC(isc.missionId, isc);
+      }
+
+      await learningManager.extractPatterns();
+
+      const suggestions = await learningManager.getSuggestions("cognito");
+
+      // "MFA enabled for all users" succeeds 100% -> suggested
+      expect(suggestions.suggested.length).toBeGreaterThan(0);
+      expect(suggestions.suggested.some((s) => s.includes("MFA"))).toBe(true);
+
+      // "Weak password allowed" fails 100% -> warning
+      expect(suggestions.warnings.length).toBeGreaterThan(0);
+      expect(suggestions.warnings.some((w) => w.includes("Weak password"))).toBe(true);
+    });
+
+    it("should return empty suggestions when no patterns are loaded", async () => {
+      // Fresh learning manager with no patterns
+      const suggestions = await learningManager.getSuggestions("s3");
+
+      expect(suggestions.suggested).toEqual([]);
+      expect(suggestions.warnings).toEqual([]);
+    });
+
+    it("should return empty suggestions for unknown service", async () => {
+      // Create patterns for s3 only
+      const isc = createMockISC("mission_20250205_100000_unk1", [
+        { text: "S3 only criterion", satisfaction: "SATISFIED" },
+      ]);
+      await workManager.createMission({
+        missionId: isc.missionId,
+        target: "test-bucket",
+        service: "s3",
+        status: "COMPLETED",
+        startedAt: new Date().toISOString(),
+      });
+      await workManager.saveISC(isc.missionId, isc);
+
+      await learningManager.extractPatterns();
+
+      const suggestions = await learningManager.getSuggestions("azure-ad");
+
+      expect(suggestions.suggested).toEqual([]);
+      expect(suggestions.warnings).toEqual([]);
+    });
+  });
+
   describe("Edge Cases", () => {
     it("should handle empty work directory gracefully", async () => {
       const patterns = await learningManager.extractPatterns();
@@ -427,6 +575,43 @@ describe("LearningManager", () => {
 
       // Should not crash, just have empty patterns
       expect(patterns.missionCount).toBe(0);
+    });
+
+    it("should persist and load patterns as a round-trip", async () => {
+      // Create sample missions
+      const missions = [
+        createMockISC("mission_20250205_100000_rt1", [
+          { text: "Round trip criterion", satisfaction: "SATISFIED" },
+        ]),
+        createMockISC("mission_20250205_110000_rt2", [
+          { text: "Round trip criterion", satisfaction: "SATISFIED" },
+        ]),
+      ];
+
+      for (const isc of missions) {
+        await workManager.createMission({
+          missionId: isc.missionId,
+          target: "test-target",
+          service: "s3",
+          status: "COMPLETED",
+          startedAt: new Date().toISOString(),
+        });
+        await workManager.saveISC(isc.missionId, isc);
+      }
+
+      // Extract, persist, then load via a new manager
+      const original = await learningManager.extractPatterns();
+      await learningManager.persistPatterns();
+
+      // Create a fresh learning manager and load
+      const freshManager = new LearningManager(workManager);
+      const loaded = await freshManager.loadPatterns();
+
+      expect(loaded).toBeDefined();
+      expect(loaded!.missionCount).toBe(original.missionCount);
+      expect(loaded!.common.length).toBe(original.common.length);
+      expect(loaded!.failures.length).toBe(original.failures.length);
+      expect(loaded!.successes.length).toBe(original.successes.length);
     });
   });
 });

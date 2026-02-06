@@ -105,7 +105,7 @@ export interface ReconMetadata {
 
 export interface ReconResult {
   snapshotId: string;
-  snapshot: CognitoSnapshot | S3Snapshot | IAMSnapshot | LambdaSnapshot | RDSSnapshot;
+  snapshot: CognitoSnapshot | S3Snapshot | IAMSnapshot | LambdaSnapshot | RDSSnapshot | Record<string, unknown>;
   metadata: ReconMetadata;
   stateModified: boolean;
   durationMs: number;
