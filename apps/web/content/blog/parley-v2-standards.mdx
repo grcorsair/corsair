@@ -63,11 +63,15 @@ Events are encoded as RFC 8417 Security Event Tokens and delivered via push or p
 
 The core thesis: attack first, discover reality, evidence emerges. The evidence is wrapped in standards that anyone can verify.
 
+## Shipped
+
+- **SCITT transparency service** — Production Postgres-backed append-only log with COSE_Sign1 receipts (Ed25519), SHA-256 Merkle tree inclusion proofs, and zero external crypto dependencies
+- **FLAGSHIP push/poll delivery** — SSF stream management with Postgres persistence, event queue, exponential backoff retry, and circuit breaker fault tolerance
+- **Production backend** — Railway Postgres with Bun.sql, 4 migrations (7 tables), API endpoints for SSF configuration, stream CRUD, and SCITT registration
+
 ## What's Next
 
-- **SCITT transparency service integration** — Full append-only log for CPOE registration
 - **Selective disclosure** — SD-JWT support for sharing partial assessment results
-- **FLAGSHIP push delivery** — Webhook-based real-time event delivery to GRC platforms
 - **Credential exchange** — Automated vendor-to-customer CPOE sharing workflows
 
 The goal remains: replace the $8.57 billion questionnaire theater industry with cryptographic proof. Parley makes that proof interoperable.
