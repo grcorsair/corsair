@@ -87,6 +87,7 @@ bun run corsair.ts --target X --service cognito  # Run mission
 - Use pirate terminology for new pipeline concepts
 - Use `import type` for type-only imports
 - Update README.md when public interfaces change
+- When shipping a backend feature, audit all user-facing content (docs + blog) in the same pass — blog posts are easy to miss since they're time-stamped and feel "done"
 
 ### Ask First
 - Before adding new dependencies (keep deps minimal)
