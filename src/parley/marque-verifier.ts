@@ -4,10 +4,10 @@
  * Verifies MARQUE document integrity: schema, freshness, Ed25519 signature,
  * and evidence chain consistency.
  *
- * Supports both v1 (MarqueDocument JSON) and v2 (JWT-VC string) formats.
+ * Supports both JWT-VC string and MarqueDocument JSON formats.
  *
  * Designed to work standalone with just a public key -- no Corsair installation required.
- * Uses Node.js built-in crypto module for v1, jose for v2 JWT-VC.
+ * Uses jose for JWT-VC, Node.js built-in crypto module for JSON envelope.
  */
 
 import * as crypto from "crypto";
@@ -60,13 +60,13 @@ export class MarqueVerifier {
   }
 
   /**
-   * Verify a MARQUE document (v1 JSON) or JWT-VC string (v2).
+   * Verify a MARQUE document (JWT-VC string or MarqueDocument JSON).
    *
    * Auto-detects format:
    * - If string containing "." → JWT-VC path
-   * - If MarqueDocument object → v1 path
+   * - If MarqueDocument object → JSON envelope path
    *
-   * For v1, checks (in order):
+   * For JSON envelope, checks (in order):
    * 1. Schema validation (all required fields present)
    * 2. Evidence chain integrity (chainVerified must be true)
    * 3. Freshness (expiresAt > now)
@@ -79,33 +79,33 @@ export class MarqueVerifier {
       return verifyVCJWT(input, this.trustedPublicKeys);
     }
 
-    // v1 path
+    // JSON envelope path
     const marque = input as MarqueDocument;
-    return this.verifyV1(marque);
+    return this.verifyJSON(marque);
   }
 
   /**
    * Read a MARQUE document from disk and verify it.
-   * Auto-detects format: JSON object → v1, JWT string → v2.
+   * Auto-detects format: JWT string or JSON object.
    */
   async verifyFromFile(filePath: string): Promise<MarqueVerificationResult> {
     const content = readFileSync(filePath, "utf-8").trim();
 
-    // If it looks like a JWT (starts with eyJ and has dots), treat as v2
+    // If it looks like a JWT (starts with eyJ and has dots), treat as JWT-VC
     if (content.startsWith("eyJ") && content.split(".").length === 3) {
       return this.verify(content);
     }
 
-    // Otherwise parse as JSON v1
+    // Otherwise parse as JSON envelope
     const doc: MarqueDocument = JSON.parse(content);
     return this.verify(doc);
   }
 
   // ===========================================================================
-  // V1 VERIFICATION (internal)
+  // JSON ENVELOPE VERIFICATION (internal)
   // ===========================================================================
 
-  private verifyV1(marque: MarqueDocument): MarqueVerificationResult {
+  private verifyJSON(marque: MarqueDocument): MarqueVerificationResult {
     // Step 1: Schema validation
     if (!this.validateSchema(marque)) {
       return { valid: false, reason: "schema_invalid" };

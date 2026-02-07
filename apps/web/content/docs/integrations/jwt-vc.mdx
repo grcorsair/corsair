@@ -7,7 +7,7 @@ order: 33
 
 ## Overview
 
-Parley v2 encodes CPOEs as **W3C Verifiable Credentials** in JWT format (`vc+jwt`). This enables interoperability with any standards-compliant VC verifier while maintaining Corsair's Ed25519 signing and evidence chain integrity.
+Corsair encodes CPOEs as **W3C Verifiable Credentials** in JWT format (`vc+jwt`). This enables interoperability with any standards-compliant VC verifier while maintaining Corsair's Ed25519 signing and evidence chain integrity.
 
 ## DID Setup
 
@@ -139,7 +139,7 @@ Visit [grcorsair.com/marque](/marque) and paste the JWT string. The verifier aut
 bun bin/corsair-verify.ts ./evidence/marque.jwt --public-key ./keys/corsair-signing.pub
 
 # Output:
-# Format: JWT-VC (Parley v2)
+# Format: JWT-VC
 # Signature: VALID
 # Issuer: did:web:example.com
 # Expires: 2026-02-14T00:00:00Z
@@ -164,7 +164,7 @@ console.log(vc.credentialSubject.summary.overallScore);
 
 ## Cross-Platform Verification
 
-Because Parley v2 uses open standards, CPOEs can be verified by:
+Because Corsair uses open standards, CPOEs can be verified by:
 
 - **Corsair CLI** — `bun bin/corsair-verify.ts`
 - **Web browser** — grcorsair.com/marque (Web Crypto API)

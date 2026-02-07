@@ -3,7 +3,7 @@
  *
  * The command ship that signals fleet-wide status changes.
  * Implements OpenID SSF, SET (RFC 8417), and CAEP for real-time
- * compliance change notifications in the Parley v2 protocol.
+ * compliance change notifications in the Parley protocol.
  */
 
 export {

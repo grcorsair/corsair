@@ -39,7 +39,7 @@ export function MarqueVerifier() {
     setResult({
       valid: true,
       reason: SAMPLE_NOTE,
-      format: "v1",
+      format: "json",
       document: parsed.marque,
     });
   };
@@ -132,13 +132,9 @@ export function MarqueVerifier() {
                   {result.format && (
                     <Badge
                       variant="outline"
-                      className={
-                        result.format === "v2-jwt-vc"
-                          ? "border-corsair-cyan/40 text-corsair-cyan"
-                          : "border-corsair-gold/40 text-corsair-gold"
-                      }
+                      className="border-corsair-cyan/40 text-corsair-cyan"
                     >
-                      {result.format === "v2-jwt-vc" ? "v2 (JWT-VC)" : "v1 (Legacy)"}
+                      {result.format === "jwt" ? "JWT-VC" : "JSON"}
                     </Badge>
                   )}
                 </div>
@@ -152,7 +148,7 @@ export function MarqueVerifier() {
           {/* Document details */}
           {result.document && (
             <CardContent className="space-y-6">
-              {/* VC Metadata (v2 only) */}
+              {/* VC Metadata */}
               {result.vcMetadata && (
                 <>
                   <Card className="bg-corsair-surface">

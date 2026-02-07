@@ -1,10 +1,10 @@
 /**
  * Marque Verifier — Client-side Ed25519 verification via Web Crypto API.
- * Supports both v1 (JSON envelope) and v2 (JWT-VC) formats.
+ * Supports JWT-VC (standard) and JSON envelope formats.
  * Zero server calls. No data leaves the browser.
  */
 
-export type MarqueFormat = "v1" | "v2-jwt-vc";
+export type MarqueFormat = "json" | "jwt";
 
 export interface MarqueVerificationResult {
   valid: boolean;
@@ -80,7 +80,7 @@ function pemToBuffer(pem: string): ArrayBuffer {
 }
 
 /**
- * Detect whether input is a JWT string (v2) or JSON object (v1).
+ * Detect whether input is a JWT string or JSON object.
  * JWT has exactly 3 base64url-encoded parts separated by dots.
  */
 export function detectFormat(input: string): MarqueFormat {
@@ -89,30 +89,30 @@ export function detectFormat(input: string): MarqueFormat {
   if (parts.length === 3 && parts.every((p) => p.length > 0)) {
     try {
       JSON.parse(base64UrlDecode(parts[0]));
-      return "v2-jwt-vc";
+      return "jwt";
     } catch {
-      // Not valid base64url JSON header, fall through to v1
+      // Not valid base64url JSON header, fall through to JSON
     }
   }
-  return "v1";
+  return "json";
 }
 
 /**
- * Verify a Marque document. Auto-detects format (v1 JSON or v2 JWT-VC).
+ * Verify a Marque document. Auto-detects format (JWT-VC or JSON envelope).
  */
 export async function verifyMarqueInBrowser(
   marqueInput: string,
   publicKeyPem: string
 ): Promise<MarqueVerificationResult> {
   const format = detectFormat(marqueInput);
-  if (format === "v2-jwt-vc") {
+  if (format === "jwt") {
     return verifyJWTVC(marqueInput.trim(), publicKeyPem);
   }
-  return verifyV1(marqueInput, publicKeyPem);
+  return verifyJSON(marqueInput, publicKeyPem);
 }
 
 /**
- * v2 JWT-VC verification path.
+ * JWT-VC verification path.
  * Split JWT, decode header+payload, verify Ed25519 signature via Web Crypto.
  */
 async function verifyJWTVC(
@@ -122,7 +122,7 @@ async function verifyJWTVC(
   try {
     const parts = jwt.split(".");
     if (parts.length !== 3) {
-      return { valid: false, reason: "Invalid JWT format: expected 3 dot-separated parts", format: "v2-jwt-vc" };
+      return { valid: false, reason: "Invalid JWT format: expected 3 dot-separated parts", format: "jwt" };
     }
 
     const [headerB64, payloadB64, signatureB64] = parts;
@@ -132,11 +132,11 @@ async function verifyJWTVC(
     try {
       header = JSON.parse(base64UrlDecode(headerB64));
     } catch {
-      return { valid: false, reason: "Invalid JWT header: failed to decode", format: "v2-jwt-vc" };
+      return { valid: false, reason: "Invalid JWT header: failed to decode", format: "jwt" };
     }
 
     if (header.alg !== "EdDSA") {
-      return { valid: false, reason: `Unsupported algorithm: ${header.alg}. Expected EdDSA.`, format: "v2-jwt-vc" };
+      return { valid: false, reason: `Unsupported algorithm: ${header.alg}. Expected EdDSA.`, format: "jwt" };
     }
 
     // Decode payload
@@ -159,11 +159,11 @@ async function verifyJWTVC(
     try {
       payload = JSON.parse(base64UrlDecode(payloadB64));
     } catch {
-      return { valid: false, reason: "Invalid JWT payload: failed to decode", format: "v2-jwt-vc" };
+      return { valid: false, reason: "Invalid JWT payload: failed to decode", format: "jwt" };
     }
 
     if (!payload.vc) {
-      return { valid: false, reason: "Invalid JWT-VC: missing 'vc' claim in payload", format: "v2-jwt-vc" };
+      return { valid: false, reason: "Invalid JWT-VC: missing 'vc' claim in payload", format: "jwt" };
     }
 
     // Import public key via Web Crypto
@@ -178,7 +178,7 @@ async function verifyJWTVC(
         ["verify"]
       );
     } catch {
-      return { valid: false, reason: "Invalid public key format. Expected PEM-encoded Ed25519 SPKI key.", format: "v2-jwt-vc" };
+      return { valid: false, reason: "Invalid public key format. Expected PEM-encoded Ed25519 SPKI key.", format: "jwt" };
     }
 
     // Verify signature over header.payload
@@ -193,7 +193,7 @@ async function verifyJWTVC(
     );
 
     if (!signatureValid) {
-      return { valid: false, reason: "JWT signature verification failed. The credential may have been tampered with.", format: "v2-jwt-vc" };
+      return { valid: false, reason: "JWT signature verification failed. The credential may have been tampered with.", format: "jwt" };
     }
 
     // Check expiry
@@ -203,7 +203,7 @@ async function verifyJWTVC(
         return {
           valid: false,
           reason: `Credential expired on ${expiresAt.toISOString()}`,
-          format: "v2-jwt-vc",
+          format: "jwt",
           document: mapVCToDocument(payload),
           vcMetadata: extractVCMetadata(payload),
         };
@@ -213,13 +213,13 @@ async function verifyJWTVC(
     return {
       valid: true,
       reason: "JWT-VC signature valid. Credential integrity verified. Not expired.",
-      format: "v2-jwt-vc",
+      format: "jwt",
       document: mapVCToDocument(payload),
       vcMetadata: extractVCMetadata(payload),
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    return { valid: false, reason: `JWT-VC verification error: ${message}`, format: "v2-jwt-vc" };
+    return { valid: false, reason: `JWT-VC verification error: ${message}`, format: "jwt" };
   }
 }
 
@@ -308,9 +308,9 @@ function extractVCMetadata(payload: {
 }
 
 /**
- * v1 (legacy) verification — existing JSON envelope format.
+ * JSON envelope verification path.
  */
-async function verifyV1(
+async function verifyJSON(
   marqueJson: string,
   publicKeyPem: string
 ): Promise<MarqueVerificationResult> {
@@ -319,7 +319,7 @@ async function verifyV1(
 
     // Validate structure
     if (!marque.signature || !marque.marque) {
-      return { valid: false, reason: "Invalid Marque format: missing 'signature' or 'marque' field", format: "v1" };
+      return { valid: false, reason: "Invalid Marque format: missing 'signature' or 'marque' field", format: "json" };
     }
 
     // Import public key via Web Crypto
@@ -334,7 +334,7 @@ async function verifyV1(
         ["verify"]
       );
     } catch {
-      return { valid: false, reason: "Invalid public key format. Expected PEM-encoded Ed25519 SPKI key.", format: "v1" };
+      return { valid: false, reason: "Invalid public key format. Expected PEM-encoded Ed25519 SPKI key.", format: "json" };
     }
 
     // Extract signature and signed content
@@ -351,7 +351,7 @@ async function verifyV1(
     );
 
     if (!signatureValid) {
-      return { valid: false, reason: "Signature verification failed. The document may have been tampered with.", format: "v1" };
+      return { valid: false, reason: "Signature verification failed. The document may have been tampered with.", format: "json" };
     }
 
     // Check expiry
@@ -360,7 +360,7 @@ async function verifyV1(
       return {
         valid: false,
         reason: `Marque expired on ${expiresAt.toISOString()}`,
-        format: "v1",
+        format: "json",
         document: marque.marque,
       };
     }
@@ -368,16 +368,16 @@ async function verifyV1(
     return {
       valid: true,
       reason: "Signature valid. Document integrity verified. Not expired.",
-      format: "v1",
+      format: "json",
       document: marque.marque,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    return { valid: false, reason: `Verification error: ${message}`, format: "v1" };
+    return { valid: false, reason: `Verification error: ${message}`, format: "json" };
   }
 }
 
-/** Sample Marque for the "Try it" button (v1 format) */
+/** Sample Marque for the "Try it" button */
 export const SAMPLE_MARQUE = JSON.stringify(
   {
     marque: {
@@ -434,4 +434,4 @@ export const SAMPLE_MARQUE = JSON.stringify(
 );
 
 export const SAMPLE_NOTE =
-  "This is a demo Marque (v1 format). The signature is not cryptographically valid — it demonstrates the verification UI. Real Marques are signed with Ed25519 keys generated by the Corsair CLI.";
+  "This is a demo Marque. The signature is not cryptographically valid — it demonstrates the verification UI. Real Marques are Ed25519-signed W3C Verifiable Credentials generated by the Corsair CLI.";

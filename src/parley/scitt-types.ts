@@ -1,7 +1,7 @@
 /**
  * SCITT Types - Supply Chain Integrity, Transparency and Trust
  *
- * Type definitions for SCITT transparency log integration in Parley v2.
+ * Type definitions for SCITT transparency log integration in Parley.
  * Based on IETF SCITT Architecture (draft-ietf-scitt-architecture).
  *
  * SCITT provides a transparency log where CPOEs are registered,

@@ -3,11 +3,11 @@
  * Standalone MARQUE Verifier CLI
  *
  * Verifies MARQUE document integrity without requiring the full Corsair installation.
- * Supports both v1 (JSON) and v2 (JWT-VC) formats with auto-detection.
+ * Auto-detects JWT-VC and JSON envelope formats.
  * Only needs the MARQUE file and the issuer's public key.
  *
  * Usage:
- *   bun run bin/corsair-verify.ts --marque ./path.json --pubkey ./key.pub
+ *   bun run bin/corsair-verify.ts --marque ./path.jwt --pubkey ./key.pub
  *   bun run bin/corsair-verify.ts --marque ./path.jwt --pubkey ./key.pub --verbose
  */
 
@@ -55,14 +55,14 @@ USAGE:
   bun run bin/corsair-verify.ts --marque <path> --pubkey <path>
 
 OPTIONS:
-  --marque <PATH>     Path to the MARQUE document (JSON v1 or JWT-VC v2)
+  --marque <PATH>   Path to the MARQUE document (JWT-VC or JSON)
   --pubkey <PATH>   Path to the issuer's Ed25519 public key (PEM)
   -v, --verbose     Show detailed verification output
   -h, --help        Show this help message
 
 FORMATS:
-  v1 (JSON):  MARQUE document with parley, marque, and signature fields
-  v2 (JWT):   JWT-VC string (vc+jwt) with Ed25519 signature
+  JWT-VC:   W3C Verifiable Credential (vc+jwt) with Ed25519 signature
+  JSON:     MARQUE document with parley, marque, and signature fields
 
 EXIT CODES:
   0  MARQUE is valid
@@ -102,7 +102,7 @@ async function main(): Promise<void> {
 
     // Auto-detect format
     const isJWT = marqueContent.startsWith("eyJ") && marqueContent.split(".").length === 3;
-    const formatLabel = isJWT ? "v2 (JWT-VC)" : "v1 (JSON)";
+    const formatLabel = isJWT ? "JWT-VC" : "JSON";
 
     let result;
     if (isJWT) {

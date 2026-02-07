@@ -1,5 +1,5 @@
 /**
- * VC Verifier - JWT-VC Verification for Parley v2
+ * VC Verifier - JWT-VC Verification for Parley
  *
  * Verifies W3C Verifiable Credentials encoded as JWT (vc+jwt).
  * Maps verification result to MarqueVerificationResult for unified interface.
@@ -20,7 +20,7 @@ import { VC_CONTEXT } from "./vc-types";
  * 3. Expiration (exp claim)
  * 4. Required VC claims (@context, type, credentialSubject)
  *
- * Returns MarqueVerificationResult for unified v1/v2 interface.
+ * Returns MarqueVerificationResult for unified interface.
  */
 export async function verifyVCJWT(
   jwt: string,

@@ -1,7 +1,7 @@
 /**
  * DID Resolver Test Contract
  *
- * Tests DID:web parsing, formatting, and resolution for Parley v2 protocol.
+ * Tests DID:web parsing, formatting, and resolution for Parley protocol.
  * Covers parse/format utilities, mock resolution, and error cases.
  */
 

@@ -30,7 +30,7 @@ Unlike traditional GRC tools that check if you *documented* security controls, C
 
 Compliance evidence is generated as a **byproduct** of attacks, not as a goal.
 
-**Parley v2 Protocol:** Assessment results are packaged as [W3C Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/) (JWT-VC), with real-time compliance notifications via [OpenID SSF/CAEP](https://openid.net/specs/openid-sharedsignals-framework-1_0.html) and transparency log integration via [SCITT](https://datatracker.ietf.org/wg/scitt/about/).
+**Parley Protocol:** Assessment results are packaged as [W3C Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/) (JWT-VC), with real-time compliance notifications via [OpenID SSF/CAEP](https://openid.net/specs/openid-sharedsignals-framework-1_0.html) and transparency log integration via [SCITT](https://datatracker.ietf.org/wg/scitt/about/).
 
 ---
 
@@ -516,7 +516,7 @@ HTML and Markdown reports include:
 
 ---
 
-## Parley Protocol (v2)
+## Parley Protocol
 
 CORSAIR's trust exchange protocol composes three open standards to make CPOEs (Certificates of Proof of Operational Effectiveness) interoperable with any standards-compliant verifier.
 
@@ -528,7 +528,7 @@ CORSAIR's trust exchange protocol composes three open standards to make CPOEs (C
 | **SSF/CAEP** (OpenID) | Real-time notifications | FLAGSHIP module signals compliance changes |
 | **SCITT** (IETF) | Transparency log | Future: CPOE registration for auditability |
 
-### MARQUE Format (v2 — JWT-VC)
+### MARQUE Format (JWT-VC)
 
 ```
 Header:  { "alg": "EdDSA", "typ": "vc+jwt", "kid": "did:web:grcorsair.com#key-1" }
@@ -552,10 +552,6 @@ FLAGSHIP is the command ship that signals fleet-wide status changes via OpenID S
 ### DID Identity
 
 Organizations are identified via `did:web` DIDs. The DID document at `.well-known/did.json` contains the Ed25519 public key for CPOE verification.
-
-### Backward Compatibility
-
-The v1 format (proprietary Ed25519-signed JSON) remains fully supported. The MarqueGenerator accepts a `format` option (`"v1"` or `"vc"`), and the MarqueVerifier auto-detects the format.
 
 ---
 
@@ -608,8 +604,8 @@ src/
     event-engine.ts      # Event querying and aggregation
     plugin-engine.ts     # Plugin discovery and registry
 
-  parley/                # Parley v2 trust exchange protocol
-    marque-types.ts      # MARQUE document types (v1 + MarqueOutput)
+  parley/                # Parley trust exchange protocol
+    marque-types.ts      # MARQUE document types + MarqueOutput
     parley-types.ts      # Exchange protocol types + FlagshipConfig
     vc-types.ts          # W3C Verifiable Credential 2.0 types
     vc-generator.ts      # JWT-VC generation (jose + Ed25519)
@@ -617,8 +613,8 @@ src/
     did-resolver.ts      # DID:web parsing, formatting, resolution
     scitt-types.ts       # SCITT transparency log type definitions
     scitt-registry.ts    # Mock SCITT registry (testing boundary)
-    marque-generator.ts  # MARQUE generation (v1 + vc format)
-    marque-verifier.ts   # MARQUE verification (auto-detects v1/JWT-VC)
+    marque-generator.ts  # MARQUE generation (JWT-VC + JSON)
+    marque-verifier.ts   # MARQUE verification (auto-detects format)
     marque-key-manager.ts # Ed25519 keypair management + JWK export
     auto-bundler.ts      # Automated multi-provider MARQUE pipeline
     marque-oscal-mapper.ts # MARQUE → OSCAL Assessment Results
@@ -679,7 +675,7 @@ plugins/
   gitlab/                # GitLab security review plugin
 
 bin/
-  corsair-verify.ts      # Standalone MARQUE verification CLI (v1 + JWT-VC)
+  corsair-verify.ts      # Standalone MARQUE verification CLI
 
 mcp-server.ts            # MCP server entry point (#!/usr/bin/env bun)
 
@@ -720,7 +716,7 @@ bun test tests/mcp/              # MCP server tests
 bun test tests/output/           # OSCAL + report tests
 bun test tests/isc/              # ISC system tests
 bun test tests/coordination/     # Multi-agent tests
-bun test tests/parley/           # Parley v2: MARQUE, JWT-VC, DID, SCITT
+bun test tests/parley/           # Parley: MARQUE, JWT-VC, DID, SCITT
 bun test tests/flagship/         # FLAGSHIP: SET generation, SSF streams
 bun test tests/quartermaster/    # Governance review tests
 bun test tests/threat-model/     # SPYGLASS threat modeling

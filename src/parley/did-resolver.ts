@@ -1,5 +1,5 @@
 /**
- * DID Resolver - did:web Resolution for Parley v2
+ * DID Resolver - did:web Resolution for Parley
  *
  * Implements DID:web method parsing, formatting, and resolution
  * per the DID:web specification (https://w3c-ccg.github.io/did-method-web/).

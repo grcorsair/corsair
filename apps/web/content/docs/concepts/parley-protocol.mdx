@@ -1,6 +1,6 @@
 ---
 title: "Parley Protocol"
-description: "The Parley v2 trust exchange protocol — JWT-VC proofs, SCITT transparency logs, and SSF/CAEP real-time signals."
+description: "The Parley trust exchange protocol — JWT-VC proofs, SCITT transparency logs, and SSF/CAEP real-time signals."
 section: "concepts"
 order: 14
 ---
@@ -9,7 +9,7 @@ order: 14
 
 Parley is Corsair's **trust exchange protocol** — the mechanism by which organizations share and verify compliance attestations. Named after the pirate parley (a negotiation between parties under a flag of truce), the protocol enables trustless verification of operational effectiveness.
 
-Parley v2 composes three open standards into a single coherent protocol:
+Parley composes three open standards into a single coherent protocol:
 
 ```
 JWT-VC (proof) + SCITT (log) + SSF/CAEP (signal)
@@ -20,36 +20,6 @@ Each standard handles a different aspect of the trust lifecycle:
 - **JWT-VC** — The attestation itself (what happened)
 - **SCITT** — The public record (that it happened)
 - **SSF/CAEP** — The notification (when things change)
-
-## Protocol Versions
-
-### v1 (Legacy)
-
-The original Corsair format uses a simple JSON envelope:
-
-```json
-{
-  "marque": { "...attestation data..." },
-  "signature": "base64-encoded-ed25519-signature"
-}
-```
-
-v1 is Corsair-specific. Verification requires understanding the Corsair document structure. It works, but it doesn't interoperate with anything outside the Corsair ecosystem.
-
-### v2 (Standards-Based)
-
-Parley v2 encodes CPOEs as **W3C Verifiable Credentials** in JWT format:
-
-```
-eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCIsImtpZCI6ImRpZDp3ZWI6Z3Jjb3Jz...
-```
-
-The JWT contains:
-- **Header**: `{ alg: "EdDSA", typ: "vc+jwt", kid: "did:web:example.com#key-1" }`
-- **Payload**: Standard VC claims plus `parley: "2.0"` version marker
-- **Signature**: Ed25519 signature over header.payload
-
-Any W3C VC 2.0 verifier can validate a Parley v2 credential. No Corsair-specific tooling required.
 
 ## Three-Standard Composition
 
@@ -103,7 +73,7 @@ Traditional third-party risk management (TPRM) relies on questionnaires — 300+
 
 Parley replaces this with a standards-based trust exchange:
 
-| Traditional TPRM | Parley v2 |
+| Traditional TPRM | Parley |
 |---|---|
 | Self-attested questionnaires | Adversarially-tested attestations |
 | Proprietary formats | W3C Verifiable Credentials |
@@ -115,7 +85,7 @@ The transition from questionnaire theater to cryptographic proof is the core val
 
 ## DID Identity
 
-Parley v2 uses `did:web` for issuer identity. Organizations publish a DID document at their domain:
+Parley uses `did:web` for issuer identity. Organizations publish a DID document at their domain:
 
 ```
 https://example.com/.well-known/did.json

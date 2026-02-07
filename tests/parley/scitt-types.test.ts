@@ -2,7 +2,7 @@
  * SCITT Types Test Contract
  *
  * Validates Supply Chain Integrity, Transparency and Trust (SCITT) type
- * definitions for the Parley v2 transparency log integration.
+ * definitions for the Parley transparency log integration.
  */
 
 import { describe, test, expect } from "bun:test";

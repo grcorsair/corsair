@@ -142,7 +142,7 @@ export class MarqueGenerator {
   }
 
   /**
-   * Generate a MarqueOutput that can be either v1 (JSON) or vc (JWT-VC).
+   * Generate a MarqueOutput in either JWT-VC or JSON envelope format.
    * Uses the format set in constructor options.
    */
   async generateOutput(input: MarqueGeneratorInput): Promise<MarqueOutput> {
@@ -162,7 +162,7 @@ export class MarqueGenerator {
       };
     }
 
-    // v1 path
+    // JSON envelope path
     const doc = await this.generate(input);
     return {
       format: "v1",

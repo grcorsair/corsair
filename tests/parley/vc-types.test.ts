@@ -1,7 +1,7 @@
 /**
  * VC Types Test Contract
  *
- * Validates W3C Verifiable Credential 2.0 types for the Parley v2 protocol.
+ * Validates W3C Verifiable Credential 2.0 types for the Parley protocol.
  * Tests type instantiation, @context validation, required fields, and
  * CPOE credential subject structure.
  */

@@ -1,5 +1,5 @@
 /**
- * VC Generator - JWT-VC Generation for Parley v2
+ * VC Generator - JWT-VC Generation for Parley
  *
  * Generates W3C Verifiable Credentials encoded as JWT (vc+jwt)
  * from MarqueGeneratorInput. Uses jose library with Ed25519 (EdDSA).

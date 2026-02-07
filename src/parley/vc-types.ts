@@ -1,5 +1,5 @@
 /**
- * VC Types - W3C Verifiable Credential 2.0 Types for Parley v2
+ * VC Types - W3C Verifiable Credential 2.0 Types for Parley
  *
  * Defines the type system for Corsair CPOE (Certificate of Proof of
  * Operational Effectiveness) as W3C Verifiable Credentials.

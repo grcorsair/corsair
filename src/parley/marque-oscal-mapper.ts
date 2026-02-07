@@ -22,7 +22,7 @@ import type {
 } from "../output/oscal-types";
 
 /**
- * Map a MARQUE document (v1 JSON or v2 JWT-VC) to an OSCAL Assessment Results document.
+ * Map a MARQUE document (JWT-VC or JSON) to an OSCAL Assessment Results document.
  *
  * If input is a string (JWT-VC), decodes the JWT payload and extracts the VC
  * to build a synthetic MarqueDocument for mapping.
