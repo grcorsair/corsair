@@ -10,6 +10,8 @@
 import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
+import { exportSPKI, importSPKI, exportJWK as joseExportJWK, importJWK as joseImportJWK } from "jose";
+import type { DIDDocument, VerificationMethod } from "./did-resolver";
 
 const PRIVATE_KEY_FILENAME = "corsair-signing.key";
 const PUBLIC_KEY_FILENAME = "corsair-signing.pub";
@@ -166,5 +168,62 @@ export class MarqueKeyManager {
       .sort();
 
     return files.map((f) => Buffer.from(fs.readFileSync(path.join(retiredDir, f))));
+  }
+
+  /**
+   * Export the Ed25519 public key as a JSON Web Key (JWK).
+   * If no publicKey buffer is provided, loads from disk.
+   */
+  async exportJWK(publicKey?: Buffer): Promise<JsonWebKey> {
+    let pemKey: string;
+    if (publicKey) {
+      pemKey = publicKey.toString();
+    } else {
+      const keypair = await this.loadKeypair();
+      if (!keypair) {
+        throw new Error("No public key found. Generate a keypair first.");
+      }
+      pemKey = keypair.publicKey.toString();
+    }
+
+    const key = await importSPKI(pemKey, "EdDSA");
+    return joseExportJWK(key);
+  }
+
+  /**
+   * Import a JWK and return it as a PEM-encoded public key buffer.
+   */
+  async importJWK(jwk: JsonWebKey): Promise<Buffer> {
+    const key = await joseImportJWK(jwk, "EdDSA");
+    const pem = await exportSPKI(key as crypto.KeyObject);
+    return Buffer.from(pem);
+  }
+
+  /**
+   * Generate a DID Document for a given domain using the current public key.
+   * The DID Document contains the public key as a JsonWebKey2020 verification method.
+   */
+  async generateDIDDocument(domain: string): Promise<DIDDocument> {
+    const jwk = await this.exportJWK();
+    const did = `did:web:${domain.replace(/:/g, "%3A")}`;
+    const keyId = `${did}#key-1`;
+
+    const verificationMethod: VerificationMethod = {
+      id: keyId,
+      type: "JsonWebKey2020",
+      controller: did,
+      publicKeyJwk: jwk,
+    };
+
+    return {
+      "@context": [
+        "https://www.w3.org/ns/did/v1",
+        "https://w3id.org/security/suites/jws-2020/v1",
+      ],
+      id: did,
+      verificationMethod: [verificationMethod],
+      authentication: [keyId],
+      assertionMethod: [keyId],
+    };
   }
 }

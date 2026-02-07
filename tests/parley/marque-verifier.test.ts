@@ -154,7 +154,7 @@ describe("MARQUE Verifier - Document Verification", () => {
     const { doc, publicKey } = await generateValidMARQUE(keyDir);
 
     const verifier = new MarqueVerifier([publicKey]);
-    const result = verifier.verify(doc);
+    const result = await verifier.verify(doc);
 
     expect(result.valid).toBe(true);
     expect(result.signedBy).toBeDefined();
@@ -171,7 +171,7 @@ describe("MARQUE Verifier - Document Verification", () => {
     tampered.marque.summary.overallScore = 42;
 
     const verifier = new MarqueVerifier([publicKey]);
-    const result = verifier.verify(tampered);
+    const result = await verifier.verify(tampered);
 
     expect(result.valid).toBe(false);
     expect(result.reason).toBe("signature_invalid");
@@ -203,7 +203,7 @@ describe("MARQUE Verifier - Document Verification", () => {
     const expiredDoc = await generator.generate(input);
 
     const verifier = new MarqueVerifier([publicKey]);
-    const result = verifier.verify(expiredDoc);
+    const result = await verifier.verify(expiredDoc);
 
     expect(result.valid).toBe(false);
     expect(result.reason).toBe("expired");
@@ -224,7 +224,7 @@ describe("MARQUE Verifier - Document Verification", () => {
     } as unknown as MarqueDocument;
 
     const verifier = new MarqueVerifier([publicKey]);
-    const result = verifier.verify(invalidDoc);
+    const result = await verifier.verify(invalidDoc);
 
     expect(result.valid).toBe(false);
     expect(result.reason).toBe("schema_invalid");
@@ -261,7 +261,7 @@ describe("MARQUE Verifier - Document Verification", () => {
     const retiredKeys = keyManager.getRetiredKeys();
     const allKeys = [newKeypair.publicKey, ...retiredKeys];
     const verifier = new MarqueVerifier(allKeys);
-    const result = verifier.verify(doc);
+    const result = await verifier.verify(doc);
 
     expect(result.valid).toBe(true);
   });
@@ -284,7 +284,7 @@ describe("MARQUE Verifier - Document Verification", () => {
     badDoc.signature = keyManager.sign(marquePayload, keypair.privateKey);
 
     const verifier = new MarqueVerifier([publicKey]);
-    const result = verifier.verify(badDoc);
+    const result = await verifier.verify(badDoc);
 
     expect(result.valid).toBe(false);
     expect(result.reason).toBe("evidence_mismatch");
@@ -296,7 +296,7 @@ describe("MARQUE Verifier - Document Verification", () => {
 
     // Simulate standalone verification: only a public key buffer, no key manager
     const verifier = new MarqueVerifier([publicKey]);
-    const result = verifier.verify(doc);
+    const result = await verifier.verify(doc);
 
     expect(result.valid).toBe(true);
     // The verifier should work with just the public key -- no Corsair dependency
@@ -313,7 +313,7 @@ describe("MARQUE Verifier - Document Verification", () => {
     fs.writeFileSync(marquePath, JSON.stringify(doc, null, 2));
 
     const verifier = new MarqueVerifier([publicKey]);
-    const result = verifier.verifyFromFile(marquePath);
+    const result = await verifier.verifyFromFile(marquePath);
 
     expect(result.valid).toBe(true);
     expect(result.signedBy).toBeDefined();

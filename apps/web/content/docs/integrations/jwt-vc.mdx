@@ -1,0 +1,175 @@
+---
+title: "JWT-VC Integration"
+description: "Generate and verify CPOEs as W3C Verifiable Credentials encoded in JWT format."
+section: "integrations"
+order: 33
+---
+
+## Overview
+
+Parley v2 encodes CPOEs as **W3C Verifiable Credentials** in JWT format (`vc+jwt`). This enables interoperability with any standards-compliant VC verifier while maintaining Corsair's Ed25519 signing and evidence chain integrity.
+
+## DID Setup
+
+Organizations identify themselves using `did:web` — a DID method that resolves to a JSON document hosted at the organization's domain.
+
+### Generate a DID Document
+
+The Corsair CLI generates a DID document alongside your Ed25519 keypair:
+
+```bash
+# Generate keypair and DID document
+bun corsair.ts --generate-keys --did-domain example.com
+
+# Output:
+#   .corsair/corsair-signing.key (private key — keep secret)
+#   .corsair/corsair-signing.pub (public key)
+#   .corsair/did.json (DID document for publication)
+```
+
+### Publish the DID Document
+
+Host the DID document at your domain's well-known path:
+
+```
+https://example.com/.well-known/did.json
+```
+
+The document contains your Ed25519 public key:
+
+```json
+{
+  "@context": ["https://www.w3.org/ns/did/v1"],
+  "id": "did:web:example.com",
+  "verificationMethod": [{
+    "id": "did:web:example.com#key-1",
+    "type": "Ed25519VerificationKey2020",
+    "controller": "did:web:example.com",
+    "publicKeyMultibase": "z6Mkf5rGMoatrSj1f..."
+  }],
+  "assertionMethod": ["did:web:example.com#key-1"]
+}
+```
+
+## Issuing CPOEs as Verifiable Credentials
+
+### Via CLI
+
+```bash
+# Run assessment and output as JWT-VC
+bun corsair.ts \
+  --target us-west-2_ABC123 \
+  --service cognito \
+  --format vc-jwt \
+  --did did:web:example.com
+
+# Output: JWT string written to evidence directory
+# eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCIs...
+```
+
+### JWT Structure
+
+The generated JWT contains three parts:
+
+**Header:**
+```json
+{
+  "alg": "EdDSA",
+  "typ": "vc+jwt",
+  "kid": "did:web:example.com#key-1"
+}
+```
+
+**Payload:**
+```json
+{
+  "iss": "did:web:example.com",
+  "sub": "marque-uuid",
+  "exp": 1708041600,
+  "iat": 1707436800,
+  "jti": "marque-uuid",
+  "vc": {
+    "@context": [
+      "https://www.w3.org/ns/credentials/v2",
+      "https://grcorsair.com/credentials/v1"
+    ],
+    "type": ["VerifiableCredential", "CorsairCPOE"],
+    "issuer": {
+      "id": "did:web:example.com",
+      "name": "Security Engineering"
+    },
+    "validFrom": "2026-02-07T00:00:00Z",
+    "validUntil": "2026-02-14T00:00:00Z",
+    "credentialSubject": {
+      "type": "CorsairCPOE",
+      "scope": {
+        "providers": ["aws-cognito"],
+        "resourceCount": 1,
+        "frameworksCovered": ["NIST 800-53", "SOC2"]
+      },
+      "summary": {
+        "controlsTested": 24,
+        "controlsPassed": 18,
+        "controlsFailed": 6,
+        "overallScore": 75
+      },
+      "evidenceChain": {
+        "hashChainRoot": "sha256:abc123...",
+        "recordCount": 12,
+        "chainVerified": true
+      }
+    }
+  },
+  "parley": "2.0"
+}
+```
+
+**Signature:** Ed25519 signature over `base64url(header).base64url(payload)`
+
+## Verifying CPOEs
+
+### Web Verifier
+
+Visit [grcorsair.com/marque](/marque) and paste the JWT string. The verifier auto-detects the format and verifies the Ed25519 signature entirely client-side using the Web Crypto API.
+
+### CLI Verification
+
+```bash
+# Verify a JWT-VC Marque
+bun bin/corsair-verify.ts ./evidence/marque.jwt --public-key ./keys/corsair-signing.pub
+
+# Output:
+# Format: JWT-VC (Parley v2)
+# Signature: VALID
+# Issuer: did:web:example.com
+# Expires: 2026-02-14T00:00:00Z
+# Score: 75/100 (18/24 controls passed)
+```
+
+### Programmatic Verification
+
+Any W3C VC verifier can validate a Corsair JWT-VC. The credential uses standard claims and Ed25519 signing:
+
+```typescript
+// Using any JWT library with EdDSA support
+import { jwtVerify } from "jose";
+
+const { payload } = await jwtVerify(jwt, publicKey, {
+  algorithms: ["EdDSA"],
+});
+
+const vc = payload.vc;
+console.log(vc.credentialSubject.summary.overallScore);
+```
+
+## Cross-Platform Verification
+
+Because Parley v2 uses open standards, CPOEs can be verified by:
+
+- **Corsair CLI** — `bun bin/corsair-verify.ts`
+- **Web browser** — grcorsair.com/marque (Web Crypto API)
+- **Any JWT library** — jose, jsonwebtoken, etc. with EdDSA support
+- **W3C VC verifiers** — Any spec-compliant implementation
+- **Custom tooling** — Base64url decode + Ed25519 verify
+
+The verification surface is not locked to Corsair infrastructure. This is the key difference from proprietary attestation formats.

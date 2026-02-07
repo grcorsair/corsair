@@ -20,6 +20,7 @@ import type {
   MarqueThreatModelSummary,
   MarqueQuartermasterAttestation,
   MarqueIssuer,
+  MarqueOutput,
 } from "./marque-types";
 import type {
   MarkResult,
@@ -83,10 +84,12 @@ const COGNITO_POOL_PATTERN = /\b(us|eu|ap|sa|ca|me|af)-[a-z]+-\d+_[A-Za-z0-9]+\b
 export class MarqueGenerator {
   private keyManager: MarqueKeyManager;
   private expiryDays: number;
+  private format: "v1" | "vc";
 
-  constructor(keyManager: MarqueKeyManager, options?: { expiryDays?: number }) {
+  constructor(keyManager: MarqueKeyManager, options?: { expiryDays?: number; format?: "v1" | "vc" }) {
     this.keyManager = keyManager;
     this.expiryDays = options?.expiryDays ?? 7;
+    this.format = options?.format ?? "v1";
   }
 
   /**
@@ -135,6 +138,38 @@ export class MarqueGenerator {
       parley: "1.0",
       marque: sanitizedCpoe,
       signature,
+    };
+  }
+
+  /**
+   * Generate a MarqueOutput that can be either v1 (JSON) or vc (JWT-VC).
+   * Uses the format set in constructor options.
+   */
+  async generateOutput(input: MarqueGeneratorInput): Promise<MarqueOutput> {
+    if (this.format === "vc") {
+      const { generateVCJWT } = await import("./vc-generator");
+      const jwt = await generateVCJWT(input, this.keyManager, { expiryDays: this.expiryDays });
+
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + this.expiryDays * 24 * 60 * 60 * 1000);
+
+      return {
+        format: "vc",
+        jwt,
+        marqueId: `marque-${crypto.randomUUID()}`,
+        issuedAt: now.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+      };
+    }
+
+    // v1 path
+    const doc = await this.generate(input);
+    return {
+      format: "v1",
+      v1: doc,
+      marqueId: doc.marque.id,
+      issuedAt: doc.marque.generatedAt,
+      expiresAt: doc.marque.expiresAt,
     };
   }
 
@@ -318,70 +353,78 @@ export class MarqueGenerator {
   }
 
   // ===========================================================================
-  // INTERNAL: SANITIZATION
+  // INTERNAL: SANITIZATION (delegates to exported sanitize function)
   // ===========================================================================
 
-  /**
-   * Deep recursive sanitization of any data structure.
-   * Strips ARNs, IP addresses, file paths, account IDs, API keys, etc.
-   */
   private sanitize(data: unknown): unknown {
-    if (data === null || data === undefined) {
-      return data;
-    }
+    return sanitize(data);
+  }
+}
 
-    if (typeof data === "string") {
-      return this.sanitizeString(data);
-    }
+// =============================================================================
+// SANITIZATION (exported for reuse by vc-generator)
+// =============================================================================
 
-    if (Array.isArray(data)) {
-      return data.map((item) => this.sanitize(item));
-    }
-
-    if (typeof data === "object") {
-      const result: Record<string, unknown> = {};
-      for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
-        result[key] = this.sanitize(value);
-      }
-      return result;
-    }
-
+/**
+ * Deep recursive sanitization of any data structure.
+ * Strips ARNs, IP addresses, file paths, account IDs, API keys, etc.
+ */
+export function sanitize(data: unknown): unknown {
+  if (data === null || data === undefined) {
     return data;
   }
 
-  /**
-   * Sanitize a single string value.
-   * Replaces sensitive patterns with redacted/hashed placeholders.
-   */
-  private sanitizeString(value: string): string {
-    let sanitized = value;
-
-    // Replace ARNs first (most specific pattern)
-    sanitized = sanitized.replace(ARN_PATTERN, "[REDACTED-ARN]");
-
-    // Replace Cognito pool IDs
-    sanitized = sanitized.replace(COGNITO_POOL_PATTERN, "[REDACTED-POOL]");
-
-    // Replace AWS access keys
-    sanitized = sanitized.replace(AWS_KEY_PATTERN, "[REDACTED-KEY]");
-
-    // Replace secret/API keys
-    sanitized = sanitized.replace(SECRET_KEY_PATTERN, "[REDACTED-SECRET]");
-
-    // Replace IP addresses
-    sanitized = sanitized.replace(IPV4_PATTERN, "[REDACTED-IP]");
-
-    // Replace Unix paths
-    sanitized = sanitized.replace(UNIX_PATH_PATTERN, "[REDACTED-PATH]");
-
-    // Replace Windows paths
-    sanitized = sanitized.replace(WINDOWS_PATH_PATTERN, "[REDACTED-PATH]");
-
-    // Replace 12-digit account IDs
-    sanitized = sanitized.replace(ACCOUNT_ID_PATTERN, "[REDACTED-ACCOUNT]");
-
-    return sanitized;
+  if (typeof data === "string") {
+    return sanitizeString(data);
   }
+
+  if (Array.isArray(data)) {
+    return data.map((item) => sanitize(item));
+  }
+
+  if (typeof data === "object") {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      result[key] = sanitize(value);
+    }
+    return result;
+  }
+
+  return data;
+}
+
+/**
+ * Sanitize a single string value.
+ * Replaces sensitive patterns with redacted/hashed placeholders.
+ */
+function sanitizeString(value: string): string {
+  let sanitized = value;
+
+  // Replace ARNs first (most specific pattern)
+  sanitized = sanitized.replace(ARN_PATTERN, "[REDACTED-ARN]");
+
+  // Replace Cognito pool IDs
+  sanitized = sanitized.replace(COGNITO_POOL_PATTERN, "[REDACTED-POOL]");
+
+  // Replace AWS access keys
+  sanitized = sanitized.replace(AWS_KEY_PATTERN, "[REDACTED-KEY]");
+
+  // Replace secret/API keys
+  sanitized = sanitized.replace(SECRET_KEY_PATTERN, "[REDACTED-SECRET]");
+
+  // Replace IP addresses
+  sanitized = sanitized.replace(IPV4_PATTERN, "[REDACTED-IP]");
+
+  // Replace Unix paths
+  sanitized = sanitized.replace(UNIX_PATH_PATTERN, "[REDACTED-PATH]");
+
+  // Replace Windows paths
+  sanitized = sanitized.replace(WINDOWS_PATH_PATTERN, "[REDACTED-PATH]");
+
+  // Replace 12-digit account IDs
+  sanitized = sanitized.replace(ACCOUNT_ID_PATTERN, "[REDACTED-ACCOUNT]");
+
+  return sanitized;
 }
 
 // =============================================================================

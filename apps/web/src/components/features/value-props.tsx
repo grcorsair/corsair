@@ -32,7 +32,7 @@ const props = [
   {
     title: "Signed Proof",
     description:
-      "MARQUE generates Ed25519-signed attestation. QUARTERMASTER AI reviews assessment quality. Cryptographic proof replaces questionnaire theater.",
+      "MARQUE generates standards-based Ed25519-signed attestation. QUARTERMASTER AI reviews assessment quality. W3C Verifiable Credential replaces questionnaire theater.",
     accent: "border-t-corsair-gold",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-7 w-7 text-corsair-gold" strokeWidth={1.5}>

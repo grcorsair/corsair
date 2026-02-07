@@ -76,6 +76,37 @@ export interface MarqueIssuer {
 
   /** Optional organization the issuer belongs to */
   organization?: string;
+
+  /** Optional DID for Parley v2 (e.g., "did:web:grcorsair.com") */
+  did?: string;
+}
+
+// =============================================================================
+// MARQUE OUTPUT (v1 + v2 dual format)
+// =============================================================================
+
+/**
+ * Unified output type that can carry either a v1 MarqueDocument
+ * or a v2 JWT-VC encoded CPOE, or both.
+ */
+export interface MarqueOutput {
+  /** Output format: "v1" for legacy JSON, "vc" for JWT-VC */
+  format: "v1" | "vc";
+
+  /** Legacy v1 MarqueDocument (present when format is "v1") */
+  v1?: MarqueDocument;
+
+  /** JWT-VC encoded string (present when format is "vc") */
+  jwt?: string;
+
+  /** Unique MARQUE identifier */
+  marqueId: string;
+
+  /** ISO 8601 timestamp when issued */
+  issuedAt: string;
+
+  /** ISO 8601 timestamp when it expires */
+  expiresAt: string;
 }
 
 // =============================================================================

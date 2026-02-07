@@ -1,0 +1,27 @@
+/**
+ * FLAGSHIP Module - SSF/SET/CAEP Event System
+ *
+ * The command ship that signals fleet-wide status changes.
+ * Implements OpenID SSF, SET (RFC 8417), and CAEP for real-time
+ * compliance change notifications in the Parley v2 protocol.
+ */
+
+export {
+  FLAGSHIP_EVENTS,
+  type FlagshipEventType,
+  type FlagshipSubject,
+  type CAEPEventData,
+  type ColorsChangedData,
+  type FleetAlertData,
+  type PapersChangedData,
+  type MarqueRevokedData,
+  type FlagshipEvent,
+  type SETPayload,
+  type SSFStreamConfig,
+  type SSFStream,
+  type FlagshipConfig,
+} from "./flagship-types";
+
+export { generateSET, verifySET } from "./set-generator";
+export { SSFStreamManager } from "./ssf-stream";
+export { FlagshipClient } from "./flagship-client";

@@ -4,8 +4,10 @@
  * Verifies MARQUE document integrity: schema, freshness, Ed25519 signature,
  * and evidence chain consistency.
  *
+ * Supports both v1 (MarqueDocument JSON) and v2 (JWT-VC string) formats.
+ *
  * Designed to work standalone with just a public key -- no Corsair installation required.
- * Uses Node.js built-in crypto module only.
+ * Uses Node.js built-in crypto module for v1, jose for v2 JWT-VC.
  */
 
 import * as crypto from "crypto";
@@ -58,15 +60,52 @@ export class MarqueVerifier {
   }
 
   /**
-   * Verify a MARQUE document.
+   * Verify a MARQUE document (v1 JSON) or JWT-VC string (v2).
    *
-   * Checks (in order):
+   * Auto-detects format:
+   * - If string containing "." → JWT-VC path
+   * - If MarqueDocument object → v1 path
+   *
+   * For v1, checks (in order):
    * 1. Schema validation (all required fields present)
    * 2. Evidence chain integrity (chainVerified must be true)
    * 3. Freshness (expiresAt > now)
    * 4. Signature (Ed25519 verify against trusted keys)
    */
-  verify(marque: MarqueDocument): MarqueVerificationResult {
+  async verify(input: MarqueDocument | string): Promise<MarqueVerificationResult> {
+    // JWT-VC path
+    if (typeof input === "string" && input.includes(".")) {
+      const { verifyVCJWT } = await import("./vc-verifier");
+      return verifyVCJWT(input, this.trustedPublicKeys);
+    }
+
+    // v1 path
+    const marque = input as MarqueDocument;
+    return this.verifyV1(marque);
+  }
+
+  /**
+   * Read a MARQUE document from disk and verify it.
+   * Auto-detects format: JSON object → v1, JWT string → v2.
+   */
+  async verifyFromFile(filePath: string): Promise<MarqueVerificationResult> {
+    const content = readFileSync(filePath, "utf-8").trim();
+
+    // If it looks like a JWT (starts with eyJ and has dots), treat as v2
+    if (content.startsWith("eyJ") && content.split(".").length === 3) {
+      return this.verify(content);
+    }
+
+    // Otherwise parse as JSON v1
+    const doc: MarqueDocument = JSON.parse(content);
+    return this.verify(doc);
+  }
+
+  // ===========================================================================
+  // V1 VERIFICATION (internal)
+  // ===========================================================================
+
+  private verifyV1(marque: MarqueDocument): MarqueVerificationResult {
     // Step 1: Schema validation
     if (!this.validateSchema(marque)) {
       return { valid: false, reason: "schema_invalid" };
@@ -116,15 +155,6 @@ export class MarqueVerifier {
       generatedAt: marque.marque.generatedAt,
       expiresAt: marque.marque.expiresAt,
     };
-  }
-
-  /**
-   * Read a MARQUE document from disk and verify it.
-   */
-  verifyFromFile(filePath: string): MarqueVerificationResult {
-    const content = readFileSync(filePath, "utf-8");
-    const doc: MarqueDocument = JSON.parse(content);
-    return this.verify(doc);
   }
 
   // ===========================================================================

@@ -22,9 +22,45 @@ import type {
 } from "../output/oscal-types";
 
 /**
- * Map a MARQUE document to an OSCAL Assessment Results document.
+ * Map a MARQUE document (v1 JSON or v2 JWT-VC) to an OSCAL Assessment Results document.
+ *
+ * If input is a string (JWT-VC), decodes the JWT payload and extracts the VC
+ * to build a synthetic MarqueDocument for mapping.
  */
-export function mapToOSCAL(marque: MarqueDocument): OSCALAssessmentResult {
+export function mapToOSCAL(input: MarqueDocument | string): OSCALAssessmentResult {
+  let marque: MarqueDocument;
+
+  if (typeof input === "string") {
+    // JWT-VC path: decode payload and reconstruct MarqueDocument shape
+    const parts = input.split(".");
+    if (parts.length !== 3) throw new Error("Invalid JWT-VC format");
+    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+    const vc = payload.vc;
+    const subject = vc.credentialSubject;
+
+    marque = {
+      parley: "2.0",
+      marque: {
+        id: payload.jti || "unknown",
+        version: "2.0.0",
+        issuer: typeof vc.issuer === "string"
+          ? { id: vc.issuer, name: vc.issuer }
+          : { id: vc.issuer.id, name: vc.issuer.name || vc.issuer.id },
+        generatedAt: vc.validFrom || new Date(payload.iat * 1000).toISOString(),
+        expiresAt: vc.validUntil || new Date(payload.exp * 1000).toISOString(),
+        scope: subject.scope,
+        summary: subject.summary,
+        evidenceChain: subject.evidenceChain,
+        frameworks: subject.frameworks,
+        threatModel: subject.threatModel,
+        quartermasterAttestation: subject.quartermasterAttestation,
+      },
+      signature: parts[2],
+    };
+  } else {
+    marque = input;
+  }
+
   const now = marque.marque.generatedAt;
   const docUuid = crypto.randomUUID();
   const resultUuid = crypto.randomUUID();

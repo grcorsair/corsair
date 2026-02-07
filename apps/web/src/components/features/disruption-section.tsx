@@ -58,7 +58,7 @@ export function DisruptionSection() {
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-0.5 text-corsair-green">✓</span>
-              Ed25519-signed Marque with AI governance review
+              W3C Verifiable Credential with AI governance review
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-0.5 text-corsair-green">✓</span>

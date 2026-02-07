@@ -145,7 +145,7 @@ describe("Parley Client", () => {
     const client = new ParleyClient(endpoint);
     const { marque, publicKey } = await createTestMarque();
 
-    const result = client.verify(marque, [publicKey]);
+    const result = await client.verify(marque, [publicKey]);
     expect(result.valid).toBe(true);
   });
 

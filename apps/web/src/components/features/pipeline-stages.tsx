@@ -66,7 +66,7 @@ const stages = [
   },
   {
     name: "MARQUE",
-    description: "Signed proof (Ed25519)",
+    description: "Verifiable Credential (JWT-VC)",
     icon: <MarqueIcon size={40} />,
     color: "text-corsair-crimson",
     glowColor: "rgba(192,57,43,0.15)",

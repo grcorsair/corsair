@@ -90,3 +90,14 @@ bun corsair.ts --compact ./evidence/mission-*.jsonl --output ./evidence/compacte
 ```
 
 Compaction creates a new chain that references the original chains' root hashes, maintaining the full audit trail.
+
+## SCITT Transparency Log Integration
+
+As part of the Parley v2 protocol, evidence chains can be registered with an IETF SCITT (Supply Chain Integrity, Transparency, and Trust) transparency service. When a Marque is issued, the signed attestation and its evidence chain root hash can be submitted as a SCITT statement, producing a COSE receipt that proves inclusion in the append-only log.
+
+This provides two properties beyond the existing hash chain:
+
+- **Non-repudiation** — The issuer cannot deny having issued the attestation at the recorded time
+- **Discoverability** — Third parties can audit the transparency log to verify CPOE history
+
+SCITT integration is defined at the type/interface level in the current release. Full transparency service integration is on the roadmap, tracking the IETF SCITT Architecture draft as it progresses toward RFC status.

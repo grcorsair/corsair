@@ -1,0 +1,142 @@
+---
+title: "FLAGSHIP Events"
+description: "Real-time compliance change notifications via SSF/SET/CAEP — the FLAGSHIP event system."
+section: "concepts"
+order: 15
+---
+
+## Overview
+
+FLAGSHIP is Corsair's real-time compliance notification system, implementing **OpenID Shared Signals Framework (SSF)**, **Security Event Tokens (SET / RFC 8417)**, and **Continuous Access Evaluation Protocol (CAEP)**.
+
+The pirate name: FLAGSHIP is the command ship that signals fleet-wide status changes. When the flagship raises new colors, the fleet responds.
+
+When a CPOE's compliance status changes — drift detected, trust tier upgraded, credential revoked — FLAGSHIP delivers a standardized event to all subscribers in real time.
+
+## CAEP Event Types
+
+FLAGSHIP maps four Corsair concepts to CAEP-compliant event URIs:
+
+| Pirate Name | CAEP Mapping | Event URI | When It Fires |
+|---|---|---|---|
+| COLORS_CHANGED | assurance-level-change | `grcorsair.com/events/assurance-level-change/v1` | Trust tier transition (e.g., self-assessed to ai-verified) |
+| FLEET_ALERT | compliance-change | `grcorsair.com/events/compliance-change/v1` | MARK detects configuration drift |
+| PAPERS_CHANGED | credential-change | `grcorsair.com/events/credential-change/v1` | CPOE issued, renewed, revoked, or expired |
+| MARQUE_REVOKED | session-revoked | `grcorsair.com/events/session-revoked/v1` | Emergency CPOE revocation |
+
+## SET Token Structure
+
+Events are encoded as Security Event Tokens (SET) — signed JWTs per RFC 8417. Each SET contains:
+
+```json
+{
+  "iss": "did:web:example.com",
+  "iat": 1707300000,
+  "jti": "evt-abc123",
+  "aud": "did:web:receiver.com",
+  "events": {
+    "https://grcorsair.com/events/compliance-change/v1": {
+      "subject": {
+        "format": "complex",
+        "corsair": {
+          "marqueId": "marque-uuid-here",
+          "provider": "aws-cognito",
+          "criterion": "MFA enforced for all accounts"
+        }
+      },
+      "event_timestamp": 1707300000,
+      "drift_type": "mfa-disabled",
+      "severity": "CRITICAL",
+      "affected_controls": ["IA-2", "AC-7"]
+    }
+  }
+}
+```
+
+The `events` object is keyed by the CAEP event URI. The value contains the subject (who/what the event is about) and event-specific data.
+
+## Event Details
+
+### COLORS_CHANGED (Assurance Level Change)
+
+Fired when a CPOE's trust tier changes. Trust tiers are: self-assessed (below 70), ai-verified (70-89), and auditor-verified (90+).
+
+```json
+{
+  "previous_level": "self-assessed",
+  "current_level": "ai-verified",
+  "change_direction": "increase"
+}
+```
+
+### FLEET_ALERT (Compliance Change)
+
+Fired when MARK detects configuration drift that degrades controls.
+
+```json
+{
+  "drift_type": "mfa-disabled",
+  "severity": "CRITICAL",
+  "affected_controls": ["IA-2", "AC-7"]
+}
+```
+
+### PAPERS_CHANGED (Credential Change)
+
+Fired when a CPOE lifecycle event occurs.
+
+```json
+{
+  "credential_type": "CorsairCPOE",
+  "change_type": "issued"
+}
+```
+
+Change types: `issued`, `renewed`, `revoked`, `expired`.
+
+### MARQUE_REVOKED (Emergency Revocation)
+
+Fired when a CPOE is revoked due to evidence tampering or critical failure.
+
+```json
+{
+  "reason": "Evidence chain integrity failure detected",
+  "revocation_timestamp": 1707300000,
+  "initiator": "did:web:example.com"
+}
+```
+
+## Stream Management
+
+FLAGSHIP uses SSF stream configuration to manage event subscriptions:
+
+### Create a Stream
+
+```json
+{
+  "delivery": {
+    "method": "push",
+    "endpoint_url": "https://receiver.com/events"
+  },
+  "events_requested": [
+    "https://grcorsair.com/events/compliance-change/v1",
+    "https://grcorsair.com/events/credential-change/v1"
+  ],
+  "format": "jwt"
+}
+```
+
+### Delivery Methods
+
+- **Push**: Events are POSTed to the subscriber's endpoint as they occur
+- **Poll**: Subscriber periodically fetches events from the stream endpoint
+
+### Stream Lifecycle
+
+Streams have three states: `active` (delivering events), `paused` (temporarily stopped), and `deleted` (permanently removed).
+
+## Integration with Parley
+
+FLAGSHIP is the real-time notification layer of the Parley v2 protocol. While JWT-VC provides the proof and SCITT provides the audit trail, FLAGSHIP ensures that compliance changes are communicated immediately rather than discovered during the next quarterly review.
+
+The combination means: you don't just verify a vendor's compliance at a point in time — you get notified the moment it changes.

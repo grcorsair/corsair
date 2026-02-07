@@ -1,6 +1,6 @@
 ---
 title: "Marque & CPOE"
-description: "Ed25519 signing, verification flow, trust tiers, and the CPOE attestation format."
+description: "Ed25519 signing, verification flow, trust tiers, JWT-VC format, and the CPOE attestation system."
 section: "concepts"
 order: 11
 ---
@@ -9,7 +9,62 @@ order: 11
 
 A **Marque** is a cryptographically signed document that attests to the results of a Corsair adversarial assessment. Named after the historical Letter of Marque that authorized privateers, it serves as a **Certificate of Proof of Operational Effectiveness (CPOE)**.
 
-## Signing
+## JWT-VC Format (Parley v2)
+
+Parley v2 introduces standards-based CPOEs using **W3C Verifiable Credentials** encoded as JWTs:
+
+```
+eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCIsImtpZCI6ImRpZDp3ZWI6ZXhhbXBsZS5jb20ja2V5LTEifQ...
+```
+
+The JWT contains:
+- **Header**: `{ alg: "EdDSA", typ: "vc+jwt", kid: "did:web:domain#key-1" }`
+- **Payload**: W3C VC 2.0 claims with CPOE credential subject and `parley: "2.0"`
+- **Signature**: Ed25519 over header.payload (the JWT IS the proof)
+
+The CPOE credential subject maps directly to the Marque document structure:
+
+```json
+{
+  "type": "CorsairCPOE",
+  "scope": { "providers": ["aws-cognito"], "frameworksCovered": ["NIST 800-53"] },
+  "summary": { "controlsTested": 24, "controlsPassed": 18, "overallScore": 75 },
+  "evidenceChain": { "hashChainRoot": "sha256:...", "recordCount": 12 }
+}
+```
+
+Any W3C VC 2.0 verifier can validate a Parley v2 credential — verification is not locked to Corsair tooling.
+
+## DID Identity
+
+Parley v2 uses `did:web` for issuer identity. Organizations publish a DID document at:
+
+```
+https://example.com/.well-known/did.json
+```
+
+The DID document contains the Ed25519 public key. During verification, the `kid` in the JWT header points to the DID URL, enabling automatic key discovery.
+
+## Migration
+
+Both formats are fully supported:
+
+| | v1 (Legacy) | v2 (JWT-VC) |
+|---|---|---|
+| **Format** | JSON envelope | JWT string |
+| **Signing** | Ed25519 | Ed25519 (EdDSA) |
+| **Identity** | Issuer name + org | did:web DID |
+| **Interop** | Corsair-specific | W3C VC 2.0 compatible |
+| **Generation** | `--format marque` | `--format vc-jwt` |
+| **Detection** | JSON with `marque` + `signature` | 3-part dot-separated JWT |
+
+The web verifier at [grcorsair.com/marque](/marque) auto-detects the format.
+
+## Legacy Format (v1)
+
+The original Corsair format uses a JSON envelope with Ed25519 signing.
+
+### Signing
 
 Corsair uses **Ed25519** (Edwards-curve Digital Signature Algorithm) for signing:
 
@@ -18,7 +73,7 @@ Corsair uses **Ed25519** (Edwards-curve Digital Signature Algorithm) for signing
 - Deterministic — same input always produces same signature
 - Fast verification (important for client-side use)
 
-## Document Structure
+### Document Structure
 
 ```json
 {
@@ -66,20 +121,21 @@ The Quartermaster assigns trust tiers based on the governance confidence score:
 
 Marque verification is **fully client-side** at [grcorsair.com/marque](/marque):
 
-1. Paste the Marque JSON and the issuer's public key
-2. Web Crypto API verifies the Ed25519 signature
-3. Evidence chain integrity is validated
-4. Expiry date is checked
+1. Paste the Marque (JSON or JWT) and the issuer's public key
+2. Format is auto-detected (v1 JSON vs v2 JWT-VC)
+3. Web Crypto API verifies the Ed25519 signature
+4. Evidence chain integrity is validated
+5. Expiry date is checked
 
 No data leaves the browser. No server calls. No Corsair account needed.
 
 ## Sanitization
 
 Before signing, Corsair sanitizes sensitive data:
-- AWS Account IDs → redacted
-- ARNs → redacted
-- IP addresses → redacted
-- File paths → redacted
-- API keys → redacted
+- AWS Account IDs -> redacted
+- ARNs -> redacted
+- IP addresses -> redacted
+- File paths -> redacted
+- API keys -> redacted
 
 The Marque contains assessment *results*, not raw infrastructure details.

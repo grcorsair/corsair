@@ -212,9 +212,9 @@ describe("E2E Full Pipeline", () => {
     expect(generatedMarque.signature.length).toBeGreaterThan(0);
   });
 
-  test("MARQUE signature valid", () => {
+  test("MARQUE signature valid", async () => {
     const verifier = new MarqueVerifier([publicKey]);
-    const result = verifier.verify(generatedMarque);
+    const result = await verifier.verify(generatedMarque);
     expect(result.valid).toBe(true);
   });
 
@@ -287,19 +287,19 @@ describe("E2E Full Pipeline", () => {
   // MARQUE VERIFIER
   // =========================================================================
 
-  test("MARQUE verifier validates generated MARQUE", () => {
+  test("MARQUE verifier validates generated MARQUE", async () => {
     const verifier = new MarqueVerifier([publicKey]);
-    const result = verifier.verify(generatedMarque);
+    const result = await verifier.verify(generatedMarque);
     expect(result.valid).toBe(true);
     expect(result.signedBy).toBe("E2E Test Issuer");
   });
 
-  test("MARQUE verifier rejects tampered MARQUE", () => {
+  test("MARQUE verifier rejects tampered MARQUE", async () => {
     const tampered = JSON.parse(JSON.stringify(generatedMarque)) as MarqueDocument;
     tampered.marque.summary.overallScore = 999;
 
     const verifier = new MarqueVerifier([publicKey]);
-    const result = verifier.verify(tampered);
+    const result = await verifier.verify(tampered);
     expect(result.valid).toBe(false);
     expect(result.reason).toBe("signature_invalid");
   });

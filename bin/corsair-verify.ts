@@ -3,16 +3,16 @@
  * Standalone MARQUE Verifier CLI
  *
  * Verifies MARQUE document integrity without requiring the full Corsair installation.
- * Only needs the MARQUE JSON file and the issuer's public key.
+ * Supports both v1 (JSON) and v2 (JWT-VC) formats with auto-detection.
+ * Only needs the MARQUE file and the issuer's public key.
  *
  * Usage:
  *   bun run bin/corsair-verify.ts --marque ./path.json --pubkey ./key.pub
- *   bun run bin/corsair-verify.ts --marque ./path.json --pubkey ./key.pub --verbose
+ *   bun run bin/corsair-verify.ts --marque ./path.jwt --pubkey ./key.pub --verbose
  */
 
 import { readFileSync, existsSync } from "fs";
 import { MarqueVerifier } from "../src/parley/marque-verifier";
-import type { MarqueDocument } from "../src/parley/marque-types";
 
 interface VerifyArgs {
   marquePath?: string;
@@ -55,10 +55,14 @@ USAGE:
   bun run bin/corsair-verify.ts --marque <path> --pubkey <path>
 
 OPTIONS:
-  --marque <PATH>     Path to the MARQUE JSON document
+  --marque <PATH>     Path to the MARQUE document (JSON v1 or JWT-VC v2)
   --pubkey <PATH>   Path to the issuer's Ed25519 public key (PEM)
   -v, --verbose     Show detailed verification output
   -h, --help        Show this help message
+
+FORMATS:
+  v1 (JSON):  MARQUE document with parley, marque, and signature fields
+  v2 (JWT):   JWT-VC string (vc+jwt) with Ed25519 signature
 
 EXIT CODES:
   0  MARQUE is valid
@@ -67,7 +71,7 @@ EXIT CODES:
 `);
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const args = parseArgs();
 
   if (args.help) {
@@ -92,17 +96,30 @@ function main(): void {
   }
 
   try {
-    const marqueContent = readFileSync(args.marquePath, "utf-8");
-    const marque: MarqueDocument = JSON.parse(marqueContent);
+    const marqueContent = readFileSync(args.marquePath, "utf-8").trim();
     const publicKey = readFileSync(args.pubkeyPath);
-
     const verifier = new MarqueVerifier([Buffer.from(publicKey)]);
-    const result = verifier.verify(marque);
+
+    // Auto-detect format
+    const isJWT = marqueContent.startsWith("eyJ") && marqueContent.split(".").length === 3;
+    const formatLabel = isJWT ? "v2 (JWT-VC)" : "v1 (JSON)";
+
+    let result;
+    if (isJWT) {
+      result = await verifier.verify(marqueContent);
+    } else {
+      const marque = JSON.parse(marqueContent);
+      result = await verifier.verify(marque);
+    }
 
     if (args.verbose) {
       console.log("MARQUE Verification Report");
       console.log("========================");
-      console.log(`Document ID: ${marque.marque.id}`);
+      console.log(`Format:      ${formatLabel}`);
+      if (!isJWT) {
+        const doc = JSON.parse(marqueContent);
+        console.log(`Document ID: ${doc.marque.id}`);
+      }
       console.log(`Issuer:      ${result.signedBy || "unknown"}`);
       console.log(`Generated:   ${result.generatedAt || "unknown"}`);
       console.log(`Expires:     ${result.expiresAt || "unknown"}`);
@@ -114,7 +131,8 @@ function main(): void {
     }
 
     if (result.valid) {
-      console.log(`VALID: MARQUE ${marque.marque.id} verified successfully`);
+      const id = isJWT ? "(JWT-VC)" : JSON.parse(marqueContent).marque.id;
+      console.log(`VALID: MARQUE ${id} verified successfully [${formatLabel}]`);
       process.exit(0);
     } else {
       console.error(`INVALID: ${result.reason}`);

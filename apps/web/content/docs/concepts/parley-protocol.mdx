@@ -1,0 +1,124 @@
+---
+title: "Parley Protocol"
+description: "The Parley v2 trust exchange protocol — JWT-VC proofs, SCITT transparency logs, and SSF/CAEP real-time signals."
+section: "concepts"
+order: 14
+---
+
+## Overview
+
+Parley is Corsair's **trust exchange protocol** — the mechanism by which organizations share and verify compliance attestations. Named after the pirate parley (a negotiation between parties under a flag of truce), the protocol enables trustless verification of operational effectiveness.
+
+Parley v2 composes three open standards into a single coherent protocol:
+
+```
+JWT-VC (proof) + SCITT (log) + SSF/CAEP (signal)
+```
+
+Each standard handles a different aspect of the trust lifecycle:
+
+- **JWT-VC** — The attestation itself (what happened)
+- **SCITT** — The public record (that it happened)
+- **SSF/CAEP** — The notification (when things change)
+
+## Protocol Versions
+
+### v1 (Legacy)
+
+The original Corsair format uses a simple JSON envelope:
+
+```json
+{
+  "marque": { "...attestation data..." },
+  "signature": "base64-encoded-ed25519-signature"
+}
+```
+
+v1 is Corsair-specific. Verification requires understanding the Corsair document structure. It works, but it doesn't interoperate with anything outside the Corsair ecosystem.
+
+### v2 (Standards-Based)
+
+Parley v2 encodes CPOEs as **W3C Verifiable Credentials** in JWT format:
+
+```
+eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCIsImtpZCI6ImRpZDp3ZWI6Z3Jjb3Jz...
+```
+
+The JWT contains:
+- **Header**: `{ alg: "EdDSA", typ: "vc+jwt", kid: "did:web:example.com#key-1" }`
+- **Payload**: Standard VC claims plus `parley: "2.0"` version marker
+- **Signature**: Ed25519 signature over header.payload
+
+Any W3C VC 2.0 verifier can validate a Parley v2 credential. No Corsair-specific tooling required.
+
+## Three-Standard Composition
+
+### 1. JWT-VC (The Proof)
+
+W3C Verifiable Credentials 2.0 provides the **credential data model**. A CPOE becomes a VC with:
+
+- `@context`: W3C VC 2.0 + Corsair credential context
+- `type`: `["VerifiableCredential", "CorsairCPOE"]`
+- `issuer`: DID of the assessing organization
+- `credentialSubject`: Assessment scope, summary, evidence chain, frameworks
+
+The JWT encoding (`vc+jwt`) means the signature IS the JWT — no separate proof object needed.
+
+### 2. SCITT (The Log)
+
+IETF Supply Chain Integrity, Transparency, and Trust provides the **transparency log**. When a CPOE is issued, it can be registered with a SCITT transparency service:
+
+- **Registration**: Submit the JWT-VC as a SCITT statement
+- **Receipt**: Get back a COSE receipt proving inclusion in the log
+- **Verification**: Anyone can verify the CPOE was registered at a specific time
+
+SCITT ensures that CPOEs are auditable and that issuers cannot silently revoke or modify attestations without detection.
+
+### 3. SSF/CAEP (The Signal)
+
+OpenID Shared Signals Framework and Continuous Access Evaluation Protocol provide **real-time notifications**. When compliance status changes, subscribers are notified immediately:
+
+- **COLORS_CHANGED**: Trust tier changed (e.g., self-assessed to ai-verified)
+- **FLEET_ALERT**: Drift detected, controls degraded
+- **PAPERS_CHANGED**: CPOE issued, renewed, or revoked
+- **MARQUE_REVOKED**: Emergency revocation
+
+See the [FLAGSHIP Events](/docs/concepts/flagship-events) page for details.
+
+## End-to-End Flow
+
+```
+1. ASSESS    Corsair runs adversarial assessment (RECON -> QUARTER)
+2. GENERATE  MARQUE stage produces JWT-VC signed with Ed25519
+3. REGISTER  (Optional) JWT-VC submitted to SCITT transparency log
+4. SHARE     Vendor shares JWT-VC with requesting organization
+5. VERIFY    Requestor verifies locally (Web Crypto, CLI, or any VC verifier)
+6. MONITOR   SSF/CAEP stream delivers real-time compliance change events
+7. RENEW     Periodic re-assessment produces new JWT-VC, old one expires
+```
+
+## TPRM Disruption
+
+Traditional third-party risk management (TPRM) relies on questionnaires — 300+ questions answered by vendors with every incentive to overstate their posture. The $8.57 billion TPRM market is built on trust, not verification.
+
+Parley replaces this with a standards-based trust exchange:
+
+| Traditional TPRM | Parley v2 |
+|---|---|
+| Self-attested questionnaires | Adversarially-tested attestations |
+| Proprietary formats | W3C Verifiable Credentials |
+| Annual point-in-time reviews | Continuous signals via SSF/CAEP |
+| No audit trail | SCITT transparency log |
+| Trust the vendor | Verify the proof |
+
+The transition from questionnaire theater to cryptographic proof is the core value proposition of the Parley protocol.
+
+## DID Identity
+
+Parley v2 uses `did:web` for issuer identity. Organizations publish a DID document at their domain:
+
+```
+https://example.com/.well-known/did.json
+```
+
+This document contains the Ed25519 public key used for verification. The DID is embedded in the JWT-VC as the issuer claim, enabling automatic key discovery during verification.

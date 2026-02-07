@@ -10,12 +10,18 @@
 import type { MarqueDocument } from "./marque-types";
 import { MarqueVerifier, type MarqueVerificationResult } from "./marque-verifier";
 import type { ParleyEndpoint, ParleySubscription } from "./parley-types";
+import type { SSFStreamConfig } from "../flagship/flagship-types";
+import { FlagshipClient } from "../flagship/flagship-client";
 
 export class ParleyClient {
   private endpoint: ParleyEndpoint;
+  private flagship?: FlagshipClient;
 
-  constructor(endpoint: ParleyEndpoint) {
+  constructor(endpoint: ParleyEndpoint, flagship?: { baseUrl: string; apiKey: string }) {
     this.endpoint = endpoint;
+    if (flagship) {
+      this.flagship = new FlagshipClient(flagship.baseUrl, flagship.apiKey);
+    }
   }
 
   /**
@@ -96,10 +102,32 @@ export class ParleyClient {
   }
 
   /**
-   * Verify a MARQUE document using the provided public keys.
+   * Verify a MARQUE document or JWT-VC using the provided public keys.
    */
-  verify(marque: MarqueDocument, publicKeys: Buffer[]): MarqueVerificationResult {
+  async verify(marque: MarqueDocument | string, publicKeys: Buffer[]): Promise<MarqueVerificationResult> {
     const verifier = new MarqueVerifier(publicKeys);
     return verifier.verify(marque);
+  }
+
+  /**
+   * Push a signed SET to a FLAGSHIP receiver endpoint.
+   * Requires flagship client to be configured.
+   */
+  async pushEvent(endpoint: string, set: string): Promise<{ delivered: boolean }> {
+    if (!this.flagship) {
+      throw new Error("Parley: FLAGSHIP client not configured");
+    }
+    return this.flagship.pushEvent(endpoint, set);
+  }
+
+  /**
+   * Poll for pending SET tokens from a FLAGSHIP stream.
+   * Requires flagship client to be configured.
+   */
+  async pollEvents(streamId: string): Promise<{ sets: string[] }> {
+    if (!this.flagship) {
+      throw new Error("Parley: FLAGSHIP client not configured");
+    }
+    return this.flagship.pollEvents(streamId);
   }
 }

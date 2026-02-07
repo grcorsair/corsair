@@ -39,6 +39,7 @@ export function MarqueVerifier() {
     setResult({
       valid: true,
       reason: SAMPLE_NOTE,
+      format: "v1",
       document: parsed.marque,
     });
   };
@@ -49,7 +50,7 @@ export function MarqueVerifier() {
       <div className="space-y-4">
         <div>
           <label className="mb-2 block font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Marque JSON
+            Marque Document (JSON or JWT)
           </label>
           <textarea
             value={marqueJson}
@@ -58,7 +59,7 @@ export function MarqueVerifier() {
               setIsSample(false);
               setResult(null);
             }}
-            placeholder='Paste your Marque JSON document here...'
+            placeholder='Paste your Marque JSON document or JWT-VC token here...'
             className="h-48 w-full resize-none rounded-lg border border-input bg-card p-4 font-mono text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/30"
           />
         </div>
@@ -119,13 +120,27 @@ export function MarqueVerifier() {
               >
                 {result.valid ? "✓" : "✗"}
               </div>
-              <div>
-                <div
-                  className={`font-display text-lg font-bold ${
-                    result.valid ? "text-corsair-green" : "text-corsair-crimson"
-                  }`}
-                >
-                  {result.valid ? "SIGNATURE VALID" : "VERIFICATION FAILED"}
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`font-display text-lg font-bold ${
+                      result.valid ? "text-corsair-green" : "text-corsair-crimson"
+                    }`}
+                  >
+                    {result.valid ? "SIGNATURE VALID" : "VERIFICATION FAILED"}
+                  </span>
+                  {result.format && (
+                    <Badge
+                      variant="outline"
+                      className={
+                        result.format === "v2-jwt-vc"
+                          ? "border-corsair-cyan/40 text-corsair-cyan"
+                          : "border-corsair-gold/40 text-corsair-gold"
+                      }
+                    >
+                      {result.format === "v2-jwt-vc" ? "v2 (JWT-VC)" : "v1 (Legacy)"}
+                    </Badge>
+                  )}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {result.reason}
@@ -137,6 +152,53 @@ export function MarqueVerifier() {
           {/* Document details */}
           {result.document && (
             <CardContent className="space-y-6">
+              {/* VC Metadata (v2 only) */}
+              {result.vcMetadata && (
+                <>
+                  <Card className="bg-corsair-surface">
+                    <CardContent className="space-y-3 p-4">
+                      <span className="block font-mono text-xs uppercase text-muted-foreground">
+                        Verifiable Credential Details
+                      </span>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <span className="block text-xs text-muted-foreground">@context</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {result.vcMetadata.context.map((ctx) => (
+                              <Badge key={ctx} variant="outline" className="font-mono text-[10px]">
+                                {ctx.replace("https://", "")}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="block text-xs text-muted-foreground">Credential Type</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {result.vcMetadata.credentialType.map((t) => (
+                              <Badge key={t} variant="outline" className="font-mono text-[10px]">
+                                {t}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      {result.vcMetadata.issuerDID && (
+                        <div>
+                          <span className="block text-xs text-muted-foreground">Issuer DID</span>
+                          <span className="block mt-1 truncate font-mono text-xs text-corsair-cyan">
+                            {result.vcMetadata.issuerDID}
+                          </span>
+                          <span className="block mt-1 text-[10px] text-muted-foreground/60">
+                            Resolve this DID via the issuer&apos;s .well-known/did.json endpoint
+                          </span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                  <Separator className="bg-corsair-border/50" />
+                </>
+              )}
+
               {/* Metadata grid */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <InfoField label="Document ID" value={result.document.id} />
@@ -154,11 +216,14 @@ export function MarqueVerifier() {
                 />
                 <InfoField
                   label="Expires"
-                  value={new Date(result.document.expiresAt).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
+                  value={result.document.expiresAt
+                    ? new Date(result.document.expiresAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })
+                    : "No expiry"
+                  }
                 />
               </div>
 

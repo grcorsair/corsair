@@ -6,6 +6,7 @@
  */
 
 import type { MarqueIssuer } from "./marque-types";
+import type { FlagshipConfig } from "../flagship/flagship-types";
 
 /**
  * A Parley exchange endpoint for publishing/receiving MARQUEs.
@@ -71,6 +72,9 @@ export interface ParleyConfig {
 
   /** MARQUE expiry in days (default: 7) */
   expiryDays?: number;
+
+  /** FLAGSHIP (SSF/SET/CAEP) configuration for real-time notifications */
+  flagship?: FlagshipConfig;
 }
 
 /**
@@ -97,4 +101,7 @@ export interface BundleResult {
 
   /** Overall assessment score */
   overallScore: number;
+
+  /** FLAGSHIP stream ID if SSF notifications were sent */
+  flagshipStreamId?: string;
 }

@@ -1,0 +1,90 @@
+---
+title: "Parley v2: From Pirate Signatures to W3C Credentials"
+description: "How Corsair adopted W3C Verifiable Credentials, OpenID SSF/CAEP, and IETF SCITT to turn proprietary attestations into interoperable proof."
+date: "2026-02-07"
+tag: "Protocol"
+published: true
+---
+
+Today we're shipping **Parley v2** — the standards-based evolution of Corsair's trust exchange protocol. CPOEs (Certificates of Proof of Operational Effectiveness) are now W3C Verifiable Credentials, compliance changes are broadcast via OpenID SSF/CAEP, and transparency logging follows the IETF SCITT architecture.
+
+## The Problem: Proprietary Lock-In
+
+Corsair v1 Marques were effective but proprietary. An Ed25519-signed JSON document with a Corsair-specific structure. To verify one, you needed Corsair tooling or intimate knowledge of the format.
+
+This creates a problem: if the goal is to replace questionnaire theater with cryptographic proof, the proof format itself can't be a walled garden. A vendor shouldn't need to convince their customer to install specific tooling just to verify an attestation.
+
+The entire point of Pieces of Eight was universal verifiability. Anyone could cut, weigh, and bite a silver coin. CPOEs need the same property.
+
+## Three Standards, One Protocol
+
+Parley v2 composes three open standards:
+
+**W3C Verifiable Credentials 2.0** — The credential envelope. A CPOE is now a VC with `type: ["VerifiableCredential", "CorsairCPOE"]`, encoded as a JWT with `alg: EdDSA`. Any VC verifier can validate it. The Ed25519 signing is unchanged — the same key, the same algorithm. The container is now standard.
+
+**OpenID SSF / CAEP** — Real-time compliance signals. We call this module **FLAGSHIP** (the command ship that signals fleet-wide changes). When a vendor's compliance status changes — drift detected, trust tier upgraded, credential revoked — subscribers get a standardized Security Event Token immediately. No more quarterly reviews to discover that MFA was disabled three months ago.
+
+**IETF SCITT** — Transparency logging. When a CPOE is issued, it can be registered in a SCITT append-only log. This provides non-repudiation (the issuer can't deny the attestation) and discoverability (anyone can audit the history). SCITT interfaces are defined in this release; full transparency service integration tracks the IETF draft.
+
+## What Changes
+
+### The JWT-VC Envelope
+
+A v1 Marque:
+```json
+{
+  "marque": { "id": "mrq_...", "summary": {...} },
+  "signature": "base64-ed25519-sig"
+}
+```
+
+A v2 CPOE:
+```
+eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCJ9.eyJpc3MiOiJkaWQ6d2ViOmV4YW1wbGUuY29tIi...
+```
+
+Same Ed25519 key. Same signing. But the JWT format is understood by every identity platform, security tool, and compliance system that supports VCs.
+
+### DID Identity
+
+Organizations identify themselves with `did:web` — a DID that resolves to a JSON document at their domain. The public key is published at `example.com/.well-known/did.json`. Verifiers can automatically discover the key from the JWT header's `kid` claim.
+
+### FLAGSHIP Events
+
+Four CAEP event types, with pirate names:
+
+| Event | Meaning |
+|-------|---------|
+| **COLORS_CHANGED** | Trust tier transition |
+| **FLEET_ALERT** | Drift detected |
+| **PAPERS_CHANGED** | CPOE lifecycle event |
+| **MARQUE_REVOKED** | Emergency revocation |
+
+Events are encoded as RFC 8417 Security Event Tokens and delivered via push or poll.
+
+## What Stays the Same
+
+Everything that matters:
+
+- **Ed25519 signing** — Same algorithm, same keys, same deterministic signatures
+- **Evidence chains** — SHA-256 hash chains with tamper-proof integrity
+- **Pirate names** — RECON, SPYGLASS, MARK, RAID, PLUNDER, CHART, QUARTER, MARQUE
+- **Client-side verification** — The [web verifier](/marque) now auto-detects format
+- **Zero external signing dependencies** — Node.js crypto module for key generation and signing
+
+The core thesis hasn't changed: attack first, discover reality, evidence emerges. We just wrapped the evidence in a better container.
+
+## Migration Path
+
+Both v1 and v2 formats are fully supported. The CLI accepts `--format marque` (v1) or `--format vc-jwt` (v2). The web verifier auto-detects and handles both.
+
+There is no forced migration. v1 Marques continue to verify. Organizations can adopt v2 when they're ready for interoperable credentials.
+
+## What's Next
+
+- **SCITT transparency service integration** — Full append-only log for CPOE registration
+- **Selective disclosure** — SD-JWT support for sharing partial assessment results
+- **FLAGSHIP push delivery** — Webhook-based real-time event delivery to GRC platforms
+- **Credential exchange** — Automated vendor-to-customer CPOE sharing workflows
+
+The goal remains: replace the $8.57 billion questionnaire theater industry with cryptographic proof. Parley v2 makes that proof interoperable.

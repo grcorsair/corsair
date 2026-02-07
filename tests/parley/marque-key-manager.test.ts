@@ -182,4 +182,64 @@ describe("MARQUE Key Manager - Ed25519 Signing", () => {
     const isValid = manager.verify(data, signature, retiredKeys[0]);
     expect(isValid).toBe(true);
   });
+
+  test("exportJWK returns JWK with kty=OKP and crv=Ed25519", async () => {
+    const keyDir = createTestDir();
+    const manager = new MarqueKeyManager(keyDir);
+    await manager.generateKeypair();
+
+    const jwk = await manager.exportJWK();
+
+    expect(jwk.kty).toBe("OKP");
+    expect(jwk.crv).toBe("Ed25519");
+    expect(jwk.x).toBeDefined();
+    expect(typeof jwk.x).toBe("string");
+  });
+
+  test("importJWK roundtrips with exportJWK", async () => {
+    const keyDir = createTestDir();
+    const manager = new MarqueKeyManager(keyDir);
+    const keypair = await manager.generateKeypair();
+
+    const jwk = await manager.exportJWK(keypair.publicKey);
+    const reimported = await manager.importJWK(jwk);
+
+    expect(reimported).toBeInstanceOf(Buffer);
+    expect(reimported.toString()).toContain("PUBLIC KEY");
+
+    // Verify the reimported key can verify signatures
+    const data = "roundtrip-test-data";
+    const signature = manager.sign(data, keypair.privateKey);
+    const isValid = manager.verify(data, signature, reimported);
+    expect(isValid).toBe(true);
+  });
+
+  test("generateDIDDocument creates valid DID document for domain", async () => {
+    const keyDir = createTestDir();
+    const manager = new MarqueKeyManager(keyDir);
+    await manager.generateKeypair();
+
+    const didDoc = await manager.generateDIDDocument("grcorsair.com");
+
+    expect(didDoc["@context"]).toContain("https://www.w3.org/ns/did/v1");
+    expect(didDoc.id).toBe("did:web:grcorsair.com");
+    expect(didDoc.verificationMethod).toHaveLength(1);
+    expect(didDoc.verificationMethod[0].type).toBe("JsonWebKey2020");
+    expect(didDoc.verificationMethod[0].id).toBe("did:web:grcorsair.com#key-1");
+    expect(didDoc.verificationMethod[0].controller).toBe("did:web:grcorsair.com");
+    expect(didDoc.verificationMethod[0].publicKeyJwk.kty).toBe("OKP");
+    expect(didDoc.authentication).toContain("did:web:grcorsair.com#key-1");
+    expect(didDoc.assertionMethod).toContain("did:web:grcorsair.com#key-1");
+  });
+
+  test("generateDIDDocument encodes port in DID", async () => {
+    const keyDir = createTestDir();
+    const manager = new MarqueKeyManager(keyDir);
+    await manager.generateKeypair();
+
+    const didDoc = await manager.generateDIDDocument("localhost:3000");
+
+    expect(didDoc.id).toBe("did:web:localhost%3A3000");
+    expect(didDoc.verificationMethod[0].id).toBe("did:web:localhost%3A3000#key-1");
+  });
 });

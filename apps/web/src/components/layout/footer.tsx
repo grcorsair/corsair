@@ -11,6 +11,7 @@ const productLinks = [
 const resourceLinks = [
   { href: "/docs/getting-started/quick-start", label: "Quick Start" },
   { href: "/docs/concepts/pipeline", label: "Pipeline Architecture" },
+  { href: "/docs/concepts/parley-protocol", label: "Parley Protocol" },
   { href: "/docs/integrations/mcp-server", label: "MCP Server" },
   { href: "/docs/integrations/ci-cd", label: "CI/CD Integration" },
 ];

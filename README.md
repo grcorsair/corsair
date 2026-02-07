@@ -26,9 +26,11 @@ CORSAIR is an **agentic chaos engineering platform** that validates compliance t
 
 Unlike traditional GRC tools that check if you *documented* security controls, CORSAIR proves they *actually work under attack*.
 
-**Current Providers:** AWS Cognito, AWS S3, Azure Entra ID (skeleton). Provider-agnostic engine accepts any JSON snapshot — add new providers via the plugin system.
+**Current Providers:** AWS Cognito, AWS S3, AWS IAM, AWS Lambda, AWS RDS, GitLab. Provider-agnostic engine accepts any JSON snapshot — add new providers via the plugin system.
 
 Compliance evidence is generated as a **byproduct** of attacks, not as a goal.
+
+**Parley v2 Protocol:** Assessment results are packaged as [W3C Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/) (JWT-VC), with real-time compliance notifications via [OpenID SSF/CAEP](https://openid.net/specs/openid-sharedsignals-framework-1_0.html) and transparency log integration via [SCITT](https://datatracker.ietf.org/wg/scitt/about/).
 
 ---
 
@@ -158,17 +160,20 @@ stateDiagram-v2
 
 ### Mission Phases
 
-Each mission tracks progress through the 6-primitive lifecycle:
+Each mission tracks progress through the full pipeline:
 
 ```
-RECON → MARK → RAID → PLUNDER → CHART → ESCAPE
+RECON → SPYGLASS → MARK → RAID → PLUNDER → CHART → QUARTER → MARQUE
 ```
 
 - **RECON**: Reconnaissance (read-only)
+- **SPYGLASS**: STRIDE threat modeling
 - **MARK**: Drift detection (ISC evaluation)
 - **RAID**: Controlled chaos injection
 - **PLUNDER**: Evidence extraction
 - **CHART**: Framework mapping (12+ frameworks via CTID/SCF data)
+- **QUARTER**: Governance review (Quartermaster AI)
+- **MARQUE**: Signed proof — W3C Verifiable Credential (Ed25519)
 - **ESCAPE**: Cleanup and rollback
 
 ---
@@ -336,7 +341,10 @@ CORSAIR follows a plugin-first architecture with auto-discovery. Engines are pro
 |--------|----------|---------------|--------|
 | **aws-cognito** | AWS Cognito | mfa-bypass, password-spray, token-replay, session-hijack | Full |
 | **aws-s3** | AWS S3 | public-access-test, encryption-test, versioning-test | Full |
-| **azure-entra** | Azure Entra ID | conditional-access-bypass, password-sync-exploit, mfa-fatigue | Skeleton |
+| **aws-iam** | AWS IAM | policy-analysis, privilege-escalation, cross-account | Full |
+| **aws-lambda** | AWS Lambda | function-policy, runtime-config, layer-security | Full |
+| **aws-rds** | AWS RDS | encryption-audit, public-access, backup-config | Full |
+| **gitlab** | GitLab | branch-protection, merge-request-policy, secret-detection | Full |
 
 ### Plugin Discovery
 
@@ -508,6 +516,49 @@ HTML and Markdown reports include:
 
 ---
 
+## Parley Protocol (v2)
+
+CORSAIR's trust exchange protocol composes three open standards to make CPOEs (Certificates of Proof of Operational Effectiveness) interoperable with any standards-compliant verifier.
+
+### Three-Standard Composition
+
+| Standard | Role | Corsair Integration |
+|----------|------|-------------------|
+| **JWT-VC** (W3C) | Attestation envelope | CPOE packaged as Verifiable Credential, Ed25519-signed |
+| **SSF/CAEP** (OpenID) | Real-time notifications | FLAGSHIP module signals compliance changes |
+| **SCITT** (IETF) | Transparency log | Future: CPOE registration for auditability |
+
+### MARQUE Format (v2 — JWT-VC)
+
+```
+Header:  { "alg": "EdDSA", "typ": "vc+jwt", "kid": "did:web:grcorsair.com#key-1" }
+Payload: { "iss": "did:web:grcorsair.com", "vc": { ... CPOE ... }, "parley": "2.0" }
+Signature: Ed25519
+```
+
+The CPOE credential subject contains: assessment scope, control test results, evidence chain metadata, framework mappings, and optional Quartermaster AI attestation.
+
+### FLAGSHIP (Real-Time Compliance Signals)
+
+FLAGSHIP is the command ship that signals fleet-wide status changes via OpenID SSF/CAEP:
+
+| Pirate Name | CAEP Event | Trigger |
+|-------------|-----------|---------|
+| `COLORS_CHANGED` | assurance-level-change | Trust tier changed |
+| `FLEET_ALERT` | compliance-change | Drift detected |
+| `PAPERS_CHANGED` | credential-change | CPOE issued/renewed/revoked |
+| `MARQUE_REVOKED` | session-revoked | Emergency revocation |
+
+### DID Identity
+
+Organizations are identified via `did:web` DIDs. The DID document at `.well-known/did.json` contains the Ed25519 public key for CPOE verification.
+
+### Backward Compatibility
+
+The v1 format (proprietary Ed25519-signed JSON) remains fully supported. The MarqueGenerator accepts a `format` option (`"v1"` or `"vc"`), and the MarqueVerifier auto-detects the format.
+
+---
+
 ## Philosophy
 
 **Old approach**: Configure framework → Define controls → Test against checklist → Generate evidence
@@ -525,12 +576,15 @@ The difference is existential. Compliance tools ask "are you compliant?" CORSAIR
 - **Architecture**: 3-phase (Primitives → Agentic → Multi-Agent)
 - **ISC System**: Automatic criteria extraction and tracking
 - **Evidence**: JSONL with SHA-256 hash chain integrity
-- **Plugin System**: Provider-agnostic core with 3 plugins (Cognito, S3, Azure Entra)
+- **Plugin System**: Provider-agnostic core with 6 plugins (Cognito, S3, IAM, Lambda, RDS, GitLab)
 - **Framework Mapping**: 12+ frameworks via CTID/SCF data (3-tier resolution)
+- **Parley Protocol**: JWT-VC (W3C Verifiable Credentials) + SSF/CAEP (OpenID Shared Signals) + SCITT (IETF Transparency)
+- **FLAGSHIP**: Real-time compliance change notifications via signed Security Event Tokens (SET)
+- **DID Identity**: did:web method for organizational identity and key discovery
 - **MCP Server**: 8 tools + 2 resources for AI agent integration
 - **Output**: OSCAL JSON, HTML reports, Markdown reports
 - **Event System**: Pub/sub events with aggregation and query support
-- **Tests**: 561 tests across 41 files (primitives, patterns, ISC, coordination, MCP, output, E2E)
+- **Tests**: 957 tests across 75 files (primitives, patterns, ISC, coordination, MCP, output, parley, flagship, E2E)
 
 ---
 
@@ -546,12 +600,35 @@ src/
   engine/                # Core engine modules (provider-agnostic)
     index.ts             # Corsair facade class + barrel re-exports
     recon-engine.ts      # RECON: Read-only observation (fixture/aws/file modes)
+    spyglass-engine.ts   # SPYGLASS: STRIDE threat modeling (6 providers)
     mark-engine.ts       # MARK: Drift detection (any snapshot shape)
     raid-engine.ts       # RAID: Attack simulation (Cognito + S3 vectors)
     chart-engine.ts      # CHART: 3-tier framework mapping (12+ frameworks)
     escape-engine.ts     # ESCAPE: Scope guards, rollback, RAII cleanup
     event-engine.ts      # Event querying and aggregation
     plugin-engine.ts     # Plugin discovery and registry
+
+  parley/                # Parley v2 trust exchange protocol
+    marque-types.ts      # MARQUE document types (v1 + MarqueOutput)
+    parley-types.ts      # Exchange protocol types + FlagshipConfig
+    vc-types.ts          # W3C Verifiable Credential 2.0 types
+    vc-generator.ts      # JWT-VC generation (jose + Ed25519)
+    vc-verifier.ts       # JWT-VC verification
+    did-resolver.ts      # DID:web parsing, formatting, resolution
+    scitt-types.ts       # SCITT transparency log type definitions
+    scitt-registry.ts    # Mock SCITT registry (testing boundary)
+    marque-generator.ts  # MARQUE generation (v1 + vc format)
+    marque-verifier.ts   # MARQUE verification (auto-detects v1/JWT-VC)
+    marque-key-manager.ts # Ed25519 keypair management + JWK export
+    auto-bundler.ts      # Automated multi-provider MARQUE pipeline
+    marque-oscal-mapper.ts # MARQUE → OSCAL Assessment Results
+    parley-client.ts     # Parley exchange HTTP client + SSF streams
+
+  flagship/              # FLAGSHIP: Real-time compliance signals (SSF/SET/CAEP)
+    flagship-types.ts    # CAEP event types with pirate aliases
+    set-generator.ts     # Security Event Token generation (Ed25519-signed JWT)
+    ssf-stream.ts        # SSF stream lifecycle management
+    flagship-client.ts   # Push/poll event delivery client
 
   data/                  # Framework mapping data layer
     mapping-loader.ts    # CTID/SCF loader with singleton cache
@@ -565,6 +642,10 @@ src/
     oscal-types.ts       # OSCAL Assessment Results type definitions
     oscal-generator.ts   # OSCAL JSON generator
     report-generator.ts  # HTML + Markdown report generator
+
+  quartermaster/         # Governance verification
+    quartermaster-agent.ts         # Deterministic + LLM governance
+    quartermaster-marque-bridge.ts # Governance → MARQUE attestation
 
   core/
     isc-manager.ts       # ISC lifecycle tracking
@@ -591,22 +672,21 @@ src/
 
 plugins/
   aws-cognito/           # Full plugin (4 attack vectors)
-    aws-cognito.plugin.json
-    aws-cognito-plugin.ts
-    index.ts
   aws-s3/                # Full plugin (3 attack vectors)
-    aws-s3.plugin.json
-    aws-s3-plugin.ts
-  azure-entra/           # Skeleton plugin (3 attack vectors, fixture-only)
-    azure-entra.plugin.json
-    azure-entra-plugin.ts
+  aws-iam/               # IAM policy analysis plugin
+  aws-lambda/            # Lambda security review plugin
+  aws-rds/               # RDS configuration audit plugin
+  gitlab/                # GitLab security review plugin
+
+bin/
+  corsair-verify.ts      # Standalone MARQUE verification CLI (v1 + JWT-VC)
 
 mcp-server.ts            # MCP server entry point (#!/usr/bin/env bun)
 
 tests/
   primitives/            # 6 primitive tests (RECON, MARK, RAID, PLUNDER, CHART, ESCAPE)
   patterns/              # OpenClaw pattern tests (events, compaction, hash chain)
-  plugin-system/         # Plugin discovery, S3, Azure Entra tests
+  plugin-system/         # Plugin discovery, S3, provider tests
   data/                  # MappingLoader + framework coverage tests
   mcp/                   # MCP server tool + resource tests
   output/                # OSCAL generator + report generator tests
@@ -615,6 +695,10 @@ tests/
   coordination/          # Multi-agent coordination tests
   integration/           # E2E multi-framework pipeline tests
   learning/              # Learning system tests
+  parley/                # MARQUE generation, verification, VC types, DID, SCITT, bundler
+  flagship/              # FLAGSHIP SET generation, SSF streams, event delivery
+  quartermaster/         # Governance review + adversarial eval tests
+  threat-model/          # SPYGLASS threat modeling tests
   cli/                   # CLI tests
 ```
 
@@ -622,7 +706,7 @@ tests/
 
 ## Testing
 
-561 tests across 41 files:
+957 tests across 75 files:
 
 ```bash
 # All tests
@@ -636,6 +720,10 @@ bun test tests/mcp/              # MCP server tests
 bun test tests/output/           # OSCAL + report tests
 bun test tests/isc/              # ISC system tests
 bun test tests/coordination/     # Multi-agent tests
+bun test tests/parley/           # Parley v2: MARQUE, JWT-VC, DID, SCITT
+bun test tests/flagship/         # FLAGSHIP: SET generation, SSF streams
+bun test tests/quartermaster/    # Governance review tests
+bun test tests/threat-model/     # SPYGLASS threat modeling
 bun test tests/integration/      # E2E multi-framework pipeline
 ```
 
