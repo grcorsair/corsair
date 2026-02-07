@@ -48,3 +48,7 @@ npm-debug.log*
 
 # Mission directories (generated during testing)
 missions/
+
+# Internal strategy documents (confidential)
+AUDIT_DISRUPTION_STRATEGY.md
+TPRM_DISRUPTION_STRATEGY.md
