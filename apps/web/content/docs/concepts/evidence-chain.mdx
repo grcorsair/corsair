@@ -100,4 +100,4 @@ This provides two properties beyond the existing hash chain:
 - **Non-repudiation** — The issuer cannot deny having issued the attestation at the recorded time
 - **Discoverability** — Third parties can audit the transparency log to verify CPOE history
 
-SCITT integration is defined at the type/interface level in the current release. Full transparency service integration is on the roadmap, tracking the IETF SCITT Architecture draft as it progresses toward RFC status.
+SCITT integration is production-ready with a Postgres-backed append-only transparency log. Statements are registered with SHA-256 Merkle tree hashing, and receipts are generated as COSE_Sign1 signed envelopes (RFC 9052) using Ed25519 — with hand-rolled CBOR encoding (RFC 8949) and zero external crypto dependencies. The API is available at `/scitt/entries` for registration and `/scitt/entries/:id/receipt` for receipt retrieval.
