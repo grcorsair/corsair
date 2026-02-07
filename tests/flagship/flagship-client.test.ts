@@ -121,6 +121,7 @@ describe("FlagshipClient", () => {
       const client = new FlagshipClient(
         `http://localhost:${serverPort}`,
         "rate-limited",
+        { maxRetries: 0 },
       );
 
       await expect(
@@ -135,6 +136,7 @@ describe("FlagshipClient", () => {
       const client = new FlagshipClient(
         `http://localhost:${serverPort}`,
         "valid-key",
+        { maxRetries: 0 },
       );
 
       await expect(

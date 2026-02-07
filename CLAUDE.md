@@ -13,7 +13,7 @@ Agentic GRC chaos engineering platform. Pirate-themed offensive security tool th
 ## Commands
 ```bash
 bun install                          # Install dependencies
-bun test                             # Run all tests (790 tests, 64 files)
+bun test                             # Run all tests (1167 tests, 86 files)
 bun test tests/threat-model/         # SPYGLASS engine tests
 bun test tests/parley/               # Marque/Parley tests
 bun test tests/quartermaster/        # Quartermaster tests

@@ -94,3 +94,27 @@ export interface SCITTRegistry {
   /** Retrieve a receipt for a previously registered entry */
   getReceipt(entryId: string): Promise<SCITTReceipt | null>;
 }
+
+// =============================================================================
+// INCLUSION PROOF & COSE RECEIPT (for Postgres-backed SCITT)
+// =============================================================================
+
+/**
+ * Merkle inclusion proof for a SCITT transparency log entry.
+ */
+export interface SCITTInclusionProof {
+  leafIndex: number;
+  treeSize: number;
+  hashes: string[];
+}
+
+/**
+ * COSE receipt wrapping a signed inclusion proof.
+ * The coseBytes field is base64-encoded COSE_Sign1.
+ */
+export interface COSEReceipt {
+  coseBytes: string; // base64-encoded COSE_Sign1
+  logId: string;
+  treeSize: number;
+  treeHash: string;
+}

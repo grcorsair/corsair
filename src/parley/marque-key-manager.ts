@@ -13,11 +13,29 @@ import * as path from "path";
 import { exportSPKI, importSPKI, exportJWK as joseExportJWK, importJWK as joseImportJWK } from "jose";
 import type { DIDDocument, VerificationMethod } from "./did-resolver";
 
+/**
+ * KeyManager Interface
+ *
+ * Abstraction for Ed25519 key management. Implementations may store keys
+ * on disk (MarqueKeyManager) or in Postgres (PgKeyManager).
+ */
+export interface KeyManager {
+  generateKeypair(): Promise<{ publicKey: Buffer; privateKey: Buffer }>;
+  loadKeypair(): Promise<{ publicKey: Buffer; privateKey: Buffer } | null>;
+  sign(data: string, privateKey?: Buffer): string;
+  verify(data: string, signature: string, publicKey: Buffer): boolean;
+  rotateKey(): Promise<{ newPublicKey: Buffer; retiredPublicKey: Buffer }>;
+  getRetiredKeys(): Buffer[] | Promise<Buffer[]>;
+  exportJWK(publicKey?: Buffer): Promise<JsonWebKey>;
+  importJWK(jwk: JsonWebKey): Promise<Buffer>;
+  generateDIDDocument(domain: string): Promise<DIDDocument>;
+}
+
 const PRIVATE_KEY_FILENAME = "corsair-signing.key";
 const PUBLIC_KEY_FILENAME = "corsair-signing.pub";
 const RETIRED_DIR = "retired";
 
-export class MarqueKeyManager {
+export class MarqueKeyManager implements KeyManager {
   private keyDir: string;
 
   constructor(keyDir?: string) {

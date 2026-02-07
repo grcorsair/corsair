@@ -580,7 +580,8 @@ The difference is existential. Compliance tools ask "are you compliant?" CORSAIR
 - **MCP Server**: 8 tools + 2 resources for AI agent integration
 - **Output**: OSCAL JSON, HTML reports, Markdown reports
 - **Event System**: Pub/sub events with aggregation and query support
-- **Tests**: 957 tests across 75 files (primitives, patterns, ISC, coordination, MCP, output, parley, flagship, E2E)
+- **Database**: Postgres via Bun.sql (zero-dependency driver), Railway hosting
+- **Tests**: 1,167 tests across 86 files (primitives, patterns, ISC, coordination, MCP, output, parley, flagship, db, functions, E2E)
 
 ---
 
@@ -604,6 +605,12 @@ src/
     event-engine.ts      # Event querying and aggregation
     plugin-engine.ts     # Plugin discovery and registry
 
+  db/                    # Database layer (Postgres via Bun.sql)
+    connection.ts        # Singleton connection pool (DATABASE_URL)
+    migrate.ts           # Idempotent SQL migration runner
+    index.ts             # Barrel exports
+    migrations/          # SQL migrations (001-004)
+
   parley/                # Parley trust exchange protocol
     marque-types.ts      # MARQUE document types + MarqueOutput
     parley-types.ts      # Exchange protocol types + FlagshipConfig
@@ -611,11 +618,16 @@ src/
     vc-generator.ts      # JWT-VC generation (jose + Ed25519)
     vc-verifier.ts       # JWT-VC verification
     did-resolver.ts      # DID:web parsing, formatting, resolution
-    scitt-types.ts       # SCITT transparency log type definitions
+    cbor.ts              # Minimal CBOR encoder/decoder (zero deps)
+    cose.ts              # Custom COSE_Sign1 sign/verify (Ed25519, zero deps)
+    merkle.ts            # SHA-256 Merkle tree + inclusion proofs
+    scitt-types.ts       # SCITT transparency log + COSE receipt types
     scitt-registry.ts    # Mock SCITT registry (testing boundary)
+    pg-scitt-registry.ts # Postgres-backed SCITT transparency log
     marque-generator.ts  # MARQUE generation (JWT-VC + JSON)
     marque-verifier.ts   # MARQUE verification (auto-detects format)
     marque-key-manager.ts # Ed25519 keypair management + JWK export
+    pg-key-manager.ts    # Postgres-backed key manager (AES-256-GCM encrypted)
     auto-bundler.ts      # Automated multi-provider MARQUE pipeline
     marque-oscal-mapper.ts # MARQUE → OSCAL Assessment Results
     parley-client.ts     # Parley exchange HTTP client + SSF streams
@@ -623,8 +635,9 @@ src/
   flagship/              # FLAGSHIP: Real-time compliance signals (SSF/SET/CAEP)
     flagship-types.ts    # CAEP event types with pirate aliases
     set-generator.ts     # Security Event Token generation (Ed25519-signed JWT)
-    ssf-stream.ts        # SSF stream lifecycle management
-    flagship-client.ts   # Push/poll event delivery client
+    ssf-stream.ts        # SSF stream lifecycle (memory + interface)
+    pg-ssf-stream.ts     # Postgres-backed SSF stream manager + event queue
+    flagship-client.ts   # Push/poll delivery client (retry, circuit breaker)
 
   data/                  # Framework mapping data layer
     mapping-loader.ts    # CTID/SCF loader with singleton cache
@@ -676,6 +689,14 @@ plugins/
 
 bin/
   corsair-verify.ts      # Standalone MARQUE verification CLI
+  corsair-did-generate.ts # DID document generation CLI
+
+functions/               # Railway Functions (Bun-native HTTP endpoints)
+  health.ts              # GET /health
+  ssf-configuration.ts   # GET /.well-known/ssf-configuration
+  ssf-stream.ts          # SSF stream CRUD API
+  scitt-register.ts      # SCITT registration + receipt API
+  ssf-delivery-worker.ts # Event delivery worker with retry
 
 mcp-server.ts            # MCP server entry point (#!/usr/bin/env bun)
 
@@ -691,8 +712,10 @@ tests/
   coordination/          # Multi-agent coordination tests
   integration/           # E2E multi-framework pipeline tests
   learning/              # Learning system tests
-  parley/                # MARQUE generation, verification, VC types, DID, SCITT, bundler
-  flagship/              # FLAGSHIP SET generation, SSF streams, event delivery
+  db/                    # Database connection + migration tests
+  parley/                # MARQUE, JWT-VC, DID, SCITT, CBOR, COSE, Merkle, key manager
+  flagship/              # FLAGSHIP SET generation, SSF streams, delivery worker
+  functions/             # API endpoint tests (SSF, SCITT, health)
   quartermaster/         # Governance review + adversarial eval tests
   threat-model/          # SPYGLASS threat modeling tests
   cli/                   # CLI tests
@@ -702,7 +725,7 @@ tests/
 
 ## Testing
 
-957 tests across 75 files:
+1,167 tests across 86 files:
 
 ```bash
 # All tests
@@ -716,8 +739,10 @@ bun test tests/mcp/              # MCP server tests
 bun test tests/output/           # OSCAL + report tests
 bun test tests/isc/              # ISC system tests
 bun test tests/coordination/     # Multi-agent tests
-bun test tests/parley/           # Parley: MARQUE, JWT-VC, DID, SCITT
-bun test tests/flagship/         # FLAGSHIP: SET generation, SSF streams
+bun test tests/db/               # Database connection + migration tests
+bun test tests/parley/           # Parley: MARQUE, JWT-VC, DID, SCITT, CBOR, COSE, Merkle
+bun test tests/flagship/         # FLAGSHIP: SET generation, SSF streams, delivery worker
+bun test tests/functions/        # API endpoint tests (SSF, SCITT, health)
 bun test tests/quartermaster/    # Governance review tests
 bun test tests/threat-model/     # SPYGLASS threat modeling
 bun test tests/integration/      # E2E multi-framework pipeline

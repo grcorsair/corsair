@@ -16,7 +16,30 @@ import type {
   FlagshipEventType,
 } from "./flagship-types";
 
-export class SSFStreamManager {
+// =============================================================================
+// INTERFACE
+// =============================================================================
+
+/**
+ * Common interface for SSF stream management.
+ * Implementations may be in-memory (MemorySSFStreamManager)
+ * or Postgres-backed (PgSSFStreamManager).
+ */
+export interface SSFStreamManagerInterface {
+  createStream(config: SSFStreamConfig): SSFStream | Promise<SSFStream>;
+  updateStream(streamId: string, updates: Partial<SSFStreamConfig>): SSFStream | Promise<SSFStream>;
+  deleteStream(streamId: string): void | Promise<void>;
+  getStream(streamId: string): SSFStream | null | Promise<SSFStream | null>;
+  getStreamStatus(streamId: string): SSFStream["status"] | null | Promise<SSFStream["status"] | null>;
+  listStreams(): SSFStream[] | Promise<SSFStream[]>;
+  shouldDeliver(streamId: string, eventType: FlagshipEventType): boolean | Promise<boolean>;
+}
+
+// =============================================================================
+// IN-MEMORY IMPLEMENTATION
+// =============================================================================
+
+export class MemorySSFStreamManager implements SSFStreamManagerInterface {
   private streams: Map<string, SSFStream> = new Map();
 
   /**
@@ -117,3 +140,6 @@ export class SSFStreamManager {
     return stream.config.events_requested.includes(eventType);
   }
 }
+
+// Backward-compatible alias
+export { MemorySSFStreamManager as SSFStreamManager };
