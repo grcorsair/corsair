@@ -1,59 +1,49 @@
 {
   "name": "corsair",
-  "version": "0.2.0",
-  "description": "CORSAIR - Agentic GRC chaos engineering platform",
+  "version": "0.3.0",
+  "description": "CORSAIR - CPOE ingestion and trust exchange platform",
   "type": "module",
-  "main": "src/corsair-mvp.ts",
-  "workspaces": ["apps/*"],
+  "main": "src/ingestion/index.ts",
   "bin": {
     "corsair": "./corsair.ts"
   },
   "scripts": {
-    "test": "bun test tests/primitives/",
-    "test:recon": "bun test tests/primitives/test_recon_readonly.test.ts",
-    "test:mark": "bun test tests/primitives/test_mark_drift.test.ts",
-    "test:raid": "bun test tests/primitives/test_raid_chaos.test.ts",
-    "test:plunder": "bun test tests/primitives/test_plunder_evidence.test.ts",
-    "test:chart": "bun test tests/primitives/test_chart_mapping.test.ts",
-    "test:escape": "bun test tests/primitives/test_escape_rollback.test.ts",
-    "test:agents": "bun test tests/agents/",
-    "test:agent-isc": "bun test tests/agents/test_agent_isc_generation.test.ts",
-    "corsair": "bun run corsair.ts",
-    "strike": "bun run corsair.ts strike",
-    "recon": "bun run corsair.ts recon",
-    "evidence": "bun run corsair.ts evidence",
-    "help": "bun run corsair.ts help",
-    "demo": "bun run demo.sh"
+    "test": "bun test",
+    "test:parley": "bun test tests/parley/",
+    "test:flagship": "bun test tests/flagship/",
+    "test:ingestion": "bun test tests/ingestion/",
+    "test:quartermaster": "bun test tests/quartermaster/",
+    "test:db": "bun test tests/db/",
+    "test:chart": "bun test tests/chart/",
+    "test:e2e": "bun test tests/integration/",
+    "test:output": "bun test tests/output/",
+    "test:data": "bun test tests/data/",
+    "test:functions": "bun test tests/functions/",
+    "ingest": "bun run corsair.ts ingest",
+    "verify": "bun run corsair.ts verify",
+    "serve": "bun run corsair.ts serve"
   },
   "keywords": [
-    "chaos-engineering",
-    "security",
-    "offensive-security",
     "compliance",
+    "verifiable-credentials",
+    "cpoe",
+    "grc",
     "soc2",
-    "mfa",
-    "authentication",
-    "tdd",
-    "cognito",
-    "aws"
+    "jwt-vc",
+    "scitt",
+    "ed25519",
+    "trust"
   ],
   "author": "GRC Engineer",
   "license": "MIT",
   "devDependencies": {
-    "bun-types": "latest",
-    "turbo": "^2.8.3"
+    "bun-types": "latest"
   },
   "exports": {
-    ".": "./src/corsair-mvp.ts"
+    ".": "./src/ingestion/index.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.72.1",
-    "@aws-sdk/client-cognito-identity-provider": "^3.983.0",
-    "@aws-sdk/client-iam": "^3.983.0",
-    "@aws-sdk/client-lambda": "^3.983.0",
-    "@aws-sdk/client-rds": "^3.983.0",
-    "@aws-sdk/client-s3": "^3.983.0",
-    "@modelcontextprotocol/sdk": "^1.26.0",
     "jose": "^6.1.3"
   }
 }

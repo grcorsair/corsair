@@ -122,7 +122,7 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
   let recordCount = 0;
   let chainVerified = true;
   const engine = new EvidenceEngine();
-  for (const evPath of input.evidencePaths) {
+  for (const evPath of (input.evidencePaths || [])) {
     if (!fs.existsSync(evPath)) continue;
     const verification = engine.verifyEvidenceChain(evPath);
     recordCount += verification.recordCount;
@@ -141,7 +141,7 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
     }
   }
   let resourceCount = 0;
-  for (const mark of input.markResults) resourceCount += mark.findings.length;
+  for (const mark of (input.markResults || [])) resourceCount += mark.findings.length;
   if (resourceCount === 0) resourceCount = input.providers.length;
 
   const subject: CPOECredentialSubject = {

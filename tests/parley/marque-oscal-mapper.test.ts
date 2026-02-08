@@ -10,7 +10,7 @@ import { mapToOSCAL } from "../../src/parley/marque-oscal-mapper";
 import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
 import { MarqueGenerator } from "../../src/parley/marque-generator";
 import type { MarqueDocument } from "../../src/parley/marque-types";
-import type { ChartResult } from "../../src/corsair-mvp";
+import type { ChartResult } from "../../src/types";
 
 const TEST_DIR = "/tmp/marque-oscal-mapper-test";
 let testMarque: MarqueDocument;

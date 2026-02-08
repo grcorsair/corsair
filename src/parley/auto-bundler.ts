@@ -14,13 +14,30 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { createHash } from "crypto";
 
-import { Corsair } from "../engine/index";
+// TODO: v0.3.0 — Corsair facade deleted. AutoBundler needs rewrite for ingestion pipeline.
+// import { Corsair } from "../engine/index";
+
+/**
+ * Minimal Corsair facade interface for AutoBundler compatibility.
+ * Will be replaced by the ingestion pipeline in Phase 2.
+ */
+interface Corsair {
+  recon(targetId: string, options: { source: string }): Promise<{ snapshot: Record<string, unknown> }>;
+  threatModel(snapshot: Record<string, unknown>, providerId: string): Promise<ThreatModelResult>;
+  autoMark(snapshot: Record<string, unknown>, providerId: string): Promise<MarkResult>;
+  autoRaid(snapshot: Record<string, unknown>, threatModel: ThreatModelResult): { vector: string; intensity: number; dryRun: boolean }[];
+  raid(snapshot: Record<string, unknown>, opts: { vector: string; intensity: number; dryRun: boolean }): Promise<RaidResult>;
+  plunder(raid: RaidResult, evidencePath: string): Promise<void>;
+  chart(findings: DriftFinding[], options: { providerId: string }): Promise<ChartResult>;
+}
+
 import { MarqueGenerator, type MarqueGeneratorInput } from "./marque-generator";
 import { MarqueKeyManager } from "./marque-key-manager";
 import { ParleyClient } from "./parley-client";
 import type { MarqueDocument } from "./marque-types";
 import type { ParleyConfig, BundleResult } from "./parley-types";
 import type {
+  DriftFinding,
   MarkResult,
   RaidResult,
   ChartResult,
@@ -217,13 +234,13 @@ export class AutoBundler {
   private hashResults(input: MarqueGeneratorInput): string {
     const data = JSON.stringify({
       providers: input.providers.sort(),
-      markFindings: input.markResults
+      markFindings: (input.markResults || [])
         .flatMap((m) => m.findings.map((f) => `${f.field}:${f.expected}:${f.actual}:${f.drift}`))
         .sort(),
-      raidResults: input.raidResults
+      raidResults: (input.raidResults || [])
         .map((r) => `${r.vector}:${r.success}:${r.controlsHeld}`)
         .sort(),
-      driftDetected: input.markResults.some((m) => m.driftDetected),
+      driftDetected: (input.markResults || []).some((m) => m.driftDetected),
     });
     return createHash("sha256").update(data).digest("hex");
   }

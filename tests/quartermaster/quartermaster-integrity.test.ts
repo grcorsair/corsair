@@ -12,7 +12,7 @@ import { existsSync, mkdirSync, writeFileSync, unlinkSync, rmSync } from "fs";
 import { createHash } from "crypto";
 import { QuartermasterAgent } from "../../src/quartermaster/quartermaster-agent";
 import type { QuartermasterInput, QuartermasterConfig } from "../../src/quartermaster/quartermaster-types";
-import type { MarkResult, RaidResult, ChartResult } from "../../src/corsair-mvp";
+import type { MarkResult, RaidResult, ChartResult } from "../../src/types";
 
 const TEST_DIR = "/tmp/quartermaster-integrity-test";
 const TEST_EVIDENCE = `${TEST_DIR}/evidence.jsonl`;

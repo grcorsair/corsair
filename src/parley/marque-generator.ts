@@ -29,6 +29,7 @@ import type {
   ThreatModelResult,
   PlunderRecord,
 } from "../types";
+import type { IngestedDocument } from "../ingestion/types";
 import { EvidenceEngine } from "../evidence";
 
 // =============================================================================
@@ -36,14 +37,20 @@ import { EvidenceEngine } from "../evidence";
 // =============================================================================
 
 export interface MarqueGeneratorInput {
-  markResults: MarkResult[];
-  raidResults: RaidResult[];
+  /** New primary input (from ingestion pipeline) */
+  document?: IngestedDocument;
+
+  /** Kept fields */
   chartResults: ChartResult[];
-  evidencePaths: string[];
-  threatModel?: ThreatModelResult;
   quartermasterAttestation?: MarqueQuartermasterAttestation;
   issuer: MarqueIssuer;
   providers: string[];
+
+  /** Legacy fields (now optional — not needed for document ingestion) */
+  markResults?: MarkResult[];
+  raidResults?: RaidResult[];
+  evidencePaths?: string[];
+  threatModel?: ThreatModelResult;
 }
 
 // =============================================================================
@@ -102,9 +109,9 @@ export class MarqueGenerator {
     // Build all sections with sanitization
     const frameworks = this.buildFrameworks(input.chartResults);
     const summary = this.buildSummary(frameworks);
-    const evidenceChain = this.buildEvidenceChain(input.evidencePaths);
-    const scope = this.buildScope(input.providers, input.chartResults, input.markResults);
-    const threatModel = this.buildThreatModelSummary(input.raidResults, input.threatModel);
+    const evidenceChain = this.buildEvidenceChain(input.evidencePaths || []);
+    const scope = this.buildScope(input.providers, input.chartResults, input.markResults || []);
+    const threatModel = this.buildThreatModelSummary(input.raidResults || [], input.threatModel);
 
     // Build the marque payload
     const marque: MarqueDocument["marque"] = {

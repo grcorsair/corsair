@@ -129,6 +129,54 @@ export class EvidenceEngine {
   }
 
   /**
+   * Capture evidence from generic data.
+   * Creates a single evidence record with the given data.
+   * Unlike plunder(), this does not require RaidResult-specific fields
+   * and creates only one record instead of three.
+   *
+   * @param operation - The operation type for this evidence record
+   * @param data - Arbitrary data to capture as evidence
+   * @param evidencePath - Path to write JSONL evidence
+   * @returns PlunderResult with evidence metadata
+   */
+  async captureEvidence(
+    operation: OperationType,
+    data: unknown,
+    evidencePath: string,
+  ): Promise<PlunderResult> {
+    this.sequence++;
+    const timestamp = new Date().toISOString();
+    const record: Omit<PlunderRecord, "hash"> = {
+      sequence: this.sequence,
+      timestamp,
+      operation,
+      data,
+      previousHash: this.lastHash,
+    };
+    const hash = this.calculateHash(record);
+    const event: PlunderRecord = { ...record, hash };
+    this.lastHash = hash;
+
+    // Ensure evidence directory exists before writing
+    const evidenceDir = dirname(evidencePath);
+    if (!existsSync(evidenceDir)) {
+      mkdirSync(evidenceDir, { recursive: true });
+    }
+
+    appendFileSync(evidencePath, JSON.stringify(event) + "\n");
+
+    const chainVerified = this.verifyEvidenceChain(evidencePath).valid;
+
+    return {
+      evidencePath,
+      eventCount: 1,
+      chainVerified,
+      immutable: true,
+      auditReady: chainVerified,
+    };
+  }
+
+  /**
    * Reset the evidence state.
    * Clears sequence counter and last hash.
    * Optionally clears the evidence file.

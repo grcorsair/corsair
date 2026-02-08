@@ -16,7 +16,18 @@ import type {
   PlunderResult,
   ThreatModelResult,
 } from "../types";
-import type { ISCCriterion } from "../types/isc";
+
+// Inlined from deleted src/types/isc.ts — kept minimal for QuartermasterInput
+interface ISCCriterion {
+  id: string;
+  text: string;
+  satisfaction: "PENDING" | "SATISFIED" | "FAILED";
+  evidenceRefs: string[];
+  createdAt: string;
+  verifiedAt?: string;
+  confidence?: number;
+  source?: string;
+}
 
 // =============================================================================
 // ADMIRAL FINDING
