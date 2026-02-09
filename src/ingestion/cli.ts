@@ -9,7 +9,6 @@
  *   bun run corsair.ts ingest --file report.pdf --type soc2 --output ./cpoe.jwt --format vc
  */
 
-import * as fs from "fs";
 import { parseSOC2 } from "./soc2-parser";
 import { mapToMarqueInput } from "./mapper";
 import { MarqueGenerator } from "../parley/marque-generator";
@@ -107,7 +106,7 @@ export async function runIngest(args: IngestArgs): Promise<void> {
     process.exit(2);
   }
 
-  if (!fs.existsSync(args.file)) {
+  if (!(await Bun.file(args.file).exists())) {
     console.error(`Error: File not found: ${args.file}`);
     process.exit(2);
   }
@@ -187,7 +186,7 @@ export async function runIngest(args: IngestArgs): Promise<void> {
     : JSON.stringify(output.v1!, null, 2);
 
   if (args.output) {
-    fs.writeFileSync(args.output, content);
+    await Bun.write(args.output, content);
     console.log(`\nCPOE written to: ${args.output}`);
   } else {
     console.log("\n--- CPOE ---");

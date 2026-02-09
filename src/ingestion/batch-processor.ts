@@ -5,7 +5,7 @@
  * pipeline, and collects results.
  */
 
-import { existsSync, readdirSync, writeFileSync } from "fs";
+import { existsSync, readdirSync } from "fs";
 import { join, extname } from "path";
 import type { DocumentSource } from "./types";
 
@@ -75,7 +75,7 @@ export async function processBatch(
       const outputFile = join(options.outputDir, `${file.replace(/\.pdf$/i, "")}.cpoe.jwt`);
       const content = output.format === "vc" ? output.jwt! : JSON.stringify(output.v1!, null, 2);
 
-      writeFileSync(outputFile, content);
+      await Bun.write(outputFile, content);
 
       result.succeeded++;
       result.results.push({ file, cpoe: outputFile });

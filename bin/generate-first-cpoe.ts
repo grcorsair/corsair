@@ -410,19 +410,19 @@ async function main(): Promise<void> {
 
   // Write raw JWT
   const jwtPath = path.join(EXAMPLES_DIR, "example-cpoe.jwt");
-  fs.writeFileSync(jwtPath, jwt);
+  await Bun.write(jwtPath, jwt);
   console.log(`      ${jwtPath}`);
 
   // Decode and write pretty-printed JSON
   const decoded = decodeJwt(jwt);
   const decodedPath = path.join(EXAMPLES_DIR, "example-cpoe-decoded.json");
-  fs.writeFileSync(decodedPath, JSON.stringify(decoded, null, 2));
+  await Bun.write(decodedPath, JSON.stringify(decoded, null, 2));
   console.log(`      ${decodedPath}`);
 
   // Generate DID document
   const didDoc = await keyManager.generateDIDDocument("grcorsair.com");
   const didPath = path.join(EXAMPLES_DIR, "did.json");
-  fs.writeFileSync(didPath, JSON.stringify(didDoc, null, 2));
+  await Bun.write(didPath, JSON.stringify(didDoc, null, 2));
   console.log(`      ${didPath}`);
 
   // 6. Print verification summary

@@ -26,7 +26,14 @@ export type { SOC2ParserOptions } from "./soc2-parser";
 export { readPDF } from "./pdf-extractor";
 export type { ExtractedPDF } from "./pdf-extractor";
 
-export { calculateAssuranceLevel, calculateDocumentAssurance } from "./assurance-calculator";
+export {
+  calculateAssuranceLevel,
+  calculateDocumentAssurance,
+  calculateDocumentRollup,
+  deriveProvenance,
+  assessFreshness,
+} from "./assurance-calculator";
+export type { FreshnessAssessment } from "./assurance-calculator";
 
 export { processBatch } from "./batch-processor";
 export type { BatchOptions, BatchResult } from "./batch-processor";

@@ -39,7 +39,7 @@ export class MarqueKeyManager implements KeyManager {
   private keyDir: string;
 
   constructor(keyDir?: string) {
-    this.keyDir = keyDir || path.join(process.env.HOME || "~", ".corsair", "keys");
+    this.keyDir = keyDir || path.join(Bun.env.HOME || "~", ".corsair", "keys");
   }
 
   /**
@@ -59,8 +59,8 @@ export class MarqueKeyManager implements KeyManager {
     const privateKeyPath = path.join(this.keyDir, PRIVATE_KEY_FILENAME);
     const publicKeyPath = path.join(this.keyDir, PUBLIC_KEY_FILENAME);
 
-    fs.writeFileSync(privateKeyPath, privateKey, { mode: 0o600 });
-    fs.writeFileSync(publicKeyPath, publicKey, { mode: 0o644 });
+    await Bun.write(privateKeyPath, privateKey);
+    await Bun.write(publicKeyPath, publicKey);
 
     return {
       publicKey: Buffer.from(publicKey),
@@ -76,16 +76,16 @@ export class MarqueKeyManager implements KeyManager {
     const privateKeyPath = path.join(this.keyDir, PRIVATE_KEY_FILENAME);
     const publicKeyPath = path.join(this.keyDir, PUBLIC_KEY_FILENAME);
 
-    if (!fs.existsSync(privateKeyPath) || !fs.existsSync(publicKeyPath)) {
+    if (!(await Bun.file(privateKeyPath).exists()) || !(await Bun.file(publicKeyPath).exists())) {
       return null;
     }
 
-    const privateKey = fs.readFileSync(privateKeyPath);
-    const publicKey = fs.readFileSync(publicKeyPath);
+    const privateKeyArrayBuffer = await Bun.file(privateKeyPath).arrayBuffer();
+    const publicKeyArrayBuffer = await Bun.file(publicKeyPath).arrayBuffer();
 
     return {
-      publicKey: Buffer.from(publicKey),
-      privateKey: Buffer.from(privateKey),
+      publicKey: Buffer.from(publicKeyArrayBuffer),
+      privateKey: Buffer.from(privateKeyArrayBuffer),
     };
   }
 
@@ -145,11 +145,12 @@ export class MarqueKeyManager implements KeyManager {
   async rotateKey(): Promise<{ newPublicKey: Buffer; retiredPublicKey: Buffer }> {
     // Read current public key before rotation
     const publicKeyPath = path.join(this.keyDir, PUBLIC_KEY_FILENAME);
-    if (!fs.existsSync(publicKeyPath)) {
+    if (!(await Bun.file(publicKeyPath).exists())) {
       throw new Error("No existing keypair to rotate. Generate a keypair first.");
     }
 
-    const currentPublicKey = fs.readFileSync(publicKeyPath);
+    const currentPublicKeyArrayBuffer = await Bun.file(publicKeyPath).arrayBuffer();
+    const currentPublicKey = Buffer.from(currentPublicKeyArrayBuffer);
 
     // Ensure retired directory exists
     const retiredDir = path.join(this.keyDir, RETIRED_DIR);
@@ -159,14 +160,14 @@ export class MarqueKeyManager implements KeyManager {
     const timestamp = Date.now();
     const uniqueId = crypto.randomUUID().slice(0, 8);
     const retiredKeyPath = path.join(retiredDir, `corsair-signing-${timestamp}-${uniqueId}.pub`);
-    fs.writeFileSync(retiredKeyPath, currentPublicKey);
+    await Bun.write(retiredKeyPath, currentPublicKey);
 
     // Generate new keypair (overwrites current files)
     const newKeypair = await this.generateKeypair();
 
     return {
       newPublicKey: newKeypair.publicKey,
-      retiredPublicKey: Buffer.from(currentPublicKey),
+      retiredPublicKey: currentPublicKey,
     };
   }
 

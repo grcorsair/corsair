@@ -11,16 +11,14 @@
 
 import * as crypto from "crypto";
 import { SignJWT, importPKCS8 } from "jose";
-import * as fs from "fs";
-import * as path from "path";
+import { existsSync } from "fs";
 
 import { MarqueKeyManager } from "./marque-key-manager";
 import { sanitize } from "./marque-generator";
 import type { MarqueGeneratorInput } from "./marque-generator";
-import type { CPOECredentialSubject, CPOEAssurance, CPOEProvenance, AssuranceLevel } from "./vc-types";
+import type { CPOECredentialSubject, CPOEAssurance, CPOEProvenance } from "./vc-types";
 import { VC_CONTEXT, CORSAIR_CONTEXT, CPOE_TYPE } from "./vc-types";
-import { calculateDocumentAssurance } from "../ingestion/assurance-calculator";
-import type { DocumentSource } from "../ingestion/types";
+import { calculateDocumentAssurance, calculateDocumentRollup, deriveProvenance } from "../ingestion/assurance-calculator";
 import { EvidenceEngine } from "../evidence";
 
 const PRIVATE_KEY_FILENAME = "corsair-signing.key";
@@ -149,7 +147,7 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
     let chainVerified = true;
     const engine = new EvidenceEngine();
     for (const evPath of evidencePaths) {
-      if (!fs.existsSync(evPath)) continue;
+      if (!existsSync(evPath)) continue;
       const verification = engine.verifyEvidenceChain(evPath);
       recordCount += verification.recordCount;
       if (!verification.valid) chainVerified = false;
@@ -192,25 +190,8 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
 }
 
 // =============================================================================
-// INTERNAL: ASSURANCE
+// INTERNAL: ASSURANCE (delegates to assurance-calculator)
 // =============================================================================
-
-/** Map DocumentSource to assurance method */
-function sourceToMethod(source: DocumentSource): CPOEAssurance["method"] {
-  switch (source) {
-    case "soc2":
-    case "iso27001":
-    case "manual":
-      return "self-assessed";
-    case "prowler":
-    case "securityhub":
-      return "automated-config-check";
-    case "pentest":
-      return "ai-evidence-review";
-    default:
-      return "self-assessed";
-  }
-}
 
 /** Build CPOEAssurance from input */
 function buildAssurance(input: MarqueGeneratorInput): CPOEAssurance {
@@ -221,28 +202,8 @@ function buildAssurance(input: MarqueGeneratorInput): CPOEAssurance {
       doc.source,
       doc.metadata,
     );
-
-    // Build breakdown: count controls at each level
-    const breakdown: Record<string, number> = {};
-    let minLevel: AssuranceLevel = 4;
-    for (const ctrl of controlsWithAssurance) {
-      const lvl = String(ctrl.assuranceLevel);
-      breakdown[lvl] = (breakdown[lvl] || 0) + 1;
-      if (ctrl.assuranceLevel < minLevel) {
-        minLevel = ctrl.assuranceLevel;
-      }
-    }
-    // If no controls, declared is 0
-    if (controlsWithAssurance.length === 0) {
-      minLevel = 0;
-    }
-
-    return {
-      declared: minLevel,
-      verified: true,
-      method: sourceToMethod(doc.source),
-      breakdown,
-    };
+    const { assurance } = calculateDocumentRollup(controlsWithAssurance, doc.source, doc.metadata);
+    return assurance;
   }
 
   // Legacy path — no document, minimal assurance
@@ -255,40 +216,13 @@ function buildAssurance(input: MarqueGeneratorInput): CPOEAssurance {
 }
 
 // =============================================================================
-// INTERNAL: PROVENANCE
+// INTERNAL: PROVENANCE (delegates to assurance-calculator)
 // =============================================================================
-
-/** Map DocumentSource to provenance source type */
-function sourceToProvenanceSource(source: DocumentSource): CPOEProvenance["source"] {
-  switch (source) {
-    case "soc2":
-    case "iso27001":
-      return "auditor";
-    case "prowler":
-    case "securityhub":
-    case "pentest":
-      return "tool";
-    case "manual":
-    default:
-      return "self";
-  }
-}
 
 /** Build CPOEProvenance from input */
 function buildProvenance(input: MarqueGeneratorInput): CPOEProvenance {
   if (input.document) {
-    const doc = input.document;
-    const provenance: CPOEProvenance = {
-      source: sourceToProvenanceSource(doc.source),
-    };
-
-    const identity = doc.metadata.auditor || doc.metadata.issuer;
-    if (identity) provenance.sourceIdentity = identity;
-
-    if (doc.metadata.rawTextHash) provenance.sourceDocument = doc.metadata.rawTextHash;
-    if (doc.metadata.date) provenance.sourceDate = doc.metadata.date;
-
-    return provenance;
+    return deriveProvenance(input.document.source, input.document.metadata);
   }
 
   // Legacy path

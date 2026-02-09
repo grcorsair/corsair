@@ -11,7 +11,6 @@
  */
 
 import * as crypto from "crypto";
-import { readFileSync } from "fs";
 
 import type { MarqueDocument } from "./marque-types";
 import { sortKeysDeep } from "./marque-generator";
@@ -95,7 +94,7 @@ export class MarqueVerifier {
    * Auto-detects format: JWT string or JSON object.
    */
   async verifyFromFile(filePath: string): Promise<MarqueVerificationResult> {
-    const content = readFileSync(filePath, "utf-8").trim();
+    const content = (await Bun.file(filePath).text()).trim();
 
     // If it looks like a JWT (starts with eyJ and has dots), treat as JWT-VC
     if (content.startsWith("eyJ") && content.split(".").length === 3) {

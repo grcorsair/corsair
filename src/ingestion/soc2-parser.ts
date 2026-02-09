@@ -112,7 +112,7 @@ export async function parseSOC2(
 
   // 2. Send to Claude
   const client = new Anthropic({
-    apiKey: options?.apiKey || process.env.ANTHROPIC_API_KEY,
+    apiKey: options?.apiKey || Bun.env.ANTHROPIC_API_KEY,
   });
 
   const model = options?.model || "claude-sonnet-4-5-20250929";
@@ -167,7 +167,7 @@ export async function parseSOC2FromText(
   options?: SOC2ParserOptions,
 ): Promise<IngestedDocument> {
   const client = new Anthropic({
-    apiKey: options?.apiKey || process.env.ANTHROPIC_API_KEY,
+    apiKey: options?.apiKey || Bun.env.ANTHROPIC_API_KEY,
   });
 
   const model = options?.model || "claude-sonnet-4-5-20250929";
