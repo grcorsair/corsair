@@ -70,6 +70,80 @@ export interface VCProof {
 /** Assurance level — L0 (Documented) through L4 (Attested) */
 export type AssuranceLevel = 0 | 1 | 2 | 3 | 4;
 
+// =============================================================================
+// EVIDENCE TYPE HIERARCHY (ISO 19011 + SOC 2 + NIST 800-53A)
+// =============================================================================
+
+/**
+ * Evidence type ranked by reliability across three converging frameworks:
+ * ISO 19011 reliability hierarchy + SOC 2 test methods + NIST 800-53A methods.
+ *
+ * Ordered from highest to lowest reliability.
+ */
+export type EvidenceType =
+  | "automated-observation"   // Highest: CAAT, continuous monitoring (SOC 2: CAAT, NIST: Test-Comprehensive)
+  | "system-generated-record" // System logs, config exports (SOC 2: Inspection, NIST: Examine-Focused)
+  | "reperformance"           // Assessor re-executes procedure (SOC 2: Reperformance, NIST: Test-Focused)
+  | "documented-record"       // Policies, procedures, reports (SOC 2: Observation, NIST: Examine-Basic)
+  | "interview"               // Personnel discussions (SOC 2: Inquiry, NIST: Interview-Basic)
+  | "self-attestation";       // Lowest: Self-reported (no SOC 2/NIST equivalent)
+
+// =============================================================================
+// SEVEN-DIMENSION ASSURANCE MODEL (FAIR-CAM + GRADE + COSO)
+// =============================================================================
+
+/**
+ * Seven-dimension assurance model grounded in 8 international frameworks.
+ *
+ * The Universal Triad (D1-D3) comes from FAIR-CAM × COBIT × COSO convergence:
+ * every framework agrees effectiveness = strength × breadth × consistency.
+ *
+ * The Evidence Quality dimensions (D4-D7) come from GRADE × NIST 800-53A × Three Lines Model.
+ *
+ * All scores are 0-100. Dimensions are INFORMATIONAL, not gating — the L0-L4
+ * declared level remains the SSL-model minimum. Dimensions provide granularity
+ * WITHIN a level (a rich L1 vs a thin L1).
+ */
+export interface AssuranceDimensions {
+  /** D1: Capability — "How strong is this control as designed?" (FAIR-CAM, COSO Design Effectiveness, CC EAL) */
+  capability: number;
+  /** D2: Coverage — "What % of in-scope assets does it protect?" (FAIR-CAM, COBIT, NIST 53A Coverage) */
+  coverage: number;
+  /** D3: Reliability — "How consistently does it operate?" (FAIR-CAM, COBIT Control, COSO Operating Effectiveness) */
+  reliability: number;
+  /** D4: Evidence Methodology — "How rigorous was the assessment?" (GRADE Risk of Bias, NIST 53A Depth, SOC 2 methods) */
+  methodology: number;
+  /** D5: Evidence Freshness — "How recent is the evidence?" (GRADE Imprecision, ISO 27004 timing) */
+  freshness: number;
+  /** D6: Evidence Independence — "How separated is assessor from assessed?" (Three Lines Model, GRADE Publication Bias) */
+  independence: number;
+  /** D7: Evidence Consistency — "Do multiple sources agree?" (GRADE Inconsistency, IEC 62443 SL alignment) */
+  consistency: number;
+}
+
+// =============================================================================
+// OBSERVATION PERIOD (COSO Design vs Operating + SOC 2 Type II)
+// =============================================================================
+
+/**
+ * Observation period mapping to COSO's Design Effectiveness vs Operating Effectiveness
+ * distinction — the single most validated finding across all frameworks.
+ */
+export interface ObservationPeriod {
+  /** Assessment start date (ISO 8601) */
+  startDate: string;
+  /** Assessment end date (ISO 8601) */
+  endDate: string;
+  /** Duration in calendar days */
+  durationDays: number;
+  /** Whether the period is sufficient for the declared level (>= 90 days for L2+) */
+  sufficient: boolean;
+  /** COSO classification: "design-only" (L0-L1) or "operating" (L2+) */
+  cosoClassification: "design-only" | "operating";
+  /** SOC 2 equivalent period description */
+  soc2Equivalent: "Pre-engagement" | "Type I" | "Type II (3mo)" | "Type II (6mo)" | "Type II (12mo)";
+}
+
 /** Human-readable assurance level names */
 export const ASSURANCE_NAMES: Record<AssuranceLevel, string> = {
   0: "Documented",
@@ -181,6 +255,51 @@ export interface CPOECredentialSubject extends CredentialSubject {
     trustTier: string;
     dimensions: Array<{ dimension: string; score: number }>;
   };
+
+  /** Optional 7-dimension assurance scores (FAIR-CAM + GRADE + COSO grounded) */
+  dimensions?: AssuranceDimensions;
+
+  /** Optional evidence types present in the assessment (ISO 19011 hierarchy) */
+  evidenceTypes?: EvidenceType[];
+
+  /** Optional observation period (COSO Design vs Operating Effectiveness) */
+  observationPeriod?: ObservationPeriod;
+
+  /** Optional CRQ risk quantification (BetaPERT + FAIR-CAM mapping) */
+  riskQuantification?: CPOERiskQuantification;
+}
+
+// =============================================================================
+// CRQ RISK QUANTIFICATION
+// =============================================================================
+
+/**
+ * Risk quantification output for CRQ platform consumption.
+ * Maps CPOE assurance data to FAIR-CAM and BetaPERT models.
+ */
+export interface CPOERiskQuantification {
+  /** BetaPERT distribution parameters for Monte Carlo simulation */
+  betaPert: {
+    /** Shape parameter: 2/4/6/8/10 for L0-L4 */
+    shapeParameter: number;
+    /** Confidence width description */
+    confidenceWidth: "very-wide" | "wide" | "moderate" | "narrow" | "very-narrow";
+  };
+  /** FAIR-CAM operational efficacy mapping */
+  fairMapping: {
+    /** Resistance strength derived from assurance level */
+    resistanceStrength: "very-low" | "low" | "moderate" | "high" | "very-high";
+    /** Control effectiveness from pass rate (0-1) */
+    controlEffectiveness: number;
+    /** FAIR-CAM function classification */
+    controlFunction: "loss-event" | "variance-management" | "decision-support";
+  };
+  /** Three Lines Model provenance modifier: self=0.75, tool=1.0, auditor=1.25 */
+  provenanceModifier: number;
+  /** Freshness decay factor: 1.0 (fresh) → 0.0 (365+ days) */
+  freshnessDecay: number;
+  /** Aggregate confidence from 7 dimensions (geometric mean, 0-1) */
+  dimensionConfidence: number;
 }
 
 // =============================================================================

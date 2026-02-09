@@ -12,7 +12,17 @@
 import { SignJWT, jwtVerify, importPKCS8, importSPKI } from "jose";
 import * as crypto from "crypto";
 import type { MarqueKeyManager } from "../parley/marque-key-manager";
-import type { FlagshipEvent, SETPayload } from "./flagship-types";
+import type {
+  FlagshipEvent,
+  SETPayload,
+  FlagshipEventType,
+  CAEPEventData,
+  ColorsChangedData,
+  FleetAlertData,
+  PapersChangedData,
+  MarqueRevokedData,
+} from "./flagship-types";
+import { FLAGSHIP_EVENTS } from "./flagship-types";
 
 /**
  * Generate a signed Security Event Token (SET) for a FLAGSHIP event.
@@ -68,6 +78,57 @@ export async function generateSET(
  * @param keyManager - MarqueKeyManager with the signing public key
  * @returns Verification result with validity flag and decoded payload
  */
+/**
+ * Generate a plain-English description for a FLAGSHIP event.
+ * Designed for GRC staff, vendors, and auditors — NOT engineers.
+ *
+ * @param event - The FLAGSHIP event to describe
+ * @returns Human-readable description of what changed and why it matters
+ */
+export function generateFlagshipDescription(event: FlagshipEvent): string {
+  const marqueId = event.data.subject.corsair.marqueId;
+  const provider = event.data.subject.corsair.provider;
+  const providerNote = provider ? ` for ${provider}` : "";
+
+  switch (event.type) {
+    case FLAGSHIP_EVENTS.COLORS_CHANGED: {
+      const data = event.data as ColorsChangedData;
+      const direction = data.change_direction === "increase" ? "upgraded" : "downgraded";
+      return `Assurance level ${direction} from "${data.previous_level}" to "${data.current_level}"${providerNote}. ` +
+        `CPOE ${marqueId} now reflects ${data.change_direction === "increase" ? "stronger" : "weaker"} evidence of control effectiveness.`;
+    }
+
+    case FLAGSHIP_EVENTS.FLEET_ALERT: {
+      const data = event.data as FleetAlertData;
+      const controlList = data.affected_controls.join(", ");
+      return `Compliance drift detected${providerNote}: ${data.drift_type} (${data.severity} severity). ` +
+        `Affected controls: ${controlList}. CPOE ${marqueId} may require reassessment.`;
+    }
+
+    case FLAGSHIP_EVENTS.PAPERS_CHANGED: {
+      const data = event.data as PapersChangedData;
+      const actionMap: Record<string, string> = {
+        issued: "A new CPOE has been issued",
+        renewed: "The CPOE has been renewed with updated evidence",
+        revoked: "The CPOE has been revoked and should no longer be trusted",
+        expired: "The CPOE has expired and should be renewed",
+      };
+      return `${actionMap[data.change_type] ?? "CPOE status changed"}${providerNote}. ` +
+        `CPOE ${marqueId} (${data.credential_type}).`;
+    }
+
+    case FLAGSHIP_EVENTS.MARQUE_REVOKED: {
+      const data = event.data as MarqueRevokedData;
+      const revokedAt = new Date(data.revocation_timestamp * 1000).toISOString();
+      return `EMERGENCY: CPOE ${marqueId} has been revoked by ${data.initiator}. ` +
+        `Reason: ${data.reason}. Revoked at ${revokedAt}. This CPOE should no longer be accepted.`;
+    }
+
+    default:
+      return `FLAGSHIP event for CPOE ${marqueId}${providerNote}.`;
+  }
+}
+
 export async function verifySET(
   jwt: string,
   keyManager: MarqueKeyManager,

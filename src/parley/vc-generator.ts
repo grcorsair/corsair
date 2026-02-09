@@ -18,7 +18,14 @@ import { sanitize } from "./marque-generator";
 import type { MarqueGeneratorInput } from "./marque-generator";
 import type { CPOECredentialSubject, CPOEAssurance, CPOEProvenance } from "./vc-types";
 import { VC_CONTEXT, CORSAIR_CONTEXT, CPOE_TYPE } from "./vc-types";
-import { calculateDocumentAssurance, calculateDocumentRollup, deriveProvenance } from "../ingestion/assurance-calculator";
+import {
+  calculateDocumentAssurance,
+  calculateDocumentRollup,
+  deriveProvenance,
+  calculateAssuranceDimensions,
+  deriveEvidenceTypes,
+  deriveObservationPeriod,
+} from "../ingestion/assurance-calculator";
 import { EvidenceEngine } from "../evidence";
 
 const PRIVATE_KEY_FILENAME = "corsair-signing.key";
@@ -184,6 +191,41 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
         score: d.score,
       })),
     };
+  }
+
+  // Wire in framework-grounded assurance dimensions (optional, informational)
+  if (input.document) {
+    const doc = input.document;
+
+    // Extract QM scores for dimension calculation if available
+    const qmScores = input.quartermasterAttestation
+      ? {
+          methodology: input.quartermasterAttestation.dimensions.find(d => d.dimension === "methodology")?.score ?? undefined,
+          bias: input.quartermasterAttestation.dimensions.find(d => d.dimension === "bias_detection" || d.dimension === "bias")?.score ?? undefined,
+        }
+      : undefined;
+
+    // Only include if QM scores are valid (both defined) or neither
+    const cleanQmScores = qmScores && (qmScores.methodology !== undefined || qmScores.bias !== undefined)
+      ? qmScores as { methodology: number; bias: number }
+      : undefined;
+
+    subject.dimensions = calculateAssuranceDimensions(
+      doc.controls,
+      doc.source,
+      doc.metadata,
+      cleanQmScores,
+    );
+
+    const evidenceTypes = deriveEvidenceTypes(doc.controls, doc.source);
+    if (evidenceTypes.length > 0) {
+      subject.evidenceTypes = evidenceTypes;
+    }
+
+    const observationPeriod = deriveObservationPeriod(doc.metadata);
+    if (observationPeriod) {
+      subject.observationPeriod = observationPeriod;
+    }
   }
 
   return subject;

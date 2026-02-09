@@ -89,6 +89,35 @@ export interface MarqueVerificationResult {
     generatedAt?: string;
     expiresAt?: string;
   };
+  /** 7-dimension assurance scores (FAIR-CAM + GRADE + COSO) */
+  dimensions?: {
+    capability: number;
+    coverage: number;
+    reliability: number;
+    methodology: number;
+    freshness: number;
+    independence: number;
+    consistency: number;
+  };
+  /** Evidence types present (ISO 19011 hierarchy) */
+  evidenceTypes?: string[];
+  /** Observation period (COSO Design vs Operating) */
+  observationPeriod?: {
+    startDate: string;
+    endDate: string;
+    durationDays: number;
+    sufficient: boolean;
+    cosoClassification: string;
+    soc2Equivalent: string;
+  };
+  /** CRQ risk quantification data */
+  riskQuantification?: {
+    betaPert: { shapeParameter: number; confidenceWidth: string };
+    fairMapping: { resistanceStrength: string; controlEffectiveness: number; controlFunction: string };
+    provenanceModifier: number;
+    freshnessDecay: number;
+    dimensionConfidence: number;
+  };
 }
 
 function base64ToBuffer(base64: string): ArrayBuffer {
@@ -392,6 +421,25 @@ function extractCPOEFields(payload: {
     overallScore?: number;
   } | undefined;
 
+  // Extract new framework-grounded fields
+  const dimensionsData = cs.dimensions as {
+    capability: number; coverage: number; reliability: number;
+    methodology: number; freshness: number; independence: number; consistency: number;
+  } | undefined;
+
+  const evidenceTypesData = cs.evidenceTypes as string[] | undefined;
+
+  const observationPeriodData = cs.observationPeriod as {
+    startDate: string; endDate: string; durationDays: number;
+    sufficient: boolean; cosoClassification: string; soc2Equivalent: string;
+  } | undefined;
+
+  const riskQuantificationData = cs.riskQuantification as {
+    betaPert: { shapeParameter: number; confidenceWidth: string };
+    fairMapping: { resistanceStrength: string; controlEffectiveness: number; controlFunction: string };
+    provenanceModifier: number; freshnessDecay: number; dimensionConfidence: number;
+  } | undefined;
+
   return {
     issuerTier: determineIssuerTier(payload),
     assuranceLevel: assuranceData?.declared,
@@ -417,6 +465,10 @@ function extractCPOEFields(payload: {
       controlsFailed: summaryData.controlsFailed ?? 0,
       overallScore: summaryData.overallScore ?? 0,
     } : undefined,
+    dimensions: dimensionsData,
+    evidenceTypes: evidenceTypesData,
+    observationPeriod: observationPeriodData,
+    riskQuantification: riskQuantificationData,
   };
 }
 

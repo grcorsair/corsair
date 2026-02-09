@@ -462,6 +462,167 @@ export function MarqueVerifier() {
                 </Card>
               )}
 
+              {/* 7-Dimension Assurance Profile */}
+              {result.dimensions && (
+                <Card className="bg-corsair-surface">
+                  <CardContent className="space-y-3 p-4">
+                    <span className="block font-mono text-xs uppercase text-muted-foreground">
+                      Assurance Dimensions (FAIR-CAM + GRADE + COSO)
+                    </span>
+                    {(["capability", "coverage", "reliability", "methodology", "freshness", "independence", "consistency"] as const).map((dim) => {
+                      const value = result.dimensions![dim];
+                      const labels: Record<string, string> = {
+                        capability: "Capability",
+                        coverage: "Coverage",
+                        reliability: "Reliability",
+                        methodology: "Methodology",
+                        freshness: "Freshness",
+                        independence: "Independence",
+                        consistency: "Consistency",
+                      };
+                      const sources: Record<string, string> = {
+                        capability: "FAIR-CAM",
+                        coverage: "FAIR-CAM + COBIT",
+                        reliability: "COSO",
+                        methodology: "GRADE + NIST 53A",
+                        freshness: "ISO 27004",
+                        independence: "Three Lines Model",
+                        consistency: "GRADE + IEC 62443",
+                      };
+                      return (
+                        <div key={dim} className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-foreground">{labels[dim]}</span>
+                            <span className="text-xs text-muted-foreground">{sources[dim]} — {value}/100</span>
+                          </div>
+                          <div className="h-1.5 overflow-hidden rounded-full bg-corsair-deep">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                value >= 75 ? "bg-corsair-green" :
+                                value >= 50 ? "bg-corsair-cyan" :
+                                value >= 25 ? "bg-yellow-400" :
+                                "bg-corsair-crimson"
+                              }`}
+                              style={{ width: `${value}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Evidence Types */}
+              {result.evidenceTypes && result.evidenceTypes.length > 0 && (
+                <Card className="bg-corsair-surface">
+                  <CardContent className="p-4">
+                    <span className="mb-2 block font-mono text-xs uppercase text-muted-foreground">
+                      Evidence Types (ISO 19011)
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {result.evidenceTypes.map((type) => {
+                        const typeColors: Record<string, string> = {
+                          "automated-observation": "border-corsair-green/40 text-corsair-green",
+                          "system-generated-record": "border-corsair-cyan/40 text-corsair-cyan",
+                          "reperformance": "border-blue-400/40 text-blue-400",
+                          "documented-record": "border-yellow-500/40 text-yellow-400",
+                          "interview": "border-orange-400/40 text-orange-400",
+                          "self-attestation": "border-corsair-crimson/40 text-corsair-crimson",
+                        };
+                        return (
+                          <Badge
+                            key={type}
+                            variant="outline"
+                            className={typeColors[type] ?? "text-muted-foreground"}
+                          >
+                            {type.replace(/-/g, " ")}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Observation Period */}
+              {result.observationPeriod && (
+                <Card className="bg-corsair-surface">
+                  <CardContent className="p-4">
+                    <span className="mb-2 block font-mono text-xs uppercase text-muted-foreground">
+                      Observation Period (COSO)
+                    </span>
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      <div>
+                        <span className="block text-xs text-muted-foreground">Period</span>
+                        <span className="text-sm text-foreground">
+                          {result.observationPeriod.startDate} — {result.observationPeriod.endDate}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="block text-xs text-muted-foreground">Classification</span>
+                        <Badge
+                          variant="outline"
+                          className={
+                            result.observationPeriod.cosoClassification === "operating"
+                              ? "border-corsair-green/40 text-corsair-green"
+                              : "border-yellow-500/40 text-yellow-400"
+                          }
+                        >
+                          {result.observationPeriod.cosoClassification === "operating" ? "Operating Effectiveness" : "Design Only"}
+                        </Badge>
+                      </div>
+                      <div>
+                        <span className="block text-xs text-muted-foreground">SOC 2 Equivalent</span>
+                        <span className="text-sm text-foreground">{result.observationPeriod.soc2Equivalent}</span>
+                      </div>
+                    </div>
+                    {!result.observationPeriod.sufficient && (
+                      <div className="mt-2 text-xs text-yellow-400">
+                        Period of {result.observationPeriod.durationDays} days is below the 90-day minimum for L2+ assurance.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Risk Quantification */}
+              {result.riskQuantification && (
+                <Card className="bg-corsair-surface">
+                  <CardContent className="space-y-3 p-4">
+                    <span className="block font-mono text-xs uppercase text-muted-foreground">
+                      Risk Quantification (CRQ)
+                    </span>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <span className="block text-xs text-muted-foreground">BetaPERT Shape</span>
+                        <span className="text-sm text-foreground">
+                          {"\u03B3"}={result.riskQuantification.betaPert.shapeParameter} ({result.riskQuantification.betaPert.confidenceWidth.replace(/-/g, " ")})
+                        </span>
+                      </div>
+                      <div>
+                        <span className="block text-xs text-muted-foreground">FAIR-CAM Resistance</span>
+                        <span className="text-sm text-foreground">
+                          {result.riskQuantification.fairMapping.resistanceStrength.replace(/-/g, " ")}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="block text-xs text-muted-foreground">Provenance Modifier</span>
+                        <span className="text-sm text-foreground">
+                          {result.riskQuantification.provenanceModifier}x
+                        </span>
+                      </div>
+                      <div>
+                        <span className="block text-xs text-muted-foreground">Freshness Decay</span>
+                        <span className="text-sm text-foreground">
+                          {Math.round(result.riskQuantification.freshnessDecay * 100)}%
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Trust tier */}
               {result.document?.quartermasterAttestation && (
                 <Card className="bg-corsair-surface">
@@ -534,6 +695,43 @@ export function MarqueVerifier() {
                       </Card>
                     ))}
                   </div>
+                </div>
+              )}
+              {/* Download as JSON */}
+              {result.valid && (
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="font-mono text-xs hover:border-corsair-gold hover:text-corsair-gold"
+                    onClick={() => {
+                      const exportData = {
+                        verification: {
+                          valid: result.valid,
+                          issuerTier: result.issuerTier,
+                          format: result.format,
+                        },
+                        assurance: result.assurance,
+                        provenance: result.provenance,
+                        summary: result.summary,
+                        scope: result.scope,
+                        dimensions: result.dimensions,
+                        evidenceTypes: result.evidenceTypes,
+                        observationPeriod: result.observationPeriod,
+                        riskQuantification: result.riskQuantification,
+                        vcMetadata: result.vcMetadata,
+                      };
+                      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "cpoe-verification.json";
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    Download as JSON
+                  </Button>
                 </div>
               )}
             </CardContent>

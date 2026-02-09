@@ -267,4 +267,109 @@ describe("VC Generator - JWT-VC Generation", () => {
 
     expect(payload.iss).toBe("corsair-fallback");
   });
+
+  // ===========================================================================
+  // Phase 1D: Framework-grounded fields wiring
+  // ===========================================================================
+
+  test("JWT includes dimensions when document input is provided", async () => {
+    const { keyManager, input } = await setup();
+    input.document = {
+      source: "soc2",
+      metadata: {
+        title: "SOC 2 Type II",
+        issuer: "Acme",
+        date: new Date().toISOString().split("T")[0],
+        scope: "All production systems",
+        auditor: "Deloitte LLP",
+        reportType: "SOC 2 Type II",
+      },
+      controls: [
+        { id: "CC6.1", description: "Logical access", status: "effective", evidence: "MFA verified" },
+        { id: "CC6.2", description: "Auth controls", status: "effective", evidence: "Config checked" },
+      ],
+    };
+
+    const jwt = await generateVCJWT(input, keyManager);
+    const payload = jose.decodeJwt(jwt);
+    const vc = payload.vc as Record<string, unknown>;
+    const subject = vc.credentialSubject as Record<string, unknown>;
+
+    expect(subject.dimensions).toBeDefined();
+    const dims = subject.dimensions as Record<string, number>;
+    expect(typeof dims.capability).toBe("number");
+    expect(typeof dims.coverage).toBe("number");
+    expect(typeof dims.reliability).toBe("number");
+    expect(typeof dims.methodology).toBe("number");
+    expect(typeof dims.freshness).toBe("number");
+    expect(typeof dims.independence).toBe("number");
+    expect(typeof dims.consistency).toBe("number");
+  });
+
+  test("JWT includes evidenceTypes when document input is provided", async () => {
+    const { keyManager, input } = await setup();
+    input.document = {
+      source: "prowler",
+      metadata: {
+        title: "Prowler Scan",
+        issuer: "Automated",
+        date: new Date().toISOString().split("T")[0],
+        scope: "AWS",
+      },
+      controls: [
+        { id: "check-mfa", description: "MFA check", status: "effective", evidence: "PASS" },
+      ],
+    };
+
+    const jwt = await generateVCJWT(input, keyManager);
+    const payload = jose.decodeJwt(jwt);
+    const vc = payload.vc as Record<string, unknown>;
+    const subject = vc.credentialSubject as Record<string, unknown>;
+
+    expect(subject.evidenceTypes).toBeDefined();
+    const types = subject.evidenceTypes as string[];
+    expect(types).toContain("automated-observation");
+  });
+
+  test("JWT includes observationPeriod for SOC 2 Type II", async () => {
+    const { keyManager, input } = await setup();
+    input.document = {
+      source: "soc2",
+      metadata: {
+        title: "SOC 2 Type II",
+        issuer: "Acme",
+        date: "2026-01-15",
+        scope: "All",
+        reportType: "SOC 2 Type II",
+      },
+      controls: [
+        { id: "CC6.1", description: "Logical access", status: "effective", evidence: "Tested" },
+      ],
+    };
+
+    const jwt = await generateVCJWT(input, keyManager);
+    const payload = jose.decodeJwt(jwt);
+    const vc = payload.vc as Record<string, unknown>;
+    const subject = vc.credentialSubject as Record<string, unknown>;
+
+    expect(subject.observationPeriod).toBeDefined();
+    const period = subject.observationPeriod as Record<string, unknown>;
+    expect(period.cosoClassification).toBe("operating");
+    expect(period.soc2Equivalent).toBe("Type II (6mo)");
+  });
+
+  test("JWT omits new fields when no document input (legacy path)", async () => {
+    const { keyManager, input } = await setup();
+    // Legacy path: no document
+    delete (input as Record<string, unknown>).document;
+
+    const jwt = await generateVCJWT(input, keyManager);
+    const payload = jose.decodeJwt(jwt);
+    const vc = payload.vc as Record<string, unknown>;
+    const subject = vc.credentialSubject as Record<string, unknown>;
+
+    expect(subject.dimensions).toBeUndefined();
+    expect(subject.evidenceTypes).toBeUndefined();
+    expect(subject.observationPeriod).toBeUndefined();
+  });
 });

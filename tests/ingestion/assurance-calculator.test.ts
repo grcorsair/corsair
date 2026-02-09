@@ -5,6 +5,16 @@ import {
   calculateDocumentRollup,
   deriveProvenance,
   assessFreshness,
+  calculateAssuranceDimensions,
+  scoreCapability,
+  scoreCoverage,
+  scoreReliability,
+  scoreMethodology,
+  scoreFreshness,
+  scoreIndependence,
+  scoreConsistency,
+  deriveEvidenceTypes,
+  deriveObservationPeriod,
 } from "../../src/ingestion/assurance-calculator";
 import type { IngestedControl, DocumentMetadata, AssuranceLevel } from "../../src/ingestion/types";
 
@@ -373,6 +383,343 @@ describe("Assurance Calculator", () => {
       const result = assessFreshness("not-a-date");
       expect(result.status).toBe("stale");
       expect(result.ageDays).toBe(-1);
+    });
+  });
+
+  // ===========================================================================
+  // 7-DIMENSION ASSURANCE MODEL (FAIR-CAM + GRADE + COSO)
+  // ===========================================================================
+
+  describe("scoreCapability", () => {
+    test("all effective with evidence → high score", () => {
+      const controls: IngestedControl[] = [
+        { ...baseControl, evidence: "MFA verified" },
+        { ...baseControl, id: "CC6.2", evidence: "Config checked" },
+      ];
+      const score = scoreCapability(controls);
+      expect(score).toBe(100); // 100% pass + 100% evidence
+    });
+
+    test("mixed effective/ineffective → lower score", () => {
+      const controls: IngestedControl[] = [
+        { ...baseControl, evidence: "MFA verified" },
+        { ...baseControl, id: "CC6.2", status: "ineffective" },
+      ];
+      const score = scoreCapability(controls);
+      expect(score).toBe(50); // 50% pass (35) + 50% evidence (15) = 50
+    });
+
+    test("effective without evidence → partial score", () => {
+      const controls: IngestedControl[] = [
+        { ...baseControl },
+        { ...baseControl, id: "CC6.2" },
+      ];
+      const score = scoreCapability(controls);
+      expect(score).toBe(70); // 100% pass (70) + 0% evidence (0)
+    });
+
+    test("empty controls → 0", () => {
+      expect(scoreCapability([])).toBe(0);
+    });
+  });
+
+  describe("scoreCoverage", () => {
+    test("all tested with framework refs → high score", () => {
+      const controls: IngestedControl[] = [
+        { ...baseControl, evidence: "Tested", frameworkRefs: [{ framework: "SOC2", controlId: "CC6.1" }] },
+        { ...baseControl, id: "CC6.2", evidence: "Tested", frameworkRefs: [{ framework: "NIST-800-53", controlId: "AC-2" }] },
+      ];
+      const score = scoreCoverage(controls, soc2Metadata);
+      expect(score).toBe(100); // 100% tested + 100% mapped
+    });
+
+    test("some not-tested → lower coverage", () => {
+      const controls: IngestedControl[] = [
+        { ...baseControl, evidence: "Tested" },
+        { ...baseControl, id: "CC6.2", status: "not-tested" },
+      ];
+      const score = scoreCoverage(controls, soc2Metadata);
+      expect(score).toBe(35); // 50% tested (35) + 0% mapped (0)
+    });
+
+    test("empty controls → 0", () => {
+      expect(scoreCoverage([], soc2Metadata)).toBe(0);
+    });
+  });
+
+  describe("scoreReliability", () => {
+    test("all effective + fresh evidence → high score", () => {
+      const controls: IngestedControl[] = [
+        { ...baseControl, evidence: "MFA verified" },
+        { ...baseControl, id: "CC6.2", evidence: "Config checked" },
+      ];
+      const score = scoreReliability(controls, { status: "fresh", ageDays: 30 });
+      expect(score).toBe(100); // 100% effective (60) + fresh (40)
+    });
+
+    test("all effective + stale evidence → lower score", () => {
+      const controls: IngestedControl[] = [
+        { ...baseControl, evidence: "MFA verified" },
+      ];
+      const score = scoreReliability(controls, { status: "stale", ageDays: 400 });
+      expect(score).toBe(60); // 100% effective (60) + stale (0)
+    });
+
+    test("empty controls → 0", () => {
+      expect(scoreReliability([], { status: "fresh", ageDays: 0 })).toBe(0);
+    });
+  });
+
+  describe("scoreMethodology", () => {
+    test("pentest source → 75", () => {
+      expect(scoreMethodology("pentest")).toBe(75);
+    });
+
+    test("prowler source → 60", () => {
+      expect(scoreMethodology("prowler")).toBe(60);
+    });
+
+    test("soc2 source → 50", () => {
+      expect(scoreMethodology("soc2")).toBe(50);
+    });
+
+    test("manual source → 15", () => {
+      expect(scoreMethodology("manual")).toBe(15);
+    });
+
+    test("Quartermaster score overrides source-based score", () => {
+      expect(scoreMethodology("manual", 0.85)).toBe(85);
+    });
+
+    test("QM score clamped to 0-100", () => {
+      expect(scoreMethodology("manual", 1.5)).toBe(100);
+      expect(scoreMethodology("manual", -0.1)).toBe(0);
+    });
+  });
+
+  describe("scoreFreshness", () => {
+    test("today's date → ~100", () => {
+      const today = new Date().toISOString().split("T")[0];
+      const score = scoreFreshness(today);
+      expect(score).toBeGreaterThanOrEqual(99);
+    });
+
+    test("180 days ago → ~51", () => {
+      const d = new Date();
+      d.setDate(d.getDate() - 180);
+      const score = scoreFreshness(d.toISOString().split("T")[0]);
+      expect(score).toBeGreaterThanOrEqual(48);
+      expect(score).toBeLessThanOrEqual(54);
+    });
+
+    test("365+ days → 0", () => {
+      const d = new Date();
+      d.setDate(d.getDate() - 400);
+      expect(scoreFreshness(d.toISOString().split("T")[0])).toBe(0);
+    });
+
+    test("no date → 0", () => {
+      expect(scoreFreshness(undefined)).toBe(0);
+    });
+
+    test("invalid date → 0", () => {
+      expect(scoreFreshness("not-a-date")).toBe(0);
+    });
+  });
+
+  describe("scoreIndependence", () => {
+    test("soc2 → 85 (external auditor)", () => {
+      expect(scoreIndependence("soc2")).toBe(85);
+    });
+
+    test("iso27001 → 85 (external auditor)", () => {
+      expect(scoreIndependence("iso27001")).toBe(85);
+    });
+
+    test("pentest → 75 (external tester)", () => {
+      expect(scoreIndependence("pentest")).toBe(75);
+    });
+
+    test("prowler → 50 (automated tool)", () => {
+      expect(scoreIndependence("prowler")).toBe(50);
+    });
+
+    test("manual → 15 (self-assessment)", () => {
+      expect(scoreIndependence("manual")).toBe(15);
+    });
+  });
+
+  describe("scoreConsistency", () => {
+    test("QM bias score overrides heuristic", () => {
+      const controls: IngestedControl[] = [{ ...baseControl, evidence: "Tested" }];
+      expect(scoreConsistency(controls, 0.9)).toBe(90);
+    });
+
+    test("mixed results with evidence → higher (transparency bonus)", () => {
+      const controls: IngestedControl[] = [
+        { ...baseControl, evidence: "MFA verified" },
+        { ...baseControl, id: "CC6.2", status: "ineffective", evidence: "MFA disabled" },
+      ];
+      const score = scoreConsistency(controls);
+      // 100% evidence (60) + transparency bonus (15) + base (25) = 100
+      expect(score).toBe(100);
+    });
+
+    test("all passing without evidence → lower consistency", () => {
+      const controls: IngestedControl[] = [
+        { ...baseControl },
+        { ...baseControl, id: "CC6.2" },
+      ];
+      const score = scoreConsistency(controls);
+      // 0% evidence (0) + no transparency bonus (0) + base (25) = 25
+      expect(score).toBe(25);
+    });
+
+    test("empty controls → 0", () => {
+      expect(scoreConsistency([])).toBe(0);
+    });
+  });
+
+  describe("calculateAssuranceDimensions", () => {
+    test("returns all 7 dimensions as 0-100 numbers", () => {
+      const controls: IngestedControl[] = [
+        { ...baseControl, evidence: "MFA verified" },
+      ];
+      const dims = calculateAssuranceDimensions(controls, "soc2", soc2Metadata);
+      const keys = ["capability", "coverage", "reliability", "methodology", "freshness", "independence", "consistency"];
+      for (const key of keys) {
+        const val = dims[key as keyof typeof dims];
+        expect(typeof val).toBe("number");
+        expect(val).toBeGreaterThanOrEqual(0);
+        expect(val).toBeLessThanOrEqual(100);
+      }
+    });
+
+    test("uses QM scores when provided", () => {
+      const controls: IngestedControl[] = [
+        { ...baseControl, evidence: "MFA verified" },
+      ];
+      const dims = calculateAssuranceDimensions(controls, "soc2", soc2Metadata, {
+        methodology: 0.85,
+        bias: 0.90,
+      });
+      expect(dims.methodology).toBe(85);
+      expect(dims.consistency).toBe(90);
+    });
+  });
+
+  // ===========================================================================
+  // EVIDENCE TYPE DERIVATION (ISO 19011 + SOC 2 + NIST 800-53A)
+  // ===========================================================================
+
+  describe("deriveEvidenceTypes", () => {
+    test("prowler → automated-observation + system-generated-record + documented-record", () => {
+      const controls: IngestedControl[] = [{ ...baseControl, evidence: "PASS" }];
+      const types = deriveEvidenceTypes(controls, "prowler");
+      expect(types).toContain("automated-observation");
+      expect(types).toContain("system-generated-record");
+      expect(types).toContain("documented-record");
+    });
+
+    test("pentest → reperformance + system-generated-record + documented-record", () => {
+      const controls: IngestedControl[] = [{ ...baseControl, evidence: "Bypass blocked" }];
+      const types = deriveEvidenceTypes(controls, "pentest");
+      expect(types).toContain("reperformance");
+      expect(types).toContain("system-generated-record");
+    });
+
+    test("soc2 → documented-record + interview", () => {
+      const controls: IngestedControl[] = [{ ...baseControl, evidence: "Tested" }];
+      const types = deriveEvidenceTypes(controls, "soc2");
+      expect(types).toContain("documented-record");
+      expect(types).toContain("interview");
+    });
+
+    test("manual → self-attestation", () => {
+      const controls: IngestedControl[] = [{ ...baseControl }];
+      const types = deriveEvidenceTypes(controls, "manual");
+      expect(types).toContain("self-attestation");
+      expect(types).not.toContain("automated-observation");
+    });
+
+    test("results sorted by reliability (highest first)", () => {
+      const controls: IngestedControl[] = [{ ...baseControl, evidence: "PASS" }];
+      const types = deriveEvidenceTypes(controls, "prowler");
+      const firstIdx = types.indexOf("automated-observation");
+      const lastIdx = types.indexOf("documented-record");
+      expect(firstIdx).toBeLessThan(lastIdx);
+    });
+
+    test("no duplicate types", () => {
+      const controls: IngestedControl[] = [{ ...baseControl, evidence: "PASS" }];
+      const types = deriveEvidenceTypes(controls, "prowler");
+      expect(new Set(types).size).toBe(types.length);
+    });
+  });
+
+  // ===========================================================================
+  // OBSERVATION PERIOD (COSO Design vs Operating + SOC 2 Type II)
+  // ===========================================================================
+
+  describe("deriveObservationPeriod", () => {
+    test("SOC 2 Type II → operating, 180 days, Type II (6mo)", () => {
+      const result = deriveObservationPeriod(soc2Metadata);
+      expect(result).toBeDefined();
+      expect(result!.durationDays).toBe(180);
+      expect(result!.cosoClassification).toBe("operating");
+      expect(result!.soc2Equivalent).toBe("Type II (6mo)");
+      expect(result!.sufficient).toBe(true);
+    });
+
+    test("SOC 2 Type I → design-only, 1 day, Type I", () => {
+      const result = deriveObservationPeriod({
+        ...soc2Metadata,
+        reportType: "SOC 2 Type I",
+      });
+      expect(result).toBeDefined();
+      expect(result!.durationDays).toBe(1);
+      expect(result!.cosoClassification).toBe("design-only");
+      expect(result!.soc2Equivalent).toBe("Type I");
+      expect(result!.sufficient).toBe(false);
+    });
+
+    test("Prowler scan → design-only, 1 day", () => {
+      const result = deriveObservationPeriod({
+        title: "Prowler Scan",
+        issuer: "Automated",
+        date: "2026-01-15",
+        scope: "AWS",
+        reportType: "Prowler Scan",
+      });
+      expect(result).toBeDefined();
+      expect(result!.durationDays).toBe(1);
+      expect(result!.cosoClassification).toBe("design-only");
+    });
+
+    test("no date → undefined", () => {
+      const result = deriveObservationPeriod({
+        ...soc2Metadata,
+        date: "",
+      });
+      expect(result).toBeUndefined();
+    });
+
+    test("invalid date → undefined", () => {
+      const result = deriveObservationPeriod({
+        ...soc2Metadata,
+        date: "not-a-date",
+      });
+      expect(result).toBeUndefined();
+    });
+
+    test("12-month Type II → Type II (12mo)", () => {
+      const result = deriveObservationPeriod({
+        ...soc2Metadata,
+        reportType: "SOC 2 Type II 12-month period",
+      });
+      expect(result).toBeDefined();
+      expect(result!.durationDays).toBe(365);
+      expect(result!.soc2Equivalent).toBe("Type II (12mo)");
     });
   });
 });

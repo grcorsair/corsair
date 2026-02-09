@@ -23,7 +23,13 @@
  */
 
 import type { AssuranceLevel, DocumentSource, DocumentMetadata, IngestedControl } from "./types";
-import type { CPOEAssurance, CPOEProvenance } from "../parley/vc-types";
+import type {
+  CPOEAssurance,
+  CPOEProvenance,
+  AssuranceDimensions,
+  EvidenceType,
+  ObservationPeriod,
+} from "../parley/vc-types";
 
 // =============================================================================
 // FRESHNESS TYPES
@@ -273,4 +279,290 @@ function sourceToMethod(source: DocumentSource): CPOEAssurance["method"] {
     default:
       return "self-assessed";
   }
+}
+
+// =============================================================================
+// SEVEN-DIMENSION ASSURANCE MODEL (FAIR-CAM + GRADE + COSO)
+// =============================================================================
+
+/**
+ * Calculate all 7 assurance dimensions from available data.
+ *
+ * Uses existing control data, source type, metadata, and optional
+ * Quartermaster scores. All dimensions are 0-100.
+ */
+export function calculateAssuranceDimensions(
+  controls: IngestedControl[],
+  source: DocumentSource,
+  metadata: DocumentMetadata,
+  quartermasterScores?: { methodology: number; bias: number },
+): AssuranceDimensions {
+  const freshness = metadata.date ? assessFreshness(metadata.date) : { status: "stale" as const, ageDays: -1 };
+
+  return {
+    capability: scoreCapability(controls),
+    coverage: scoreCoverage(controls, metadata),
+    reliability: scoreReliability(controls, freshness),
+    methodology: scoreMethodology(source, quartermasterScores?.methodology),
+    freshness: scoreFreshness(metadata.date),
+    independence: scoreIndependence(source),
+    consistency: scoreConsistency(controls, quartermasterScores?.bias),
+  };
+}
+
+/**
+ * D1: Capability — "How strong is this control as designed?"
+ * Sources: FAIR-CAM Capability, COSO Design Effectiveness, CC EAL depth.
+ * Scores based on pass rate and evidence depth.
+ */
+export function scoreCapability(controls: IngestedControl[]): number {
+  if (controls.length === 0) return 0;
+  const effective = controls.filter(c => c.status === "effective").length;
+  const withEvidence = controls.filter(c => c.status === "effective" && c.evidence && c.evidence.trim().length > 0).length;
+
+  // Base score from pass rate (0-70), bonus for evidence depth (0-30)
+  const passRate = effective / controls.length;
+  const evidenceRate = controls.length > 0 ? withEvidence / controls.length : 0;
+  return Math.round(passRate * 70 + evidenceRate * 30);
+}
+
+/**
+ * D2: Coverage — "What % of in-scope assets does it protect?"
+ * Sources: FAIR-CAM Coverage, COBIT Coverage, NIST 53A Coverage attribute.
+ * FAIR-CAM proves this is MULTIPLICATIVE — 90% capability at 50% coverage = ~45% effective.
+ */
+export function scoreCoverage(controls: IngestedControl[], metadata: DocumentMetadata): number {
+  if (controls.length === 0) return 0;
+
+  // Coverage is primarily about whether controls cover the full scope.
+  // With document-level assessment, all extracted controls are in-scope.
+  const tested = controls.filter(c => c.status !== "not-tested").length;
+  const testedRate = tested / controls.length;
+
+  // Bonus for framework references (indicates mapped, not ad-hoc)
+  const withFrameworkRefs = controls.filter(c => c.frameworkRefs && c.frameworkRefs.length > 0).length;
+  const mappedRate = controls.length > 0 ? withFrameworkRefs / controls.length : 0;
+
+  return Math.round(testedRate * 70 + mappedRate * 30);
+}
+
+/**
+ * D3: Reliability — "How consistently does it operate?"
+ * Sources: FAIR-CAM Reliability, COBIT Control, COSO Operating Effectiveness.
+ * COSO distinction: Design Effectiveness (L1) vs Operating Effectiveness (L2+).
+ */
+export function scoreReliability(controls: IngestedControl[], freshness: FreshnessAssessment): number {
+  if (controls.length === 0) return 0;
+
+  // Base: effective controls ratio
+  const effective = controls.filter(c => c.status === "effective").length;
+  const baseScore = (effective / controls.length) * 60;
+
+  // Freshness modifier: fresh evidence suggests recent operational check
+  let freshnessBonus: number;
+  switch (freshness.status) {
+    case "fresh": freshnessBonus = 40; break;
+    case "aging": freshnessBonus = 20; break;
+    case "stale": freshnessBonus = 0; break;
+  }
+
+  return Math.round(baseScore + freshnessBonus);
+}
+
+/**
+ * D4: Evidence Methodology — "How rigorous was the assessment?"
+ * Sources: GRADE Risk of Bias, NIST 53A Depth, SOC 2 test methods.
+ * SOC 2 hierarchy: Inquiry < Observation < Inspection < Reperformance < CAAT.
+ * When Quartermaster score is available, it takes priority (already calibrated).
+ */
+export function scoreMethodology(source: DocumentSource, qmScore?: number): number {
+  // If Quartermaster has already scored methodology, use it (scaled to 0-100)
+  if (qmScore !== undefined) {
+    return Math.round(Math.min(100, Math.max(0, qmScore * 100)));
+  }
+
+  // Fall back to source-based scoring
+  switch (source) {
+    case "pentest": return 75;        // Active testing = NIST Test-Focused
+    case "prowler":
+    case "securityhub": return 60;    // Automated scan = NIST Examine-Focused
+    case "soc2":
+    case "iso27001": return 50;       // Audit report = NIST Examine-Basic + Interview
+    case "manual": return 15;         // Self-reported = minimal
+    default: return 10;
+  }
+}
+
+/**
+ * D5: Evidence Freshness — "How recent is the evidence?"
+ * Sources: GRADE Imprecision (sample recency), ISO 27004 timing requirement.
+ * ISO 27001 Clause 9.1: "when to measure" and "when to analyze" are mandatory.
+ */
+export function scoreFreshness(dateString?: string): number {
+  if (!dateString) return 0;
+  const assessment = assessFreshness(dateString);
+  if (assessment.ageDays < 0) return 0;  // Invalid date
+
+  // Linear decay: 100 at 0 days, 0 at 365+ days
+  if (assessment.ageDays >= 365) return 0;
+  return Math.round(100 * (1 - assessment.ageDays / 365));
+}
+
+/**
+ * D6: Evidence Independence — "How separated is the assessor from the assessed?"
+ * Sources: Three Lines Model, GRADE Publication Bias, CC evaluator independence.
+ * Three Lines: Self (1st) < Oversight (2nd) < Internal Audit (3rd) < External (4th).
+ */
+export function scoreIndependence(source: DocumentSource): number {
+  switch (source) {
+    case "soc2":
+    case "iso27001": return 85;       // External auditor (4th line)
+    case "pentest": return 75;        // External tester (3rd-4th line)
+    case "prowler":
+    case "securityhub": return 50;    // Automated tool (2nd line equivalent)
+    case "manual": return 15;         // Self-assessment (1st line)
+    default: return 10;
+  }
+}
+
+/**
+ * D7: Evidence Consistency — "Do multiple sources agree?"
+ * Sources: GRADE Inconsistency, IEC 62443 SL-T/SL-C/SL-A alignment.
+ * When Quartermaster bias score is available, it takes priority.
+ */
+export function scoreConsistency(controls: IngestedControl[], qmBiasScore?: number): number {
+  // If Quartermaster has bias detection score, invert it (low bias = high consistency)
+  if (qmBiasScore !== undefined) {
+    return Math.round(Math.min(100, Math.max(0, qmBiasScore * 100)));
+  }
+
+  if (controls.length === 0) return 0;
+
+  // Without QM, score based on status uniformity and evidence presence
+  const statuses = controls.map(c => c.status);
+  const withEvidence = controls.filter(c => c.evidence && c.evidence.trim().length > 0).length;
+  const evidenceRate = withEvidence / controls.length;
+
+  // Mixed results (some pass, some fail) is actually MORE consistent/honest
+  // than everything passing — GRADE rewards transparent reporting
+  const hasFailures = statuses.some(s => s === "ineffective");
+  const hasSuccesses = statuses.some(s => s === "effective");
+  const transparencyBonus = hasFailures && hasSuccesses ? 15 : 0;
+
+  return Math.round(evidenceRate * 60 + transparencyBonus + 25);
+}
+
+// =============================================================================
+// EVIDENCE TYPE DERIVATION (ISO 19011 + SOC 2 + NIST 800-53A)
+// =============================================================================
+
+/**
+ * Derive the evidence types present in the assessment, ranked by the
+ * ISO 19011 reliability hierarchy.
+ */
+export function deriveEvidenceTypes(
+  controls: IngestedControl[],
+  source: DocumentSource,
+): EvidenceType[] {
+  const types = new Set<EvidenceType>();
+
+  // Source type determines the primary evidence method
+  switch (source) {
+    case "prowler":
+    case "securityhub":
+      types.add("automated-observation");
+      types.add("system-generated-record");
+      break;
+    case "pentest":
+      types.add("reperformance");
+      types.add("system-generated-record");
+      break;
+    case "soc2":
+    case "iso27001":
+      types.add("documented-record");
+      // SOC 2 reports typically include interview + inspection evidence
+      types.add("interview");
+      break;
+    case "manual":
+      types.add("self-attestation");
+      break;
+  }
+
+  // Controls with evidence text suggest at least documented-record
+  const hasEvidence = controls.some(c => c.evidence && c.evidence.trim().length > 0);
+  if (hasEvidence && !types.has("self-attestation")) {
+    types.add("documented-record");
+  }
+
+  // Sort by reliability (highest first)
+  const order: EvidenceType[] = [
+    "automated-observation",
+    "system-generated-record",
+    "reperformance",
+    "documented-record",
+    "interview",
+    "self-attestation",
+  ];
+  return order.filter(t => types.has(t));
+}
+
+// =============================================================================
+// OBSERVATION PERIOD (COSO Design vs Operating + SOC 2 Type II)
+// =============================================================================
+
+/**
+ * Derive observation period from document metadata.
+ * Maps to COSO's Design Effectiveness vs Operating Effectiveness.
+ *
+ * Returns undefined if date metadata is insufficient.
+ */
+export function deriveObservationPeriod(
+  metadata: DocumentMetadata,
+): ObservationPeriod | undefined {
+  if (!metadata.date) return undefined;
+
+  const endDate = new Date(metadata.date);
+  if (isNaN(endDate.getTime())) return undefined;
+
+  // Infer start date from report type
+  let durationDays: number;
+  const reportType = (metadata.reportType ?? "").toLowerCase();
+
+  if (reportType.includes("type ii") || reportType.includes("type 2")) {
+    // SOC 2 Type II typically covers 6-12 months
+    durationDays = reportType.includes("12") ? 365 : 180;
+  } else if (reportType.includes("type i") || reportType.includes("type 1")) {
+    // SOC 2 Type I is point-in-time
+    durationDays = 1;
+  } else if (reportType.includes("prowler") || reportType.includes("securityhub")) {
+    // Automated scans are point-in-time
+    durationDays = 1;
+  } else {
+    // Default: assume quarterly assessment period
+    durationDays = 90;
+  }
+
+  const startDate = new Date(endDate.getTime() - durationDays * 24 * 60 * 60 * 1000);
+  const sufficient = durationDays >= 90;
+
+  // COSO classification
+  const cosoClassification: ObservationPeriod["cosoClassification"] =
+    durationDays >= 90 ? "operating" : "design-only";
+
+  // SOC 2 equivalent
+  let soc2Equivalent: ObservationPeriod["soc2Equivalent"];
+  if (durationDays <= 1) soc2Equivalent = "Type I";
+  else if (durationDays < 90) soc2Equivalent = "Pre-engagement";
+  else if (durationDays < 180) soc2Equivalent = "Type II (3mo)";
+  else if (durationDays < 365) soc2Equivalent = "Type II (6mo)";
+  else soc2Equivalent = "Type II (12mo)";
+
+  return {
+    startDate: startDate.toISOString().split("T")[0],
+    endDate: endDate.toISOString().split("T")[0],
+    durationDays,
+    sufficient,
+    cosoClassification,
+    soc2Equivalent,
+  };
 }

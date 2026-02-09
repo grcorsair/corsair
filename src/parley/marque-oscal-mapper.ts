@@ -205,5 +205,61 @@ function buildObservations(marque: MarqueDocument): OSCALObservation[] {
     });
   }
 
+  // Assurance dimensions observation (if present in VC subject)
+  if (marque.marque.dimensions) {
+    const dims = marque.marque.dimensions;
+    observations.push({
+      uuid: crypto.randomUUID(),
+      title: "Assurance Dimensions (FAIR-CAM + GRADE + COSO)",
+      description: `Seven-dimension assurance profile: capability=${dims.capability}, coverage=${dims.coverage}, reliability=${dims.reliability}, methodology=${dims.methodology}, freshness=${dims.freshness}, independence=${dims.independence}, consistency=${dims.consistency}`,
+      methods: ["EXAMINE" as const],
+      collected: marque.marque.generatedAt,
+      props: [
+        { name: "capability", value: String(dims.capability) },
+        { name: "coverage", value: String(dims.coverage) },
+        { name: "reliability", value: String(dims.reliability) },
+        { name: "methodology", value: String(dims.methodology) },
+        { name: "freshness", value: String(dims.freshness) },
+        { name: "independence", value: String(dims.independence) },
+        { name: "consistency", value: String(dims.consistency) },
+      ],
+    });
+  }
+
+  // Evidence types observation (if present)
+  if (marque.marque.evidenceTypes && marque.marque.evidenceTypes.length > 0) {
+    observations.push({
+      uuid: crypto.randomUUID(),
+      title: "Evidence Type Classification (ISO 19011)",
+      description: `Evidence types present: ${marque.marque.evidenceTypes.join(", ")}`,
+      methods: ["EXAMINE" as const],
+      collected: marque.marque.generatedAt,
+      props: marque.marque.evidenceTypes.map((t: string, i: number) => ({
+        name: `evidence-type-${i}`,
+        value: t,
+      })),
+    });
+  }
+
+  // Observation period observation (if present)
+  if (marque.marque.observationPeriod) {
+    const period = marque.marque.observationPeriod;
+    observations.push({
+      uuid: crypto.randomUUID(),
+      title: "Assessment Observation Period (COSO)",
+      description: `${period.soc2Equivalent} assessment from ${period.startDate} to ${period.endDate} (${period.durationDays} days). COSO classification: ${period.cosoClassification}. Period sufficient: ${period.sufficient}.`,
+      methods: ["EXAMINE" as const],
+      collected: marque.marque.generatedAt,
+      props: [
+        { name: "start-date", value: period.startDate },
+        { name: "end-date", value: period.endDate },
+        { name: "duration-days", value: String(period.durationDays) },
+        { name: "coso-classification", value: period.cosoClassification },
+        { name: "soc2-equivalent", value: period.soc2Equivalent },
+        { name: "sufficient", value: String(period.sufficient) },
+      ],
+    });
+  }
+
   return observations;
 }

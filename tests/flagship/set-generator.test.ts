@@ -10,7 +10,7 @@ import { describe, test, expect, beforeAll } from "bun:test";
 import { decodeJwt, decodeProtectedHeader } from "jose";
 import { mkdirSync, rmSync, existsSync } from "fs";
 import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
-import { generateSET, verifySET } from "../../src/flagship/set-generator";
+import { generateSET, verifySET, generateFlagshipDescription } from "../../src/flagship/set-generator";
 import {
   FLAGSHIP_EVENTS,
   type FlagshipEvent,
@@ -366,7 +366,7 @@ describe("SET Generator", () => {
       expect(result.valid).toBe(false);
     });
 
-    test("rejects SET signed with different key", async () => {
+    test("rejects SET signed with different key (wrong public key)", async () => {
       const otherKeyManager = new MarqueKeyManager(`${TEST_DIR}/other-keys`);
       await otherKeyManager.generateKeypair();
 
@@ -394,6 +394,142 @@ describe("SET Generator", () => {
       // Verify with the original keyManager (different public key)
       const result = await verifySET(jwt, keyManager);
       expect(result.valid).toBe(false);
+    });
+  });
+
+  // ===========================================================================
+  // Phase 2A: Human-readable FLAGSHIP descriptions
+  // ===========================================================================
+
+  describe("generateFlagshipDescription", () => {
+    test("COLORS_CHANGED upgrade → plain English description", () => {
+      const event: FlagshipEvent = {
+        type: FLAGSHIP_EVENTS.COLORS_CHANGED,
+        data: {
+          subject: { format: "complex", corsair: { marqueId: "marque-001" } },
+          event_timestamp: 1707300000,
+          previous_level: "self-assessed",
+          current_level: "ai-verified",
+          change_direction: "increase",
+        } as ColorsChangedData,
+      };
+      const desc = generateFlagshipDescription(event);
+      expect(desc).toContain("upgraded");
+      expect(desc).toContain("self-assessed");
+      expect(desc).toContain("ai-verified");
+      expect(desc).toContain("marque-001");
+    });
+
+    test("COLORS_CHANGED downgrade → mentions weaker evidence", () => {
+      const event: FlagshipEvent = {
+        type: FLAGSHIP_EVENTS.COLORS_CHANGED,
+        data: {
+          subject: { format: "complex", corsair: { marqueId: "marque-002" } },
+          event_timestamp: 1707300000,
+          previous_level: "ai-verified",
+          current_level: "self-assessed",
+          change_direction: "decrease",
+        } as ColorsChangedData,
+      };
+      const desc = generateFlagshipDescription(event);
+      expect(desc).toContain("downgraded");
+      expect(desc).toContain("weaker");
+    });
+
+    test("FLEET_ALERT → mentions drift type, severity, and affected controls", () => {
+      const event: FlagshipEvent = {
+        type: FLAGSHIP_EVENTS.FLEET_ALERT,
+        data: {
+          subject: { format: "complex", corsair: { marqueId: "marque-003", provider: "aws-s3" } },
+          event_timestamp: 1707300000,
+          drift_type: "publicAccessBlock",
+          severity: "CRITICAL",
+          affected_controls: ["AC-3", "CC6.1"],
+        } as FleetAlertData,
+      };
+      const desc = generateFlagshipDescription(event);
+      expect(desc).toContain("publicAccessBlock");
+      expect(desc).toContain("CRITICAL");
+      expect(desc).toContain("AC-3, CC6.1");
+      expect(desc).toContain("aws-s3");
+    });
+
+    test("PAPERS_CHANGED issued → plain English about new CPOE", () => {
+      const event: FlagshipEvent = {
+        type: FLAGSHIP_EVENTS.PAPERS_CHANGED,
+        data: {
+          subject: { format: "complex", corsair: { marqueId: "marque-004" } },
+          event_timestamp: 1707300000,
+          credential_type: "CorsairCPOE",
+          change_type: "issued",
+        } as PapersChangedData,
+      };
+      const desc = generateFlagshipDescription(event);
+      expect(desc).toContain("new CPOE has been issued");
+      expect(desc).toContain("marque-004");
+    });
+
+    test("PAPERS_CHANGED revoked → warning about trust", () => {
+      const event: FlagshipEvent = {
+        type: FLAGSHIP_EVENTS.PAPERS_CHANGED,
+        data: {
+          subject: { format: "complex", corsair: { marqueId: "marque-005" } },
+          event_timestamp: 1707300000,
+          credential_type: "CorsairCPOE",
+          change_type: "revoked",
+        } as PapersChangedData,
+      };
+      const desc = generateFlagshipDescription(event);
+      expect(desc).toContain("revoked");
+      expect(desc).toContain("should no longer be trusted");
+    });
+
+    test("PAPERS_CHANGED expired → renewal prompt", () => {
+      const event: FlagshipEvent = {
+        type: FLAGSHIP_EVENTS.PAPERS_CHANGED,
+        data: {
+          subject: { format: "complex", corsair: { marqueId: "marque-006" } },
+          event_timestamp: 1707300000,
+          credential_type: "CorsairCPOE",
+          change_type: "expired",
+        } as PapersChangedData,
+      };
+      const desc = generateFlagshipDescription(event);
+      expect(desc).toContain("expired");
+      expect(desc).toContain("renewed");
+    });
+
+    test("MARQUE_REVOKED → emergency notice with reason", () => {
+      const event: FlagshipEvent = {
+        type: FLAGSHIP_EVENTS.MARQUE_REVOKED,
+        data: {
+          subject: { format: "complex", corsair: { marqueId: "marque-007" } },
+          event_timestamp: 1707300000,
+          reason: "Evidence tampering detected",
+          revocation_timestamp: 1707300100,
+          initiator: "did:web:grcorsair.com",
+        } as MarqueRevokedData,
+      };
+      const desc = generateFlagshipDescription(event);
+      expect(desc).toContain("EMERGENCY");
+      expect(desc).toContain("Evidence tampering detected");
+      expect(desc).toContain("did:web:grcorsair.com");
+      expect(desc).toContain("should no longer be accepted");
+    });
+
+    test("includes provider when present in subject", () => {
+      const event: FlagshipEvent = {
+        type: FLAGSHIP_EVENTS.FLEET_ALERT,
+        data: {
+          subject: { format: "complex", corsair: { marqueId: "marque-008", provider: "aws-cognito" } },
+          event_timestamp: 1707300000,
+          drift_type: "mfaDisabled",
+          severity: "HIGH",
+          affected_controls: ["AC-2"],
+        } as FleetAlertData,
+      };
+      const desc = generateFlagshipDescription(event);
+      expect(desc).toContain("aws-cognito");
     });
   });
 });
