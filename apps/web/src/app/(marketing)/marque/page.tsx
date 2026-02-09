@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { MarqueVerifier } from "@/components/features/marque-verifier";
 
 export const metadata: Metadata = {
-  title: "Marque Verifier",
+  title: "Verify CPOE",
   description:
-    "Verify any Corsair CPOE attestation. Ed25519-signed W3C Verifiable Credentials verified entirely in your browser. No data leaves your machine.",
+    "Verify any CPOE (Certificate of Proof of Operational Effectiveness). Ed25519-signed W3C Verifiable Credentials verified entirely in your browser. No data leaves your machine.",
 };
 
 export default function MarquePage() {
@@ -14,11 +14,11 @@ export default function MarquePage() {
         {/* Header */}
         <div className="mb-12 text-center">
           <h1 className="mb-4 font-display text-4xl font-bold text-corsair-text">
-            Marque Verifier
+            Verify a CPOE
           </h1>
           <p className="mx-auto max-w-xl text-corsair-text-dim">
-            Verify any Corsair CPOE attestation. Ed25519-signed W3C Verifiable
-            Credentials.{" "}
+            Verify any Certificate of Proof of Operational Effectiveness. Ed25519-signed
+            W3C Verifiable Credentials.{" "}
             <span className="font-semibold text-corsair-cyan">
               Runs entirely in your browser
             </span>
@@ -32,19 +32,49 @@ export default function MarquePage() {
         <div className="mt-16 space-y-8">
           <div>
             <h2 className="mb-3 font-display text-xl font-bold text-corsair-text">
-              What is a Marque?
+              What is a CPOE?
             </h2>
             <p className="text-sm leading-relaxed text-corsair-text-dim">
-              A Marque is a{" "}
+              A{" "}
               <span className="text-corsair-gold">
-                Certificate of Proof of Operational Effectiveness (CPOE)
+                CPOE (Certificate of Proof of Operational Effectiveness)
               </span>{" "}
-              — a cryptographically signed document that proves security
-              controls were adversarially tested and the results are
-              tamper-proof. Named after the historical Letter of Marque that
-              authorized privateers, a Corsair Marque authorizes trust through
-              proof rather than promises.
+              is a cryptographically signed credential that proves security
+              controls were assessed and the results are tamper-proof. Each
+              CPOE carries an{" "}
+              <span className="text-corsair-gold">assurance level (L0-L4)</span>{" "}
+              reflecting the depth of evidence, and{" "}
+              <span className="text-corsair-gold">provenance metadata</span>{" "}
+              identifying who produced the underlying evidence.
             </p>
+          </div>
+
+          <div>
+            <h2 className="mb-3 font-display text-xl font-bold text-corsair-text">
+              Assurance Levels
+            </h2>
+            <div className="space-y-2 text-sm leading-relaxed text-corsair-text-dim">
+              <div className="flex gap-3">
+                <span className="font-mono text-yellow-400 w-6">L0</span>
+                <span><span className="text-corsair-text font-semibold">Documented</span> — Policy exists, self-attestation only</span>
+              </div>
+              <div className="flex gap-3">
+                <span className="font-mono text-corsair-cyan w-6">L1</span>
+                <span><span className="text-corsair-text font-semibold">Configured</span> — Automated checks confirm settings are in place</span>
+              </div>
+              <div className="flex gap-3">
+                <span className="font-mono text-corsair-green w-6">L2</span>
+                <span><span className="text-corsair-text font-semibold">Demonstrated</span> — Test results prove controls work</span>
+              </div>
+              <div className="flex gap-3">
+                <span className="font-mono text-blue-400 w-6">L3</span>
+                <span><span className="text-corsair-text font-semibold">Observed</span> — Continuous monitoring active, re-validated quarterly</span>
+              </div>
+              <div className="flex gap-3">
+                <span className="font-mono text-purple-400 w-6">L4</span>
+                <span><span className="text-corsair-text font-semibold">Attested</span> — Independent auditor co-signs the credential</span>
+              </div>
+            </div>
           </div>
 
           <div>
@@ -54,25 +84,26 @@ export default function MarquePage() {
             <ol className="space-y-2 text-sm leading-relaxed text-corsair-text-dim">
               <li className="flex gap-3">
                 <span className="font-mono text-corsair-cyan">1.</span>
-                The Corsair CLI runs an adversarial assessment and generates a
-                Marque — a W3C Verifiable Credential (JWT-VC) signed with
-                Ed25519.
+                An organization ingests compliance evidence (SOC 2 report, scan
+                results) and generates a signed CPOE — a W3C Verifiable
+                Credential (JWT-VC) signed with Ed25519.
               </li>
               <li className="flex gap-3">
                 <span className="font-mono text-corsair-cyan">2.</span>
-                The vendor shares the Marque (JWT) and their public key with
-                the requesting organization.
+                The organization publishes their DID document at{" "}
+                <code className="text-corsair-cyan">.well-known/did.json</code>{" "}
+                containing their public key.
               </li>
               <li className="flex gap-3">
                 <span className="font-mono text-corsair-cyan">3.</span>
-                The requestor pastes both into this verifier. The Web Crypto
-                API verifies the Ed25519 signature entirely client-side.
+                Anyone pastes the CPOE into this verifier. The Ed25519
+                signature is verified entirely client-side via Web Crypto API.
               </li>
               <li className="flex gap-3">
                 <span className="font-mono text-corsair-cyan">4.</span>
-                If valid: cryptographic proof that the assessment results
-                haven&apos;t been tampered with. Questionnaire theater replaced
-                with math.
+                The result shows: signature validity, assurance level,
+                evidence provenance, and control pass rate. Questionnaire theater
+                replaced with math.
               </li>
             </ol>
           </div>
@@ -86,14 +117,21 @@ export default function MarquePage() {
                 <span className="text-corsair-cyan">--</span>
                 <span>
                   <span className="font-semibold text-corsair-text">W3C Verifiable Credentials 2.0</span>{" "}
-                  — The credential data model for CPOEs as interoperable attestations
+                  — CPOEs as interoperable, standards-compliant attestations
+                </span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-corsair-cyan">--</span>
+                <span>
+                  <span className="font-semibold text-corsair-text">DID:web</span>{" "}
+                  — Decentralized identity for issuer key discovery
                 </span>
               </li>
               <li className="flex gap-3">
                 <span className="text-corsair-cyan">--</span>
                 <span>
                   <span className="font-semibold text-corsair-text">OpenID SSF / CAEP</span>{" "}
-                  — Real-time compliance change notifications via the FLAGSHIP event system
+                  — Real-time compliance change notifications via FLAGSHIP
                 </span>
               </li>
               <li className="flex gap-3">
@@ -113,10 +151,11 @@ export default function MarquePage() {
             <p className="text-sm leading-relaxed text-corsair-text-dim">
               Traditional TPRM relies on self-attested questionnaires — 300+
               questions answered by vendors who have every incentive to
-              overstate their security posture. A Marque replaces trust with
-              verification: the controls were attacked, the results were
-              recorded, and the evidence is cryptographically signed. You
-              don&apos;t have to trust the vendor. You verify the proof.
+              overstate their security posture. A CPOE replaces trust with
+              verification: the evidence was assessed, the results were
+              recorded at a declared assurance level, and the credential is
+              cryptographically signed. You don&apos;t have to trust the
+              vendor. You verify the proof.
             </p>
           </div>
         </div>

@@ -6,10 +6,47 @@
 
 export type MarqueFormat = "json" | "jwt";
 
+/** Issuer trust tier for display */
+export type IssuerTier = "corsair-verified" | "self-signed" | "unverifiable" | "invalid";
+
 export interface MarqueVerificationResult {
   valid: boolean;
   reason: string;
   format?: MarqueFormat;
+  /** Issuer trust tier (how trustworthy is the signer) */
+  issuerTier?: IssuerTier;
+  /** Assurance level (0-4) */
+  assuranceLevel?: number;
+  /** Human-readable assurance name */
+  assuranceName?: string;
+  /** Evidence provenance */
+  provenance?: {
+    source: "self" | "tool" | "auditor";
+    sourceIdentity?: string;
+    sourceDate?: string;
+  };
+  /** CPOE scope (human-readable string) */
+  scope?: string;
+  /** Assessment summary */
+  summary?: {
+    controlsTested: number;
+    controlsPassed: number;
+    controlsFailed: number;
+    overallScore: number;
+  };
+  /** Full assurance breakdown */
+  assurance?: {
+    declared: number;
+    verified: boolean;
+    method: string;
+    breakdown: Record<string, number>;
+    excluded?: Array<{
+      controlId: string;
+      reason: string;
+      acceptedBy?: string;
+    }>;
+  };
+  /** Legacy document format (JSON envelope) */
   document?: {
     id: string;
     version: string;
@@ -48,6 +85,9 @@ export interface MarqueVerificationResult {
     credentialType: string[];
     issuerDID: string;
     parleyVersion: string;
+    signedBy?: string;
+    generatedAt?: string;
+    expiresAt?: string;
   };
 }
 
@@ -196,6 +236,10 @@ async function verifyJWTVC(
       return { valid: false, reason: "JWT signature verification failed. The credential may have been tampered with.", format: "jwt" };
     }
 
+    // Extract CPOE-specific fields from payload
+    const vcMetadata = extractVCMetadata(payload);
+    const cpoeFields = extractCPOEFields(payload);
+
     // Check expiry
     if (payload.exp) {
       const expiresAt = new Date(payload.exp * 1000);
@@ -204,8 +248,9 @@ async function verifyJWTVC(
           valid: false,
           reason: `Credential expired on ${expiresAt.toISOString()}`,
           format: "jwt",
+          ...cpoeFields,
           document: mapVCToDocument(payload),
-          vcMetadata: extractVCMetadata(payload),
+          vcMetadata,
         };
       }
     }
@@ -214,8 +259,9 @@ async function verifyJWTVC(
       valid: true,
       reason: "JWT-VC signature valid. Credential integrity verified. Not expired.",
       format: "jwt",
+      ...cpoeFields,
       document: mapVCToDocument(payload),
-      vcMetadata: extractVCMetadata(payload),
+      vcMetadata,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
@@ -288,22 +334,123 @@ function mapVCToDocument(payload: {
   };
 }
 
+/** Human-readable assurance level names */
+const ASSURANCE_NAMES: Record<number, string> = {
+  0: "Documented",
+  1: "Configured",
+  2: "Demonstrated",
+  3: "Observed",
+  4: "Attested",
+};
+
+/**
+ * Determine issuer trust tier from payload.
+ */
+function determineIssuerTier(payload: { iss?: string }): IssuerTier {
+  const iss = payload.iss;
+  if (!iss) return "unverifiable";
+  if (iss.startsWith("did:web:grcorsair.com")) return "corsair-verified";
+  if (iss.startsWith("did:web:")) return "self-signed";
+  return "unverifiable";
+}
+
+/**
+ * Extract CPOE-specific fields (assurance, provenance, scope, summary, issuer tier).
+ */
+function extractCPOEFields(payload: {
+  iss?: string;
+  iat?: number;
+  exp?: number;
+  vc?: {
+    issuer?: string | { id: string; name?: string };
+    validFrom?: string;
+    validUntil?: string;
+    credentialSubject?: Record<string, unknown>;
+  };
+}): Partial<MarqueVerificationResult> {
+  const cs = payload.vc?.credentialSubject;
+  if (!cs) return {};
+
+  const assuranceData = cs.assurance as {
+    declared?: number;
+    verified?: boolean;
+    method?: string;
+    breakdown?: Record<string, number>;
+    excluded?: Array<{ controlId: string; reason: string; acceptedBy?: string }>;
+  } | undefined;
+
+  const provenanceData = cs.provenance as {
+    source?: "self" | "tool" | "auditor";
+    sourceIdentity?: string;
+    sourceDate?: string;
+  } | undefined;
+
+  const summaryData = cs.summary as {
+    controlsTested?: number;
+    controlsPassed?: number;
+    controlsFailed?: number;
+    overallScore?: number;
+  } | undefined;
+
+  return {
+    issuerTier: determineIssuerTier(payload),
+    assuranceLevel: assuranceData?.declared,
+    assuranceName: assuranceData?.declared !== undefined
+      ? ASSURANCE_NAMES[assuranceData.declared] ?? `L${assuranceData.declared}`
+      : undefined,
+    assurance: assuranceData ? {
+      declared: assuranceData.declared ?? 0,
+      verified: assuranceData.verified ?? false,
+      method: assuranceData.method ?? "self-assessed",
+      breakdown: assuranceData.breakdown ?? {},
+      excluded: assuranceData.excluded,
+    } : undefined,
+    provenance: provenanceData ? {
+      source: provenanceData.source ?? "self",
+      sourceIdentity: provenanceData.sourceIdentity,
+      sourceDate: provenanceData.sourceDate,
+    } : undefined,
+    scope: typeof cs.scope === "string" ? cs.scope : undefined,
+    summary: summaryData ? {
+      controlsTested: summaryData.controlsTested ?? 0,
+      controlsPassed: summaryData.controlsPassed ?? 0,
+      controlsFailed: summaryData.controlsFailed ?? 0,
+      overallScore: summaryData.overallScore ?? 0,
+    } : undefined,
+  };
+}
+
 /**
  * Extract VC-specific metadata for display.
  */
 function extractVCMetadata(payload: {
   iss?: string;
+  iat?: number;
+  exp?: number;
   vc?: {
     "@context"?: string[];
     type?: string[];
+    issuer?: string | { id: string; name?: string };
+    validFrom?: string;
+    validUntil?: string;
   };
   parley?: string;
 }): MarqueVerificationResult["vcMetadata"] {
+  const issuer = payload.vc?.issuer;
+  const signedBy = typeof issuer === "string"
+    ? issuer
+    : typeof issuer === "object" && issuer !== null
+      ? issuer.name ?? issuer.id
+      : payload.iss ?? "";
+
   return {
     context: payload.vc?.["@context"] ?? [],
     credentialType: payload.vc?.type ?? [],
     issuerDID: payload.iss ?? "",
     parleyVersion: payload.parley ?? "2.0",
+    signedBy,
+    generatedAt: payload.vc?.validFrom,
+    expiresAt: payload.vc?.validUntil,
   };
 }
 
@@ -377,28 +524,35 @@ async function verifyJSON(
   }
 }
 
-/** Sample Marque for the "Try it" button */
+/** Sample CPOE in v0.3.0 format for the "Try it" button */
 export const SAMPLE_MARQUE = JSON.stringify(
   {
     marque: {
-      id: "mrq_2026-02-06_demo_abc123",
-      version: "1.0.0",
+      id: "mrq_2026-02-09_demo_abc123",
+      version: "2.0.0",
       issuer: {
         name: "Security Engineering",
-        organization: "Corsair Demo",
+        organization: "Acme Cloud Platform",
       },
-      generatedAt: "2026-02-06T10:30:00Z",
-      expiresAt: "2027-02-06T10:30:00Z",
-      scope: {
-        providers: ["aws-cognito"],
-        frameworksCovered: ["NIST 800-53", "SOC2", "ISO 27001"],
-        servicesAssessed: ["cognito:us-west-2_ABC123"],
+      generatedAt: "2026-02-09T10:30:00Z",
+      expiresAt: "2027-02-09T10:30:00Z",
+      scope: "SOC 2 Type II — Acme Cloud Platform",
+      assurance: {
+        declared: 1,
+        verified: true,
+        method: "self-assessed",
+        breakdown: { "0": 2, "1": 22 },
+      },
+      provenance: {
+        source: "auditor",
+        sourceIdentity: "Example Audit Firm LLP",
+        sourceDate: "2026-01-15",
       },
       summary: {
         controlsTested: 24,
-        controlsPassed: 18,
-        controlsFailed: 6,
-        overallScore: 75,
+        controlsPassed: 22,
+        controlsFailed: 2,
+        overallScore: 92,
       },
       evidenceChain: {
         hashChainRoot:
@@ -434,4 +588,4 @@ export const SAMPLE_MARQUE = JSON.stringify(
 );
 
 export const SAMPLE_NOTE =
-  "This is a demo Marque. The signature is not cryptographically valid — it demonstrates the verification UI. Real Marques are Ed25519-signed W3C Verifiable Credentials generated by the Corsair CLI.";
+  "This is a demo CPOE. The signature is not cryptographically valid — it demonstrates the verification UI. Real CPOEs are Ed25519-signed W3C Verifiable Credentials generated by the Corsair CLI.";
