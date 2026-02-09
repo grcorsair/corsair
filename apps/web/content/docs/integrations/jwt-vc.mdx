@@ -56,10 +56,10 @@ The document contains your Ed25519 public key:
 ### Via CLI
 
 ```bash
-# Run assessment and output as JWT-VC
-bun corsair.ts \
-  --target us-west-2_ABC123 \
-  --service cognito \
+# Ingest a SOC 2 report and output as JWT-VC
+bun corsair.ts ingest \
+  --file soc2-report.pdf \
+  --type soc2 \
   --format vc-jwt \
   --did did:web:example.com
 
@@ -102,21 +102,23 @@ The generated JWT contains three parts:
     "validUntil": "2026-02-14T00:00:00Z",
     "credentialSubject": {
       "type": "CorsairCPOE",
-      "scope": {
-        "providers": ["aws-cognito"],
-        "resourceCount": 1,
-        "frameworksCovered": ["NIST 800-53", "SOC2"]
+      "scope": "SOC 2 Type II — Cloud Infrastructure Controls",
+      "assurance": {
+        "declared": 1,
+        "verified": true,
+        "method": "self-assessed",
+        "breakdown": { "0": 2, "1": 22 }
+      },
+      "provenance": {
+        "source": "auditor",
+        "sourceIdentity": "Example Audit Firm LLP",
+        "sourceDate": "2026-01-15"
       },
       "summary": {
         "controlsTested": 24,
-        "controlsPassed": 18,
-        "controlsFailed": 6,
-        "overallScore": 75
-      },
-      "evidenceChain": {
-        "hashChainRoot": "sha256:abc123...",
-        "recordCount": 12,
-        "chainVerified": true
+        "controlsPassed": 22,
+        "controlsFailed": 2,
+        "overallScore": 92
       }
     }
   },

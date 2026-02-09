@@ -7,7 +7,7 @@ order: 13
 
 ## Overview
 
-Every Corsair mission produces an **evidence chain** — a JSONL file where each record is cryptographically linked to the previous one via SHA-256 hashing. This creates a tamper-proof audit trail that proves no evidence has been modified after collection.
+Every Corsair assessment produces an **evidence chain** — a JSONL file where each record is cryptographically linked to the previous one via SHA-256 hashing. This creates a tamper-proof audit trail that proves no evidence has been modified after collection.
 
 ## How It Works
 
@@ -39,7 +39,7 @@ Verify a chain programmatically:
 ```typescript
 import { verifyChain } from "corsair/evidence";
 
-const records = readJsonl("./evidence/mission.jsonl");
+const records = readJsonl("./evidence/assessment.jsonl");
 const result = verifyChain(records);
 // { valid: true, recordCount: 12, brokenAt: null }
 ```
@@ -47,7 +47,7 @@ const result = verifyChain(records);
 Or via the CLI:
 
 ```bash
-bun corsair.ts verify ./evidence/mission.jsonl
+bun corsair.ts verify ./evidence/assessment.jsonl
 ```
 
 ## Evidence Phases
@@ -79,10 +79,10 @@ Evidence chains integrate with:
 
 ## Compaction
 
-For long-running or repeated missions, the evidence compaction engine can merge multiple chains while preserving integrity:
+For repeated assessments, the evidence compaction engine can merge multiple chains while preserving integrity:
 
 ```bash
-bun corsair.ts --compact ./evidence/mission-*.jsonl --output ./evidence/compacted.jsonl
+bun corsair.ts --compact ./evidence/assessment-*.jsonl --output ./evidence/compacted.jsonl
 ```
 
 Compaction creates a new chain that references the original chains' root hashes, maintaining the full audit trail.

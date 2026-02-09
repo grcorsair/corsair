@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 const productLinks = [
   { href: "/demo", label: "Demo" },
   { href: "/docs", label: "Documentation" },
-  { href: "/marque", label: "Marque Verifier" },
+  { href: "/marque", label: "Verify CPOE" },
   { href: "/blog", label: "Blog" },
 ];
 

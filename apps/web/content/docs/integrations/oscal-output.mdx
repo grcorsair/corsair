@@ -1,6 +1,6 @@
 ---
 title: "OSCAL Output"
-description: "Generate machine-readable NIST OSCAL Assessment Results from Corsair missions."
+description: "Generate machine-readable NIST OSCAL Assessment Results from Corsair assessments."
 section: "integrations"
 order: 31
 ---
@@ -35,7 +35,7 @@ bun corsair.ts ingest --input soc2-report.pdf --format md
 
 HTML and Markdown reports include:
 
-- **Executive Summary** — Mission overview, assurance level, control coverage
+- **Executive Summary** — Assessment overview, assurance level, control coverage
 - **Framework Coverage** — Which frameworks mapped, control counts
 - **Finding Details** — Per-finding severity, evidence references, remediation context
 - **Evidence Chain** — Hash chain verification, record count, integrity status

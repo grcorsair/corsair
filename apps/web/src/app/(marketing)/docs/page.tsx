@@ -66,18 +66,18 @@ export default function DocsPage() {
               </div>
               <div>
                 <span className="text-corsair-text-dim">
-                  # Run demo mission (no API keys needed)
+                  # Verify the example CPOE (no API keys needed)
                 </span>
                 <div className="text-corsair-gold">
-                  bun corsair.ts --target demo --service cognito --format html
+                  bun run bin/corsair-verify.ts examples/example-cpoe.jwt
                 </div>
               </div>
               <div>
                 <span className="text-corsair-text-dim">
-                  # Run against real AWS (requires credentials)
+                  # Ingest a SOC 2 report and generate a signed CPOE
                 </span>
                 <div className="text-corsair-gold">
-                  bun corsair.ts --target us-west-2_ABC123 --service cognito
+                  bun corsair.ts ingest --file report.pdf --type soc2
                 </div>
               </div>
             </div>

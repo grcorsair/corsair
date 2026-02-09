@@ -12,8 +12,12 @@ curl -fsSL https://bun.sh/install | bash
 git clone https://github.com/Arudjreis/corsair.git
 cd corsair && bun install
 
-# Your first mission (no API keys needed)
-bun corsair.ts --target demo --service cognito --format html`;
+# Verify the example CPOE (no API keys needed)
+bun run bin/corsair-verify.ts examples/example-cpoe.jwt
+
+# Ingest a SOC 2 report and generate a signed CPOE
+export ANTHROPIC_API_KEY=your_key_here
+bun corsair.ts ingest --file report.pdf --type soc2`;
 
 export function QuickStart() {
   const [copied, setCopied] = useState(false);
