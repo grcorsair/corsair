@@ -1,27 +1,52 @@
 # CORSAIR
 
-Agentic GRC chaos engineering platform. Pirate-themed offensive security tool that validates compliance through adversarial testing.
+Compliance proof infrastructure — cryptographic trust layer for GRC. Parley protocol (JWT-VC + SCITT + SSF/CAEP) for machine-readable, verifiable compliance attestations (CPOEs).
 
 ## Tech Stack
 - **Runtime**: Bun (NOT Node.js) — TypeScript runs directly, no build step
 - **Language**: TypeScript (strict mode, ESM modules)
 - **Test Runner**: `bun test` (NOT jest, vitest, or mocha)
 - **Package Manager**: `bun install` (NOT npm, yarn, or pnpm)
-- **Crypto**: Node.js built-in `crypto` module (zero external deps for Ed25519/SHA-256)
-- **AI SDK**: @anthropic-ai/sdk, @modelcontextprotocol/sdk
+- **Crypto**: Node.js built-in `crypto` module + `jose` for JWT-VC (Ed25519)
+- **AI SDK**: @anthropic-ai/sdk (SOC 2 ingestion)
+- **Database**: Railway Postgres via Bun.sql (zero-dep driver)
+- **Web**: Next.js 15 + Tailwind 4 + shadcn/ui (apps/web/)
 
 ## Commands
 ```bash
 bun install                          # Install dependencies
-bun test                             # Run all tests (1167 tests, 86 files)
-bun test tests/threat-model/         # SPYGLASS engine tests
-bun test tests/parley/               # Marque/Parley tests
-bun test tests/quartermaster/        # Quartermaster tests
-bun test tests/integration/          # E2E pipeline tests
-bun test --coverage                  # With coverage (target: >80%)
-bun run corsair.ts --help            # CLI help
-bun run corsair.ts --target X --service cognito  # Run mission
+bun test                             # Run all tests (556 tests, 47 files)
+bun test tests/parley/               # Parley protocol tests (20 files)
+bun test tests/flagship/             # FLAGSHIP SSF/CAEP tests
+bun test tests/ingestion/            # Ingestion pipeline tests
+bun test tests/quartermaster/        # Governance tests
+bun run corsair.ts ingest --file report.pdf --type soc2  # Ingest SOC 2
+bun run corsair.ts verify cpoe.jwt   # Verify a CPOE
+bun run corsair.ts keygen            # Generate Ed25519 keypair
 ```
+
+## Pipeline (v0.3.0)
+```
+INGEST → CHART → QUARTER → MARQUE (+ FLAGSHIP for real-time signals)
+```
+
+## Pirate Naming Convention
+
+| Stage | Meaning | Code Pattern |
+|---|---|---|
+| INGEST | Document ingestion | `parseSOC2()`, `mapToMarqueInput()` |
+| CHART | Framework mapping | `ChartEngine`, `chart()` |
+| QUARTER | Governance verification | `QuartermasterAgent` |
+| MARQUE | Signed CPOE (Ed25519 JWT-VC) | `MarqueGenerator`, `MarqueVerifier` |
+| FLAGSHIP | Real-time compliance signals | `SETGenerator`, `SSFStream` |
+
+## Architecture Patterns
+- **Ingestion pipeline**: PDF → Claude extraction → IngestedDocument → MarqueGeneratorInput → JWT-VC
+- **Protocol**: Parley = JWT-VC (proof) + SCITT (log) + SSF/CAEP (signal)
+- **Assurance levels**: L0=Documented, L1=Configured, L2=Demonstrated, L3=Observed, L4=Attested
+- **Barrel exports**: Each module has `index.ts` re-exporting everything
+- **Type-only imports**: Use `import type { }` to avoid circular dependencies
+- **Bun-native**: Prefer `Bun.env`, `Bun.file()`, `Bun.write()` over Node.js equivalents
 
 ## TDD Workflow (MANDATORY)
 1. Write test FIRST in `tests/` mirroring `src/` structure
@@ -31,53 +56,18 @@ bun run corsair.ts --target X --service cognito  # Run mission
 5. Refactor if needed, tests stay green
 6. NEVER claim work complete without running `bun test` and showing green output
 
-## PAI Integration
-- The PAI Algorithm ALWAYS runs. Use ISC criteria to define and verify every change.
-- Every feature/fix should have verifiable ISC criteria (8 words, binary testable).
-- Use OBSERVE phase to understand existing patterns before modifying code.
-- VERIFY phase = `bun test` passing + README updated if public API changed.
-
-## Pirate Naming Convention (CRITICAL)
-
-| Pipeline Stage | Meaning | Code Pattern |
-|---|---|---|
-| RECON | Reconnaissance (read-only) | `ReconEngine`, `recon()` |
-| SPYGLASS | Threat modeling (STRIDE) | `SpyglassEngine`, `spyglassAnalyze()` |
-| MARK | Drift detection | `MarkEngine`, `mark()` |
-| RAID | Attack execution | `RaidEngine`, `raid()` |
-| PLUNDER | Evidence extraction | `EvidenceEngine`, `plunder()` |
-| CHART | Framework mapping | `ChartEngine`, `chart()` |
-| QUARTER | Governance verification | `QuartermasterAgent` |
-| MARQUE | Signed proof (Ed25519) | `MarqueGenerator`, `MarqueVerifier` |
-| ESCAPE | Cleanup/rollback | `EscapeEngine`, `withScopeGuard()` |
-
-- Pipeline stages: ALL CAPS in user-facing output (RECON, RAID, PLUNDER)
-- Class names: PascalCase pirate metaphors (SpyglassEngine, QuartermasterAgent)
-- STRIDE methodology: kept as-is internally (STRIDECategory type)
-- New features MUST use pirate terminology, not generic terms
-
-## Architecture Patterns
-- **Facade**: `Corsair` class delegates to engine modules (src/engine/)
-- **Shared event store**: `CorsairEvent[]` passed by reference to all engines
-- **Barrel exports**: `src/engine/index.ts` re-exports everything
-- **Plugin discovery**: `*.plugin.json` manifests auto-discovered in `plugins/`
-- **Type centralization**: Core types in `src/types.ts`, plugin types re-exported from there
-- **Type-only imports**: Use `import type { }` to avoid circular dependencies
-
 ## Testing Conventions
 - Test files: `*.test.ts` in `tests/` directory (mirrors src/ structure)
 - Imports: `import { describe, test, expect } from "bun:test"`
-- Fixtures: `tests/fixtures/mock-snapshots.ts` — reuse existing mock data
 - Pattern: `describe("Feature") > test("should X when Y")`
 - Run specific test file first (`bun test tests/path/file.test.ts`), not the full suite
+- 31 Postgres tests fail due to pre-existing tenant_id constraint (005_multi_tenancy.sql)
 
 ## Security Rules
-- Ed25519 for Marque signing (Node.js crypto, zero external deps)
-- SHA-256 hash chain for evidence integrity — NEVER break the chain
-- Marque sanitization strips: ARNs, IPs, file paths, account IDs, API keys
-- DryRun=true by default for all RAIDs
+- Ed25519 for CPOE signing (Node.js crypto + jose for JWT-VC)
+- SHA-256 hash chain for evidence integrity
+- CPOE sanitization strips: ARNs, IPs, file paths, account IDs, API keys
 - NEVER commit .env files, AWS credentials, or private keys
-- NEVER disable sanitization in Marque generation
 
 ## Boundaries
 
@@ -86,14 +76,12 @@ bun run corsair.ts --target X --service cognito  # Run mission
 - Write tests for every new feature or bug fix
 - Use pirate terminology for new pipeline concepts
 - Use `import type` for type-only imports
-- Update README.md when public interfaces change
-- When shipping a backend feature, audit all user-facing content (docs + blog) in the same pass — blog posts are easy to miss since they're time-stamped and feel "done"
+- When shipping a backend feature, audit all user-facing content (docs + blog) in the same pass
 
 ### Ask First
-- Before adding new dependencies (keep deps minimal)
+- Before adding new dependencies (keep deps minimal — currently only 2)
 - Before modifying Ed25519 signing or hash chain logic
-- Before changing plugin manifest schema
-- Before modifying the Corsair facade delegation pattern
+- Before changing CPOE/Parley type schemas
 
 ### Never
 - Never use Node.js/npm/yarn — this is a Bun project
@@ -103,7 +91,8 @@ bun run corsair.ts --target X --service cognito  # Run mission
 - Never use `any` — use `unknown` with type guards instead
 
 ## References
-- @README.md — Full project documentation, CLI usage, architecture diagrams
-- @CONTRIBUTING.md — The Pirate's Code (contribution rules)
-- @PLUGIN_ARCHITECTURE.md — Plugin development guide
+- @README.md — Full project documentation
+- @CONTRIBUTING.md — Contribution rules
 - @SECURITY.md — Vulnerability reporting
+- @CPOE_SPEC.md — CPOE one-page specification
+- @L0-L4_ISSUANCE_SPEC.md — Assurance level specification
