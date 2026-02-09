@@ -4,8 +4,8 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.2.x   | :white_check_mark: |
-| < 0.2   | :x:                |
+| 0.3.x   | :white_check_mark: |
+| < 0.3   | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -31,9 +31,9 @@ If you've discovered a vulnerability in CORSAIR, we want to hear from you.
 
 ### Scope
 
-CORSAIR is an offensive security testing tool. The following are NOT vulnerabilities:
-- The tool successfully attacks test targets (that's the point)
-- Evidence files contain sensitive data from tested systems (expected behavior)
-- The tool requires elevated permissions to function (by design)
+CORSAIR is a compliance trust exchange protocol. The following are NOT vulnerabilities:
+- Test CPOEs containing synthetic compliance data (expected — examples are synthetic)
+- The tool generates Ed25519 keypairs for signing (by design)
+- Evidence files from document ingestion contain extracted text (expected behavior)
 
 **Fair winds and following seas, security researcher.**

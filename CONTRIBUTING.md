@@ -6,9 +6,9 @@
 
 1. **Scout Before You Raid** - Check existing issues/PRs before starting work
 2. **Chart Your Course** - Open an issue to discuss significant changes
-3. **Leave No Trace** - ESCAPE primitive must clean up all test resources
-4. **Plunder With Proof** - All changes need test coverage
-5. **Respect the Hash Chain** - Never break evidence integrity
+3. **Sign Your Work** - Every CPOE must be cryptographically verifiable
+4. **Test With Proof** - All changes need test coverage
+5. **Respect the Protocol** - Never break Parley verification or CPOE format
 
 ## Getting Started
 
@@ -27,7 +27,7 @@ bun test
 ## Pull Request Process
 
 1. Fork the repository
-2. Create feature branch: `git checkout -b feature/new-attack-vector`
+2. Create feature branch: `git checkout -b feature/new-parser`
 3. Write tests first (TDD approach)
 4. Implement the feature
 5. Ensure all tests pass: `bun test`
@@ -38,27 +38,26 @@ bun test
 
 - **TypeScript strict mode** - No implicit any
 - **Explicit types** over inference where it improves clarity
-- **Pirate terminology** in user-facing output (RECON, RAID, PLUNDER, etc.)
+- **Pirate terminology** in protocol concepts (MARQUE, CHART, QUARTER, FLAGSHIP)
 - **Professional terminology** in code internals (functions, variables, types)
 - **Comprehensive tests** - Aim for >80% coverage
 
-## Creating a New Plugin
+## Adding Document Parsers
 
-CORSAIR uses a plugin-first architecture. See `plugins/aws-cognito/` for reference implementation.
+CORSAIR uses an ingestion pipeline to extract compliance data from documents. See `src/ingestion/` for reference implementations.
 
-**Plugin Requirements:**
-1. Implement `ProviderPlugin<T>` interface
-2. Create `*.plugin.json` manifest with attack vectors
-3. Define framework mappings (MITRE → NIST → SOC2)
-4. Implement all 6 primitives: RECON, MARK, RAID, PLUNDER, CHART, ESCAPE
-5. Write comprehensive tests
+**Parser Requirements:**
+1. Implement `IngestedDocument` output format
+2. Add your source to the `DocumentSource` type
+3. Map extracted controls to framework identifiers
+4. Write comprehensive tests
 
 ## Testing Guidelines
 
-- **Unit tests**: Test individual primitives
-- **Integration tests**: Test full attack lifecycle
-- **Plugin tests**: Test provider-specific implementations
-- **Evidence validation**: Verify hash chain integrity
+- **Unit tests**: Test individual modules (parley, ingestion, flagship)
+- **Integration tests**: Test full ingestion-to-CPOE pipeline
+- **Protocol tests**: Test Parley exchange, SCITT registration, FLAGSHIP signals
+- **Evidence validation**: Verify Ed25519 signatures and hash chain integrity
 
 Run tests with coverage:
 ```bash
