@@ -50,6 +50,7 @@ export function mapToMarqueInput(
   const chartResults = buildChartResults(doc.controls);
 
   return {
+    document: doc,
     markResults,
     raidResults: [], // No attacks run during document ingestion
     chartResults,

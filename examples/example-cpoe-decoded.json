@@ -1,0 +1,248 @@
+{
+  "vc": {
+    "@context": [
+      "https://www.w3.org/ns/credentials/v2",
+      "https://grcorsair.com/credentials/v1"
+    ],
+    "type": [
+      "VerifiableCredential",
+      "CorsairCPOE"
+    ],
+    "issuer": {
+      "id": "did:web:grcorsair.com",
+      "name": "Acme Corporation"
+    },
+    "validFrom": "2026-02-09T11:22:28.757Z",
+    "validUntil": "2026-05-10T11:22:28.757Z",
+    "credentialSubject": {
+      "type": "CorsairCPOE",
+      "scope": "SOC 2 Type II — Acme Cloud Platform",
+      "assurance": {
+        "declared": 0,
+        "verified": true,
+        "method": "self-assessed",
+        "breakdown": {
+          "0": 2,
+          "1": 22
+        }
+      },
+      "provenance": {
+        "source": "auditor",
+        "sourceIdentity": "Example Audit Firm LLP",
+        "sourceDate": "2026-01-15"
+      },
+      "summary": {
+        "controlsTested": 46,
+        "controlsPassed": 42,
+        "controlsFailed": 4,
+        "overallScore": 91
+      },
+      "frameworks": {
+        "SOC2": {
+          "controlsMapped": 24,
+          "passed": 22,
+          "failed": 2,
+          "controls": [
+            {
+              "controlId": "CC1.1",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC1.2",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC2.1",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC2.2",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC3.1",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC3.2",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC3.3",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC3.4",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC4.1",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC4.2",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC5.1",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC5.2",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC5.3",
+              "status": "failed"
+            },
+            {
+              "controlId": "CC6.1",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC6.2",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC6.3",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC6.6",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC6.7",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC6.8",
+              "status": "failed"
+            },
+            {
+              "controlId": "CC7.1",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC7.2",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC7.3",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC7.4",
+              "status": "passed"
+            },
+            {
+              "controlId": "CC8.1",
+              "status": "passed"
+            }
+          ]
+        },
+        "NIST-800-53": {
+          "controlsMapped": 22,
+          "passed": 20,
+          "failed": 2,
+          "controls": [
+            {
+              "controlId": "PL-4",
+              "status": "passed"
+            },
+            {
+              "controlId": "PM-1",
+              "status": "passed"
+            },
+            {
+              "controlId": "AT-2",
+              "status": "passed"
+            },
+            {
+              "controlId": "IR-6",
+              "status": "passed"
+            },
+            {
+              "controlId": "RA-3",
+              "status": "passed"
+            },
+            {
+              "controlId": "RA-5",
+              "status": "passed"
+            },
+            {
+              "controlId": "AC-5",
+              "status": "passed"
+            },
+            {
+              "controlId": "CM-3",
+              "status": "passed"
+            },
+            {
+              "controlId": "CA-7",
+              "status": "passed"
+            },
+            {
+              "controlId": "CA-5",
+              "status": "passed"
+            },
+            {
+              "controlId": "PL-2",
+              "status": "passed"
+            },
+            {
+              "controlId": "SI-2",
+              "status": "passed"
+            },
+            {
+              "controlId": "PL-1",
+              "status": "failed"
+            },
+            {
+              "controlId": "IA-2",
+              "status": "passed"
+            },
+            {
+              "controlId": "AC-2",
+              "status": "passed"
+            },
+            {
+              "controlId": "PS-4",
+              "status": "passed"
+            },
+            {
+              "controlId": "SI-4",
+              "status": "passed"
+            },
+            {
+              "controlId": "SC-8",
+              "status": "passed"
+            },
+            {
+              "controlId": "CM-7",
+              "status": "failed"
+            },
+            {
+              "controlId": "AU-6",
+              "status": "passed"
+            },
+            {
+              "controlId": "CA-8",
+              "status": "passed"
+            },
+            {
+              "controlId": "IR-3",
+              "status": "passed"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "parley": "2.0",
+  "iat": 1770636148,
+  "iss": "did:web:grcorsair.com",
+  "sub": "marque-f6b7fec5-845c-46a4-abc9-f811d98dd55c",
+  "jti": "marque-f6b7fec5-845c-46a4-abc9-f811d98dd55c",
+  "exp": 1778412148
+}

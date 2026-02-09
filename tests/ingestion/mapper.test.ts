@@ -211,5 +211,13 @@ describe("Ingestion Mapper", () => {
       expect(result.markResults[0].findings).toHaveLength(0);
       expect(result.markResults[0].driftDetected).toBe(false);
     });
+
+    test("should pass through document reference for assurance/provenance building", () => {
+      const result = mapToMarqueInput(minimalDocument);
+      expect(result.document).toBeDefined();
+      expect(result.document).toBe(minimalDocument);
+      expect(result.document!.source).toBe("soc2");
+      expect(result.document!.metadata.title).toBe("Acme Corp SOC 2 Type II");
+    });
   });
 });

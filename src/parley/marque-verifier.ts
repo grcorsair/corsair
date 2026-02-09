@@ -26,6 +26,12 @@ export interface MarqueVerificationResult {
   signedBy?: string;
   generatedAt?: string;
   expiresAt?: string;
+  assuranceLevel?: number;
+  assuranceName?: string;
+  provenance?: { source: string; sourceIdentity?: string; sourceDate?: string };
+  scope?: string;
+  summary?: { controlsTested: number; controlsPassed: number; controlsFailed: number; overallScore: number };
+  issuerTier?: "corsair-verified" | "self-signed" | "unverifiable" | "invalid";
 }
 
 // =============================================================================

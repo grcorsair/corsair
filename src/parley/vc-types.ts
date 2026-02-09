@@ -64,6 +64,64 @@ export interface VCProof {
 }
 
 // =============================================================================
+// ASSURANCE & PROVENANCE TYPES
+// =============================================================================
+
+/** Assurance level — L0 (Documented) through L4 (Attested) */
+export type AssuranceLevel = 0 | 1 | 2 | 3 | 4;
+
+/** Human-readable assurance level names */
+export const ASSURANCE_NAMES: Record<AssuranceLevel, string> = {
+  0: "Documented",
+  1: "Configured",
+  2: "Demonstrated",
+  3: "Observed",
+  4: "Attested",
+};
+
+/** Assurance metadata for a CPOE */
+export interface CPOEAssurance {
+  /** Declared assurance level (0-4). Min of all in-scope controls. */
+  declared: AssuranceLevel;
+
+  /** Has the declared level been verified against all controls? */
+  verified: boolean;
+
+  /** Method used to establish assurance */
+  method:
+    | "self-assessed"
+    | "automated-config-check"
+    | "ai-evidence-review"
+    | "continuous-observation"
+    | "third-party-attested";
+
+  /** Count of controls at each level: { "0": 2, "1": 18 } */
+  breakdown: Record<string, number>;
+
+  /** Controls explicitly excluded from scope */
+  excluded?: Array<{
+    controlId: string;
+    reason: string;
+    acceptedBy?: string;
+  }>;
+}
+
+/** Evidence provenance — who produced the underlying evidence */
+export interface CPOEProvenance {
+  /** Source authority type */
+  source: "self" | "tool" | "auditor";
+
+  /** Identity of source (e.g., "Deloitte LLP", "Prowler v3.1") */
+  sourceIdentity?: string;
+
+  /** SHA-256 hash of the source document */
+  sourceDocument?: string;
+
+  /** Date of source assessment (ISO 8601) */
+  sourceDate?: string;
+}
+
+// =============================================================================
 // CORSAIR CPOE CREDENTIAL SUBJECT
 // =============================================================================
 
@@ -71,12 +129,14 @@ export interface CPOECredentialSubject extends CredentialSubject {
   /** Discriminator for CPOE credential subjects */
   type: "CorsairCPOE";
 
-  /** Assessment scope */
-  scope: {
-    providers: string[];
-    resourceCount: number;
-    frameworksCovered: string[];
-  };
+  /** Assessment scope (human-readable description) */
+  scope: string;
+
+  /** Assurance metadata (required — every CPOE must declare a level) */
+  assurance: CPOEAssurance;
+
+  /** Evidence provenance (required — every CPOE must state its source) */
+  provenance: CPOEProvenance;
 
   /** Assessment summary */
   summary: {
@@ -86,15 +146,15 @@ export interface CPOECredentialSubject extends CredentialSubject {
     overallScore: number;
   };
 
-  /** Evidence chain metadata */
-  evidenceChain: {
+  /** Evidence chain metadata (optional — document ingestion has no chain) */
+  evidenceChain?: {
     hashChainRoot: string;
     recordCount: number;
     chainVerified: boolean;
   };
 
-  /** Per-framework compliance results */
-  frameworks: Record<
+  /** Per-framework compliance results (optional) */
+  frameworks?: Record<
     string,
     {
       controlsMapped: number;

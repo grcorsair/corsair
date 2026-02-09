@@ -12,7 +12,7 @@ import * as fs from "fs";
 import * as jose from "jose";
 import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
 import { generateVCJWT } from "../../src/parley/vc-generator";
-import { verifyVCJWT } from "../../src/parley/vc-verifier";
+import { verifyVCJWT, verifyVCJWTViaDID } from "../../src/parley/vc-verifier";
 import type { MarqueGeneratorInput } from "../../src/parley/marque-generator";
 import type { MarkResult, RaidResult, ChartResult } from "../../src/types";
 import { VC_CONTEXT } from "../../src/parley/vc-types";
@@ -191,5 +191,160 @@ describe("VC Verifier - JWT-VC Verification", () => {
 
     expect(result.valid).toBe(true);
     expect(result.signedBy).toBeDefined();
+  });
+
+  test("verifyVCJWT returns enriched result with assurance and provenance", async () => {
+    const { keyManager, input, publicKey } = await setup();
+    const jwt = await generateVCJWT(input, keyManager);
+
+    const result = await verifyVCJWT(jwt, [publicKey]);
+
+    expect(result.valid).toBe(true);
+    // Assurance is populated from the CPOE credential subject
+    expect(result.assuranceLevel).toBeDefined();
+    expect(typeof result.assuranceLevel).toBe("number");
+    expect(result.assuranceName).toBeDefined();
+    // Provenance is populated
+    expect(result.provenance).toBeDefined();
+    expect(result.provenance!.source).toBeDefined();
+    // Scope is a string
+    expect(result.scope).toBeDefined();
+    expect(typeof result.scope).toBe("string");
+    // Summary is populated
+    expect(result.summary).toBeDefined();
+    expect(result.summary!.controlsTested).toBeDefined();
+    // Issuer tier
+    expect(result.issuerTier).toBe("corsair-verified");
+  });
+});
+
+describe("VC Verifier - verifyVCJWTViaDID", () => {
+  const testDirs: string[] = [];
+
+  function trackDir(dir: string): string {
+    testDirs.push(dir);
+    return dir;
+  }
+
+  afterAll(() => {
+    for (const dir of testDirs) {
+      try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* */ }
+    }
+  });
+
+  test("verifyVCJWTViaDID returns schema_invalid for non-JWT string", async () => {
+    const result = await verifyVCJWTViaDID("not-a-jwt");
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBe("schema_invalid");
+    expect(result.issuerTier).toBe("unverifiable");
+  });
+
+  test("verifyVCJWTViaDID returns schema_invalid for JWT without did:web kid", async () => {
+    // Create a JWT with a non-DID kid
+    const { privateKey } = await jose.generateKeyPair("EdDSA");
+    const jwt = await new jose.SignJWT({ vc: {}, parley: "2.0" })
+      .setProtectedHeader({ alg: "EdDSA", typ: "vc+jwt", kid: "not-a-did" })
+      .setIssuedAt()
+      .setIssuer("test")
+      .setExpirationTime("1h")
+      .sign(privateKey);
+
+    const result = await verifyVCJWTViaDID(jwt);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBe("schema_invalid");
+  });
+
+  test("verifyVCJWTViaDID resolves DID document and verifies signature with mock fetch", async () => {
+    // Generate a real keypair and JWT
+    const keyDir = trackDir(path.join(
+      os.tmpdir(),
+      `corsair-vc-did-test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    ));
+    const keyManager = new MarqueKeyManager(keyDir);
+    await keyManager.generateKeypair();
+
+    const evidencePath = path.join(keyDir, "evidence.jsonl");
+    const engine = new EvidenceEngine(evidencePath);
+    await engine.plunder({
+      raidId: "raid-001", target: "test", vector: "mfa-bypass",
+      success: true, controlsHeld: false, findings: ["test"],
+      timeline: [{ timestamp: new Date().toISOString(), action: "test", result: "done" }],
+      startedAt: new Date().toISOString(), completedAt: new Date().toISOString(),
+      serialized: true, durationMs: 100,
+    }, evidencePath);
+
+    const input: MarqueGeneratorInput = {
+      markResults: [{ findings: [], driftDetected: false, durationMs: 0 }],
+      raidResults: [],
+      chartResults: [{ mitre: { technique: "T1556", name: "MFA", tactic: "CA", description: "" }, nist: { function: "P", category: "AC", controls: [] }, soc2: { principle: "S", criteria: [], description: "" }, frameworks: {} }],
+      evidencePaths: [evidencePath],
+      issuer: { id: "corsair-test", name: "Test Engine", did: "did:web:test.example.com" },
+      providers: ["test"],
+    };
+
+    const jwt = await generateVCJWT(input, keyManager);
+
+    // Export the public key as JWK for the mock DID document
+    const keypair = (await keyManager.loadKeypair())!;
+    const jwk = await keyManager.exportJWK();
+
+    // Mock fetch that returns a DID document with the correct public key
+    const mockFetchFn = async (url: string | URL | Request): Promise<Response> => {
+      const didDocument = {
+        "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/suites/jws-2020/v1"],
+        id: "did:web:test.example.com",
+        verificationMethod: [{
+          id: "did:web:test.example.com#key-1",
+          type: "JsonWebKey2020",
+          controller: "did:web:test.example.com",
+          publicKeyJwk: jwk,
+        }],
+        authentication: ["did:web:test.example.com#key-1"],
+        assertionMethod: ["did:web:test.example.com#key-1"],
+      };
+
+      return new Response(JSON.stringify(didDocument), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    };
+
+    const result = await verifyVCJWTViaDID(jwt, mockFetchFn);
+
+    expect(result.valid).toBe(true);
+    expect(result.signedBy).toBeDefined();
+    expect(result.generatedAt).toBeDefined();
+    expect(result.expiresAt).toBeDefined();
+    expect(result.assuranceLevel).toBeDefined();
+    expect(result.scope).toBeDefined();
+  });
+
+  test("verifyVCJWTViaDID returns schema_invalid when DID resolution fails", async () => {
+    // Create a valid JWT with a did:web kid
+    const { privateKey } = await jose.generateKeyPair("EdDSA");
+    const jwt = await new jose.SignJWT({
+      vc: {
+        "@context": [VC_CONTEXT],
+        type: ["VerifiableCredential"],
+        credentialSubject: {},
+      },
+      parley: "2.0",
+    })
+      .setProtectedHeader({ alg: "EdDSA", typ: "vc+jwt", kid: "did:web:unreachable.example.com#key-1" })
+      .setIssuedAt()
+      .setIssuer("did:web:unreachable.example.com")
+      .setExpirationTime("1h")
+      .sign(privateKey);
+
+    // Mock fetch that returns 404
+    const mockFetchFn = async (): Promise<Response> => {
+      return new Response("Not Found", { status: 404, statusText: "Not Found" });
+    };
+
+    const result = await verifyVCJWTViaDID(jwt, mockFetchFn);
+
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBe("schema_invalid");
+    expect(result.issuerTier).toBe("unverifiable");
   });
 });

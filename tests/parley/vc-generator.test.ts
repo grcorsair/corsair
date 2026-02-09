@@ -210,6 +210,10 @@ describe("VC Generator - JWT-VC Generation", () => {
     expect(subject.type).toBe("CorsairCPOE");
     expect(subject.scope).toBeDefined();
     expect(subject.summary).toBeDefined();
+    expect(subject.assurance).toBeDefined();
+    expect(subject.provenance).toBeDefined();
+    // frameworks and evidenceChain are optional in CPOECredentialSubject
+    // but should be present when chartResults and evidencePaths are provided
     expect(subject.frameworks).toBeDefined();
     expect(subject.evidenceChain).toBeDefined();
   });

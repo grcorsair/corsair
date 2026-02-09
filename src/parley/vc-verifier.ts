@@ -9,7 +9,8 @@
 
 import { jwtVerify, importSPKI, decodeJwt, decodeProtectedHeader } from "jose";
 import type { MarqueVerificationResult } from "./marque-verifier";
-import { VC_CONTEXT } from "./vc-types";
+import { VC_CONTEXT, ASSURANCE_NAMES } from "./vc-types";
+import type { AssuranceLevel } from "./vc-types";
 
 /**
  * Verify a JWT-VC against trusted public keys.
@@ -85,7 +86,24 @@ export async function verifyVCJWT(
         return { valid: false, reason: "schema_invalid", signedBy, generatedAt, expiresAt };
       }
 
-      return { valid: true, signedBy, generatedAt, expiresAt };
+      // Extract CPOE-specific fields from verified payload
+      const cs = verifiedVc.credentialSubject as Record<string, unknown>;
+      const assurance = cs?.assurance as { declared?: number } | undefined;
+
+      return {
+        valid: true,
+        signedBy,
+        generatedAt,
+        expiresAt,
+        assuranceLevel: assurance?.declared,
+        assuranceName: assurance?.declared !== undefined
+          ? ASSURANCE_NAMES[assurance.declared as AssuranceLevel]
+          : undefined,
+        provenance: cs?.provenance as MarqueVerificationResult["provenance"],
+        scope: typeof cs?.scope === "string" ? cs.scope : undefined,
+        summary: cs?.summary as MarqueVerificationResult["summary"],
+        issuerTier: determineIssuerTier(payload),
+      };
     } catch {
       // Try next key
       continue;
@@ -93,4 +111,135 @@ export async function verifyVCJWT(
   }
 
   return { valid: false, reason: "signature_invalid", signedBy, generatedAt, expiresAt };
+}
+
+// =============================================================================
+// ISSUER TIER DETERMINATION
+// =============================================================================
+
+function determineIssuerTier(payload: Record<string, unknown>): MarqueVerificationResult["issuerTier"] {
+  const iss = payload.iss as string | undefined;
+  if (!iss) return "unverifiable";
+  if (iss.startsWith("did:web:grcorsair.com")) return "corsair-verified";
+  if (iss.startsWith("did:web:")) return "self-signed";
+  return "unverifiable";
+}
+
+// =============================================================================
+// DID-BASED VERIFICATION
+// =============================================================================
+
+/**
+ * Verify a JWT-VC by resolving the issuer's public key via DID:web.
+ * Zero-trust verification path -- no pre-loaded keys needed.
+ */
+export async function verifyVCJWTViaDID(
+  jwt: string,
+  fetchFn?: typeof fetch,
+): Promise<MarqueVerificationResult> {
+  // 1. Basic structure check
+  if (!jwt || jwt.split(".").length !== 3) {
+    return { valid: false, reason: "schema_invalid", issuerTier: "unverifiable" };
+  }
+
+  // 2. Decode header to get kid
+  let header;
+  try {
+    header = decodeProtectedHeader(jwt);
+  } catch {
+    return { valid: false, reason: "schema_invalid", issuerTier: "unverifiable" };
+  }
+
+  const kid = header.kid;
+  if (!kid || !kid.includes("did:web:")) {
+    return { valid: false, reason: "schema_invalid", issuerTier: "unverifiable" };
+  }
+
+  // 3. Extract DID from kid (format: "did:web:domain#key-1")
+  const did = kid.split("#")[0];
+
+  // 4. Resolve DID document
+  const { resolveDIDDocument } = await import("./did-resolver");
+  const resolution = await resolveDIDDocument(did, fetchFn);
+
+  if (!resolution.didDocument) {
+    // Decode payload for partial metadata even on failure
+    let payload: Record<string, unknown> = {};
+    try { payload = decodeJwt(jwt) as Record<string, unknown>; } catch { /* ignore */ }
+    return {
+      valid: false,
+      reason: "schema_invalid",
+      issuerTier: "unverifiable",
+      signedBy: String(payload.iss || "unknown"),
+    };
+  }
+
+  // 5. Find the verification method matching kid
+  const vm = resolution.didDocument.verificationMethod.find(m => m.id === kid);
+  if (!vm?.publicKeyJwk) {
+    return { valid: false, reason: "signature_invalid", issuerTier: "unverifiable" };
+  }
+
+  // 6. Import JWK and verify
+  const { importJWK } = await import("jose");
+
+  try {
+    const publicKey = await importJWK(vm.publicKeyJwk, "EdDSA");
+    const { payload: verifiedPayload } = await jwtVerify(jwt, publicKey);
+    const payload = verifiedPayload as Record<string, unknown>;
+
+    // Extract metadata
+    const vc = payload.vc as Record<string, unknown> | undefined;
+    const issuer = vc?.issuer;
+    const signedBy = typeof issuer === "string"
+      ? issuer
+      : typeof issuer === "object" && issuer !== null
+        ? (issuer as { name?: string }).name || (issuer as { id?: string }).id
+        : String(payload.iss || "unknown");
+    const generatedAt = payload.iat
+      ? new Date((payload.iat as number) * 1000).toISOString()
+      : undefined;
+    const expiresAt = payload.exp
+      ? new Date((payload.exp as number) * 1000).toISOString()
+      : undefined;
+
+    // Validate VC structure
+    if (!vc) return { valid: false, reason: "schema_invalid", signedBy, issuerTier: "invalid" };
+
+    const context = vc["@context"] as string[] | undefined;
+    const vcContext = "https://www.w3.org/ns/credentials/v2";
+    if (!context || !context.includes(vcContext)) {
+      return { valid: false, reason: "schema_invalid", signedBy, issuerTier: "invalid" };
+    }
+
+    const types = vc.type as string[] | undefined;
+    if (!types || !types.includes("VerifiableCredential")) {
+      return { valid: false, reason: "schema_invalid", signedBy, issuerTier: "invalid" };
+    }
+
+    if (!vc.credentialSubject) {
+      return { valid: false, reason: "schema_invalid", signedBy, issuerTier: "invalid" };
+    }
+
+    // Extract CPOE fields
+    const cs = vc.credentialSubject as Record<string, unknown>;
+    const assurance = cs?.assurance as { declared?: number } | undefined;
+
+    return {
+      valid: true,
+      signedBy,
+      generatedAt,
+      expiresAt,
+      assuranceLevel: assurance?.declared,
+      assuranceName: assurance?.declared !== undefined
+        ? ASSURANCE_NAMES[assurance.declared as AssuranceLevel]
+        : undefined,
+      provenance: cs?.provenance as MarqueVerificationResult["provenance"],
+      scope: typeof cs?.scope === "string" ? cs.scope : undefined,
+      summary: cs?.summary as MarqueVerificationResult["summary"],
+      issuerTier: determineIssuerTier(payload),
+    };
+  } catch {
+    return { valid: false, reason: "signature_invalid", issuerTier: "invalid" };
+  }
 }

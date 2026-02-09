@@ -46,6 +46,9 @@ npm-debug.log*
 *.jsonl
 /tmp/
 
+# Test key directories (Ed25519 keypairs — never commit)
+.test-keys-*/
+
 # Mission directories (generated during testing)
 missions/
 
