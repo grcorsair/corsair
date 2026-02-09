@@ -2,6 +2,11 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
+    "watchPatterns": [
+      "apps/web/**",
+      "package.json",
+      "bun.lock"
+    ],
     "buildCommand": "bun install --frozen-lockfile && bun run build"
   },
   "deploy": {
