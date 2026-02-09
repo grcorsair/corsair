@@ -20,13 +20,13 @@ export default function Home() {
         <div className="mx-auto max-w-5xl">
           <FadeIn>
             <p className="mb-3 text-center font-pixel text-[8px] tracking-widest text-corsair-cyan/60">
-              THE PIPELINE
+              THE PROTOCOL
             </p>
             <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
-              The Corsair Pipeline
+              The Parley Protocol
             </h2>
             <p className="mb-12 text-center text-corsair-text-dim">
-              Eight stages. From reconnaissance to signed proof.
+              Four stages. From document to signed proof.
             </p>
           </FadeIn>
           <FadeIn delay={0.2}>
@@ -73,7 +73,7 @@ export default function Home() {
               13+ Compliance Frameworks
             </h2>
             <p className="mb-12 text-center text-corsair-text-dim">
-              Evidence auto-maps to every framework. You attack. The mappings
+              Evidence auto-maps to every framework. You ingest. The mappings
               happen.
             </p>
           </FadeIn>

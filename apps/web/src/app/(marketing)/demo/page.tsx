@@ -9,59 +9,41 @@ import { FadeIn } from "@/components/motion/fade-in";
 export const metadata: Metadata = {
   title: "Demo",
   description:
-    "Watch Corsair autonomously attack and assess security controls. Full pipeline demonstration from RECON to MARQUE.",
+    "See how compliance documents become cryptographically verifiable CPOEs. From ingestion to signed proof.",
 };
 
 const demoScenarios = [
   {
-    provider: "AWS Cognito",
-    description: "MFA bypass, password spray, session hijack assessment",
-    findings: "4 threats, 2 CRITICAL",
-    badge: "CRITICAL",
-    badgeColor: "bg-corsair-crimson/10 text-corsair-crimson border-corsair-crimson/30",
+    title: "SOC 2 Report Ingestion",
+    description:
+      "Upload a SOC 2 Type II report. Corsair extracts controls, maps to frameworks, and generates a signed CPOE.",
+    badge: "INGEST",
+    badgeColor:
+      "bg-corsair-cyan/10 text-corsair-cyan border-corsair-cyan/30",
   },
   {
-    provider: "AWS S3",
-    description: "Public access, encryption, versioning controls",
-    findings: "3 threats, 1 CRITICAL",
-    badge: "CRITICAL",
-    badgeColor: "bg-corsair-crimson/10 text-corsair-crimson border-corsair-crimson/30",
+    title: "CPOE Verification",
+    description:
+      "Paste any JWT-VC CPOE and verify it in-browser. Resolves did:web, checks Ed25519 signature, displays results.",
+    badge: "VERIFY",
+    badgeColor:
+      "bg-corsair-green/10 text-corsair-green border-corsair-green/30",
   },
   {
-    provider: "AWS IAM",
-    description: "Privilege escalation, policy drift, unused credentials",
-    findings: "5 threats, 3 HIGH",
-    badge: "HIGH",
-    badgeColor: "bg-corsair-gold/10 text-corsair-gold border-corsair-gold/30",
-  },
-  {
-    provider: "AWS Lambda",
-    description: "Runtime security, environment variable exposure",
-    findings: "2 threats, 1 HIGH",
-    badge: "HIGH",
-    badgeColor: "bg-corsair-gold/10 text-corsair-gold border-corsair-gold/30",
-  },
-  {
-    provider: "AWS RDS",
-    description: "Encryption at rest, public accessibility, backup retention",
-    findings: "3 threats, 1 CRITICAL",
-    badge: "CRITICAL",
-    badgeColor: "bg-corsair-crimson/10 text-corsair-crimson border-corsair-crimson/30",
-  },
-  {
-    provider: "GitLab",
-    description: "Branch protection, secret scanning, merge request rules",
-    findings: "4 threats, 2 HIGH",
-    badge: "HIGH",
-    badgeColor: "bg-corsair-gold/10 text-corsair-gold border-corsair-gold/30",
+    title: "Framework Mapping",
+    description:
+      "See how controls map across SOC 2, NIST 800-53, ISO 27001, and 12+ frameworks via CTID/SCF data.",
+    badge: "CHART",
+    badgeColor:
+      "bg-corsair-gold/10 text-corsair-gold border-corsair-gold/30",
   },
 ];
 
 const sampleOutputs = [
   {
-    name: "Evidence Chain (JSONL)",
-    description: "SHA-256 hash chain with 12 evidence records",
-    format: "JSONL",
+    name: "CPOE (JWT-VC)",
+    description: "W3C Verifiable Credential signed with Ed25519",
+    format: "JWT",
   },
   {
     name: "OSCAL Assessment Results",
@@ -69,14 +51,14 @@ const sampleOutputs = [
     format: "JSON",
   },
   {
+    name: "Evidence Chain (JSONL)",
+    description: "SHA-256 hash chain with tamper-proof integrity",
+    format: "JSONL",
+  },
+  {
     name: "HTML Report",
     description: "Self-contained executive summary with findings",
     format: "HTML",
-  },
-  {
-    name: "Marque Document",
-    description: "Ed25519-signed attestation (CPOE)",
-    format: "JSON",
   },
 ];
 
@@ -94,8 +76,8 @@ export default function DemoPage() {
               Watch Corsair in Action
             </h1>
             <p className="mx-auto max-w-xl text-corsair-text-dim">
-              Full autonomous mission against a demo Cognito user pool. No API
-              keys needed — runs against fixture data.
+              See how compliance documents become cryptographically verifiable
+              CPOEs. No API keys needed — runs against sample data.
             </p>
           </div>
         </FadeIn>
@@ -114,7 +96,7 @@ export default function DemoPage() {
         <FadeIn delay={0.3}>
           <div className="mb-16">
             <h2 className="mb-4 font-display text-xl font-bold text-corsair-text">
-              Full Mission Recording
+              Full Pipeline Recording
             </h2>
             <p className="mb-4 text-sm text-corsair-text-dim">
               Scrub through the full pipeline output. Copy any line.
@@ -128,23 +110,23 @@ export default function DemoPage() {
           </div>
         </FadeIn>
 
-        {/* Provider scenarios */}
+        {/* Demo scenarios */}
         <FadeIn>
           <h2 className="mb-6 font-display text-2xl font-bold text-corsair-text">
-            Supported Providers
+            Pipeline Stages
           </h2>
         </FadeIn>
         <FadeIn delay={0.1}>
           <div className="mb-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {demoScenarios.map((scenario) => (
               <Card
-                key={scenario.provider}
+                key={scenario.title}
                 className="bg-corsair-surface transition-all hover:border-corsair-cyan/40"
               >
                 <CardContent className="p-5">
                   <div className="mb-2 flex items-center justify-between">
                     <span className="font-display text-lg font-bold text-corsair-text">
-                      {scenario.provider}
+                      {scenario.title}
                     </span>
                     <Badge
                       variant="outline"
@@ -153,12 +135,9 @@ export default function DemoPage() {
                       {scenario.badge}
                     </Badge>
                   </div>
-                  <p className="mb-3 text-sm text-corsair-text-dim">
+                  <p className="text-sm text-corsair-text-dim">
                     {scenario.description}
                   </p>
-                  <div className="font-mono text-xs text-corsair-crimson">
-                    {scenario.findings}
-                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -197,7 +176,7 @@ export default function DemoPage() {
         <FadeIn>
           <div className="mt-16 text-center">
             <p className="mb-6 text-corsair-text-dim">
-              Ready to run your own mission?
+              Ready to issue your first CPOE?
             </p>
             <Button size="lg" className="font-display font-semibold shadow-[0_0_20px_rgba(0,207,255,0.2)]" asChild>
               <a

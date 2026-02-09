@@ -3,17 +3,17 @@ import { Badge } from "@/components/ui/badge";
 const frameworks = [
   { name: "MITRE ATT&CK", source: "CTID" },
   { name: "NIST 800-53", source: "CTID" },
-  { name: "NIST CSF", source: "SCF" },
-  { name: "SOC 2", source: "Plugin + SCF" },
-  { name: "ISO 27001", source: "Plugin + SCF" },
-  { name: "CIS Controls", source: "Plugin + SCF" },
-  { name: "PCI-DSS", source: "Plugin + SCF" },
-  { name: "HIPAA", source: "SCF" },
-  { name: "GDPR", source: "SCF" },
-  { name: "CMMC", source: "SCF" },
-  { name: "FedRAMP", source: "SCF" },
-  { name: "SOX", source: "SCF" },
-  { name: "COBIT", source: "SCF" },
+  { name: "NIST CSF", source: "SCF Crosswalk" },
+  { name: "SOC 2", source: "CHART Engine" },
+  { name: "ISO 27001", source: "CHART Engine" },
+  { name: "CIS Controls", source: "CHART Engine" },
+  { name: "PCI-DSS", source: "CHART Engine" },
+  { name: "HIPAA", source: "SCF Crosswalk" },
+  { name: "GDPR", source: "SCF Crosswalk" },
+  { name: "CMMC", source: "SCF Crosswalk" },
+  { name: "FedRAMP", source: "SCF Crosswalk" },
+  { name: "SOX", source: "SCF Crosswalk" },
+  { name: "COBIT", source: "SCF Crosswalk" },
 ];
 
 export function FrameworkGrid() {

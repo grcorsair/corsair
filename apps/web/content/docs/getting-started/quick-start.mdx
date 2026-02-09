@@ -1,6 +1,6 @@
 ---
 title: "Quick Start"
-description: "Install Corsair, configure credentials, and run your first mission in under 5 minutes."
+description: "Install Corsair, generate your first CPOE, and verify it in under 5 minutes."
 section: "getting-started"
 order: 1
 ---
@@ -8,7 +8,7 @@ order: 1
 ## Prerequisites
 
 - [Bun](https://bun.sh/) runtime (v1.0+)
-- An AWS account with appropriate permissions (for live testing), or use demo mode with no credentials
+- An Anthropic API key (for document ingestion via Claude)
 
 ## Installation
 
@@ -21,40 +21,46 @@ cd corsair
 bun install
 ```
 
-## Demo Mode (No API Keys)
+## Verify an Existing CPOE (No API Key Needed)
 
-Run a full Corsair mission against fixture data — no AWS credentials needed:
-
-```bash
-bun corsair.ts --target demo --service cognito --format html
-```
-
-This runs the complete pipeline: RECON → SPYGLASS → MARK → RAID → PLUNDER → CHART → QUARTER → MARQUE.
-
-## Live Mode (AWS Credentials)
-
-To test against real AWS resources:
+The fastest way to see Corsair in action — verify the example CPOE:
 
 ```bash
-# Set your AWS profile
-export AWS_PROFILE=your-profile
-
-# Run against a real Cognito User Pool
-bun corsair.ts --target us-west-2_ABC123 --service cognito
+bun run bin/corsair-verify.ts examples/example-cpoe.jwt
 ```
 
-## CLI Options
+This verifies the Ed25519 signature, checks expiry, and displays the assurance level and control results.
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--target` | Target resource ID | Required |
-| `--service` | Service type (cognito, s3, iam, lambda, rds) | Required |
-| `--format` | Output format (html, oscal, md, json) | json |
-| `--source` | Data source (aws, fixture) | aws |
-| `--output` | Custom output path | ./evidence/ |
+## Generate a CPOE from a SOC 2 Report
+
+```bash
+# Set your Anthropic API key
+export ANTHROPIC_API_KEY=your_key_here
+
+# Ingest a SOC 2 report and generate a signed CPOE
+bun run corsair.ts ingest --file report.pdf --type soc2
+```
+
+This runs the CPOE lifecycle: INGEST → CHART → QUARTER → MARQUE.
+
+## Generate Signing Keys
+
+```bash
+# Generate Ed25519 keypair for CPOE signing
+bun run corsair.ts keygen --output ./keys
+```
+
+## CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `corsair ingest` | Ingest a compliance document and generate a signed CPOE |
+| `corsair verify` | Verify a CPOE's Ed25519 signature and check validity |
+| `corsair keygen` | Generate Ed25519 signing keypair |
+| `corsair help` | Show available commands |
 
 ## Next Steps
 
-- Learn about the [pipeline stages](/docs/concepts/pipeline)
-- Explore [available plugins](/docs/plugins/aws-cognito)
-- Understand [Marque signing](/docs/concepts/marque-signing)
+- Learn about the [CPOE lifecycle](/docs/concepts/pipeline)
+- Understand [assurance levels (L0-L4)](/docs/getting-started/core-concepts)
+- Explore the [Parley protocol](/docs/concepts/parley-protocol)

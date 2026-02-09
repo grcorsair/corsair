@@ -1,47 +1,49 @@
 ---
-title: "Why GRC Needs Chaos Engineering"
-description: "Compliance tools ask 'are you compliant?' Corsair asks 'what actually happens when things go wrong?' The difference is existential."
+title: "Why Compliance Needs Cryptographic Proof"
+description: "Compliance tools ask 'are you compliant?' Corsair asks 'can you prove it cryptographically?' The difference is existential."
 date: "2026-02-06"
 tag: "Philosophy"
 published: true
 ---
 
-The compliance industry has a dirty secret: most of what we call "security testing" isn't testing at all.
+The compliance industry has a dirty secret: most of what we call "compliance evidence" isn't evidence at all.
 
-It's checking boxes.
+It's documentation about documentation.
 
-## The Checkbox Problem
+## The Documentation Problem
 
-When an auditor asks "do you have MFA enabled?", they're asking a **documentation question**, not a **security question**. The answer tells you what was *configured*. It tells you nothing about what *actually happens* when an attacker tries to bypass it.
+When an auditor asks "do you have MFA enabled?", they accept a **screenshot** as proof. A PDF export. A self-attested questionnaire response. The answer tells you what someone *wrote down*. It tells you nothing about whether the control *actually works* — or whether the screenshot was taken six months ago.
 
 This is the fundamental gap that Corsair addresses.
 
-## Chaos Engineering for Controls
+## From Trust to Proof
 
-Netflix pioneered chaos engineering for infrastructure with Chaos Monkey — randomly killing production instances to prove that redundancy actually works. The insight wasn't that redundancy was important (everyone knew that). The insight was that **you can't trust a control you haven't tested under adversarial conditions**.
+The $8.57 billion TPRM market is built on trust, not verification. Vendors self-attest to 300+ questions. Customers review the answers. Nobody cryptographically proves that controls are effective.
 
-The same principle applies to GRC:
+Consider the difference:
 
-- **Traditional approach**: Document that MFA is configured → check the box → move on
-- **Corsair approach**: Attempt to bypass MFA → discover it's set to OPTIONAL → generate cryptographic evidence of the gap
+- **Traditional approach**: Document that MFA is configured → export a screenshot → attach to questionnaire → move on
+- **Corsair approach**: Ingest compliance evidence → map to frameworks → verify governance criteria → sign a cryptographic attestation that anyone can verify
 
-The evidence chain that emerges from adversarial testing is fundamentally different from the evidence produced by configuration scanning. It's the difference between asking "is the door locked?" and actually trying to open it.
+The attestation that emerges from cryptographic proof is fundamentally different from the evidence produced by documentation review. It's the difference between someone telling you the door is locked and handing you a mathematically verifiable proof.
 
 ## The CPOE: A New Unit of Trust
 
-When Corsair completes an adversarial assessment, it generates a **Certificate of Proof of Operational Effectiveness (CPOE)** — a cryptographically signed document that proves:
+When Corsair processes compliance evidence, it generates a **Certificate of Proof of Operational Effectiveness (CPOE)** — a W3C Verifiable Credential signed with Ed25519 that proves:
 
-1. Which controls were tested
-2. How they were tested (adversarial, not just scanned)
-3. Which controls held and which failed
-4. A tamper-proof evidence chain
+1. Which controls were assessed
+2. What evidence was evaluated
+3. What governance criteria were applied
+4. A tamper-proof, cryptographically signed attestation
 
 We call this a **Marque** — named after the historical Letter of Marque that authorized privateers. A Corsair Marque authorizes trust through proof, not promises.
 
+CPOEs are the compliance equivalent of Pieces of Eight — universally verifiable. Anyone with the issuer's public key can verify the attestation. No proprietary tooling required. No vendor lock-in. Just Ed25519 and a JWT library.
+
 ## What This Means for the Industry
 
-The $62B GRC market is built on a fundamental assumption: that compliance questionnaires and configuration scans are sufficient to assess security posture. Corsair challenges that assumption by introducing adversarial verification as the standard.
+The $62B GRC market is built on a fundamental assumption: that compliance questionnaires and documentation reviews are sufficient to assess security posture. Corsair challenges that assumption by introducing cryptographic proof as the standard.
 
 The question isn't "are you compliant?" anymore.
 
-The question is: **prove it works.**
+The question is: **verify trust, don't assume it.**

@@ -6,13 +6,13 @@ import { FadeIn } from "@/components/motion/fade-in";
 export const metadata: Metadata = {
   title: "Documentation",
   description:
-    "Get started with Corsair. Learn about the pipeline, plugins, ISC system, and how to integrate with your GRC workflow.",
+    "Get started with Corsair. Learn about the CPOE lifecycle, Parley protocol, assurance levels, and how to integrate with your GRC workflow.",
 };
 
 const sections = [
   { id: "getting-started", title: "Getting Started" },
   { id: "concepts", title: "Core Concepts" },
-  { id: "plugins", title: "Plugins" },
+  { id: "protocol", title: "Protocol" },
   { id: "integrations", title: "Integrations" },
 ];
 

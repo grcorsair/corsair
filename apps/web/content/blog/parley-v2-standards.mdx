@@ -1,12 +1,12 @@
 ---
 title: "Parley: Standards-Based Trust Exchange"
-description: "How Corsair uses W3C Verifiable Credentials, OpenID SSF/CAEP, and IETF SCITT to turn adversarial evidence into interoperable proof."
+description: "How Corsair uses W3C Verifiable Credentials, OpenID SSF/CAEP, and IETF SCITT to turn compliance evidence into interoperable cryptographic proof."
 date: "2026-02-07"
 tag: "Protocol"
 published: true
 ---
 
-Today we're shipping **Parley** — Corsair's standards-based trust exchange protocol. CPOEs (Certificates of Proof of Operational Effectiveness) are W3C Verifiable Credentials, compliance changes are broadcast via OpenID SSF/CAEP, and transparency logging follows the IETF SCITT architecture.
+Today we're shipping **Parley** — Corsair's standards-based trust exchange protocol. CPOEs (Certificates of Proof of Operational Effectiveness) are W3C Verifiable Credentials, compliance changes are broadcast via OpenID SSF/CAEP, and transparency logging follows the IETF SCITT architecture. The pipeline is simple: INGEST evidence, CHART framework mappings, QUARTER governance review, MARQUE the signed proof.
 
 ## The Problem: Questionnaire Theater
 
@@ -56,12 +56,12 @@ Events are encoded as RFC 8417 Security Event Tokens and delivered via push or p
 
 - **Ed25519 signing** — Deterministic signatures, 64-byte, fast verification
 - **Evidence chains** — SHA-256 hash chains with tamper-proof integrity
-- **Pirate names** — RECON, SPYGLASS, MARK, RAID, PLUNDER, CHART, QUARTER, MARQUE
+- **Pirate names** — INGEST, CHART, QUARTER, MARQUE (and FLAGSHIP for real-time signals)
 - **Client-side verification** — The [web verifier](/marque) verifies entirely in-browser
 - **Zero external signing dependencies** — Node.js crypto module for key generation and signing
 - **Universal verification** — Any W3C VC 2.0 verifier, any JWT library with EdDSA support
 
-The core thesis: attack first, discover reality, evidence emerges. The evidence is wrapped in standards that anyone can verify.
+The core thesis: verify trust, don't assume it. Compliance evidence is wrapped in standards that anyone can verify.
 
 ## Shipped
 

@@ -30,25 +30,27 @@ const pressStart2P = Press_Start_2P({
 
 export const metadata: Metadata = {
   title: {
-    default: "CORSAIR — Agentic GRC Chaos Engineering",
+    default: "CORSAIR — Open Compliance Trust Exchange Protocol",
     template: "%s — CORSAIR",
   },
   description:
-    "Your controls say they work. We make them prove it. Attack first. Discover reality. Evidence emerges.",
+    "Open protocol for machine-readable, cryptographically verifiable compliance attestations. Verify trust. Don't assume it.",
   keywords: [
     "GRC",
-    "chaos engineering",
-    "security testing",
+    "compliance verification",
+    "verifiable credentials",
     "compliance",
     "SOC2",
     "NIST",
-    "offensive security",
+    "CPOE",
+    "trust exchange",
+    "JWT-VC",
+    "Ed25519",
     "TPRM",
     "third-party risk management",
-    "CPOE",
-    "adversarial testing",
     "Marque",
-    "Ed25519",
+    "SCITT",
+    "Parley protocol",
   ],
   metadataBase: new URL("https://grcorsair.com"),
   icons: {
@@ -56,9 +58,9 @@ export const metadata: Metadata = {
     apple: "/favicon.png",
   },
   openGraph: {
-    title: "CORSAIR — Agentic GRC Chaos Engineering",
+    title: "CORSAIR — Open Compliance Trust Exchange Protocol",
     description:
-      "Your controls say they work. We make them prove it. Attack first. Discover reality. Evidence emerges.",
+      "Open protocol for machine-readable, cryptographically verifiable compliance attestations. Verify trust. Don't assume it.",
     url: "https://grcorsair.com",
     siteName: "CORSAIR",
     type: "website",
@@ -66,8 +68,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "CORSAIR — Agentic GRC Chaos Engineering",
-    description: "Your controls say they work. We make them prove it.",
+    title: "CORSAIR — Open Compliance Trust Exchange Protocol",
+    description: "Open protocol for cryptographically verifiable compliance attestations. Verify trust. Don't assume it.",
   },
   robots: {
     index: true,

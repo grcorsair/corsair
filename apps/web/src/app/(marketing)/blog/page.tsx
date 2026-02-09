@@ -6,7 +6,7 @@ import { FadeIn } from "@/components/motion/fade-in";
 export const metadata: Metadata = {
   title: "Blog",
   description:
-    "Thought leadership on GRC chaos engineering, offensive compliance testing, and the future of TPRM.",
+    "Thought leadership on compliance proof infrastructure, trust exchange protocols, and the future of TPRM.",
 };
 
 export default function BlogPage() {
@@ -22,8 +22,8 @@ export default function BlogPage() {
               Blog
             </h1>
             <p className="text-corsair-text-dim">
-              Thought leadership on GRC chaos engineering, offensive compliance,
-              and the future of trust verification.
+              Thought leadership on compliance proof infrastructure, trust
+              exchange protocols, and the future of trust verification.
             </p>
           </div>
         </FadeIn>

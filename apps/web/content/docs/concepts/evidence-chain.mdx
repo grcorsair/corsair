@@ -17,7 +17,7 @@ Each evidence record contains:
 {
   "sequenceNumber": 1,
   "timestamp": "2026-02-06T10:30:00.000Z",
-  "phase": "RECON",
+  "phase": "INGEST",
   "type": "snapshot",
   "data": { "...": "..." },
   "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -47,7 +47,7 @@ const result = verifyChain(records);
 Or via the CLI:
 
 ```bash
-bun corsair.ts --verify ./evidence/mission.jsonl
+bun corsair.ts verify ./evidence/mission.jsonl
 ```
 
 ## Evidence Phases
@@ -56,11 +56,7 @@ Evidence records are tagged with their pipeline phase:
 
 | Phase | Evidence Type |
 |-------|--------------|
-| RECON | Configuration snapshot |
-| SPYGLASS | Threat model results |
-| MARK | Drift findings (DRIFT/HOLD) |
-| RAID | Attack results (SUCCEEDED/BLOCKED) |
-| PLUNDER | Extracted evidence artifacts |
+| INGEST | Ingested controls and evidence artifacts |
 | CHART | Framework mapping results |
 | QUARTER | Governance scores |
 | MARQUE | Signed attestation reference |

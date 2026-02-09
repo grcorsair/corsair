@@ -8,34 +8,34 @@ import {
 
 const props = [
   {
-    title: "Prove It Works",
+    title: "Ingest Existing Evidence",
     description:
-      "RAID attacks your controls to test operational effectiveness. SPYGLASS models threats using STRIDE methodology. Not a checkbox — a proof.",
-    accent: "border-t-corsair-crimson",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-7 w-7 text-corsair-crimson" strokeWidth={1.5}>
-        <path d="M9.5 14.5L3 21m0 0h5.5M3 21v-5.5M14.5 9.5L21 3m0 0h-5.5M21 3v5.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
-    title: "Not Just Exists",
-    description:
-      "MARK detects drift between expected and actual state. 13+ compliance frameworks mapped automatically. Evidence is a byproduct, not a goal.",
+      "INGEST extracts compliance data from SOC 2 reports, pentest results, and audit documents. CHART maps controls to 12+ frameworks automatically. No new data collection required.",
     accent: "border-t-corsair-cyan",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-7 w-7 text-corsair-cyan" strokeWidth={1.5}>
-        <path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
   },
   {
-    title: "Signed Proof",
+    title: "AI Governance Review",
     description:
-      "MARQUE generates standards-based Ed25519-signed attestation. QUARTERMASTER AI reviews assessment quality. W3C Verifiable Credential replaces questionnaire theater.",
+      "QUARTERMASTER evaluates evidence quality, methodology rigor, and completeness before any credential is signed. Not a checkbox -- a governance gate with deterministic and LLM verification.",
     accent: "border-t-corsair-gold",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-7 w-7 text-corsair-gold" strokeWidth={1.5}>
+        <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    title: "Cryptographic Proof Anyone Can Verify",
+    description:
+      "MARQUE generates Ed25519-signed W3C Verifiable Credentials (JWT-VC). Anyone with a public key can verify a CPOE -- no vendor lock-in, no trust assumptions. Open. Verifiable. Interoperable.",
+    accent: "border-t-corsair-crimson",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-7 w-7 text-corsair-crimson" strokeWidth={1.5}>
         <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),

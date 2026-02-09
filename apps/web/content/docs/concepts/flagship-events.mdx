@@ -20,7 +20,7 @@ FLAGSHIP maps four Corsair concepts to CAEP-compliant event URIs:
 | Pirate Name | CAEP Mapping | Event URI | When It Fires |
 |---|---|---|---|
 | COLORS_CHANGED | assurance-level-change | `grcorsair.com/events/assurance-level-change/v1` | Trust tier transition (e.g., self-assessed to ai-verified) |
-| FLEET_ALERT | compliance-change | `grcorsair.com/events/compliance-change/v1` | MARK detects configuration drift |
+| FLEET_ALERT | compliance-change | `grcorsair.com/events/compliance-change/v1` | Continuous monitoring detects compliance drift |
 | PAPERS_CHANGED | credential-change | `grcorsair.com/events/credential-change/v1` | CPOE issued, renewed, revoked, or expired |
 | MARQUE_REVOKED | session-revoked | `grcorsair.com/events/session-revoked/v1` | Emergency CPOE revocation |
 
@@ -71,7 +71,7 @@ Fired when a CPOE's trust tier changes. Trust tiers are: self-assessed (below 70
 
 ### FLEET_ALERT (Compliance Change)
 
-Fired when MARK detects configuration drift that degrades controls.
+Fired when continuous monitoring detects compliance drift that degrades controls.
 
 ```json
 {

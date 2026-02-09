@@ -5,7 +5,7 @@ export async function GET() {
   const feed = new RSS({
     title: "CORSAIR Blog",
     description:
-      "Thought leadership on GRC chaos engineering, offensive compliance testing, and the future of TPRM.",
+      "Thought leadership on compliance proof infrastructure, trust exchange protocols, and the future of TPRM.",
     site_url: "https://grcorsair.com",
     feed_url: "https://grcorsair.com/blog/rss.xml",
     language: "en",

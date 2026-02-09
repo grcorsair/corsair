@@ -24,7 +24,7 @@ export function HeroSection() {
         >
           <Image
             src="/assets/corsair-logo.png"
-            alt="CORSAIR — Agentic Pirate raiding your GRC program"
+            alt="CORSAIR — Open compliance trust exchange protocol"
             width={280}
             height={280}
             priority
@@ -39,10 +39,10 @@ export function HeroSection() {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="mb-4 font-display text-4xl font-bold leading-tight tracking-tight text-corsair-text sm:text-5xl lg:text-6xl"
         >
-          Your controls say they work.
+          Compliance claims are everywhere.
           <br />
           <span className="bg-gradient-to-r from-corsair-cyan to-corsair-turquoise bg-clip-text text-transparent">
-            We make them prove it.
+            Cryptographic proof is not.
           </span>
         </motion.h1>
 
@@ -54,7 +54,7 @@ export function HeroSection() {
           className="mb-4 flex justify-center"
         >
           <span className="inline-block rounded border border-corsair-cyan/30 bg-corsair-cyan/5 px-3 py-1 font-pixel text-[8px] tracking-wider text-corsair-cyan">
-            v0.2.0 &middot; OPEN SOURCE
+            v0.3.0 &middot; OPEN PROTOCOL
           </span>
         </motion.div>
 
@@ -65,8 +65,8 @@ export function HeroSection() {
           transition={{ duration: 0.5, delay: 0.5 }}
           className="mx-auto mb-8 max-w-2xl text-lg text-corsair-text-dim"
         >
-          Agentic GRC chaos engineering. Attack first. Discover reality.
-          Evidence emerges.
+          Open protocol for machine-readable, cryptographically verifiable
+          compliance attestations. Verify trust. Don&apos;t assume it.
         </motion.p>
 
         {/* CTAs */}

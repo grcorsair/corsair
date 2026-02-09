@@ -5,10 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   ReconIcon,
-  SpyglassIcon,
-  MarkIcon,
-  RaidIcon,
-  PlunderIcon,
   ChartIcon,
   QuarterIcon,
   MarqueIcon,
@@ -16,57 +12,29 @@ import {
 
 const stages = [
   {
-    name: "RECON",
-    description: "Scout target configuration",
+    name: "INGEST",
+    description: "Extract compliance data from SOC 2 reports, pentest results, and audit documents using Claude AI",
     icon: <ReconIcon size={40} />,
-    color: "text-corsair-gold",
-    glowColor: "rgba(212,168,83,0.15)",
-  },
-  {
-    name: "SPYGLASS",
-    description: "STRIDE threat modeling",
-    icon: <SpyglassIcon size={40} />,
-    color: "text-corsair-turquoise",
-    glowColor: "rgba(127,219,202,0.15)",
-  },
-  {
-    name: "MARK",
-    description: "Drift detection",
-    icon: <MarkIcon size={40} />,
-    color: "text-corsair-gold",
-    glowColor: "rgba(212,168,83,0.15)",
-  },
-  {
-    name: "RAID",
-    description: "Attack simulation",
-    icon: <RaidIcon size={40} />,
     color: "text-corsair-cyan",
     glowColor: "rgba(0,207,255,0.15)",
   },
   {
-    name: "PLUNDER",
-    description: "Evidence extraction",
-    icon: <PlunderIcon size={40} />,
-    color: "text-corsair-gold",
-    glowColor: "rgba(212,168,83,0.15)",
-  },
-  {
     name: "CHART",
-    description: "Framework mapping",
+    description: "Automatically map extracted controls to 12+ compliance frameworks via CTID/SCF crosswalk",
     icon: <ChartIcon size={40} />,
     color: "text-corsair-turquoise",
     glowColor: "rgba(127,219,202,0.15)",
   },
   {
     name: "QUARTER",
-    description: "Governance review",
+    description: "AI governance review evaluates evidence quality, methodology, and completeness",
     icon: <QuarterIcon size={40} />,
     color: "text-corsair-gold",
     glowColor: "rgba(212,168,83,0.15)",
   },
   {
     name: "MARQUE",
-    description: "Verifiable Credential (JWT-VC)",
+    description: "Sign as JWT-VC (Ed25519, did:web) — a cryptographically verifiable CPOE",
     icon: <MarqueIcon size={40} />,
     color: "text-corsair-crimson",
     glowColor: "rgba(192,57,43,0.15)",
@@ -93,7 +61,7 @@ const itemVariants = {
 export function PipelineStages() {
   return (
     <motion.div
-      className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8"
+      className="grid grid-cols-2 gap-6 sm:grid-cols-4"
       variants={containerVariants}
       initial="hidden"
       whileInView="visible"
@@ -127,7 +95,7 @@ export function PipelineStages() {
 
           {/* Connector arrow (desktop only, not on last) */}
           {i < stages.length - 1 && (
-            <span className="mt-2 hidden font-pixel text-[8px] text-corsair-border lg:block">
+            <span className="mt-2 hidden font-pixel text-[8px] text-corsair-border sm:block">
               &gt;
             </span>
           )}

@@ -1,49 +1,48 @@
 ---
 title: "Core Concepts"
-description: "Understanding the Corsair pipeline, ISC system, evidence chain, and Marque signing."
+description: "Understanding the Corsair pipeline, CPOE assurance levels, evidence chain, and Marque signing."
 section: "getting-started"
 order: 2
 ---
 
 ## The Corsair Philosophy
 
-Corsair is built on a single insight: **compliance tools check if controls exist, but never test if they actually work under attack.**
+Corsair is built on a single insight: **compliance tools generate reports, but nobody can cryptographically verify the evidence behind them.**
 
-Traditional GRC tools ask: "Is MFA configured?"
-Corsair asks: "What happens when an attacker tries to bypass MFA?"
+Traditional GRC tools ask: "Did you document your controls?"
+Corsair asks: "Can you prove your controls are effective with a signed, verifiable credential?"
 
-The evidence that emerges from adversarial testing is fundamentally different from configuration scanning.
+The proof that emerges from evidence ingestion and cryptographic signing is fundamentally different from self-reported questionnaires.
 
 ## The Pipeline
 
-Every Corsair mission flows through eight stages:
+Every Corsair mission flows through four stages:
 
 | Stage | Purpose | Output |
 |-------|---------|--------|
-| **RECON** | Read-only reconnaissance | Service snapshot (JSON) |
-| **SPYGLASS** | STRIDE threat modeling | Threat model with severity ratings |
-| **MARK** | Configuration drift detection | Drift findings (expected vs actual) |
-| **RAID** | Adversarial attack simulation | Attack results (DryRun=true by default) |
-| **PLUNDER** | Cryptographic evidence extraction | SHA-256 hash chain (JSONL) |
-| **CHART** | Compliance framework mapping | MITRE → NIST → SOC2 → 10+ frameworks |
+| **INGEST** | Evidence ingestion (PDF, JSON, API) | Structured controls and evidence |
+| **CHART** | Compliance framework mapping | MITRE, NIST, SOC 2, ISO 27001, 10+ frameworks |
 | **QUARTER** | AI governance review | Confidence score and trust tier |
-| **MARQUE** | Ed25519 signed attestation | Signed CPOE document |
+| **MARQUE** | Ed25519 signed attestation | Signed CPOE (W3C Verifiable Credential) |
 
-## ISC (Ideal State Criteria)
+Two companion systems operate alongside:
 
-ISC criteria define what "secure" looks like for a given target. Each criterion is:
+- **FLAGSHIP** — Real-time compliance change notifications (SSF/CAEP)
+- **SCITT** — Append-only transparency log for CPOE registration
 
-- **8 words maximum** — concise and actionable
-- **Binary testable** — SATISFIED or FAILED, nothing in between
-- **One concern per criterion** — granular and specific
+## CPOE Assurance Levels (L0-L4)
 
-Example ISC criteria for a Cognito User Pool:
+Every CPOE is issued at an assurance level reflecting the depth of evidence:
 
-```
-✅ "Multi-factor authentication enforced for all accounts"
-❌ "Password policy requires minimum fourteen characters"
-✅ "Advanced security features enabled and active"
-```
+| Level | Name | What It Means |
+|-------|------|---------------|
+| **L0** | Documented | Policy exists, self-attestation only |
+| **L1** | Configured | Automated checks confirm settings are in place |
+| **L2** | Demonstrated | Test results prove controls work, AI-verified (confidence >= 70) |
+| **L3** | Observed | Continuous monitoring active, re-validated within 90 days |
+| **L4** | Attested | Independent auditor co-signs the credential |
+
+The CPOE level is the minimum across all in-scope controls. Buyers set their own acceptance thresholds.
 
 ## Evidence Chain
 
@@ -65,3 +64,15 @@ A Marque is signed with Ed25519 (elliptic curve digital signature):
 - **Verification**: Runs client-side via Web Crypto API at [grcorsair.com/marque](/marque)
 
 No server, no account, no data sharing required for verification.
+
+## Parley Protocol
+
+Parley is the trust exchange protocol that composes three open standards:
+
+| Standard | Role | What It Provides |
+|----------|------|-----------------|
+| **JWT-VC** (W3C) | Proof | CPOE as a Verifiable Credential, Ed25519-signed |
+| **SCITT** (IETF) | Audit trail | Append-only transparency log with COSE receipts |
+| **SSF/CAEP** (OpenID) | Signals | Real-time compliance change notifications |
+
+Together, these ensure that compliance proofs are verifiable, auditable, and communicated in real time.

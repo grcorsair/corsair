@@ -17,6 +17,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/blog/why-grc-needs-chaos-engineering`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${baseUrl}/blog/introducing-marque`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${baseUrl}/blog/cpoe-pieces-of-eight`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${baseUrl}/blog/parley-v2-standards`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
 
     // Docs — Getting Started
     { url: `${baseUrl}/docs/getting-started/quick-start`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
@@ -25,20 +26,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Docs — Concepts
     { url: `${baseUrl}/docs/concepts/pipeline`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/docs/concepts/marque-signing`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${baseUrl}/docs/concepts/isc-system`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/docs/concepts/evidence-chain`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
 
-    // Docs — Plugins
-    { url: `${baseUrl}/docs/plugins/aws-cognito`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${baseUrl}/docs/plugins/aws-s3`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${baseUrl}/docs/plugins/aws-iam`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${baseUrl}/docs/plugins/aws-lambda`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${baseUrl}/docs/plugins/aws-rds`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${baseUrl}/docs/plugins/gitlab`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${baseUrl}/docs/plugins/creating-plugins`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-
     // Docs — Integrations
-    { url: `${baseUrl}/docs/integrations/mcp-server`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/docs/integrations/oscal-output`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/docs/integrations/ci-cd`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
   ];

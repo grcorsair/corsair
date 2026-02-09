@@ -13,33 +13,33 @@ Corsair generates [OSCAL](https://pages.nist.gov/OSCAL/) (Open Security Controls
 
 ```bash
 # OSCAL JSON (machine-readable, NIST SP 800-53A compliant)
-bun corsair.ts --target demo --service cognito --format oscal
+bun corsair.ts ingest --input soc2-report.pdf --format oscal
 
 # HTML report (self-contained, no external dependencies)
-bun corsair.ts --target demo --service cognito --format html
+bun corsair.ts ingest --input soc2-report.pdf --format html
 
 # Markdown report
-bun corsair.ts --target demo --service cognito --format md
+bun corsair.ts ingest --input soc2-report.pdf --format md
 ```
 
 ## OSCAL Mapping
 
 | Corsair Concept | OSCAL Element |
 |----------------|---------------|
-| ISC Criteria | Findings (satisfied/not-satisfied) |
-| MARK Drift Findings | Observations (TEST method) |
-| RAID Results | Risks (open/closed) |
+| Ingestion Findings | Findings (satisfied/not-satisfied) |
 | CHART Frameworks | Reviewed Controls (control-selections) |
+| QUARTER Governance | Observations (EXAMINE method) |
+| MARQUE Attestation | Assessment Results metadata |
 
 ## Report Sections
 
 HTML and Markdown reports include:
 
-- **Executive Summary** — Mission overview, ISC satisfaction rate, risk score
+- **Executive Summary** — Mission overview, assurance level, control coverage
 - **Framework Coverage** — Which frameworks mapped, control counts
-- **Finding Details** — Per-finding severity, drift values, remediation context
+- **Finding Details** — Per-finding severity, evidence references, remediation context
 - **Evidence Chain** — Hash chain verification, record count, integrity status
-- **ISC Table** — Full criteria list with SATISFIED/FAILED status
+- **Assurance Summary** — L0-L4 level with per-control breakdown
 
 ## Integration with GRC Platforms
 
@@ -47,7 +47,7 @@ OSCAL JSON output can be ingested by:
 
 - **ServiceNow** GRC module (via REST API import)
 - **Archer** IRM (via data feed)
-- **Jira** (JSONL evidence → Jira issues via webhook)
+- **Jira** (JSONL evidence to Jira issues via webhook)
 - **Drata/Vanta** (planned Corsair integration)
 
 The OSCAL format ensures Corsair evidence is portable across any platform that supports the NIST standard.

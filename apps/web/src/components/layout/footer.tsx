@@ -12,7 +12,7 @@ const resourceLinks = [
   { href: "/docs/getting-started/quick-start", label: "Quick Start" },
   { href: "/docs/concepts/pipeline", label: "Pipeline Architecture" },
   { href: "/docs/concepts/parley-protocol", label: "Parley Protocol" },
-  { href: "/docs/integrations/mcp-server", label: "MCP Server" },
+  { href: "/docs/protocol-spec", label: "Protocol Spec" },
   { href: "/docs/integrations/ci-cd", label: "CI/CD Integration" },
 ];
 
@@ -35,10 +35,10 @@ export function Footer() {
               CORSAIR
             </span>
             <p className="mt-2 text-sm leading-relaxed text-corsair-text-dim">
-              Agentic GRC chaos engineering. Attack first. Discover reality. Evidence emerges.
+              Open compliance trust exchange protocol. Verify trust. Don&apos;t assume it.
             </p>
             <p className="mt-3 font-pixel text-[7px] tracking-wider text-corsair-text-dim/60">
-              v0.2.0 &middot; MIT License
+              v0.3.0 &middot; MIT License
             </p>
           </div>
 
@@ -107,7 +107,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
           <p className="text-xs text-corsair-text-dim/60">
-            &copy; {new Date().getFullYear()} Corsair. Autonomous. Adversarial. Agentic.
+            &copy; {new Date().getFullYear()} Corsair. Open. Verifiable. Interoperable.
           </p>
           <div className="flex items-center gap-4">
             <Link

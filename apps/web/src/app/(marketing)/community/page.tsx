@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 export const metadata: Metadata = {
   title: "Community",
   description:
-    "Join the Corsair community. Contribute plugins, SPYGLASS rules, and help build the future of adversarial GRC testing.",
+    "Join the Corsair community. Contribute document parsers, framework mappings, and help build the future of compliance proof infrastructure.",
 };
 
 const links = [
@@ -27,7 +27,7 @@ const links = [
   {
     name: "Contributing Guide",
     description:
-      "The Pirate's Code — how to contribute plugins, SPYGLASS rules, and attack vectors.",
+      "The Pirate's Code — how to contribute document parsers, framework mappings, and protocol extensions.",
     href: "https://github.com/Arudjreis/corsair/blob/main/CONTRIBUTING.md",
     icon: "scroll",
     cta: "Read the Code",
@@ -52,24 +52,24 @@ const links = [
 
 const contributions = [
   {
-    title: "New Provider Plugins",
+    title: "Document Parsers",
     description:
-      "Build plugins for Okta, Auth0, Datadog, GitHub Actions, Terraform, Kubernetes, and more. Each plugin adds attack vectors and framework mappings.",
-  },
-  {
-    title: "SPYGLASS Rules",
-    description:
-      "Write STRIDE threat model rules for new services. Community-contributed rules expand Corsair's threat coverage.",
-  },
-  {
-    title: "Attack Vectors",
-    description:
-      "Design new RAID scenarios. Contribute adversarial test cases that validate control operational effectiveness.",
+      "Build parsers for new report types — ISO 27001 audit reports, PCI-DSS ROCs, HIPAA assessments, and more. Each parser feeds the INGEST pipeline.",
   },
   {
     title: "Framework Mappings",
     description:
-      "Extend the CTID/SCF data layer. Map new compliance frameworks to MITRE ATT&CK techniques.",
+      "Extend the CTID/SCF data layer. Map new compliance frameworks to MITRE ATT&CK techniques and expand CHART coverage.",
+  },
+  {
+    title: "Protocol Extensions",
+    description:
+      "Advance the Parley protocol — SD-JWT selective disclosure, SCITT transparency features, FLAGSHIP delivery patterns, and new CAEP event types.",
+  },
+  {
+    title: "Verification Tools",
+    description:
+      "Build CPOE verification integrations — browser extensions, CI/CD plugins, API clients, and third-party platform connectors.",
   },
 ];
 
@@ -82,7 +82,7 @@ function CommunityIcon({ name }: { name: string }) {
     ),
     scroll: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-6 w-6 text-corsair-gold">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
       </svg>
     ),
     flag: (
@@ -110,9 +110,9 @@ export default function CommunityPage() {
               Join the Crew
             </h1>
             <p className="mx-auto max-w-xl text-corsair-text-dim">
-              Corsair is open source. Contribute plugins, attack vectors,
-              SPYGLASS rules, and help build the future of adversarial GRC
-              testing.
+              Corsair is open source. Contribute document parsers, framework
+              mappings, protocol extensions, and help build the future of
+              compliance proof infrastructure.
             </p>
           </div>
         </FadeIn>

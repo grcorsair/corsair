@@ -50,7 +50,7 @@ export function DisruptionSection() {
           <ul className="space-y-3 text-sm text-corsair-text-dim">
             <li className="flex items-start gap-2">
               <span className="mt-0.5 text-corsair-green">✓</span>
-              Adversarial attacks test controls under pressure
+              Protocol-based verification proves controls actually work
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-0.5 text-corsair-green">✓</span>
