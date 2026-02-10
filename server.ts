@@ -70,10 +70,15 @@ if (migrationResult.applied > 0) {
 // =============================================================================
 
 // Key manager (AES-256-GCM encrypted keys in Postgres)
-const keySecretHex = Bun.env.KEY_ENCRYPTION_SECRET;
+const keySecretHex = (Bun.env.KEY_ENCRYPTION_SECRET || "").trim();
 if (!keySecretHex) {
   console.error("ERROR: KEY_ENCRYPTION_SECRET is required (64 hex chars = 32 bytes)");
-  console.error("Generate with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"");
+  console.error("Generate with: bun -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"");
+  process.exit(1);
+}
+if (!/^[0-9a-fA-F]{64}$/.test(keySecretHex)) {
+  console.error(`ERROR: KEY_ENCRYPTION_SECRET must be exactly 64 hex characters (got ${keySecretHex.length} chars)`);
+  console.error("Generate with: bun -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"");
   process.exit(1);
 }
 const keySecret = Buffer.from(keySecretHex, "hex");
