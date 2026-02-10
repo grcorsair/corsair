@@ -15,6 +15,8 @@ RUN bun run build
 # Production image
 FROM base AS runner
 ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
 WORKDIR /app
 
 COPY --from=builder /app/.next/standalone ./
