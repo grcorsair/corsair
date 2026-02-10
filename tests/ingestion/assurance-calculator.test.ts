@@ -795,6 +795,84 @@ describe("Assurance Calculator", () => {
       expect(result.effectiveLevel).toBeLessThanOrEqual(1);
       expect(result.appliedSafeguards.length).toBeGreaterThanOrEqual(2);
     });
+
+    // Phase 3: New safeguards
+    test("severity asymmetry: CRITICAL with inquiry, MEDIUM with reperformance → caps at L1", () => {
+      const controls: IngestedControl[] = [
+        { ...baseControl, severity: "CRITICAL", evidence: "Inquired of management regarding MFA configuration" },
+        { ...baseControl, id: "CC6.2", severity: "CRITICAL", evidence: "Management stated encryption is enabled" },
+        { ...baseControl, id: "CC8.1", severity: "MEDIUM", evidence: "Reperformed change management review for sample of 25 deployments from population of 500" },
+        { ...baseControl, id: "CC8.2", severity: "MEDIUM", evidence: "Reperformed code review process for sample of 20 merge requests" },
+      ];
+      const result = applyAntiGamingSafeguards(
+        2,
+        controls,
+        "soc2",
+        { ...soc2Metadata, date: new Date().toISOString() },
+      );
+      expect(result.appliedSafeguards).toContain("severity-asymmetry");
+      expect(result.effectiveLevel).toBeLessThanOrEqual(1);
+    });
+
+    test("severity asymmetry: all same methodology → no trigger", () => {
+      const controls: IngestedControl[] = [
+        { ...baseControl, severity: "CRITICAL", evidence: "Inspected MFA config settings" },
+        { ...baseControl, id: "CC8.1", severity: "MEDIUM", evidence: "Inspected change management config" },
+      ];
+      const result = applyAntiGamingSafeguards(
+        1,
+        controls,
+        "soc2",
+        { ...soc2Metadata, date: new Date().toISOString() },
+      );
+      expect(result.appliedSafeguards).not.toContain("severity-asymmetry");
+    });
+
+    test("all-pass bias: 10+ controls all effective → triggers flag", () => {
+      const controls: IngestedControl[] = Array.from({ length: 12 }, (_, i) => ({
+        ...baseControl,
+        id: `CC${i + 1}`,
+        evidence: `Inspected control ${i + 1} settings`,
+      }));
+      const result = applyAntiGamingSafeguards(
+        1,
+        controls,
+        "soc2",
+        { ...soc2Metadata, date: new Date().toISOString() },
+      );
+      expect(result.appliedSafeguards).toContain("all-pass-bias");
+    });
+
+    test("all-pass bias: fewer than 10 controls → no trigger", () => {
+      const controls: IngestedControl[] = Array.from({ length: 5 }, (_, i) => ({
+        ...baseControl,
+        id: `CC${i + 1}`,
+        evidence: `Tested control ${i + 1}`,
+      }));
+      const result = applyAntiGamingSafeguards(
+        1,
+        controls,
+        "soc2",
+        { ...soc2Metadata, date: new Date().toISOString() },
+      );
+      expect(result.appliedSafeguards).not.toContain("all-pass-bias");
+    });
+
+    test("all-pass bias: mixed status (some ineffective) → no trigger", () => {
+      const controls: IngestedControl[] = Array.from({ length: 12 }, (_, i) => ({
+        ...baseControl,
+        id: `CC${i + 1}`,
+        status: i === 5 ? "ineffective" as const : "effective" as const,
+        evidence: `Tested control ${i + 1}`,
+      }));
+      const result = applyAntiGamingSafeguards(
+        1,
+        controls,
+        "soc2",
+        { ...soc2Metadata, date: new Date().toISOString() },
+      );
+      expect(result.appliedSafeguards).not.toContain("all-pass-bias");
+    });
   });
 
   // ===========================================================================

@@ -148,12 +148,26 @@ export interface ObservationPeriod {
 // ANTI-GAMING SAFEGUARD RESULT
 // =============================================================================
 
+/** Result of dimension gating — deterministic floor thresholds per level */
+export interface DimensionGatingResult {
+  /** The effective level after dimension gating */
+  gatedLevel: AssuranceLevel;
+  /** Thresholds that failed, preventing the declared level */
+  failedThresholds: Array<{ dimension: string; required: number; actual: number }>;
+}
+
 /** Result of applying anti-gaming safeguards to a declared assurance level */
 export interface AntiGamingSafeguardResult {
   /** The effective level after all safeguards are applied */
   effectiveLevel: AssuranceLevel;
   /** Which safeguards were triggered */
-  appliedSafeguards: Array<"sampling-opacity" | "freshness-decay" | "independence-check">;
+  appliedSafeguards: Array<
+    | "sampling-opacity"
+    | "freshness-decay"
+    | "independence-check"
+    | "severity-asymmetry"
+    | "all-pass-bias"
+  >;
   /** Human-readable explanation for each triggered safeguard */
   explanations: string[];
 }
@@ -233,6 +247,9 @@ export interface CPOEAssurance {
 
   /** Machine-readable rule trace explaining the level outcome */
   ruleTrace?: string[];
+
+  /** Dimension gating result (Phase 2 — which thresholds failed) */
+  dimensionGating?: DimensionGatingResult;
 
   /** LLM assessor audit metadata (only when LLM was used) */
   assessor?: CPOEAssessor;
@@ -326,8 +343,41 @@ export interface CPOECredentialSubject extends CredentialSubject {
   /** Optional observation period (COSO Design vs Operating Effectiveness) */
   observationPeriod?: ObservationPeriod;
 
+  /** Per-control evidence classification (Phase 1 — Scaffolded Intelligence) */
+  controlClassifications?: Array<{
+    controlId: string;
+    level: AssuranceLevel;
+    methodology: string;
+    trace: string;
+    sampleAdequacy?: { sample: number; population?: number; frequency?: string; adequate: boolean };
+    boilerplateFlags?: string[];
+  }>;
+
   /** Optional CRQ risk quantification (BetaPERT + FAIR-CAM mapping) */
   riskQuantification?: CPOERiskQuantification;
+
+  /** NIST 800-53A assessment depth classification (Phase 6A) */
+  assessmentDepth?: {
+    methods: Array<"examine" | "interview" | "test">;
+    depth: "basic" | "focused" | "comprehensive";
+    rigorScore: number;
+  };
+
+  /** SLSA-inspired provenance quality score (Phase 6B) */
+  provenanceQuality?: number;
+
+  /** CIS-style binary evidence quality checks (Phase 6C) */
+  binaryChecks?: { passed: number; total: number; checks: Record<string, boolean> };
+
+  /** DORA-style paired anti-gaming metrics (Phase 6D) */
+  doraMetrics?: {
+    freshness: number;
+    specificity: number;
+    independence: number;
+    reproducibility: number;
+    band: "elite" | "high" | "medium" | "low";
+    pairingFlags: string[];
+  };
 }
 
 // =============================================================================

@@ -22,10 +22,16 @@ import { existsSync, readFileSync } from "fs";
 import type {
   QuartermasterConfig,
   QuartermasterInput,
+  QuartermasterDocumentInput,
   QuartermasterGovernanceReport,
   QuartermasterDimensionScore,
   QuartermasterFinding,
 } from "./quartermaster-types";
+
+import {
+  classifyEvidenceContent,
+  detectBoilerplate,
+} from "../ingestion/assurance-calculator";
 
 // =============================================================================
 // LLM ANALYSIS RESULT (internal)
@@ -208,6 +214,544 @@ export class QuartermasterAgent {
       .digest("hex");
 
     return { ...report, reportHash };
+  }
+
+  // ===========================================================================
+  // PUBLIC: Document-specific evaluation (Phase 5 — Probo checks)
+  // ===========================================================================
+
+  /**
+   * Evaluate an ingested document for governance quality.
+   * Deterministic-only — no LLM call. Scores across four dimensions:
+   *   methodology (0.30): Evidence quality + assessor notes + structural completeness
+   *   evidence_integrity (0.25): Boilerplate + text length distribution + tech stack refs
+   *   completeness (0.25): Evidence coverage + gap acknowledgment + scope
+   *   bias_detection (0.20): Severity distribution + pass/fail ratio + all-pass bias
+   *
+   * Also runs Probo checks: auditor legitimacy (1), system description (4), AICPA structure (6).
+   */
+  evaluateDocument(input: QuartermasterDocumentInput): QuartermasterGovernanceReport {
+    const startTime = Date.now();
+
+    // Run Phase 1 classifiers on controls
+    const boilerplateResults = detectBoilerplate(input.controls);
+    const boilerplateMap = new Map(boilerplateResults.map(b => [b.controlId, b]));
+
+    const classifications = input.controls.map(ctrl =>
+      classifyEvidenceContent(ctrl, input.source)
+    );
+
+    // ---- Dimension 1: Methodology (weight 0.30) ----
+    const methodologyResult = this.checkDocMethodology(input, classifications, boilerplateMap);
+
+    // ---- Dimension 2: Evidence Integrity (weight 0.25) ----
+    const integrityResult = this.checkDocEvidenceIntegrity(input, boilerplateMap);
+
+    // ---- Dimension 3: Completeness (weight 0.25) ----
+    const completenessResult = this.checkDocCompleteness(input);
+
+    // ---- Dimension 4: Bias Detection (weight 0.20) ----
+    const biasResult = this.checkDocBias(input);
+
+    // ---- Probo Checks (findings go into relevant dimensions) ----
+    const auditorFindings = this.checkAuditorLegitimacy(input);
+    const systemFindings = this.checkSystemDescription(input);
+    const structuralFindings = this.checkStructuralCompleteness(input);
+
+    // Merge Probo findings into dimensions
+    // Auditor legitimacy affects methodology
+    for (const f of auditorFindings) {
+      methodologyResult.findings.push(f);
+      if (f.severity === "warning") methodologyResult.score -= 15;
+      else if (f.severity === "info") methodologyResult.score += 5;
+    }
+
+    // System description affects methodology and integrity
+    for (const f of systemFindings) {
+      if (f.description.includes("disconnected")) {
+        integrityResult.findings.push(f);
+        integrityResult.score -= 10;
+      } else {
+        methodologyResult.findings.push(f);
+        if (f.severity === "warning") methodologyResult.score -= 10;
+        else if (f.severity === "info") methodologyResult.score += 5;
+      }
+    }
+
+    // Structural completeness affects methodology
+    for (const f of structuralFindings) {
+      methodologyResult.findings.push(f);
+      methodologyResult.score -= 5;
+    }
+
+    // Clamp scores
+    methodologyResult.score = Math.max(0, Math.min(100, methodologyResult.score));
+    integrityResult.score = Math.max(0, Math.min(100, integrityResult.score));
+    completenessResult.score = Math.max(0, Math.min(100, completenessResult.score));
+    biasResult.score = Math.max(0, Math.min(100, biasResult.score));
+
+    // Build dimensions
+    const dimensions: QuartermasterDimensionScore[] = [
+      {
+        dimension: "methodology",
+        score: methodologyResult.score,
+        weight: this.weights.methodology,
+        rationale: this.buildRationale("methodology", methodologyResult),
+        findings: methodologyResult.findings,
+      },
+      {
+        dimension: "evidence_integrity",
+        score: integrityResult.score,
+        weight: this.weights.evidence_integrity,
+        rationale: this.buildRationale("evidence_integrity", integrityResult),
+        findings: integrityResult.findings,
+      },
+      {
+        dimension: "completeness",
+        score: completenessResult.score,
+        weight: this.weights.completeness,
+        rationale: this.buildRationale("completeness", completenessResult),
+        findings: completenessResult.findings,
+      },
+      {
+        dimension: "bias_detection",
+        score: biasResult.score,
+        weight: this.weights.bias_detection,
+        rationale: this.buildRationale("bias_detection", biasResult),
+        findings: biasResult.findings,
+      },
+    ];
+
+    const confidenceScore = this.computeWeightedScore(dimensions);
+    const trustTier = this.computeTrustTier(confidenceScore);
+
+    const allFindings = dimensions.flatMap(d => d.findings);
+    const findingsBySeverity = {
+      critical: allFindings.filter(f => f.severity === "critical").length,
+      warning: allFindings.filter(f => f.severity === "warning").length,
+      info: allFindings.filter(f => f.severity === "info").length,
+    };
+
+    const durationMs = Date.now() - startTime;
+    const executiveSummary = this.buildExecutiveSummary(confidenceScore, trustTier, findingsBySeverity);
+
+    const report: Omit<QuartermasterGovernanceReport, "reportHash"> = {
+      reportId: `qm-doc-${Date.now()}`,
+      confidenceScore,
+      dimensions,
+      trustTier,
+      totalFindings: allFindings.length,
+      findingsBySeverity,
+      executiveSummary,
+      evaluatedAt: new Date().toISOString(),
+      durationMs,
+      model: "deterministic",
+      reportHash: "",
+    };
+
+    const reportHash = createHash("sha256")
+      .update(JSON.stringify(report))
+      .digest("hex");
+
+    return { ...report, reportHash };
+  }
+
+  // ===========================================================================
+  // PRIVATE: Document dimension checks
+  // ===========================================================================
+
+  /**
+   * Methodology dimension for documents.
+   * Scores evidence methodology quality using Phase 1 classifications.
+   * Consumes assessor notes for enrichment.
+   */
+  private checkDocMethodology(
+    input: QuartermasterDocumentInput,
+    classifications: Array<{ methodology: string; maxLevel: number; trace: string }>,
+    boilerplateMap: Map<string, { flags: string[] }>,
+  ): DimensionCheckResult {
+    const findings: QuartermasterFinding[] = [];
+    let score = 50; // Base score
+
+    // Score based on methodology tiers found
+    const tierScores: Record<string, number> = {
+      reperformance: 25,
+      caat: 25,
+      inspection: 15,
+      observation: 10,
+      inquiry: 0,
+      unknown: 0,
+      none: -10,
+    };
+
+    let methodologyBonus = 0;
+    let inquiryCount = 0;
+    for (const cls of classifications) {
+      methodologyBonus += (tierScores[cls.methodology] ?? 0);
+      if (cls.methodology === "inquiry") inquiryCount++;
+    }
+
+    // Average bonus across controls
+    if (classifications.length > 0) {
+      score += Math.round(methodologyBonus / classifications.length);
+    }
+
+    // If majority inquiry-only, cap at 40
+    if (classifications.length > 0 && inquiryCount / classifications.length > 0.5) {
+      score = Math.min(score, 40);
+      findings.push({
+        id: `QM-DOC-MT-${Date.now()}-inquiry`,
+        severity: "warning",
+        category: "methodology",
+        description: `Majority of controls (${inquiryCount}/${classifications.length}) have inquiry-only evidence`,
+        evidence: [],
+        remediation: "Include inspection, observation, or reperformance evidence for higher assurance",
+      });
+    }
+
+    // Assessor notes enrichment
+    if (input.assessmentContext?.assessorNotes) {
+      const notes = input.assessmentContext.assessorNotes.toLowerCase();
+      const methodKeywords = ["reperform", "sample", "population", "walkthrough", "observed", "inspect", "examined"];
+      const matchCount = methodKeywords.filter(kw => notes.includes(kw)).length;
+      score += matchCount * 3; // Up to +21 for all 7 keywords
+    }
+
+    return { score: Math.max(0, Math.min(100, score)), findings };
+  }
+
+  /**
+   * Evidence integrity dimension for documents.
+   * Checks evidence non-emptiness, text length distribution, boilerplate flags,
+   * and tech stack cross-references.
+   */
+  private checkDocEvidenceIntegrity(
+    input: QuartermasterDocumentInput,
+    boilerplateMap: Map<string, { flags: string[] }>,
+  ): DimensionCheckResult {
+    const findings: QuartermasterFinding[] = [];
+    let score = 70; // Base: controls have evidence
+
+    // All controls with non-empty evidence
+    const withEvidence = input.controls.filter(c => c.evidence && c.evidence.trim().length > 0);
+    if (withEvidence.length === input.controls.length) {
+      score += 15;
+    } else {
+      const missing = input.controls.length - withEvidence.length;
+      score -= missing * 5;
+      findings.push({
+        id: `QM-DOC-EI-${Date.now()}-missing`,
+        severity: "warning",
+        category: "evidence_integrity",
+        description: `${missing} of ${input.controls.length} controls have no evidence`,
+        evidence: [],
+        remediation: "Ensure all in-scope controls have supporting evidence",
+      });
+    }
+
+    // Text length distribution — flag if all evidence is very short
+    const lengths = input.controls.map(c => (c.evidence || "").length);
+    const avgLength = lengths.reduce((a, b) => a + b, 0) / (lengths.length || 1);
+    if (avgLength < 30 && input.controls.length > 0) {
+      score -= 15;
+      findings.push({
+        id: `QM-DOC-EI-${Date.now()}-short`,
+        severity: "warning",
+        category: "evidence_integrity",
+        description: `Average evidence length is ${Math.round(avgLength)} characters — very thin`,
+        evidence: [],
+        remediation: "Evidence should describe test procedures and results in detail",
+      });
+    }
+
+    // Boilerplate penalty from Phase 1
+    let boilerplateCount = 0;
+    for (const [, bp] of boilerplateMap) {
+      if (bp.flags.length > 0) boilerplateCount++;
+    }
+    const bpPenalty = Math.min(30, boilerplateCount * 10);
+    if (bpPenalty > 0) {
+      score -= bpPenalty;
+      findings.push({
+        id: `QM-DOC-EI-${Date.now()}-boilerplate`,
+        severity: "warning",
+        category: "evidence_integrity",
+        description: `${boilerplateCount} controls flagged for boilerplate/template evidence`,
+        evidence: [],
+        remediation: "Replace template evidence with specific test procedures and results",
+      });
+    }
+
+    return { score: Math.max(0, Math.min(100, score)), findings };
+  }
+
+  /**
+   * Completeness dimension for documents.
+   * Checks evidence coverage, gap acknowledgment, scope.
+   */
+  private checkDocCompleteness(input: QuartermasterDocumentInput): DimensionCheckResult {
+    const findings: QuartermasterFinding[] = [];
+    let score = 60; // Base
+
+    // All controls with evidence
+    const withEvidence = input.controls.filter(c => c.evidence && c.evidence.trim().length > 0);
+    if (withEvidence.length === input.controls.length) {
+      score += 25;
+    } else {
+      score += Math.round((withEvidence.length / input.controls.length) * 20);
+    }
+
+    // Gaps acknowledged with rationale
+    if (input.assessmentContext?.gaps && input.assessmentContext.gaps.length > 0) {
+      // Acknowledging gaps is GOOD (transparency), but many gaps is concerning
+      const gapCount = input.assessmentContext.gaps.length;
+      if (gapCount <= 3) {
+        score += 10; // Transparent about limitations
+      } else {
+        score -= (gapCount - 3) * 3; // Excessive gaps reduce completeness
+        findings.push({
+          id: `QM-DOC-CO-${Date.now()}-gaps`,
+          severity: "info",
+          category: "completeness",
+          description: `${gapCount} scope gaps identified — significant exclusions`,
+          evidence: [],
+          remediation: "Review whether excluded areas represent material risk",
+        });
+      }
+    }
+
+    // Scope coverage from metadata
+    if (input.metadata.scope && input.metadata.scope.length > 20) {
+      score += 5; // Detailed scope description
+    }
+
+    return { score: Math.max(0, Math.min(100, score)), findings };
+  }
+
+  /**
+   * Bias detection dimension for documents.
+   * Checks pass/fail distribution, severity distribution, all-pass bias.
+   */
+  private checkDocBias(input: QuartermasterDocumentInput): DimensionCheckResult {
+    const findings: QuartermasterFinding[] = [];
+    let score = 90; // Start high, deduct for bias indicators
+
+    const effective = input.controls.filter(c => c.status === "effective").length;
+    const total = input.controls.length;
+
+    // All-pass bias: 100% effective with 10+ controls
+    if (total >= 10 && effective === total) {
+      score -= 15;
+      findings.push({
+        id: `QM-DOC-BD-${Date.now()}-allpass`,
+        severity: "warning",
+        category: "bias_detection",
+        description: `All ${total} controls are effective — 100% pass rate with 10+ controls is statistically unusual`,
+        evidence: [],
+        remediation: "Verify testing rigor was sufficient to detect failures",
+      });
+    }
+
+    // Severity distribution check
+    const severities = input.controls
+      .filter(c => c.severity)
+      .map(c => c.severity);
+    const uniqueSeverities = new Set(severities);
+    if (severities.length >= 5 && uniqueSeverities.size === 1) {
+      score -= 5;
+      findings.push({
+        id: `QM-DOC-BD-${Date.now()}-monosev`,
+        severity: "info",
+        category: "bias_detection",
+        description: `All ${severities.length} controls have the same severity (${severities[0]}) — may indicate mechanical classification`,
+        evidence: [],
+        remediation: "Verify severity was assigned based on actual risk, not template",
+      });
+    }
+
+    // Ineffective controls without evidence is suspicious
+    const ineffectiveNoEvidence = input.controls.filter(
+      c => c.status === "ineffective" && (!c.evidence || c.evidence.trim().length === 0)
+    );
+    if (ineffectiveNoEvidence.length > 0) {
+      score -= 10;
+      findings.push({
+        id: `QM-DOC-BD-${Date.now()}-noevfail`,
+        severity: "warning",
+        category: "bias_detection",
+        description: `${ineffectiveNoEvidence.length} ineffective controls have no evidence — failure not documented`,
+        evidence: [],
+        remediation: "All findings should include evidence of the deficiency",
+      });
+    }
+
+    return { score: Math.max(0, Math.min(100, score)), findings };
+  }
+
+  // ===========================================================================
+  // PRIVATE: Probo Checks (document-specific)
+  // ===========================================================================
+
+  /**
+   * Probo Check 1: Auditor Legitimacy.
+   * Extract and validate auditor identity from metadata.
+   */
+  private checkAuditorLegitimacy(input: QuartermasterDocumentInput): QuartermasterFinding[] {
+    const findings: QuartermasterFinding[] = [];
+    const auditor = input.metadata.auditor;
+
+    if (!auditor || auditor.trim().length === 0) {
+      findings.push({
+        id: `QM-DOC-AL-${Date.now()}-missing`,
+        severity: "warning",
+        category: "auditor_legitimacy",
+        description: "Auditor name missing from report metadata",
+        evidence: [],
+        remediation: "Verify the report includes the name of the CPA firm that performed the audit",
+      });
+      return findings;
+    }
+
+    // Generic auditor name patterns
+    const genericPatterns = [
+      /^the auditor$/i,
+      /^audit firm$/i,
+      /^auditor$/i,
+      /^external auditor$/i,
+      /^independent auditor$/i,
+    ];
+
+    const isGeneric = genericPatterns.some(p => p.test(auditor.trim()));
+    if (isGeneric) {
+      findings.push({
+        id: `QM-DOC-AL-${Date.now()}-generic`,
+        severity: "warning",
+        category: "auditor_legitimacy",
+        description: `Auditor name "${auditor}" appears generic — expected a specific firm name`,
+        evidence: [],
+        remediation: "Report should identify the specific CPA firm (e.g., 'Deloitte & Touche LLP')",
+      });
+      return findings;
+    }
+
+    // CPA firm pattern check: contains "LLP", "LLC", "&", "Associates", "Consulting", "Partners"
+    const cpaPatterns = /\b(LLP|LLC|&|Associates|Consulting|Partners|Group|Advisory|P\.?C\.?)\b/i;
+    if (cpaPatterns.test(auditor)) {
+      // Good — looks like a real firm name (info-level positive finding)
+      findings.push({
+        id: `QM-DOC-AL-${Date.now()}-cpa`,
+        severity: "info",
+        category: "auditor_legitimacy",
+        description: `Auditor "${auditor}" matches CPA firm naming pattern`,
+        evidence: [],
+        remediation: "No action needed",
+      });
+    }
+
+    return findings;
+  }
+
+  /**
+   * Probo Check 4: System Description Specificity.
+   * Validate tech stack presence and cross-reference with evidence.
+   */
+  private checkSystemDescription(input: QuartermasterDocumentInput): QuartermasterFinding[] {
+    const findings: QuartermasterFinding[] = [];
+    const techStack = input.assessmentContext?.techStack;
+
+    if (!techStack || techStack.length === 0) {
+      findings.push({
+        id: `QM-DOC-SD-${Date.now()}-empty`,
+        severity: "warning",
+        category: "system_description",
+        description: "No system description — cannot verify scope coverage",
+        evidence: [],
+        remediation: "Include technology stack details (e.g., 'Okta for IdP', 'AWS for cloud')",
+      });
+      return findings;
+    }
+
+    // Cross-reference: do tech stack names appear in evidence text?
+    const allEvidence = input.controls
+      .map(c => c.evidence || "")
+      .join(" ")
+      .toLowerCase();
+
+    let referencedCount = 0;
+    for (const entry of techStack) {
+      const techName = entry.technology.toLowerCase();
+      if (allEvidence.includes(techName)) {
+        referencedCount++;
+      }
+    }
+
+    if (referencedCount === 0) {
+      findings.push({
+        id: `QM-DOC-SD-${Date.now()}-disconnect`,
+        severity: "warning",
+        category: "system_description",
+        description: `System description disconnected from evidence — none of ${techStack.length} tech stack entries appear in control evidence`,
+        evidence: [],
+        remediation: "Evidence should reference the specific systems being assessed",
+      });
+    }
+
+    // Check for generic-only system names
+    const genericTerms = ["cloud provider", "identity system", "database", "monitoring", "server", "system"];
+    const allGeneric = techStack.every(entry => {
+      const tech = entry.technology.toLowerCase();
+      return genericTerms.some(g => tech === g);
+    });
+
+    if (allGeneric) {
+      findings.push({
+        id: `QM-DOC-SD-${Date.now()}-generic`,
+        severity: "info",
+        category: "system_description",
+        description: "Tech stack contains only generic terms, no specific product names",
+        evidence: [],
+        remediation: "Use specific product names (e.g., 'Okta' not 'identity system')",
+      });
+    }
+
+    return findings;
+  }
+
+  /**
+   * Probo Check 6: AICPA Structural Completeness.
+   * For SOC 2 documents only — verify expected structural sections were present.
+   */
+  private checkStructuralCompleteness(input: QuartermasterDocumentInput): QuartermasterFinding[] {
+    const findings: QuartermasterFinding[] = [];
+
+    // Only applies to SOC 2 documents
+    if (input.source !== "soc2") return findings;
+
+    const sections = input.metadata.structuralSections;
+    if (!sections) return findings; // No section data available
+
+    const sectionNames: Record<string, string> = {
+      auditorReport: "Independent Auditor's Report",
+      managementAssertion: "Management's Assertion",
+      systemDescription: "System Description",
+      controlMatrix: "Trust Services Criteria & Controls",
+      testResults: "Tests of Controls & Results",
+    };
+
+    for (const [key, label] of Object.entries(sectionNames)) {
+      if (!sections[key as keyof typeof sections]) {
+        findings.push({
+          id: `QM-DOC-SC-${Date.now()}-${key}`,
+          severity: "warning",
+          category: "structural_completeness",
+          description: `Missing SOC 2 section: ${label}`,
+          evidence: [],
+          remediation: `Verify the SOC 2 report includes the ${label} section`,
+        });
+      }
+    }
+
+    return findings;
   }
 
   // ===========================================================================

@@ -17,6 +17,13 @@ import type {
   ThreatModelResult,
 } from "../types";
 
+import type {
+  IngestedControl,
+  DocumentMetadata,
+  DocumentSource,
+  AssessmentContext,
+} from "../ingestion/types";
+
 // Inlined from deleted src/types/isc.ts — kept minimal for QuartermasterInput
 interface ISCCriterion {
   id: string;
@@ -184,4 +191,34 @@ export interface QuartermasterConfig {
     aiVerified?: number;
     auditorVerified?: number;
   };
+}
+
+// =============================================================================
+// DOCUMENT-SPECIFIC INPUT (Phase 5)
+// =============================================================================
+
+/**
+ * Input for document-specific Quartermaster evaluation.
+ * Replaces the pipeline-oriented QuartermasterInput for document ingestion flows.
+ *
+ * Automates Probo.com's 6 Checks for SOC 2 Quality:
+ *   Check 1: Auditor legitimacy (auditor field pattern matching)
+ *   Check 2: Template detection (Phase 1 boilerplate flags)
+ *   Check 3: Test procedure quality (Phase 1 evidence classification)
+ *   Check 4: System description specificity (tech stack cross-reference)
+ *   Check 5: Sample size adequacy (Phase 1 sample extraction)
+ *   Check 6: AICPA structural completeness (section detection)
+ */
+export interface QuartermasterDocumentInput {
+  /** Extracted controls from the document */
+  controls: IngestedControl[];
+
+  /** Document source type */
+  source: DocumentSource;
+
+  /** Document metadata (includes optional structuralSections) */
+  metadata: DocumentMetadata;
+
+  /** Optional assessment context (tech stack, gaps, assessor notes) */
+  assessmentContext?: AssessmentContext;
 }

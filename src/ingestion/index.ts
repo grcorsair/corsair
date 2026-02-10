@@ -32,8 +32,23 @@ export {
   calculateDocumentRollup,
   deriveProvenance,
   assessFreshness,
+  classifyEvidenceContent,
+  extractSampleSize,
+  detectBoilerplate,
+  applyDimensionGating,
+  classifyAssessmentDepth,
+  computeProvenanceQuality,
+  runBinaryChecks,
+  computeDoraMetrics,
 } from "./assurance-calculator";
 export type { FreshnessAssessment } from "./assurance-calculator";
+
+export type {
+  MethodologyTier,
+  EvidenceClassification,
+  SampleSizeResult,
+  BoilerplateResult,
+} from "./types";
 
 export { processBatch } from "./batch-processor";
 export type { BatchOptions, BatchResult } from "./batch-processor";

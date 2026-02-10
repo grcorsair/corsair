@@ -28,6 +28,13 @@ import {
   generateRuleTrace,
   applyAntiGamingSafeguards,
   deriveEvidenceTypeDistribution,
+  classifyEvidenceContent,
+  extractSampleSize,
+  detectBoilerplate,
+  classifyAssessmentDepth,
+  computeProvenanceQuality,
+  runBinaryChecks,
+  computeDoraMetrics,
 } from "../ingestion/assurance-calculator";
 import { EvidenceEngine } from "../evidence";
 
@@ -218,6 +225,7 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
       doc.source,
       doc.metadata,
       cleanQmScores,
+      doc.assessmentContext,
     );
 
     const evidenceTypes = deriveEvidenceTypes(doc.controls, doc.source);
@@ -228,6 +236,70 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
     const observationPeriod = deriveObservationPeriod(doc.metadata);
     if (observationPeriod) {
       subject.observationPeriod = observationPeriod;
+    }
+
+    // Phase 1: Per-control evidence classification with sample adequacy + boilerplate detection
+    const boilerplateResults = detectBoilerplate(doc.controls);
+    const boilerplateMap = new Map(boilerplateResults.map(b => [b.controlId, b]));
+
+    const classifications: CPOECredentialSubject["controlClassifications"] = doc.controls.map(ctrl => {
+      const classification = classifyEvidenceContent(ctrl, doc.source);
+      const bp = boilerplateMap.get(ctrl.id);
+      const sampleResult = ctrl.evidence ? extractSampleSize(ctrl.evidence) : null;
+
+      const entry: NonNullable<CPOECredentialSubject["controlClassifications"]>[number] = {
+        controlId: ctrl.id,
+        level: classification.maxLevel,
+        methodology: classification.methodology,
+        trace: classification.trace,
+      };
+
+      if (sampleResult && sampleResult.sample !== null) {
+        entry.sampleAdequacy = {
+          sample: sampleResult.sample,
+          population: sampleResult.population ?? undefined,
+          frequency: sampleResult.frequency ?? undefined,
+          adequate: sampleResult.adequate ?? false,
+        };
+      }
+
+      if (bp && bp.flags.length > 0) {
+        entry.boilerplateFlags = bp.flags;
+      }
+
+      return entry;
+    });
+
+    if (classifications.length > 0) {
+      subject.controlClassifications = classifications;
+    }
+
+    // Phase 6A: NIST 800-53A assessment depth (aggregate across controls)
+    const depths = doc.controls.map(ctrl => classifyAssessmentDepth(ctrl));
+    const allMethods = new Set<"examine" | "interview" | "test">();
+    let maxRigor = 0;
+    let maxDepth: "basic" | "focused" | "comprehensive" = "basic";
+    for (const d of depths) {
+      for (const m of d.methods) allMethods.add(m);
+      if (d.rigorScore > maxRigor) {
+        maxRigor = d.rigorScore;
+        maxDepth = d.depth;
+      }
+    }
+    if (allMethods.size > 0) {
+      subject.assessmentDepth = {
+        methods: [...allMethods],
+        depth: maxDepth,
+        rigorScore: maxRigor,
+      };
+    }
+
+    // Phase 6B: SLSA-inspired provenance quality
+    subject.provenanceQuality = computeProvenanceQuality(doc.controls, doc.source, doc.metadata);
+
+    // Phase 6D: DORA paired metrics (needs dimensions)
+    if (subject.dimensions) {
+      subject.doraMetrics = computeDoraMetrics(doc.controls, doc.source, doc.metadata, subject.dimensions);
     }
   }
 
@@ -253,7 +325,7 @@ function buildAssurance(input: MarqueGeneratorInput): CPOEAssurance {
     assurance.calculationVersion = "l0-l4@2026-02-09";
     assurance.ruleTrace = generateRuleTrace(controlsWithAssurance, doc.source, doc.metadata);
 
-    // Anti-gaming safeguards (Task #11) — informational, not overriding declared
+    // Anti-gaming safeguards (Phase 3) — ENFORCED: cap declared level when triggered
     const safeguardResult = applyAntiGamingSafeguards(
       assurance.declared,
       doc.controls,
@@ -264,6 +336,15 @@ function buildAssurance(input: MarqueGeneratorInput): CPOEAssurance {
       assurance.ruleTrace.push(
         ...safeguardResult.explanations.map(e => `SAFEGUARD: ${e}`),
       );
+
+      // Phase 3: Enforce safeguards — cap declared level when effective level is lower
+      if (safeguardResult.effectiveLevel < assurance.declared) {
+        assurance.ruleTrace.push(
+          `ENFORCED: declared L${assurance.declared} → L${safeguardResult.effectiveLevel} (safeguard cap)`
+        );
+        assurance.declared = safeguardResult.effectiveLevel;
+        assurance.verified = false;
+      }
     }
 
     return assurance;
