@@ -4,9 +4,7 @@
     "builder": "DOCKERFILE",
     "dockerfilePath": "Dockerfile",
     "watchPatterns": [
-      "apps/web/**",
-      "package.json",
-      "bun.lock"
+      "apps/web/**"
     ]
   },
   "deploy": {
