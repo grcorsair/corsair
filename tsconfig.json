@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["bun-types"],
+    "noEmit": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "functions/**/*.ts",
+    "tests/**/*.ts",
+    "server.ts",
+    "worker.ts",
+    "corsair.ts",
+    "bin/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "apps"
+  ]
+}
