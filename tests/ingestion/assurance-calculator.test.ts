@@ -15,6 +15,9 @@ import {
   scoreConsistency,
   deriveEvidenceTypes,
   deriveObservationPeriod,
+  applyAntiGamingSafeguards,
+  generateRuleTrace,
+  deriveEvidenceTypeDistribution,
 } from "../../src/ingestion/assurance-calculator";
 import type { IngestedControl, DocumentMetadata, AssuranceLevel } from "../../src/ingestion/types";
 
@@ -720,6 +723,150 @@ describe("Assurance Calculator", () => {
       expect(result).toBeDefined();
       expect(result!.durationDays).toBe(365);
       expect(result!.soc2Equivalent).toBe("Type II (12mo)");
+    });
+  });
+
+  // ===========================================================================
+  // ANTI-GAMING SAFEGUARDS (Plan 2.4.5)
+  // ===========================================================================
+
+  describe("applyAntiGamingSafeguards", () => {
+    test("zero controls → caps at L0", () => {
+      const result = applyAntiGamingSafeguards(2, [], "soc2", soc2Metadata);
+      expect(result.effectiveLevel).toBe(0);
+      expect(result.appliedSafeguards).toContain("sampling-opacity");
+    });
+
+    test("stale evidence (>180 days) → caps at L1", () => {
+      const staleDate = new Date();
+      staleDate.setDate(staleDate.getDate() - 200);
+      const result = applyAntiGamingSafeguards(
+        2,
+        [{ ...baseControl, evidence: "test" }],
+        "soc2",
+        { ...soc2Metadata, date: staleDate.toISOString() },
+      );
+      expect(result.effectiveLevel).toBeLessThanOrEqual(1);
+      expect(result.appliedSafeguards).toContain("freshness-decay");
+    });
+
+    test("self provenance + L3 declared → caps at L2", () => {
+      const result = applyAntiGamingSafeguards(
+        3,
+        [{ ...baseControl, evidence: "test" }],
+        "manual",
+        { ...soc2Metadata, date: new Date().toISOString() },
+      );
+      expect(result.effectiveLevel).toBeLessThanOrEqual(2);
+      expect(result.appliedSafeguards).toContain("independence-check");
+    });
+
+    test("fresh auditor evidence with controls → no caps applied", () => {
+      const result = applyAntiGamingSafeguards(
+        1,
+        [{ ...baseControl, evidence: "test" }],
+        "soc2",
+        { ...soc2Metadata, date: new Date().toISOString() },
+      );
+      expect(result.effectiveLevel).toBe(1);
+      expect(result.appliedSafeguards).toHaveLength(0);
+    });
+
+    test("no evidence on controls → caps at L1 (opacity)", () => {
+      const result = applyAntiGamingSafeguards(
+        2,
+        [{ ...baseControl, evidence: "" }, baseControl],
+        "soc2",
+        { ...soc2Metadata, date: new Date().toISOString() },
+      );
+      expect(result.effectiveLevel).toBeLessThanOrEqual(1);
+      expect(result.appliedSafeguards).toContain("sampling-opacity");
+    });
+
+    test("multiple safeguards can apply simultaneously", () => {
+      const staleDate = new Date();
+      staleDate.setDate(staleDate.getDate() - 200);
+      const result = applyAntiGamingSafeguards(
+        3,
+        [{ ...baseControl, evidence: "" }],
+        "manual",
+        { ...soc2Metadata, date: staleDate.toISOString() },
+      );
+      expect(result.effectiveLevel).toBeLessThanOrEqual(1);
+      expect(result.appliedSafeguards.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  // ===========================================================================
+  // RULE TRACE (Plan 2.4.4)
+  // ===========================================================================
+
+  describe("generateRuleTrace", () => {
+    test("produces trace entries for each rule check", () => {
+      const trace = generateRuleTrace(
+        [{ ...baseControl, evidence: "test result", assuranceLevel: 1 as AssuranceLevel }],
+        "soc2",
+        soc2Metadata,
+      );
+      expect(trace.length).toBeGreaterThan(0);
+      expect(trace.some(t => t.includes("satisfied") || t.includes("checked"))).toBe(true);
+    });
+
+    test("includes freshness check in trace", () => {
+      const trace = generateRuleTrace(
+        [{ ...baseControl, evidence: "test", assuranceLevel: 1 as AssuranceLevel }],
+        "soc2",
+        { ...soc2Metadata, date: new Date().toISOString() },
+      );
+      expect(trace.some(t => t.toLowerCase().includes("freshness") || t.toLowerCase().includes("fresh"))).toBe(true);
+    });
+
+    test("includes source ceiling in trace", () => {
+      const trace = generateRuleTrace(
+        [{ ...baseControl, evidence: "test", assuranceLevel: 2 as AssuranceLevel }],
+        "pentest",
+        soc2Metadata,
+      );
+      expect(trace.some(t => t.toLowerCase().includes("source") || t.toLowerCase().includes("ceiling"))).toBe(true);
+    });
+
+    test("trace for zero controls mentions no controls", () => {
+      const trace = generateRuleTrace([], "soc2", soc2Metadata);
+      expect(trace.some(t => t.toLowerCase().includes("no controls") || t.toLowerCase().includes("0 controls"))).toBe(true);
+    });
+  });
+
+  // ===========================================================================
+  // EVIDENCE TYPE DISTRIBUTION (Plan 2.5)
+  // ===========================================================================
+
+  describe("deriveEvidenceTypeDistribution", () => {
+    test("single evidence type → 100%", () => {
+      const dist = deriveEvidenceTypeDistribution(
+        [baseControl],
+        "manual",
+      );
+      const values = Object.values(dist);
+      expect(values.length).toBeGreaterThan(0);
+      const total = values.reduce((s, v) => s + v, 0);
+      expect(total).toBeCloseTo(1.0, 1);
+    });
+
+    test("mixed source produces multiple types with distribution", () => {
+      const dist = deriveEvidenceTypeDistribution(
+        [
+          { ...baseControl, evidence: "Automated scan output" },
+          { ...baseControl, evidence: "Policy document" },
+        ],
+        "soc2",
+      );
+      expect(Object.keys(dist).length).toBeGreaterThan(0);
+    });
+
+    test("empty controls → empty distribution", () => {
+      const dist = deriveEvidenceTypeDistribution([], "soc2");
+      const values = Object.values(dist);
+      expect(values.length).toBeGreaterThan(0);
     });
   });
 });

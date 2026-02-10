@@ -144,6 +144,52 @@ export interface ObservationPeriod {
   soc2Equivalent: "Pre-engagement" | "Type I" | "Type II (3mo)" | "Type II (6mo)" | "Type II (12mo)";
 }
 
+// =============================================================================
+// ANTI-GAMING SAFEGUARD RESULT
+// =============================================================================
+
+/** Result of applying anti-gaming safeguards to a declared assurance level */
+export interface AntiGamingSafeguardResult {
+  /** The effective level after all safeguards are applied */
+  effectiveLevel: AssuranceLevel;
+  /** Which safeguards were triggered */
+  appliedSafeguards: Array<"sampling-opacity" | "freshness-decay" | "independence-check">;
+  /** Human-readable explanation for each triggered safeguard */
+  explanations: string[];
+}
+
+// =============================================================================
+// LLM ASSESSOR METADATA (Plan 2.4.7)
+// =============================================================================
+
+/** LLM assessor audit metadata — only present when LLM was used for assessment */
+export interface CPOEAssessor {
+  /** Assessor type */
+  type: "ai" | "human" | "hybrid";
+  /** Model identifier (e.g., "claude-3.5-sonnet-2026-01") */
+  model?: string;
+  /** SHA-256 hash of the prompt used */
+  promptHash?: string;
+  /** Unique run identifier */
+  runId?: string;
+  /** SHA-256 hash of assessment inputs */
+  inputsHash?: string;
+  /** SHA-256 hash of assessment outputs */
+  outputsHash?: string;
+}
+
+// =============================================================================
+// FRAMEWORK EQUIVALENCE (UI hint, not persisted in CPOE)
+// =============================================================================
+
+/** Framework equivalence mapping for display (not a protocol claim) */
+export interface FrameworkEquivalence {
+  SOC2?: string;
+  ISO27001?: string;
+  "CSA-STAR"?: string;
+  CMMC?: string;
+}
+
 /** Human-readable assurance level names */
 export const ASSURANCE_NAMES: Record<AssuranceLevel, string> = {
   0: "Documented",
@@ -178,6 +224,18 @@ export interface CPOEAssurance {
     reason: string;
     acceptedBy?: string;
   }>;
+
+  /** Deterministic calculation version (e.g., "l0-l4@2026-02-09") */
+  calculationVersion?: string;
+
+  /** SHA-256 hash of canonicalized inputs used for level determination */
+  inputsHash?: string;
+
+  /** Machine-readable rule trace explaining the level outcome */
+  ruleTrace?: string[];
+
+  /** LLM assessor audit metadata (only when LLM was used) */
+  assessor?: CPOEAssessor;
 }
 
 /** Evidence provenance — who produced the underlying evidence */
@@ -193,6 +251,9 @@ export interface CPOEProvenance {
 
   /** Date of source assessment (ISO 8601) */
   sourceDate?: string;
+
+  /** Distribution of evidence types by percentage (ISO 19011 hierarchy) */
+  evidenceTypeDistribution?: Record<string, number>;
 }
 
 // =============================================================================
@@ -337,7 +398,7 @@ export interface VCJWTPayload {
   vc: Omit<VerifiableCredential, "proof">;
 
   /** Protocol version marker */
-  parley: "2.0";
+  parley: "2.0" | "2.1";
 }
 
 // =============================================================================

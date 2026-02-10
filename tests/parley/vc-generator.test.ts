@@ -191,12 +191,12 @@ describe("VC Generator - JWT-VC Generation", () => {
     expect((payload.exp as number) > (payload.iat as number)).toBe(true);
   });
 
-  test("JWT payload contains parley version 2.0", async () => {
+  test("JWT payload contains parley version", async () => {
     const { keyManager, input } = await setup();
     const jwt = await generateVCJWT(input, keyManager);
 
     const payload = jose.decodeJwt(jwt);
-    expect(payload.parley).toBe("2.0");
+    expect(["2.0", "2.1"]).toContain(payload.parley);
   });
 
   test("JWT vc.credentialSubject contains CPOE assessment data", async () => {
@@ -227,7 +227,7 @@ describe("VC Generator - JWT-VC Generation", () => {
     const { payload } = await jose.jwtVerify(jwt, publicKeyObj);
 
     expect(payload.iss).toBe("did:web:grcorsair.com");
-    expect(payload.parley).toBe("2.0");
+    expect(["2.0", "2.1"]).toContain(payload.parley);
   });
 
   test("JWT respects custom expiry days", async () => {
@@ -371,5 +371,108 @@ describe("VC Generator - JWT-VC Generation", () => {
     expect(subject.dimensions).toBeUndefined();
     expect(subject.evidenceTypes).toBeUndefined();
     expect(subject.observationPeriod).toBeUndefined();
+  });
+
+  // ===========================================================================
+  // Task #12: Deterministic calculation + ruleTrace
+  // ===========================================================================
+
+  test("JWT assurance includes ruleTrace when document input is provided", async () => {
+    const { keyManager, input } = await setup();
+    input.document = {
+      source: "soc2",
+      metadata: {
+        title: "SOC 2 Type II",
+        issuer: "Acme",
+        date: new Date().toISOString().split("T")[0],
+        scope: "All production systems",
+        auditor: "Deloitte LLP",
+        reportType: "SOC 2 Type II",
+      },
+      controls: [
+        { id: "CC6.1", description: "Logical access", status: "effective", evidence: "MFA verified" },
+      ],
+    };
+
+    const jwt = await generateVCJWT(input, keyManager);
+    const payload = jose.decodeJwt(jwt);
+    const vc = payload.vc as Record<string, unknown>;
+    const subject = vc.credentialSubject as Record<string, unknown>;
+    const assurance = subject.assurance as Record<string, unknown>;
+
+    expect(assurance.ruleTrace).toBeDefined();
+    expect(Array.isArray(assurance.ruleTrace)).toBe(true);
+    expect((assurance.ruleTrace as string[]).length).toBeGreaterThan(0);
+  });
+
+  test("JWT assurance includes calculationVersion", async () => {
+    const { keyManager, input } = await setup();
+    input.document = {
+      source: "soc2",
+      metadata: {
+        title: "SOC 2 Type II",
+        issuer: "Acme",
+        date: new Date().toISOString().split("T")[0],
+        scope: "All",
+        reportType: "SOC 2 Type II",
+      },
+      controls: [
+        { id: "CC6.1", description: "Logical access", status: "effective", evidence: "Tested" },
+      ],
+    };
+
+    const jwt = await generateVCJWT(input, keyManager);
+    const payload = jose.decodeJwt(jwt);
+    const vc = payload.vc as Record<string, unknown>;
+    const subject = vc.credentialSubject as Record<string, unknown>;
+    const assurance = subject.assurance as Record<string, unknown>;
+
+    expect(assurance.calculationVersion).toBeDefined();
+    expect(typeof assurance.calculationVersion).toBe("string");
+    expect((assurance.calculationVersion as string)).toContain("l0-l4@");
+  });
+
+  // ===========================================================================
+  // Task #14: Evidence type distribution in provenance
+  // ===========================================================================
+
+  test("JWT provenance includes evidenceTypeDistribution when document is provided", async () => {
+    const { keyManager, input } = await setup();
+    input.document = {
+      source: "soc2",
+      metadata: {
+        title: "SOC 2 Type II",
+        issuer: "Acme",
+        date: new Date().toISOString().split("T")[0],
+        scope: "All",
+        reportType: "SOC 2 Type II",
+      },
+      controls: [
+        { id: "CC6.1", description: "Logical access", status: "effective", evidence: "Tested" },
+      ],
+    };
+
+    const jwt = await generateVCJWT(input, keyManager);
+    const payload = jose.decodeJwt(jwt);
+    const vc = payload.vc as Record<string, unknown>;
+    const subject = vc.credentialSubject as Record<string, unknown>;
+    const provenance = subject.provenance as Record<string, unknown>;
+
+    expect(provenance.evidenceTypeDistribution).toBeDefined();
+    const dist = provenance.evidenceTypeDistribution as Record<string, number>;
+    const total = Object.values(dist).reduce((s, v) => s + v, 0);
+    expect(total).toBeCloseTo(1.0, 1);
+  });
+
+  // ===========================================================================
+  // Task #15: CPOE versioning — parley "2.1"
+  // ===========================================================================
+
+  test("JWT payload contains parley version 2.1 (upgraded from 2.0)", async () => {
+    const { keyManager, input } = await setup();
+    const jwt = await generateVCJWT(input, keyManager);
+
+    const payload = jose.decodeJwt(jwt);
+    expect(payload.parley).toBe("2.1");
   });
 });

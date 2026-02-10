@@ -25,6 +25,9 @@ import {
   calculateAssuranceDimensions,
   deriveEvidenceTypes,
   deriveObservationPeriod,
+  generateRuleTrace,
+  applyAntiGamingSafeguards,
+  deriveEvidenceTypeDistribution,
 } from "../ingestion/assurance-calculator";
 import { EvidenceEngine } from "../evidence";
 
@@ -75,7 +78,7 @@ export async function generateVCJWT(
   // Sign JWT with Ed25519
   const jwt = await new SignJWT({
     vc,
-    parley: "2.0",
+    parley: "2.1",
   })
     .setProtectedHeader({
       alg: "EdDSA",
@@ -245,6 +248,24 @@ function buildAssurance(input: MarqueGeneratorInput): CPOEAssurance {
       doc.metadata,
     );
     const { assurance } = calculateDocumentRollup(controlsWithAssurance, doc.source, doc.metadata);
+
+    // Deterministic calculation metadata (Task #12)
+    assurance.calculationVersion = "l0-l4@2026-02-09";
+    assurance.ruleTrace = generateRuleTrace(controlsWithAssurance, doc.source, doc.metadata);
+
+    // Anti-gaming safeguards (Task #11) — informational, not overriding declared
+    const safeguardResult = applyAntiGamingSafeguards(
+      assurance.declared,
+      doc.controls,
+      doc.source,
+      doc.metadata,
+    );
+    if (safeguardResult.appliedSafeguards.length > 0) {
+      assurance.ruleTrace.push(
+        ...safeguardResult.explanations.map(e => `SAFEGUARD: ${e}`),
+      );
+    }
+
     return assurance;
   }
 
@@ -264,7 +285,16 @@ function buildAssurance(input: MarqueGeneratorInput): CPOEAssurance {
 /** Build CPOEProvenance from input */
 function buildProvenance(input: MarqueGeneratorInput): CPOEProvenance {
   if (input.document) {
-    return deriveProvenance(input.document.source, input.document.metadata);
+    const doc = input.document;
+    const provenance = deriveProvenance(doc.source, doc.metadata);
+
+    // Evidence type distribution (Task #14)
+    const distribution = deriveEvidenceTypeDistribution(doc.controls, doc.source);
+    if (Object.keys(distribution).length > 0) {
+      provenance.evidenceTypeDistribution = distribution;
+    }
+
+    return provenance;
   }
 
   // Legacy path

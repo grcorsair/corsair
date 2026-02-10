@@ -12,6 +12,51 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
+/** Generate a plain-language summary from verification result */
+function generatePlainLanguageSummary(result: MarqueVerificationResult): string {
+  if (!result.valid) {
+    return `This CPOE failed verification: ${result.reason}`;
+  }
+
+  const parts: string[] = [];
+
+  // Who issued it and when
+  const issuer = result.vcMetadata?.signedBy ?? result.provenance?.sourceIdentity ?? "Unknown";
+  const issued = result.vcMetadata?.generatedAt
+    ? new Date(result.vcMetadata.generatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+    : "an unknown date";
+  parts.push(`This CPOE was issued by ${issuer} on ${issued}.`);
+
+  // What it covers
+  if (result.scope) {
+    parts.push(`It covers ${result.scope}.`);
+  }
+
+  // Controls and pass rate
+  if (result.summary) {
+    parts.push(
+      `${result.summary.controlsTested} controls were tested with a ${result.summary.overallScore}% pass rate.`
+    );
+  }
+
+  // Assurance level
+  if (result.assuranceName !== undefined) {
+    parts.push(`Assurance level: L${result.assuranceLevel} (${result.assuranceName}).`);
+  }
+
+  // Provenance
+  if (result.provenance) {
+    const sourceLabel = result.provenance.source === "auditor"
+      ? "auditor-produced"
+      : result.provenance.source === "tool"
+        ? "tool-generated"
+        : "self-assessed";
+    parts.push(`Evidence: ${sourceLabel}.`);
+  }
+
+  return parts.join(" ");
+}
+
 /** Assurance level color mapping */
 const ASSURANCE_COLORS: Record<number, string> = {
   0: "border-yellow-500/40 text-yellow-400",
@@ -189,6 +234,15 @@ export function MarqueVerifier() {
               </div>
             </div>
           </CardHeader>
+
+          {/* Plain-language summary */}
+          {result.valid && (
+            <CardContent className="pt-0 pb-0">
+              <div className="rounded-lg bg-corsair-surface p-4 text-sm text-muted-foreground leading-relaxed">
+                {generatePlainLanguageSummary(result)}
+              </div>
+            </CardContent>
+          )}
 
           {/* Details section */}
           {(result.summary || result.assurance || result.provenance || result.document) && (
@@ -623,6 +677,11 @@ export function MarqueVerifier() {
                 </Card>
               )}
 
+              {/* Framework Results Tabs */}
+              {result.frameworks && Object.keys(result.frameworks).length > 0 && (
+                <FrameworkTabs frameworks={result.frameworks} />
+              )}
+
               {/* Trust tier */}
               {result.document?.quartermasterAttestation && (
                 <Card className="bg-corsair-surface">
@@ -697,6 +756,16 @@ export function MarqueVerifier() {
                   </div>
                 </div>
               )}
+              {/* Technical Details Drawer */}
+              {(result.ruleTrace || result.calculationVersion) && (
+                <TechnicalDrawer
+                  ruleTrace={result.ruleTrace}
+                  calculationVersion={result.calculationVersion}
+                  parleyVersion={result.vcMetadata?.parleyVersion}
+                  issuerDID={result.vcMetadata?.issuerDID}
+                />
+              )}
+
               {/* Download as JSON */}
               {result.valid && (
                 <div className="flex justify-end">
@@ -750,5 +819,134 @@ function InfoField({ label, value }: { label: string; value: string }) {
       </span>
       <span className="text-sm text-foreground">{value}</span>
     </div>
+  );
+}
+
+/** Framework filter tabs — shows per-framework control results */
+function FrameworkTabs({ frameworks }: {
+  frameworks: Record<string, {
+    controlsMapped: number;
+    passed: number;
+    failed: number;
+    controls: Array<{ controlId: string; status: string }>;
+  }>;
+}) {
+  const [activeTab, setActiveTab] = useState(Object.keys(frameworks)[0] ?? "");
+  const fw = frameworks[activeTab];
+
+  return (
+    <Card className="bg-corsair-surface">
+      <CardContent className="space-y-3 p-4">
+        <span className="block font-mono text-xs uppercase text-muted-foreground">
+          Framework Results
+        </span>
+        {/* Tab buttons */}
+        <div className="flex flex-wrap gap-1">
+          {Object.keys(frameworks).map((name) => (
+            <Button
+              key={name}
+              variant={activeTab === name ? "default" : "outline"}
+              size="sm"
+              className="font-mono text-xs"
+              onClick={() => setActiveTab(name)}
+            >
+              {name}
+              <Badge variant="outline" className="ml-1 text-[10px]">
+                {frameworks[name].passed}/{frameworks[name].controlsMapped}
+              </Badge>
+            </Button>
+          ))}
+        </div>
+        {/* Active framework controls */}
+        {fw && (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>{fw.controlsMapped} mapped</span>
+              <span className="text-corsair-green">{fw.passed} passed</span>
+              <span className="text-corsair-crimson">{fw.failed} failed</span>
+            </div>
+            <div className="grid gap-1 sm:grid-cols-2">
+              {fw.controls.map((ctrl) => (
+                <div
+                  key={ctrl.controlId}
+                  className="flex items-center gap-2 rounded bg-corsair-deep px-2 py-1"
+                >
+                  <span className={`text-xs ${
+                    ctrl.status === "passed" ? "text-corsair-green" :
+                    ctrl.status === "failed" ? "text-corsair-crimson" :
+                    "text-muted-foreground"
+                  }`}>
+                    {ctrl.status === "passed" ? "P" : ctrl.status === "failed" ? "F" : "-"}
+                  </span>
+                  <span className="font-mono text-xs text-foreground">{ctrl.controlId}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Technical details drawer — collapsible section for audit/debug info */
+function TechnicalDrawer({ ruleTrace, calculationVersion, parleyVersion, issuerDID }: {
+  ruleTrace?: string[];
+  calculationVersion?: string;
+  parleyVersion?: string;
+  issuerDID?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <Card className="bg-corsair-surface">
+      <CardContent className="p-4">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <span className="font-mono text-xs uppercase text-muted-foreground">
+            Technical Details
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {isOpen ? "Hide" : "Show"}
+          </span>
+        </button>
+        {isOpen && (
+          <div className="mt-3 space-y-3">
+            {calculationVersion && (
+              <div>
+                <span className="block text-xs text-muted-foreground">Calculation Version</span>
+                <span className="font-mono text-xs text-foreground">{calculationVersion}</span>
+              </div>
+            )}
+            {parleyVersion && (
+              <div>
+                <span className="block text-xs text-muted-foreground">Parley Version</span>
+                <span className="font-mono text-xs text-foreground">{parleyVersion}</span>
+              </div>
+            )}
+            {issuerDID && (
+              <div>
+                <span className="block text-xs text-muted-foreground">Issuer DID</span>
+                <span className="font-mono text-xs text-corsair-cyan break-all">{issuerDID}</span>
+              </div>
+            )}
+            {ruleTrace && ruleTrace.length > 0 && (
+              <div>
+                <span className="block text-xs text-muted-foreground mb-1">Rule Trace</span>
+                <div className="rounded bg-corsair-deep p-2 font-mono text-[11px] text-muted-foreground space-y-0.5 max-h-48 overflow-y-auto">
+                  {ruleTrace.map((entry, i) => (
+                    <div key={i} className={entry.startsWith("SAFEGUARD:") ? "text-yellow-400" : ""}>
+                      {entry}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "watchPatterns": [
+      "server.ts",
+      "worker.ts",
+      "functions/**",
+      "src/**",
+      "package.json",
+      "bun.lock"
+    ],
+    "buildCommand": "bun install --frozen-lockfile"
+  },
+  "deploy": {
+    "startCommand": "bun run server.ts",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 30,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
+  }
+}

@@ -118,6 +118,17 @@ export interface MarqueVerificationResult {
     freshnessDecay: number;
     dimensionConfidence: number;
   };
+  /** Per-framework compliance results */
+  frameworks?: Record<string, {
+    controlsMapped: number;
+    passed: number;
+    failed: number;
+    controls: Array<{ controlId: string; status: string }>;
+  }>;
+  /** Rule trace for deterministic calculation audit */
+  ruleTrace?: string[];
+  /** Calculation version (e.g., "l0-l4@2026-02-09") */
+  calculationVersion?: string;
 }
 
 function base64ToBuffer(base64: string): ArrayBuffer {
@@ -469,6 +480,9 @@ function extractCPOEFields(payload: {
     evidenceTypes: evidenceTypesData,
     observationPeriod: observationPeriodData,
     riskQuantification: riskQuantificationData,
+    frameworks: cs.frameworks as MarqueVerificationResult["frameworks"],
+    ruleTrace: (cs.assurance as Record<string, unknown>)?.ruleTrace as string[] | undefined,
+    calculationVersion: (cs.assurance as Record<string, unknown>)?.calculationVersion as string | undefined,
   };
 }
 

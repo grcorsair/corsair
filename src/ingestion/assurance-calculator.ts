@@ -29,6 +29,7 @@ import type {
   AssuranceDimensions,
   EvidenceType,
   ObservationPeriod,
+  AntiGamingSafeguardResult,
 } from "../parley/vc-types";
 
 // =============================================================================
@@ -565,4 +566,159 @@ export function deriveObservationPeriod(
     cosoClassification,
     soc2Equivalent,
   };
+}
+
+// =============================================================================
+// ANTI-GAMING SAFEGUARDS (Plan 2.4.5)
+// =============================================================================
+
+/**
+ * Apply anti-gaming safeguards to a declared assurance level.
+ *
+ * Three safeguards that cap the effective level:
+ * 1. Sampling Opacity — zero/no-evidence controls → cap based on evidence coverage
+ * 2. Freshness Decay — stale evidence (>180 days) → cap at L1
+ * 3. Independence Check — self provenance → cap at L2
+ *
+ * Safeguards are cumulative: the effective level is the min of all caps.
+ */
+export function applyAntiGamingSafeguards(
+  declared: AssuranceLevel,
+  controls: IngestedControl[],
+  source: DocumentSource,
+  metadata: DocumentMetadata,
+): AntiGamingSafeguardResult {
+  let effectiveLevel: AssuranceLevel = declared;
+  const appliedSafeguards: AntiGamingSafeguardResult["appliedSafeguards"] = [];
+  const explanations: string[] = [];
+
+  // 1. Sampling Opacity: zero controls or high no-evidence rate
+  if (controls.length === 0) {
+    effectiveLevel = Math.min(effectiveLevel, 0) as AssuranceLevel;
+    appliedSafeguards.push("sampling-opacity");
+    explanations.push("No controls present — capped at L0");
+  } else {
+    const withEvidence = controls.filter(c => c.evidence && c.evidence.trim().length > 0).length;
+    const evidenceRate = withEvidence / controls.length;
+    if (evidenceRate < 0.5) {
+      effectiveLevel = Math.min(effectiveLevel, 1) as AssuranceLevel;
+      appliedSafeguards.push("sampling-opacity");
+      explanations.push(`Only ${Math.round(evidenceRate * 100)}% of controls have evidence — capped at L1`);
+    }
+  }
+
+  // 2. Freshness Decay: evidence older than 180 days
+  if (metadata.date) {
+    const freshness = assessFreshness(metadata.date);
+    if (freshness.ageDays > 180 || freshness.status === "stale") {
+      effectiveLevel = Math.min(effectiveLevel, 1) as AssuranceLevel;
+      appliedSafeguards.push("freshness-decay");
+      explanations.push(`Evidence is ${freshness.ageDays} days old — capped at L1`);
+    }
+  }
+
+  // 3. Independence Check: self provenance caps at L2
+  const provenanceType = sourceToProvenanceType(source);
+  if (provenanceType === "self" && declared > 2) {
+    effectiveLevel = Math.min(effectiveLevel, 2) as AssuranceLevel;
+    appliedSafeguards.push("independence-check");
+    explanations.push("Self-assessed provenance — capped at L2");
+  }
+
+  return { effectiveLevel, appliedSafeguards, explanations };
+}
+
+// =============================================================================
+// RULE TRACE (Plan 2.4.4)
+// =============================================================================
+
+/**
+ * Generate a machine-readable rule trace explaining how the assurance level
+ * was determined. Each entry describes a rule check and its outcome.
+ */
+export function generateRuleTrace(
+  controls: (IngestedControl & { assuranceLevel?: AssuranceLevel })[],
+  source: DocumentSource,
+  metadata: DocumentMetadata,
+): string[] {
+  const trace: string[] = [];
+
+  // Control count check
+  if (controls.length === 0) {
+    trace.push("RULE: no controls present — declared L0");
+    return trace;
+  }
+
+  trace.push(`RULE: ${controls.length} controls checked`);
+
+  // Source ceiling
+  const ceiling = getSourceCeiling(source);
+  trace.push(`RULE: source "${source}" ceiling = L${ceiling}`);
+
+  // Per-level breakdown
+  const breakdown: Record<string, number> = {};
+  for (const ctrl of controls) {
+    const lvl = ctrl.assuranceLevel ?? 0;
+    const key = String(lvl);
+    breakdown[key] = (breakdown[key] ?? 0) + 1;
+  }
+  trace.push(`RULE: breakdown = ${JSON.stringify(breakdown)}`);
+
+  // Min level (SSL model)
+  const levels = controls.map(c => c.assuranceLevel ?? 0);
+  const minLevel = Math.min(...levels);
+  trace.push(`RULE: min of in-scope controls = L${minLevel} — satisfied`);
+
+  // Freshness
+  if (metadata.date) {
+    const freshness = assessFreshness(metadata.date);
+    trace.push(`RULE: freshness checked — ${freshness.status} (${freshness.ageDays} days)`);
+  } else {
+    trace.push("RULE: freshness checked — no date provided");
+  }
+
+  return trace;
+}
+
+// =============================================================================
+// EVIDENCE TYPE DISTRIBUTION (Plan 2.5)
+// =============================================================================
+
+/**
+ * Derive the distribution of evidence types as percentages.
+ * Returns a record mapping evidence type names to their proportion (0-1).
+ *
+ * Uses the same evidence type derivation logic but produces proportional
+ * weights based on source type and control characteristics.
+ */
+export function deriveEvidenceTypeDistribution(
+  controls: IngestedControl[],
+  source: DocumentSource,
+): Record<string, number> {
+  // Get the evidence types present
+  const types = deriveEvidenceTypes(controls, source);
+
+  if (types.length === 0) {
+    return {};
+  }
+
+  // Weight by reliability rank (higher reliability = higher weight)
+  const reliabilityWeights: Record<EvidenceType, number> = {
+    "automated-observation": 6,
+    "system-generated-record": 5,
+    "reperformance": 4,
+    "documented-record": 3,
+    "interview": 2,
+    "self-attestation": 1,
+  };
+
+  const presentWeights = types.map(t => reliabilityWeights[t]);
+  const totalWeight = presentWeights.reduce((s, w) => s + w, 0);
+
+  const distribution: Record<string, number> = {};
+  for (let i = 0; i < types.length; i++) {
+    distribution[types[i]] = Math.round((presentWeights[i] / totalWeight) * 100) / 100;
+  }
+
+  return distribution;
 }
