@@ -1,22 +1,17 @@
-FROM oven/bun:1 AS base
+FROM oven/bun:1 AS deps
 WORKDIR /app
-
-# Install dependencies
-FROM base AS deps
 COPY package.json ./
 RUN bun install
 
-# Build the application
-FROM base AS builder
+FROM oven/bun:1 AS builder
+WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN bun run build
 
-# Production image
-FROM base AS runner
+FROM node:20-slim AS runner
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
-ENV PORT=3000
 WORKDIR /app
 
 COPY --from=builder /app/.next/standalone ./
