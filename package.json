@@ -10,10 +10,9 @@
     "corsair": "./corsair.ts"
   },
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "test:all": "turbo run test",
+    "build:web": "bun run --filter '@corsair/web' build",
+    "dev:web": "bun run --filter '@corsair/web' dev",
+    "lint:web": "bun run --filter '@corsair/web' lint",
     "test": "bun test",
     "test:parley": "bun test tests/parley/",
     "test:flagship": "bun test tests/flagship/",
@@ -43,8 +42,7 @@
   "author": "GRC Engineer",
   "license": "MIT",
   "devDependencies": {
-    "bun-types": "latest",
-    "turbo": "^2.8.3"
+    "bun-types": "latest"
   },
   "exports": {
     ".": "./src/ingestion/index.ts"
