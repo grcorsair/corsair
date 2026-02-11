@@ -293,7 +293,7 @@ src/
     types.ts               #   Ingestion type definitions
     index.ts               #   Barrel exports
 
-  parley/                  # Parley trust exchange protocol (23 files)
+  parley/                  # Parley trust exchange protocol (22 files)
     vc-generator.ts        #   JWT-VC generation (jose + Ed25519)
     vc-verifier.ts         #   JWT-VC verification
     vc-types.ts            #   W3C Verifiable Credential 2.0 types
@@ -316,7 +316,6 @@ src/
     process-receipt.ts     #   Process receipt types + COSE signing
     receipt-chain.ts       #   Pipeline step receipt accumulator
     receipt-verifier.ts    #   Process chain integrity verification
-    kms-key-manager.ts     #   AWS KMS-backed key manager (env-gated)
 
   flagship/                # Real-time compliance signals (6 files)
     flagship-types.ts      #   CAEP event types with pirate aliases

@@ -34,19 +34,11 @@ export interface KeyManager {
 /**
  * Factory: create the appropriate key manager based on environment.
  *
- * When KMS_KEY_ARN is set, returns a KMSKeyManager (requires @aws-sdk/client-kms).
- * Otherwise, returns a file-based MarqueKeyManager.
+ * Currently returns MarqueKeyManager (file-based) or PgKeyManager (Postgres-backed).
+ * Cloud HSM integration (Vault Transit, CloudHSM) deferred to Year 2
+ * when paid L1+ issuance requires FIPS 140-2 key custody.
  */
 export function createKeyManager(keyDir?: string): KeyManager {
-  const kmsKeyArn = Bun.env.KMS_KEY_ARN;
-  if (kmsKeyArn) {
-    // Lazy import to avoid requiring @aws-sdk/client-kms at startup
-    const { KMSKeyManager } = require("./kms-key-manager");
-    return new KMSKeyManager({
-      keyId: kmsKeyArn,
-      region: Bun.env.AWS_REGION || "us-east-1",
-    });
-  }
   return new MarqueKeyManager(keyDir);
 }
 
