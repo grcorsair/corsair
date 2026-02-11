@@ -28,7 +28,7 @@ The website is a **marketing and protocol surface**, not part of the CLI tool. K
 
 ```
 GitHub Organization: Arudjreis (or grcorsair)
-├── corsair              (public)   — CLI tool, MIT license
+├── corsair              (public)   — CLI tool, Apache-2.0 license
 └── grcorsair.com        (private)  — Website, proprietary
 ```
 
@@ -619,7 +619,7 @@ grcorsair.com/
 │  │  vs. Corsair output with signed Marque             │   │
 │  └────────────────────────────────────────────────────┘   │
 │                                                            │
-│  [Footer: GitHub | Discord | grcengineer.com | MIT]       │
+│  [Footer: GitHub | Discord | grcengineer.com | Apache-2.0] │
 └──────────────────────────────────────────────────────────┘
 ```
 

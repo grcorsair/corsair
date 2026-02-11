@@ -2,6 +2,10 @@
 
 **Certificate of Proof of Operational Effectiveness**
 
+> This specification is licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
+> You are free to implement, extend, and build upon this specification. Attribution required.
+> Copyright 2026 Corsair (grcorsair.com)
+
 ## 1. Overview
 
 A CPOE is a signed compliance attestation in W3C Verifiable Credential format (JWT-VC). It asserts that a specific set of controls was assessed at a specific assurance level, with cryptographic proof of who made the assertion and when. Anyone can verify a CPOE using standard JWT libraries and the issuer's public key, resolved via DID:web.
@@ -199,5 +203,7 @@ These are not required for verification but enable advanced trust workflows.
 ---
 
 CPOE is an open format. Implement it, extend it, build on it.
+
+This specification is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The reference implementation is licensed under [Apache 2.0](LICENSE).
 
 Specification source: [github.com/arudjreis/corsair](https://github.com/arudjreis/corsair)

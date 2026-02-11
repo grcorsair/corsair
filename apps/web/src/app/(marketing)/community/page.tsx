@@ -30,12 +30,12 @@ const links = [
   {
     name: "GitHub Repository",
     description:
-      "Star the repo, file issues, submit pull requests. The code is open source.",
+      "Star the repo, file issues, submit pull requests. Protocol and verification are Apache 2.0. Specs are CC BY 4.0.",
     href: "https://github.com/Arudjreis/corsair",
     icon: <RaidIcon size={32} />,
     cta: "View Repository",
     glowColor: "rgba(0,207,255,0.15)",
-    label: "OPEN SOURCE",
+    label: "APACHE 2.0",
     labelColor: "text-corsair-cyan",
   },
   {
@@ -126,7 +126,8 @@ export default function CommunityPage() {
               join the crew
             </h1>
             <p className="mx-auto max-w-xl text-corsair-text-dim">
-              Corsair is open source. Contribute document parsers, framework
+              Corsair is open source (Apache 2.0). The CPOE specification is openly
+              licensed (CC BY 4.0). Contribute document parsers, framework
               mappings, protocol extensions, and help build the future of
               compliance proof infrastructure.
             </p>

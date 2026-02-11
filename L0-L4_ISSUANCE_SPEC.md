@@ -1,5 +1,9 @@
 # L0-L4 CPOE Issuance Flow — Production Spec
 
+> This specification is licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
+> You are free to implement, extend, and build upon this specification. Attribution required.
+> Copyright 2026 Corsair (grcorsair.com)
+
 **Date**: February 9, 2026
 **Status**: Refined, ready to implement
 **Context**: This spec captures the full L0-L4 issuance design + week 1 deliverable for the Corsair proof infrastructure pivot.
