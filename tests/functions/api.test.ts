@@ -249,6 +249,58 @@ describe("SSF Stream API", () => {
     expect(res.status).toBe(400);
   });
 
+  // SSRF protection — endpoint_url validation
+  test("POST /ssf/streams rejects private IP in endpoint_url", async () => {
+    const req = jsonRequest("POST", "/ssf/streams", {
+      delivery: { method: "push", endpoint_url: "http://169.254.169.254/latest/meta-data/" },
+      events_requested: [FLAGSHIP_EVENTS.COLORS_CHANGED],
+      format: "jwt",
+    });
+    const res = await router(req);
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body.error).toContain("endpoint_url");
+  });
+
+  test("POST /ssf/streams rejects localhost in endpoint_url", async () => {
+    const req = jsonRequest("POST", "/ssf/streams", {
+      delivery: { method: "push", endpoint_url: "http://localhost:3000/events" },
+      events_requested: [FLAGSHIP_EVENTS.COLORS_CHANGED],
+      format: "jwt",
+    });
+    const res = await router(req);
+    expect(res.status).toBe(400);
+  });
+
+  test("POST /ssf/streams allows public endpoint_url", async () => {
+    const req = jsonRequest("POST", "/ssf/streams", {
+      delivery: { method: "push", endpoint_url: "https://webhook.site/test-uuid" },
+      events_requested: [FLAGSHIP_EVENTS.COLORS_CHANGED],
+      format: "jwt",
+    });
+    const res = await router(req);
+    expect(res.status).toBe(201);
+  });
+
+  test("PATCH /ssf/streams/:id rejects private endpoint_url", async () => {
+    // Create a valid stream first
+    const createReq = jsonRequest("POST", "/ssf/streams", {
+      delivery: { method: "push", endpoint_url: "https://example.com/hooks" },
+      events_requested: [FLAGSHIP_EVENTS.FLEET_ALERT],
+      format: "jwt",
+    });
+    const createRes = await router(createReq);
+    const created = (await createRes.json()) as Record<string, unknown>;
+    const streamId = created.streamId as string;
+
+    // Try to update with private endpoint
+    const patchReq = jsonRequest("PATCH", `/ssf/streams/${streamId}`, {
+      delivery: { endpoint_url: "http://10.0.0.1:8080/internal" },
+    });
+    const patchRes = await router(patchReq);
+    expect(patchRes.status).toBe(400);
+  });
+
   test("full CRUD lifecycle", async () => {
     // Create
     const createRes = await router(

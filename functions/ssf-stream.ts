@@ -10,6 +10,7 @@
 
 import type { SSFStreamManager } from "../src/flagship/ssf-stream";
 import type { SSFStreamConfig } from "../src/flagship/flagship-types";
+import { validatePublicUrl } from "../src/security/url-validation";
 
 export interface SSFStreamRouterDeps {
   streamManager: SSFStreamManager;
@@ -64,6 +65,14 @@ export function createSSFStreamRouter(
         );
       }
 
+      // SSRF protection: validate endpoint_url for push delivery
+      if (body.delivery.method === "push" && body.delivery.endpoint_url) {
+        const urlCheck = validatePublicUrl(body.delivery.endpoint_url);
+        if (!urlCheck.valid) {
+          return jsonError(400, `Invalid endpoint_url: ${urlCheck.error}`);
+        }
+      }
+
       const stream = streamManager.createStream(body as SSFStreamConfig);
       return jsonOk(stream, 201);
     }
@@ -88,6 +97,14 @@ export function createSSFStreamRouter(
           body = await req.json();
         } catch {
           return jsonError(400, "Invalid JSON body");
+        }
+
+        // SSRF protection: validate endpoint_url if being updated
+        if (body.delivery?.endpoint_url) {
+          const urlCheck = validatePublicUrl(body.delivery.endpoint_url);
+          if (!urlCheck.valid) {
+            return jsonError(400, `Invalid endpoint_url: ${urlCheck.error}`);
+          }
         }
 
         try {

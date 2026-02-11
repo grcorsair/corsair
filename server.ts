@@ -35,6 +35,7 @@ import { createVerifyRouter } from "./functions/verify";
 import { createDIDJsonHandler } from "./functions/did-json";
 import { createJWKSJsonHandler } from "./functions/jwks-json";
 import { createIssueRouter } from "./functions/issue";
+import { requireAuth } from "./src/middleware/auth";
 import { getDb } from "./src/db/connection";
 import { migrate } from "./src/db/migrate";
 import { PgSSFStreamManager } from "./src/flagship/pg-ssf-stream";
@@ -104,6 +105,12 @@ const streamManager = new PgSSFStreamManager(db as any);
 // SCITT registry
 const registry = new PgSCITTRegistry(db as any, signingKeyPem);
 
+// API key validation
+const configuredApiKeys = (Bun.env.CORSAIR_API_KEYS || "").split(",").filter((k: string) => k.trim());
+if (configuredApiKeys.length === 0) {
+  console.warn("  WARNING: No CORSAIR_API_KEYS set — protected endpoints will reject all requests");
+}
+
 // =============================================================================
 // ROUTERS
 // =============================================================================
@@ -111,9 +118,11 @@ const registry = new PgSCITTRegistry(db as any, signingKeyPem);
 const verifyRouter = createVerifyRouter({ keyManager });
 const didJsonHandler = createDIDJsonHandler({ keyManager, domain: DOMAIN });
 const jwksJsonHandler = createJWKSJsonHandler({ keyManager, domain: DOMAIN });
-const issueRouter = createIssueRouter({ keyManager, domain: DOMAIN });
-const ssfRouter = createSSFStreamRouter({ streamManager });
-const scittRouter = createSCITTRouter({ registry });
+
+// Protected routers (require API key)
+const issueRouter = requireAuth(createIssueRouter({ keyManager, domain: DOMAIN }));
+const ssfRouter = requireAuth(createSSFStreamRouter({ streamManager }));
+const scittRouter = requireAuth(createSCITTRouter({ registry }));
 
 // =============================================================================
 // SERVER

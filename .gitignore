@@ -55,3 +55,10 @@ missions/
 # Internal strategy documents (confidential)
 AUDIT_DISRUPTION_STRATEGY.md
 TPRM_DISRUPTION_STRATEGY.md
+
+# Batch test results (may contain real company data)
+soc2-batch-results.json
+*-batch-results.json
+
+# Local test scripts with hardcoded paths
+scripts/batch-*.ts

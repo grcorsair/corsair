@@ -9,6 +9,8 @@
  * With path:  did:web:example.com:path:to → https://example.com/path/to/did.json
  */
 
+import { isBlockedHost } from "../security/url-validation";
+
 // =============================================================================
 // DID DOCUMENT TYPES
 // =============================================================================
@@ -142,10 +144,20 @@ export async function resolveDIDDocument(
     url = `https://${parsed.domain}/.well-known/did.json`;
   }
 
+  // SSRF protection: block private/reserved hosts
+  try {
+    const urlObj = new URL(url);
+    if (isBlockedHost(urlObj.hostname)) {
+      return emptyResult(`Blocked: DID resolves to private/reserved address: ${urlObj.hostname}`);
+    }
+  } catch {
+    return emptyResult(`Invalid resolution URL: ${url}`);
+  }
+
   const doFetch = fetchFn || globalThis.fetch;
 
   try {
-    const response = await doFetch(url);
+    const response = await doFetch(url, { signal: AbortSignal.timeout(5000) });
     if (!response.ok) {
       return emptyResult(`HTTP ${(response as Response).status}: ${(response as Response).statusText}`);
     }

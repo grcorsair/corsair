@@ -226,4 +226,65 @@ describe("DID Resolver - did:web Resolution", () => {
       expect(result.didResolutionMetadata.error).toBeDefined();
     });
   });
+
+  describe("SSRF protection", () => {
+    test("blocks did:web:127.0.0.1 (loopback)", async () => {
+      const result = await resolveDIDDocument("did:web:127.0.0.1");
+      expect(result.didDocument).toBeNull();
+      expect(result.didResolutionMetadata.error).toContain("Blocked");
+    });
+
+    test("blocks did:web:169.254.169.254 (cloud metadata)", async () => {
+      const result = await resolveDIDDocument("did:web:169.254.169.254");
+      expect(result.didDocument).toBeNull();
+      expect(result.didResolutionMetadata.error).toContain("Blocked");
+    });
+
+    test("blocks did:web:10.0.0.1 (private /8)", async () => {
+      const result = await resolveDIDDocument("did:web:10.0.0.1");
+      expect(result.didDocument).toBeNull();
+      expect(result.didResolutionMetadata.error).toContain("Blocked");
+    });
+
+    test("blocks did:web:192.168.1.1 (private /16)", async () => {
+      const result = await resolveDIDDocument("did:web:192.168.1.1");
+      expect(result.didDocument).toBeNull();
+      expect(result.didResolutionMetadata.error).toContain("Blocked");
+    });
+
+    test("blocks did:web:172.16.0.1 (private /12)", async () => {
+      const result = await resolveDIDDocument("did:web:172.16.0.1");
+      expect(result.didDocument).toBeNull();
+      expect(result.didResolutionMetadata.error).toContain("Blocked");
+    });
+
+    test("blocks did:web:localhost", async () => {
+      const result = await resolveDIDDocument("did:web:localhost");
+      expect(result.didDocument).toBeNull();
+      expect(result.didResolutionMetadata.error).toContain("Blocked");
+    });
+
+    test("blocks did:web:metadata.google.internal", async () => {
+      const result = await resolveDIDDocument("did:web:metadata.google.internal");
+      expect(result.didDocument).toBeNull();
+      expect(result.didResolutionMetadata.error).toContain("Blocked");
+    });
+
+    test("allows did:web:grcorsair.com (public domain)", async () => {
+      const mockFetch = async (_url: string) => ({
+        ok: true,
+        json: async () => ({
+          "@context": ["https://www.w3.org/ns/did/v1"],
+          id: "did:web:grcorsair.com",
+          verificationMethod: [],
+          authentication: [],
+          assertionMethod: [],
+        }),
+      }) as unknown as Response;
+
+      const result = await resolveDIDDocument("did:web:grcorsair.com", mockFetch);
+      expect(result.didDocument).not.toBeNull();
+      expect(result.didResolutionMetadata.error).toBeUndefined();
+    });
+  });
 });
