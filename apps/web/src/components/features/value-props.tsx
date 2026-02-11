@@ -26,7 +26,7 @@ const props = [
     labelColor: "text-corsair-cyan",
   },
   {
-    title: "AI Governance Review",
+    title: "AI-Powered Evidence Review",
     description:
       "QUARTERMASTER evaluates evidence quality, methodology rigor, and completeness before any credential is signed. Not a checkbox — a governance gate with deterministic and LLM verification.",
     accent: "border-t-corsair-gold",
