@@ -69,20 +69,21 @@ export default function VisionPage() {
           <FadeIn delay={0.1}>
             <div className="max-w-2xl space-y-4 text-sm text-corsair-text-dim">
               <p>
-                Every quarter, tens of thousands of organizations email
-                compliance reports to each other. SOC 2 Type IIs. ISO 27001
-                certificates. Pentest summaries. PDF attachments, stored in
-                shared drives, re-requested when someone leaves or a link
-                expires.
+                Compliance evidence is everywhere — and none of it is
+                verifiable. SOC 2 reports in PDFs. Config exports in JSON.
+                Spreadsheets from auditors. Telemetry from Wiz, Prowler,
+                SecurityHub. Screenshots of dashboards. Pentest findings in
+                Word documents. Every format, every tool, every auditor —
+                producing evidence that cannot be cryptographically checked.
               </p>
               <p>
-                These documents are{" "}
+                These artifacts are{" "}
                 <span className="text-corsair-crimson">
-                  machine-unreadable
+                  siloed by format
                 </span>
                 ,{" "}
                 <span className="text-corsair-crimson">
-                  cryptographically unverifiable
+                  cryptographically unsigned
                 </span>
                 , and{" "}
                 <span className="text-corsair-crimson">
@@ -96,8 +97,10 @@ export default function VisionPage() {
                 The tools aren&apos;t the problem. Vanta, Drata, Secureframe —
                 they manage compliance within organizations. The problem is what
                 happens when compliance evidence moves{" "}
-                <em>between</em> organizations. There is no standard format. No
-                verification protocol. No way to check without trusting.
+                <em>between</em> organizations. There is no standard proof
+                format. No verification protocol. No way to check — regardless
+                of whether the evidence came from a PDF, a JSON export, or a
+                cloud security tool.
               </p>
             </div>
           </FadeIn>
@@ -175,6 +178,28 @@ export default function VisionPage() {
                   </span>
                 </div>
               </div>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.3}>
+            <div className="mt-4 rounded-xl border border-corsair-gold/20 bg-[#0A0A0A] p-6">
+              <p className="mb-4 font-pixel text-[8px] tracking-widest text-corsair-gold/60">
+                EVIDENCE AGNOSTIC — ANY INPUT, SAME PROOF
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {evidenceSources.map((source) => (
+                  <div key={source.label} className="flex items-center gap-3 font-mono text-xs">
+                    <span className="text-corsair-gold">&rarr;</span>
+                    <span className="text-corsair-text-dim">{source.label}</span>
+                    <span className="text-corsair-text">{source.example}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 text-xs text-corsair-gold">
+                All roads lead to the same CPOE. Same Ed25519 signature. Same
+                verification flow. The evidence source determines the assurance
+                level — not the format.
+              </p>
             </div>
           </FadeIn>
         </div>
@@ -275,16 +300,23 @@ export default function VisionPage() {
                 >
                   W3C Verifiable Credential
                 </a>{" "}
-                signed with Ed25519. It wraps compliance evidence — controls
-                tested, controls passed, assurance level, issuer identity — in a
-                JWT that anyone can verify.
+                signed with Ed25519. It doesn&apos;t care where the evidence
+                came from — a SOC 2 PDF, a Wiz JSON export, an auditor&apos;s
+                spreadsheet, a Prowler scan, or an agent&apos;s tool-call
+                trace. The CPOE wraps the{" "}
+                <span className="text-corsair-gold">
+                  assessment result
+                </span>{" "}
+                — controls tested, controls passed, assurance level, issuer
+                identity — in a JWT that anyone can verify.
               </p>
               <p>
                 The name is intentional. Pieces of Eight — the original CPOE —
                 were universally verifiable. Cut them, weigh them, bite them.
                 Anyone could check. No authority needed. A CPOE works the same
                 way: decode, resolve, extract, verify. Four steps with any JWT
-                library on Earth.
+                library on Earth. The evidence type changes. The proof format
+                does not.
               </p>
             </div>
           </FadeIn>
@@ -423,31 +455,38 @@ export default function VisionPage() {
           <FadeIn delay={0.1}>
             <div className="max-w-2xl space-y-4 text-sm text-corsair-text-dim">
               <p>
-                Today, a human reads a SOC 2 report and decides whether to trust
-                a vendor. Tomorrow, a procurement agent will need to make the
-                same decision — programmatically, at scale, in milliseconds.
+                The evidence sources are expanding, not shrinking. Today:
+                auditor PDFs and config exports. Tomorrow: real-time telemetry
+                from Wiz, CrowdStrike, and Datadog. Next: agentic tool-call
+                traces from AI systems operating autonomously. Each new source
+                is higher-fidelity evidence — and all of it needs a proof
+                format.
               </p>
               <p>
-                That agent cannot read a PDF. It cannot evaluate trust on a
-                phone call. It needs a{" "}
+                A procurement agent cannot read a PDF. It cannot evaluate trust
+                on a phone call. It needs a{" "}
                 <span className="text-corsair-turquoise">
                   machine-readable, cryptographically signed proof
                 </span>{" "}
-                that it can verify without human intervention. It needs a CPOE.
+                that it can verify without human intervention. It needs a CPOE —
+                and the assurance ladder tells it exactly how much to trust that
+                proof, whether the evidence came from a document review or a
+                live agent observation.
               </p>
               <p>
                 This is why the format matters more than the tool. Intelligence
-                commoditizes — anyone with an LLM can analyze a SOC 2 report.
-                Infrastructure compounds — signing keys, transparency logs,
-                verification networks, signal history. The protocol that carries
-                compliance trust between organizations and between agents is the
-                layer that endures.
+                commoditizes — anyone with an LLM can analyze a compliance
+                report. Infrastructure compounds — signing keys, transparency
+                logs, verification networks, signal history. The protocol that
+                carries compliance trust between organizations and between
+                agents is the layer that endures.
               </p>
               <p>
-                The same CPOE format that a human verifies on a web page today
-                is the same format an agent verifies via API tomorrow. Same
-                Ed25519 signature. Same DID resolution. Same SCITT log. Same
-                FLAGSHIP signals. The consumer changes. The proof does not.
+                The same CPOE format that wraps a SOC 2 review today wraps
+                Wiz telemetry tomorrow and agent-witnessed control tests next
+                year. Same Ed25519 signature. Same DID resolution. Same SCITT
+                log. Same FLAGSHIP signals. Same assurance ladder. The evidence
+                evolves. The proof does not.
               </p>
             </div>
           </FadeIn>
@@ -505,6 +544,15 @@ export default function VisionPage() {
 }
 
 /* ─── data ─── */
+
+const evidenceSources = [
+  { label: "Audit reports", example: "SOC 2, ISO 27001, pentest PDFs" },
+  { label: "Tool exports", example: "Prowler, SecurityHub, Wiz JSON" },
+  { label: "Auditor artifacts", example: "XLSX workpapers, evidence packs" },
+  { label: "Config scans", example: "Terraform state, CloudFormation" },
+  { label: "Telemetry", example: "CrowdStrike, Datadog, SIEM feeds" },
+  { label: "Agent traces", example: "MCP tool calls, agentic workflows" },
+];
 
 const assuranceLevels = [
   {
