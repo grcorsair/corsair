@@ -38,6 +38,7 @@
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Geist Mono", ui-monospace, monospace;
   --font-pixel: "Press Start 2P", monospace;
+  --font-pixel-display: "Pixelify Sans", "Press Start 2P", monospace;
 }
 
 /* ── Base styles ───────────────────────────────────────── */

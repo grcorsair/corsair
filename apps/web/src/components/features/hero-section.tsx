@@ -16,7 +16,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: "easeOut" }}
-          className="font-display text-[15vw] font-bold leading-[0.9] tracking-tighter text-corsair-text sm:text-[13vw] lg:text-[10vw]"
+          className="font-pixel-display text-[15vw] font-bold leading-[0.9] tracking-tighter text-corsair-text sm:text-[13vw] lg:text-[10vw]"
         >
           corsair
         </motion.h1>
