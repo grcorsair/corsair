@@ -16,6 +16,7 @@ import { MenuIcon } from "lucide-react";
 const navLinks = [
   { href: "/demo", label: "Demo" },
   { href: "/anatomy", label: "How It Works" },
+  { href: "/protocol", label: "Protocol" },
   { href: "/docs", label: "Docs" },
   { href: "/marque", label: "Verify CPOE" },
   { href: "/community", label: "Community" },

@@ -166,8 +166,8 @@ export function MarqueAssembly() {
             className="border-corsair-gold/30 font-display font-semibold text-corsair-text-dim hover:border-corsair-gold hover:text-corsair-gold"
             asChild
           >
-            <Link href="/docs">
-              Read the Protocol Spec
+            <Link href="/protocol">
+              Explore the Protocol
             </Link>
           </Button>
         </div>
