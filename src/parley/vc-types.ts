@@ -239,6 +239,13 @@ export interface CPOEAssurance {
     acceptedBy?: string;
   }>;
 
+  /** Controls tolerated under the 5% rule (below declared level but within tolerance) */
+  toleratedControls?: Array<{
+    controlId: string;
+    level: AssuranceLevel;
+    reason: string;
+  }>;
+
   /** Deterministic calculation version (e.g., "l0-l4@2026-02-09") */
   calculationVersion?: string;
 

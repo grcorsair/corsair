@@ -4,7 +4,7 @@ import { MarqueVerifier } from "@/components/features/marque-verifier";
 export const metadata: Metadata = {
   title: "Verify CPOE",
   description:
-    "Verify any CPOE (Certificate of Proof of Operational Effectiveness). Ed25519-signed W3C Verifiable Credentials verified entirely in your browser. No data leaves your machine.",
+    "Verify any CPOE (Certificate of Proof of Operational Effectiveness). Ed25519 signature verified via DID:web resolution. No account needed.",
 };
 
 export default function MarquePage() {
@@ -20,9 +20,9 @@ export default function MarquePage() {
             Verify any Certificate of Proof of Operational Effectiveness. Ed25519-signed
             W3C Verifiable Credentials.{" "}
             <span className="font-semibold text-corsair-cyan">
-              Runs entirely in your browser
+              Signature verified via DID:web
             </span>
-            . No data leaves your machine.
+            . No account needed.
           </p>
         </div>
 
@@ -96,8 +96,9 @@ export default function MarquePage() {
               </li>
               <li className="flex gap-3">
                 <span className="font-mono text-corsair-cyan">3.</span>
-                Anyone pastes the CPOE into this verifier. The Ed25519
-                signature is verified entirely client-side via Web Crypto API.
+                Anyone pastes the CPOE into this verifier. The issuer&apos;s
+                DID:web document is resolved to fetch their public key, and the
+                Ed25519 signature is verified via the Corsair API.
               </li>
               <li className="flex gap-3">
                 <span className="font-mono text-corsair-cyan">4.</span>

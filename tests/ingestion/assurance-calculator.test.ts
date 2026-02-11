@@ -171,12 +171,76 @@ describe("Assurance Calculator", () => {
       expect(result.assurance.breakdown).toEqual({ "0": 1, "1": 2 });
     });
 
-    test("declared level = min of all in-scope controls (SSL model)", () => {
+    test("declared level = min of all in-scope controls when > 5% are below (strict SSL model)", () => {
+      // 1/3 controls = 33% at L0 → exceeds 5% tolerance → declared L0
       const controls: (IngestedControl & { assuranceLevel: AssuranceLevel })[] = [
         { ...baseControl, evidence: "Tested", assuranceLevel: 1 },
         { ...baseControl, id: "CC6.2", evidence: "Tested", assuranceLevel: 1 },
         { ...baseControl, id: "CC7.1", status: "ineffective", assuranceLevel: 0 },
       ];
+      const result = calculateDocumentRollup(controls, "soc2", soc2Metadata);
+      expect(result.assurance.declared).toBe(0);
+    });
+
+    test("5% tolerance: 1/21 L0 controls (4.76%) → declared L1", () => {
+      // 20 L1 controls + 1 L0 control = 4.76% below → within tolerance → L1
+      const controls: (IngestedControl & { assuranceLevel: AssuranceLevel })[] = [];
+      for (let i = 0; i < 20; i++) {
+        controls.push({ ...baseControl, id: `CC${i}`, evidence: "Tested", assuranceLevel: 1 });
+      }
+      controls.push({ ...baseControl, id: "CC20", status: "not-tested", assuranceLevel: 0 });
+
+      const result = calculateDocumentRollup(controls, "soc2", soc2Metadata);
+      expect(result.assurance.declared).toBe(1);
+    });
+
+    test("5% tolerance: exactly 5% L0 controls → declared L1", () => {
+      // 19 L1 + 1 L0 = 5.0% → exactly at threshold → L1
+      const controls: (IngestedControl & { assuranceLevel: AssuranceLevel })[] = [];
+      for (let i = 0; i < 19; i++) {
+        controls.push({ ...baseControl, id: `CC${i}`, evidence: "Tested", assuranceLevel: 1 });
+      }
+      controls.push({ ...baseControl, id: "CC19", status: "not-tested", assuranceLevel: 0 });
+
+      const result = calculateDocumentRollup(controls, "soc2", soc2Metadata);
+      expect(result.assurance.declared).toBe(1);
+    });
+
+    test("5% tolerance: 5.1%+ L0 controls → declared L0 (strict)", () => {
+      // 18 L1 + 1 L0 = 5.26% → exceeds tolerance → L0
+      const controls: (IngestedControl & { assuranceLevel: AssuranceLevel })[] = [];
+      for (let i = 0; i < 18; i++) {
+        controls.push({ ...baseControl, id: `CC${i}`, evidence: "Tested", assuranceLevel: 1 });
+      }
+      controls.push({ ...baseControl, id: "CC18", status: "not-tested", assuranceLevel: 0 });
+
+      const result = calculateDocumentRollup(controls, "soc2", soc2Metadata);
+      expect(result.assurance.declared).toBe(0);
+    });
+
+    test("5% tolerance adds rule trace explaining tolerated controls", () => {
+      const controls: (IngestedControl & { assuranceLevel: AssuranceLevel })[] = [];
+      for (let i = 0; i < 20; i++) {
+        controls.push({ ...baseControl, id: `CC${i}`, evidence: "Tested", assuranceLevel: 1 });
+      }
+      controls.push({ ...baseControl, id: "CC20", status: "not-tested", assuranceLevel: 0 });
+
+      const result = calculateDocumentRollup(controls, "soc2", soc2Metadata);
+      expect(result.assurance.declared).toBe(1);
+      expect(result.assurance.toleratedControls).toBeDefined();
+      expect(result.assurance.toleratedControls!.length).toBe(1);
+      expect(result.assurance.toleratedControls![0].controlId).toBe("CC20");
+    });
+
+    test("5% tolerance does not apply with < 10 controls (small sample)", () => {
+      // 9 L1 + 0 L0 = fine, but test that with tiny set tolerance doesn't over-apply
+      // 8 L1 + 1 L0 = 11.1% → L0 regardless
+      const controls: (IngestedControl & { assuranceLevel: AssuranceLevel })[] = [];
+      for (let i = 0; i < 8; i++) {
+        controls.push({ ...baseControl, id: `CC${i}`, evidence: "Tested", assuranceLevel: 1 });
+      }
+      controls.push({ ...baseControl, id: "CC8", status: "not-tested", assuranceLevel: 0 });
+
       const result = calculateDocumentRollup(controls, "soc2", soc2Metadata);
       expect(result.assurance.declared).toBe(0);
     });

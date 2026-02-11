@@ -1,16 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   verifyMarqueInBrowser,
-  SAMPLE_MARQUE,
+  decodeJWTPayload,
+  mergeAPIResultWithDecoded,
+  SAMPLE_CPOE_JWT,
   SAMPLE_NOTE,
   type MarqueVerificationResult,
 } from "@/lib/marque-web-verifier";
+import { verifyViaAPI } from "@/lib/corsair-api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+
+type VerifyState = "idle" | "decoded" | "verifying" | "verified" | "failed" | "api-error";
 
 /** Generate a plain-language summary from verification result */
 function generatePlainLanguageSummary(result: MarqueVerificationResult): string {
@@ -20,31 +25,26 @@ function generatePlainLanguageSummary(result: MarqueVerificationResult): string 
 
   const parts: string[] = [];
 
-  // Who issued it and when
   const issuer = result.vcMetadata?.signedBy ?? result.provenance?.sourceIdentity ?? "Unknown";
   const issued = result.vcMetadata?.generatedAt
     ? new Date(result.vcMetadata.generatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
     : "an unknown date";
   parts.push(`This CPOE was issued by ${issuer} on ${issued}.`);
 
-  // What it covers
   if (result.scope) {
     parts.push(`It covers ${result.scope}.`);
   }
 
-  // Controls and pass rate
-  if (result.summary) {
+  if (result.summary && result.summary.controlsTested > 0) {
     parts.push(
       `${result.summary.controlsTested} controls were tested with a ${result.summary.overallScore}% pass rate.`
     );
   }
 
-  // Assurance level
   if (result.assuranceName !== undefined) {
     parts.push(`Assurance level: L${result.assuranceLevel} (${result.assuranceName}).`);
   }
 
-  // Provenance
   if (result.provenance) {
     const sourceLabel = result.provenance.source === "auditor"
       ? "auditor-produced"
@@ -78,43 +78,157 @@ export function MarqueVerifier() {
   const [marqueJson, setMarqueJson] = useState("");
   const [publicKey, setPublicKey] = useState("");
   const [result, setResult] = useState<MarqueVerificationResult | null>(null);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [isSample, setIsSample] = useState(false);
+  const [verifyState, setVerifyState] = useState<VerifyState>("idle");
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const handleVerify = async () => {
-    setIsVerifying(true);
+  // Instant decode on paste — shows metadata in neutral styling before verification
+  const handleInputChange = useCallback((value: string) => {
+    setMarqueJson(value);
     setResult(null);
-    try {
-      const res = await verifyMarqueInBrowser(marqueJson, publicKey);
-      setResult(res);
-    } catch {
-      setResult({ valid: false, reason: "Unexpected error during verification" });
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      setVerifyState("idle");
+      return;
     }
-    setIsVerifying(false);
+
+    // Try to decode as JWT
+    const payload = decodeJWTPayload(trimmed);
+    if (payload) {
+      // Extract fields for preview
+      const vc = payload.vc as Record<string, unknown> | undefined;
+      const cs = vc?.credentialSubject as Record<string, unknown> | undefined;
+      const assuranceData = cs?.assurance as { declared?: number } | undefined;
+      const NAMES: Record<number, string> = { 0: "Documented", 1: "Configured", 2: "Demonstrated", 3: "Observed", 4: "Attested" };
+
+      setResult({
+        valid: false, // Not yet verified
+        reason: "Decoded — click Verify to check signature via DID:web",
+        format: "jwt",
+        issuerTier: undefined,
+        assuranceLevel: assuranceData?.declared,
+        assuranceName: assuranceData?.declared !== undefined ? NAMES[assuranceData.declared] : undefined,
+        scope: typeof cs?.scope === "string" ? cs.scope : undefined,
+        provenance: cs?.provenance as MarqueVerificationResult["provenance"],
+        summary: cs?.summary as MarqueVerificationResult["summary"],
+        vcMetadata: {
+          context: (vc?.["@context"] as string[]) ?? [],
+          credentialType: (vc?.type as string[]) ?? [],
+          issuerDID: (payload.iss as string) ?? "",
+          parleyVersion: (payload.parley as string) ?? "",
+          signedBy: typeof vc?.issuer === "string" ? vc.issuer : (vc?.issuer as { name?: string })?.name ?? (payload.iss as string) ?? "",
+          generatedAt: vc?.validFrom as string | undefined,
+          expiresAt: vc?.validUntil as string | undefined,
+        },
+      });
+      setVerifyState("decoded");
+    } else {
+      setVerifyState("idle");
+    }
+  }, []);
+
+  // API verification
+  const handleVerify = async () => {
+    if (!marqueJson.trim()) return;
+    setVerifyState("verifying");
+
+    const trimmed = marqueJson.trim();
+
+    // Primary: API verification for JWT-VC
+    const parts = trimmed.split(".");
+    if (parts.length === 3 && trimmed.startsWith("eyJ")) {
+      const apiResult = await verifyViaAPI(trimmed);
+
+      if (apiResult.ok) {
+        const decoded = decodeJWTPayload(trimmed);
+        const merged = mergeAPIResultWithDecoded(apiResult.data, decoded);
+        setResult(merged);
+        setVerifyState(merged.valid ? "verified" : "failed");
+        return;
+      }
+
+      // API failed — fall back to decoded-only display with warning
+      const decoded = decodeJWTPayload(trimmed);
+      if (decoded) {
+        const vc = decoded.vc as Record<string, unknown> | undefined;
+        const cs = vc?.credentialSubject as Record<string, unknown> | undefined;
+        const assuranceData = cs?.assurance as { declared?: number } | undefined;
+        const NAMES: Record<number, string> = { 0: "Documented", 1: "Configured", 2: "Demonstrated", 3: "Observed", 4: "Attested" };
+        setResult({
+          valid: false,
+          reason: `API unavailable: ${apiResult.error.message}. Decoded payload shown below — signature not verified.`,
+          format: "jwt",
+          assuranceLevel: assuranceData?.declared,
+          assuranceName: assuranceData?.declared !== undefined ? NAMES[assuranceData.declared] : undefined,
+          scope: typeof cs?.scope === "string" ? cs.scope : undefined,
+          provenance: cs?.provenance as MarqueVerificationResult["provenance"],
+          summary: cs?.summary as MarqueVerificationResult["summary"],
+        });
+        setVerifyState("api-error");
+        return;
+      }
+    }
+
+    // Fallback: client-side verification (for JSON format or when user provides PEM key)
+    if (publicKey && publicKey !== "(demo mode — no key needed)") {
+      try {
+        const res = await verifyMarqueInBrowser(trimmed, publicKey);
+        setResult(res);
+        setVerifyState(res.valid ? "verified" : "failed");
+      } catch {
+        setResult({ valid: false, reason: "Client-side verification failed" });
+        setVerifyState("failed");
+      }
+    } else {
+      setResult({ valid: false, reason: "No public key provided for client-side verification" });
+      setVerifyState("failed");
+    }
   };
 
-  const handleLoadSample = () => {
-    setMarqueJson(SAMPLE_MARQUE);
-    setPublicKey("(demo mode — no key needed)");
-    setIsSample(true);
-    const parsed = JSON.parse(SAMPLE_MARQUE);
-    const marque = parsed.marque;
-    setResult({
-      valid: true,
-      reason: SAMPLE_NOTE,
-      format: "json",
-      issuerTier: "self-signed",
-      assuranceLevel: marque.assurance?.declared ?? 0,
-      assuranceName: marque.assurance?.declared !== undefined
-        ? ["Documented", "Configured", "Demonstrated", "Observed", "Attested"][marque.assurance.declared]
-        : undefined,
-      assurance: marque.assurance,
-      provenance: marque.provenance,
-      scope: marque.scope,
-      summary: marque.summary,
-      document: marque,
-    });
+  // Load sample and auto-verify
+  const handleLoadSample = async () => {
+    setMarqueJson(SAMPLE_CPOE_JWT);
+    setShowAdvanced(false);
+    setVerifyState("verifying");
+
+    // Verify via API
+    const apiResult = await verifyViaAPI(SAMPLE_CPOE_JWT);
+    const decoded = decodeJWTPayload(SAMPLE_CPOE_JWT);
+
+    if (apiResult.ok) {
+      const merged = mergeAPIResultWithDecoded(apiResult.data, decoded);
+      setResult(merged);
+      setVerifyState(merged.valid ? "verified" : "failed");
+    } else {
+      // API unavailable — show decoded with note
+      if (decoded) {
+        const vc = decoded.vc as Record<string, unknown> | undefined;
+        const cs = vc?.credentialSubject as Record<string, unknown> | undefined;
+        const assurance = cs?.assurance as { declared?: number } | undefined;
+        const NAMES: Record<number, string> = { 0: "Documented", 1: "Configured", 2: "Demonstrated", 3: "Observed", 4: "Attested" };
+        setResult({
+          valid: false,
+          reason: `${SAMPLE_NOTE} (API unavailable: ${apiResult.error.message})`,
+          format: "jwt",
+          assuranceLevel: assurance?.declared,
+          assuranceName: assurance?.declared !== undefined ? NAMES[assurance.declared] : undefined,
+          scope: typeof cs?.scope === "string" ? cs.scope : undefined,
+          provenance: cs?.provenance as MarqueVerificationResult["provenance"],
+          summary: cs?.summary as MarqueVerificationResult["summary"],
+        });
+        setVerifyState("api-error");
+      }
+    }
   };
+
+  // Border color based on state
+  const resultBorder = verifyState === "verified"
+    ? "border-corsair-green/30 bg-corsair-green/5"
+    : verifyState === "failed"
+      ? "border-corsair-crimson/30 bg-corsair-crimson/5"
+      : verifyState === "api-error"
+        ? "border-yellow-500/30 bg-yellow-500/5"
+        : "border-corsair-border/30 bg-corsair-surface"; // decoded state
 
   return (
     <div className="space-y-6">
@@ -122,49 +236,30 @@ export function MarqueVerifier() {
       <div className="space-y-4">
         <div>
           <label className="mb-2 block font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            CPOE Document (JWT-VC or JSON)
+            CPOE (JWT-VC)
           </label>
           <textarea
             value={marqueJson}
-            onChange={(e) => {
-              setMarqueJson(e.target.value);
-              setIsSample(false);
-              setResult(null);
-            }}
-            placeholder='Paste your CPOE (JWT-VC token or JSON document) here...'
+            onChange={(e) => handleInputChange(e.target.value)}
+            placeholder="Paste a JWT-VC token here (starts with eyJ...)..."
             className="h-48 w-full resize-none rounded-lg border border-input bg-card p-4 font-mono text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/30"
-          />
-        </div>
-
-        <div>
-          <label className="mb-2 block font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Public Key (PEM)
-          </label>
-          <textarea
-            value={publicKey}
-            onChange={(e) => {
-              setPublicKey(e.target.value);
-              setIsSample(false);
-              setResult(null);
-            }}
-            placeholder="-----BEGIN PUBLIC KEY-----&#10;MCowBQYDK2VwAyEA...&#10;-----END PUBLIC KEY-----"
-            className="h-28 w-full resize-none rounded-lg border border-input bg-card p-4 font-mono text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/30"
           />
         </div>
 
         <div className="flex gap-3">
           <Button
             onClick={handleVerify}
-            disabled={!marqueJson || !publicKey || isVerifying || isSample}
+            disabled={!marqueJson.trim() || verifyState === "verifying"}
             size="lg"
             className="font-display font-semibold"
           >
-            {isVerifying ? "Verifying..." : "Verify CPOE"}
+            {verifyState === "verifying" ? "Verifying..." : "Verify CPOE"}
           </Button>
           <Button
             variant="outline"
             size="lg"
             onClick={handleLoadSample}
+            disabled={verifyState === "verifying"}
             className="font-display font-semibold hover:border-corsair-gold hover:text-corsair-gold"
           >
             Try with Sample
@@ -174,42 +269,48 @@ export function MarqueVerifier() {
 
       {/* Result section */}
       {result && (
-        <Card
-          className={
-            result.valid
-              ? "border-corsair-green/30 bg-corsair-green/5"
-              : "border-corsair-crimson/30 bg-corsair-crimson/5"
-          }
-        >
+        <Card className={resultBorder}>
           <CardHeader>
             <div className="flex items-center gap-3">
               <div
                 className={`flex h-8 w-8 items-center justify-center rounded-full text-lg ${
-                  result.valid
+                  verifyState === "verified"
                     ? "bg-corsair-green/20 text-corsair-green"
-                    : "bg-corsair-crimson/20 text-corsair-crimson"
+                    : verifyState === "failed"
+                      ? "bg-corsair-crimson/20 text-corsair-crimson"
+                      : verifyState === "api-error"
+                        ? "bg-yellow-500/20 text-yellow-400"
+                        : "bg-corsair-cyan/20 text-corsair-cyan"
                 }`}
               >
-                {result.valid ? "✓" : "✗"}
+                {verifyState === "verified" ? "\u2713" : verifyState === "decoded" ? "\u2139" : verifyState === "api-error" ? "!" : "\u2717"}
               </div>
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span
                     className={`font-display text-lg font-bold ${
-                      result.valid ? "text-corsair-green" : "text-corsair-crimson"
+                      verifyState === "verified"
+                        ? "text-corsair-green"
+                        : verifyState === "failed"
+                          ? "text-corsair-crimson"
+                          : verifyState === "api-error"
+                            ? "text-yellow-400"
+                            : "text-corsair-cyan"
                     }`}
                   >
-                    {result.valid ? "SIGNATURE VALID" : "VERIFICATION FAILED"}
+                    {verifyState === "verified"
+                      ? "SIGNATURE VALID"
+                      : verifyState === "decoded"
+                        ? "DECODED"
+                        : verifyState === "api-error"
+                          ? "API UNAVAILABLE"
+                          : "VERIFICATION FAILED"}
                   </span>
                   {result.format && (
-                    <Badge
-                      variant="outline"
-                      className="border-corsair-cyan/40 text-corsair-cyan"
-                    >
+                    <Badge variant="outline" className="border-corsair-cyan/40 text-corsair-cyan">
                       {result.format === "jwt" ? "JWT-VC" : "JSON"}
                     </Badge>
                   )}
-                  {/* Assurance level badge */}
                   {result.assuranceLevel !== undefined && (
                     <Badge
                       variant="outline"
@@ -218,7 +319,6 @@ export function MarqueVerifier() {
                       L{result.assuranceLevel} {result.assuranceName}
                     </Badge>
                   )}
-                  {/* Issuer tier badge */}
                   {result.issuerTier && (
                     <Badge
                       variant="outline"
@@ -236,7 +336,7 @@ export function MarqueVerifier() {
           </CardHeader>
 
           {/* Plain-language summary */}
-          {result.valid && (
+          {verifyState === "verified" && (
             <CardContent className="pt-0 pb-0">
               <div className="rounded-lg bg-corsair-surface p-4 text-sm text-muted-foreground leading-relaxed">
                 {generatePlainLanguageSummary(result)}
@@ -245,7 +345,7 @@ export function MarqueVerifier() {
           )}
 
           {/* Details section */}
-          {(result.summary || result.assurance || result.provenance || result.document) && (
+          {(result.summary || result.assurance || result.provenance || result.document || result.vcMetadata) && (
             <CardContent className="space-y-6">
               {/* VC Metadata */}
               {result.vcMetadata && (
@@ -448,8 +548,35 @@ export function MarqueVerifier() {
                 </Card>
               )}
 
+              {/* Provenance Quality Score */}
+              {result.provenanceQuality !== undefined && (
+                <Card className="bg-corsair-surface">
+                  <CardContent className="p-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="font-mono text-xs uppercase text-muted-foreground">
+                        Provenance Quality
+                      </span>
+                      <span className="font-display text-lg font-bold text-foreground">
+                        {result.provenanceQuality}<span className="text-sm text-muted-foreground">/100</span>
+                      </span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-corsair-deep">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          result.provenanceQuality >= 75 ? "bg-corsair-green" :
+                          result.provenanceQuality >= 50 ? "bg-corsair-cyan" :
+                          result.provenanceQuality >= 25 ? "bg-yellow-400" :
+                          "bg-corsair-crimson"
+                        }`}
+                        style={{ width: `${result.provenanceQuality}%` }}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Score */}
-              {result.summary && (
+              {result.summary && result.summary.controlsTested > 0 && (
                 <Card className="bg-corsair-surface">
                   <CardContent className="p-4">
                     <div className="mb-3 flex items-center justify-between">
@@ -464,9 +591,7 @@ export function MarqueVerifier() {
                     <div className="h-2 overflow-hidden rounded-full bg-corsair-deep">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-corsair-cyan to-corsair-green transition-all"
-                        style={{
-                          width: `${result.summary.overallScore}%`,
-                        }}
+                        style={{ width: `${result.summary.overallScore}%` }}
                       />
                     </div>
                     <div className="mt-2 flex justify-between text-xs text-muted-foreground">
@@ -476,40 +601,6 @@ export function MarqueVerifier() {
                       </span>
                       <span>
                         {result.summary.controlsFailed} failed
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Legacy score display (fallback for old JSON format with no top-level summary) */}
-              {!result.summary && result.document?.summary && (
-                <Card className="bg-corsair-surface">
-                  <CardContent className="p-4">
-                    <div className="mb-3 flex items-center justify-between">
-                      <span className="font-mono text-xs uppercase text-muted-foreground">
-                        Overall Score
-                      </span>
-                      <span className="font-display text-2xl font-bold text-foreground">
-                        {result.document.summary.overallScore}
-                        <span className="text-sm text-muted-foreground">/100</span>
-                      </span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-corsair-deep">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-corsair-cyan to-corsair-green transition-all"
-                        style={{
-                          width: `${result.document.summary.overallScore}%`,
-                        }}
-                      />
-                    </div>
-                    <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-                      <span>
-                        {result.document.summary.controlsPassed}/
-                        {result.document.summary.controlsTested} controls passed
-                      </span>
-                      <span>
-                        {result.document.summary.controlsFailed} failed
                       </span>
                     </div>
                   </CardContent>
@@ -526,22 +617,12 @@ export function MarqueVerifier() {
                     {(["capability", "coverage", "reliability", "methodology", "freshness", "independence", "consistency"] as const).map((dim) => {
                       const value = result.dimensions![dim];
                       const labels: Record<string, string> = {
-                        capability: "Capability",
-                        coverage: "Coverage",
-                        reliability: "Reliability",
-                        methodology: "Methodology",
-                        freshness: "Freshness",
-                        independence: "Independence",
-                        consistency: "Consistency",
+                        capability: "Capability", coverage: "Coverage", reliability: "Reliability",
+                        methodology: "Methodology", freshness: "Freshness", independence: "Independence", consistency: "Consistency",
                       };
                       const sources: Record<string, string> = {
-                        capability: "FAIR-CAM",
-                        coverage: "FAIR-CAM + COBIT",
-                        reliability: "COSO",
-                        methodology: "GRADE + NIST 53A",
-                        freshness: "ISO 27004",
-                        independence: "Three Lines Model",
-                        consistency: "GRADE + IEC 62443",
+                        capability: "FAIR-CAM", coverage: "FAIR-CAM + COBIT", reliability: "COSO",
+                        methodology: "GRADE + NIST 53A", freshness: "ISO 27004", independence: "Three Lines Model", consistency: "GRADE + IEC 62443",
                       };
                       return (
                         <div key={dim} className="space-y-1">
@@ -567,6 +648,108 @@ export function MarqueVerifier() {
                 </Card>
               )}
 
+              {/* Assessment Depth (NIST 800-53A) */}
+              {result.assessmentDepth && (
+                <Card className="bg-corsair-surface">
+                  <CardContent className="p-4">
+                    <span className="mb-2 block font-mono text-xs uppercase text-muted-foreground">
+                      Assessment Depth (NIST 800-53A)
+                    </span>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div>
+                        <span className="block text-xs text-muted-foreground">Methods</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {result.assessmentDepth.methods.map((m) => (
+                            <Badge key={m} variant="outline" className="text-xs">
+                              {m}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="block text-xs text-muted-foreground">Depth</span>
+                        <span className="text-sm font-semibold text-foreground capitalize">{result.assessmentDepth.depth}</span>
+                      </div>
+                      <div>
+                        <span className="block text-xs text-muted-foreground">Rigor Score</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-foreground">{result.assessmentDepth.rigorScore}/100</span>
+                          <div className="flex-1 h-1.5 overflow-hidden rounded-full bg-corsair-deep">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                result.assessmentDepth.rigorScore >= 60 ? "bg-corsair-green" :
+                                result.assessmentDepth.rigorScore >= 30 ? "bg-yellow-400" :
+                                "bg-corsair-crimson"
+                              }`}
+                              style={{ width: `${result.assessmentDepth.rigorScore}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* DORA Metrics */}
+              {result.doraMetrics && (
+                <Card className="bg-corsair-surface">
+                  <CardContent className="space-y-3 p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs uppercase text-muted-foreground">
+                        DORA Evidence Quality
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={
+                          result.doraMetrics.band === "elite" ? "border-purple-400/40 text-purple-400" :
+                          result.doraMetrics.band === "high" ? "border-corsair-green/40 text-corsair-green" :
+                          result.doraMetrics.band === "medium" ? "border-corsair-cyan/40 text-corsair-cyan" :
+                          "border-yellow-500/40 text-yellow-400"
+                        }
+                      >
+                        {result.doraMetrics.band}
+                      </Badge>
+                    </div>
+                    {(["freshness", "specificity", "independence", "reproducibility"] as const).map((metric) => {
+                      const value = result.doraMetrics![metric];
+                      const labels: Record<string, string> = {
+                        freshness: "Freshness", specificity: "Specificity",
+                        independence: "Independence", reproducibility: "Reproducibility",
+                      };
+                      return (
+                        <div key={metric} className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-foreground">{labels[metric]}</span>
+                            <span className="text-xs text-muted-foreground">{value}/100</span>
+                          </div>
+                          <div className="h-1.5 overflow-hidden rounded-full bg-corsair-deep">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                value >= 75 ? "bg-corsair-green" :
+                                value >= 50 ? "bg-corsair-cyan" :
+                                value >= 25 ? "bg-yellow-400" :
+                                "bg-corsair-crimson"
+                              }`}
+                              style={{ width: `${value}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {/* Pairing flags */}
+                    {result.doraMetrics.pairingFlags && result.doraMetrics.pairingFlags.length > 0 && (
+                      <div className="space-y-1 pt-1">
+                        <span className="text-[10px] uppercase text-muted-foreground">Pairing Flags</span>
+                        {result.doraMetrics.pairingFlags.map((flag, i) => (
+                          <div key={i} className="text-xs text-yellow-400">{flag}</div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Evidence Types */}
               {result.evidenceTypes && result.evidenceTypes.length > 0 && (
                 <Card className="bg-corsair-surface">
@@ -585,11 +768,7 @@ export function MarqueVerifier() {
                           "self-attestation": "border-corsair-crimson/40 text-corsair-crimson",
                         };
                         return (
-                          <Badge
-                            key={type}
-                            variant="outline"
-                            className={typeColors[type] ?? "text-muted-foreground"}
-                          >
+                          <Badge key={type} variant="outline" className={typeColors[type] ?? "text-muted-foreground"}>
                             {type.replace(/-/g, " ")}
                           </Badge>
                         );
@@ -677,6 +856,11 @@ export function MarqueVerifier() {
                 </Card>
               )}
 
+              {/* Control Classifications */}
+              {result.controlClassifications && result.controlClassifications.length > 0 && (
+                <ControlClassificationsSection controls={result.controlClassifications} />
+              )}
+
               {/* Framework Results Tabs */}
               {result.frameworks && Object.keys(result.frameworks).length > 0 && (
                 <FrameworkTabs frameworks={result.frameworks} />
@@ -728,24 +912,13 @@ export function MarqueVerifier() {
                     {result.document.findings.map((f, i) => (
                       <Card key={i} className="bg-corsair-deep">
                         <CardContent className="flex items-start gap-3 p-3">
-                          <span
-                            className={`mt-0.5 text-sm ${
-                              f.status === "SATISFIED"
-                                ? "text-corsair-green"
-                                : "text-corsair-crimson"
-                            }`}
-                          >
-                            {f.status === "SATISFIED" ? "✓" : "✗"}
+                          <span className={`mt-0.5 text-sm ${f.status === "SATISFIED" ? "text-corsair-green" : "text-corsair-crimson"}`}>
+                            {f.status === "SATISFIED" ? "\u2713" : "\u2717"}
                           </span>
                           <div className="flex-1">
-                            <span className="text-sm text-foreground">
-                              {f.criterion}
-                            </span>
+                            <span className="text-sm text-foreground">{f.criterion}</span>
                             {f.severity && (
-                              <Badge
-                                variant={f.severity === "CRITICAL" ? "destructive" : "secondary"}
-                                className="ml-2 text-xs"
-                              >
+                              <Badge variant={f.severity === "CRITICAL" ? "destructive" : "secondary"} className="ml-2 text-xs">
                                 {f.severity}
                               </Badge>
                             )}
@@ -756,6 +929,7 @@ export function MarqueVerifier() {
                   </div>
                 </div>
               )}
+
               {/* Technical Details Drawer */}
               {(result.ruleTrace || result.calculationVersion) && (
                 <TechnicalDrawer
@@ -767,7 +941,7 @@ export function MarqueVerifier() {
               )}
 
               {/* Download as JSON */}
-              {result.valid && (
+              {(verifyState === "verified" || verifyState === "decoded") && (
                 <div className="flex justify-end">
                   <Button
                     variant="outline"
@@ -788,6 +962,9 @@ export function MarqueVerifier() {
                         evidenceTypes: result.evidenceTypes,
                         observationPeriod: result.observationPeriod,
                         riskQuantification: result.riskQuantification,
+                        doraMetrics: result.doraMetrics,
+                        assessmentDepth: result.assessmentDepth,
+                        provenanceQuality: result.provenanceQuality,
                         vcMetadata: result.vcMetadata,
                       };
                       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
@@ -807,6 +984,51 @@ export function MarqueVerifier() {
           )}
         </Card>
       )}
+
+      {/* Advanced: Client-side verification (collapsible) */}
+      <div className="border-t border-corsair-border/30 pt-4">
+        <button
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <span>{showAdvanced ? "\u25BC" : "\u25B6"}</span>
+          <span className="font-mono uppercase">Advanced: Client-side verification</span>
+        </button>
+        {showAdvanced && (
+          <div className="mt-3 space-y-3">
+            <p className="text-xs text-muted-foreground">
+              For offline verification, paste a PEM-encoded Ed25519 public key below.
+              The signature will be verified entirely in your browser via Web Crypto API.
+            </p>
+            <textarea
+              value={publicKey}
+              onChange={(e) => setPublicKey(e.target.value)}
+              placeholder="-----BEGIN PUBLIC KEY-----&#10;MCowBQYDK2VwAyEA...&#10;-----END PUBLIC KEY-----"
+              className="h-24 w-full resize-none rounded-lg border border-input bg-card p-3 font-mono text-xs text-foreground placeholder:text-muted-foreground/40 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/30"
+            />
+            <Button
+              onClick={async () => {
+                if (!marqueJson || !publicKey) return;
+                setVerifyState("verifying");
+                try {
+                  const res = await verifyMarqueInBrowser(marqueJson.trim(), publicKey);
+                  setResult(res);
+                  setVerifyState(res.valid ? "verified" : "failed");
+                } catch {
+                  setResult({ valid: false, reason: "Client-side verification error" });
+                  setVerifyState("failed");
+                }
+              }}
+              disabled={!marqueJson || !publicKey || verifyState === "verifying"}
+              size="sm"
+              variant="outline"
+              className="font-mono text-xs"
+            >
+              Verify with PEM Key
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -819,6 +1041,58 @@ function InfoField({ label, value }: { label: string; value: string }) {
       </span>
       <span className="text-sm text-foreground">{value}</span>
     </div>
+  );
+}
+
+/** Control Classifications — expandable per-control table */
+function ControlClassificationsSection({ controls }: {
+  controls: Array<{
+    controlId: string;
+    level: number;
+    methodology: string;
+    trace: string;
+    boilerplateFlags?: string[];
+  }>;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <Card className="bg-corsair-surface">
+      <CardContent className="p-4">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <span className="font-mono text-xs uppercase text-muted-foreground">
+            Control Classifications ({controls.length})
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {isOpen ? "Hide" : "Show"}
+          </span>
+        </button>
+        {isOpen && (
+          <div className="mt-3 space-y-1 max-h-64 overflow-y-auto">
+            {controls.map((ctrl) => (
+              <div key={ctrl.controlId} className="flex items-center gap-3 rounded bg-corsair-deep px-3 py-1.5">
+                <span className="font-mono text-xs font-bold text-foreground w-14">{ctrl.controlId}</span>
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] ${ASSURANCE_COLORS[ctrl.level]?.split(" ")[1] ?? "text-muted-foreground"}`}
+                >
+                  L{ctrl.level}
+                </Badge>
+                <span className="text-xs text-muted-foreground truncate flex-1">{ctrl.trace}</span>
+                {ctrl.boilerplateFlags && ctrl.boilerplateFlags.length > 0 && (
+                  <Badge variant="outline" className="text-[10px] border-yellow-500/40 text-yellow-400">
+                    boilerplate
+                  </Badge>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -840,7 +1114,6 @@ function FrameworkTabs({ frameworks }: {
         <span className="block font-mono text-xs uppercase text-muted-foreground">
           Framework Results
         </span>
-        {/* Tab buttons */}
         <div className="flex flex-wrap gap-1">
           {Object.keys(frameworks).map((name) => (
             <Button
@@ -857,7 +1130,6 @@ function FrameworkTabs({ frameworks }: {
             </Button>
           ))}
         </div>
-        {/* Active framework controls */}
         {fw && (
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -867,10 +1139,7 @@ function FrameworkTabs({ frameworks }: {
             </div>
             <div className="grid gap-1 sm:grid-cols-2">
               {fw.controls.map((ctrl) => (
-                <div
-                  key={ctrl.controlId}
-                  className="flex items-center gap-2 rounded bg-corsair-deep px-2 py-1"
-                >
+                <div key={ctrl.controlId} className="flex items-center gap-2 rounded bg-corsair-deep px-2 py-1">
                   <span className={`text-xs ${
                     ctrl.status === "passed" ? "text-corsair-green" :
                     ctrl.status === "failed" ? "text-corsair-crimson" :

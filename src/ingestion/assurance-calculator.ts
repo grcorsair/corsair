@@ -165,14 +165,46 @@ export function calculateDocumentRollup(
     breakdown[key] = (breakdown[key] ?? 0) + 1;
   }
 
-  // Declared = min of all in-scope controls (SSL model)
-  const declared: AssuranceLevel = inScope.length > 0
-    ? Math.min(...inScope.map(c => c.assuranceLevel)) as AssuranceLevel
-    : 0;
+  // 5% Tolerance Rule: If <= 5% of in-scope controls are below a candidate
+  // level AND there are >= 10 controls (small samples use strict min),
+  // the declared level can be that candidate. Controls below are "tolerated"
+  // and flagged in the CPOE.
+  const TOLERANCE_THRESHOLD = 0.05;
+  const MIN_CONTROLS_FOR_TOLERANCE = 10;
 
-  // Verified = all in-scope controls >= declared level
+  let declared: AssuranceLevel = 0;
+  let toleratedControls: Array<{ controlId: string; level: AssuranceLevel; reason: string }> = [];
+
+  if (inScope.length > 0) {
+    // Try each level from highest to lowest
+    for (let candidate = 4; candidate >= 0; candidate--) {
+      const belowControls = inScope.filter(c => c.assuranceLevel < candidate);
+      const belowFraction = belowControls.length / inScope.length;
+
+      if (belowFraction === 0) {
+        // All controls at or above this level — strict pass
+        declared = candidate as AssuranceLevel;
+        toleratedControls = [];
+        break;
+      } else if (
+        inScope.length >= MIN_CONTROLS_FOR_TOLERANCE &&
+        belowFraction <= TOLERANCE_THRESHOLD
+      ) {
+        // Within 5% tolerance — declare this level, tolerate stragglers
+        declared = candidate as AssuranceLevel;
+        toleratedControls = belowControls.map(c => ({
+          controlId: c.id,
+          level: c.assuranceLevel,
+          reason: `Auto-tolerated: L${c.assuranceLevel} control within 5% threshold (${belowControls.length}/${inScope.length} = ${(belowFraction * 100).toFixed(1)}%)`,
+        }));
+        break;
+      }
+    }
+  }
+
+  // Verified = all in-scope meet declared OR tolerance was applied
   const verified = inScope.length > 0
-    ? inScope.every(c => c.assuranceLevel >= declared)
+    ? inScope.every(c => c.assuranceLevel >= declared) || toleratedControls.length > 0
     : false;
 
   // Method from source type
@@ -188,6 +220,11 @@ export function calculateDocumentRollup(
   // Only include excluded array if non-empty
   if (excluded && excluded.length > 0) {
     assurance.excluded = excluded;
+  }
+
+  // Include tolerated controls if any
+  if (toleratedControls.length > 0) {
+    assurance.toleratedControls = toleratedControls;
   }
 
   const provenance = deriveProvenance(source, metadata);
