@@ -52,9 +52,12 @@ npm-debug.log*
 # Mission directories (generated during testing)
 missions/
 
-# Internal strategy documents (confidential)
+# Internal strategy/plan documents (confidential)
 AUDIT_DISRUPTION_STRATEGY.md
 TPRM_DISRUPTION_STRATEGY.md
+REDESIGN_SPEC.md
+WEBSITE_PLAN.md
+WEEK1_PLAN.md
 
 # Batch test results (may contain real company data)
 soc2-batch-results.json
