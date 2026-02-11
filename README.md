@@ -176,15 +176,19 @@ Every control in a CPOE is classified at an assurance level. The CPOE's overall 
                     └──────────┬──────────┘
                                │
                     ┌──────────▼──────────┐
-              02    │       CHART          │  Maps controls to compliance frameworks
+              02    │      CLASSIFY        │  Assigns L0–L4 assurance per control
                     └──────────┬──────────┘
                                │
                     ┌──────────▼──────────┐
-              03    │      QUARTER         │  AI reviews governance + evidence quality
+              03    │       CHART          │  Maps controls to compliance frameworks
                     └──────────┬──────────┘
                                │
                     ┌──────────▼──────────┐
-              04    │       MARQUE         │  Signs as JWT-VC (Ed25519) → CPOE
+              04    │      QUARTER         │  AI reviews governance + evidence quality
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+              05    │       MARQUE         │  Signs as JWT-VC (Ed25519) → CPOE
                     └─────┬─────┬─────────┘
                           │     │
                ┌──────────▼┐   ┌▼──────────┐
@@ -197,9 +201,10 @@ Every control in a CPOE is classified at an assurance level. The CPOE's overall 
 | Stage | Pirate Name | What It Does |
 |:------|:------------|:-------------|
 | Ingestion | **INGEST** | PDF/JSON to structured controls via Claude |
-| Framework mapping | **CHART** | Maps controls to 12+ compliance frameworks via CTID/SCF |
+| Assurance classification | **CLASSIFY** | Assigns L0–L4 assurance level per control based on evidence type |
+| Framework mapping | **CHART** | Maps controls to 13+ compliance frameworks via CTID/SCF |
 | Governance review | **QUARTER** | Deterministic + LLM evidence quality review (7 dimensions) |
-| Signed proof | **MARQUE** | JWT-VC generation with Ed25519 signing |
+| Signed proof | **MARQUE** | JWT-VC generation with Ed25519 signing + process provenance chain |
 | Transparency log | **SCITT** | COSE receipts, Merkle proofs, append-only registry |
 | Real-time signals | **FLAGSHIP** | SSF/CAEP notifications for compliance state changes |
 

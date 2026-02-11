@@ -8,6 +8,7 @@ import {
   QuarterIcon,
   SpyglassIcon,
   PlunderIcon,
+  MarkIcon,
 } from "@/components/pixel-art/pixel-icons";
 import { StageHeader } from "@/components/features/anatomy/stage-header";
 import {
@@ -42,14 +43,14 @@ export default function ProtocolPage() {
             protocol
           </h1>
           <p className="mx-auto max-w-2xl text-center text-lg text-corsair-text-dim sm:text-xl">
-            Five open standards. Zero vendor lock-in.
+            Six open standards. Zero vendor lock-in.
             Every decision traceable, every proof verifiable.
           </p>
         </FadeIn>
 
         <FadeIn delay={0.3}>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            {["JWT-VC", "DID:web", "Ed25519", "SCITT", "SSF/CAEP"].map(
+            {["JWT-VC", "DID:web", "Ed25519", "SCITT", "SSF/CAEP", "in-toto/SLSA"].map(
               (std) => (
                 <span
                   key={std}
@@ -77,16 +78,16 @@ export default function ProtocolPage() {
           <StageHeader
             number={1}
             name="COMPOSITION"
-            subtitle="Five standards, one protocol"
+            subtitle="Six standards, one protocol"
             color="text-corsair-gold"
             icon={<ChartIcon size={32} />}
           />
 
           <FadeIn delay={0.1}>
             <p className="mb-6 max-w-2xl text-sm text-corsair-text-dim">
-              Parley doesn&apos;t invent new cryptography. It composes five open standards
+              Parley doesn&apos;t invent new cryptography. It composes six open standards
               into a trust exchange protocol. Each standard handles one concern —
-              identity, attestation, logging, signaling, and signatures.
+              identity, attestation, logging, signaling, signatures, and process provenance.
             </p>
           </FadeIn>
 
@@ -233,6 +234,60 @@ export default function ProtocolPage() {
           </FadeIn>
 
           <SignalTimeline />
+        </div>
+      </section>
+
+      {/* ═══ LAYER 7: PROVENANCE — in-toto/SLSA Receipt Chain ═══ */}
+      <PixelDivider className="my-4" />
+      <section className="px-6 py-16">
+        <div className="mx-auto max-w-5xl">
+          <StageHeader
+            number={7}
+            name="PROVENANCE"
+            subtitle="in-toto/SLSA — cryptographic pipeline receipts"
+            color="text-corsair-green"
+            icon={<MarkIcon size={32} />}
+          />
+
+          <FadeIn delay={0.1}>
+            <p className="mb-6 max-w-2xl text-sm text-corsair-text-dim">
+              Every CPOE embeds a process provenance chain — COSE-signed receipts for each
+              pipeline step (ingest, classify, chart, quarter, marque). Each receipt captures
+              input/output hashes and links to the previous receipt, forming a tamper-evident
+              chain. The chain digest (Merkle root of all receipt hashes) is embedded in the
+              signed credential, proving not just what the CPOE says, but how it was built.
+            </p>
+          </FadeIn>
+
+          <FadeIn delay={0.2}>
+            <div className="rounded-xl border border-corsair-border bg-[#0A0A0A] p-6">
+              <p className="mb-4 font-pixel text-[8px] tracking-widest text-corsair-green/60">
+                RECEIPT CHAIN STRUCTURE
+              </p>
+              <div className="space-y-3 font-mono text-xs">
+                <div className="flex items-center gap-3">
+                  <span className="w-20 text-corsair-text-dim">Format</span>
+                  <span className="text-corsair-green">in-toto/v1 + COSE_Sign1</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-20 text-corsair-text-dim">Steps</span>
+                  <span className="text-corsair-text">ingest → classify → chart → quarter → marque</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-20 text-corsair-text-dim">Linking</span>
+                  <span className="text-corsair-text">Each receipt includes previous receipt digest (hash chain)</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-20 text-corsair-text-dim">Signing</span>
+                  <span className="text-corsair-text">Ed25519 via COSE_Sign1 (RFC 9052) — same key as CPOE</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-20 text-corsair-text-dim">Digest</span>
+                  <span className="text-corsair-gold">Merkle root of all receipt hashes → embedded in CPOE</span>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
         </div>
       </section>
 

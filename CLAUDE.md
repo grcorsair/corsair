@@ -25,9 +25,9 @@ bun run corsair.ts verify cpoe.jwt   # Verify a CPOE
 bun run corsair.ts keygen            # Generate Ed25519 keypair
 ```
 
-## Pipeline (v0.3.0)
+## Pipeline (v0.4.0)
 ```
-INGEST → CHART → QUARTER → MARQUE (+ FLAGSHIP for real-time signals)
+INGEST → CLASSIFY → CHART → QUARTER → MARQUE (+ SCITT log + FLAGSHIP signals)
 ```
 
 ## Pirate Naming Convention
@@ -35,14 +35,15 @@ INGEST → CHART → QUARTER → MARQUE (+ FLAGSHIP for real-time signals)
 | Stage | Meaning | Code Pattern |
 |---|---|---|
 | INGEST | Document ingestion | `parseSOC2()`, `mapToMarqueInput()` |
+| CLASSIFY | Assurance classification (L0–L4) | `calculateAssuranceLevel()` |
 | CHART | Framework mapping | `ChartEngine`, `chart()` |
 | QUARTER | Governance verification | `QuartermasterAgent` |
 | MARQUE | Signed CPOE (Ed25519 JWT-VC) | `MarqueGenerator`, `MarqueVerifier` |
 | FLAGSHIP | Real-time compliance signals | `SETGenerator`, `SSFStream` |
 
 ## Architecture Patterns
-- **Ingestion pipeline**: PDF → Claude extraction → IngestedDocument → MarqueGeneratorInput → JWT-VC
-- **Protocol**: Parley = JWT-VC (proof) + SCITT (log) + SSF/CAEP (signal)
+- **Ingestion pipeline**: PDF → Claude extraction → IngestedDocument → classify → chart → quarter → JWT-VC CPOE
+- **Protocol**: Parley = JWT-VC (proof) + SCITT (log) + SSF/CAEP (signal) + in-toto/SLSA (provenance)
 - **Assurance levels**: L0=Documented, L1=Configured, L2=Demonstrated, L3=Observed, L4=Attested
 - **Barrel exports**: Each module has `index.ts` re-exporting everything
 - **Type-only imports**: Use `import type { }` to avoid circular dependencies

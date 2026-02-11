@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   ReconIcon,
+  RaidIcon,
   ChartIcon,
   QuarterIcon,
   MarqueIcon,
@@ -19,8 +20,15 @@ const stages = [
     glowColor: "rgba(0,207,255,0.15)",
   },
   {
+    name: "CLASSIFY",
+    description: "Assign L0–L4 assurance levels to every control based on evidence type, source, and methodology",
+    icon: <RaidIcon size={40} />,
+    color: "text-corsair-green",
+    glowColor: "rgba(46,204,113,0.15)",
+  },
+  {
     name: "CHART",
-    description: "Automatically map extracted controls to 12+ compliance frameworks via CTID/SCF crosswalk",
+    description: "Automatically map extracted controls to 13+ compliance frameworks via CTID/SCF crosswalk",
     icon: <ChartIcon size={40} />,
     color: "text-corsair-turquoise",
     glowColor: "rgba(127,219,202,0.15)",
@@ -61,7 +69,7 @@ const itemVariants = {
 export function PipelineStages() {
   return (
     <motion.div
-      className="grid grid-cols-2 gap-6 sm:grid-cols-4"
+      className="grid grid-cols-2 gap-6 sm:grid-cols-5"
       variants={containerVariants}
       initial="hidden"
       whileInView="visible"

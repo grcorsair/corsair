@@ -404,6 +404,14 @@ export const PROTOCOL_STANDARDS = [
     what: "128-bit security, 64-byte signatures, deterministic — no random number generator risk",
     why: "Fast, compact, no configuration choices. One curve, one key size, no footguns",
   },
+  {
+    name: "in-toto/SLSA",
+    fullName: "in-toto Attestation + SLSA Provenance",
+    role: "Process provenance",
+    spec: "in-toto v1 + SLSA v1.0",
+    what: "COSE-signed receipts for each pipeline step — hash-linked chain proving how the CPOE was built",
+    why: "Proves the pipeline ran correctly, not just that the output looks right. Reproducibility + attestation",
+  },
 ];
 
 /* ─── Verification Flow ──────────────────────────── */

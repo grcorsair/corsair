@@ -23,7 +23,7 @@ export default function Home() {
               The Parley Protocol
             </h2>
             <p className="mb-12 text-center text-corsair-text-dim">
-              Four stages. From document to signed proof.
+              Five stages. From document to signed proof.
             </p>
           </FadeIn>
           <FadeIn delay={0.2}>
