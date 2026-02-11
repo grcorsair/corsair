@@ -902,6 +902,51 @@ export function MarqueVerifier() {
                 </Card>
               )}
 
+              {/* Process Provenance */}
+              {result.processProvenance && (
+                <Card className="bg-corsair-surface">
+                  <CardContent className="p-4">
+                    <span className="mb-2 block font-mono text-xs uppercase text-muted-foreground">
+                      Process Provenance
+                    </span>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Badge className={result.processProvenance.chainVerified
+                          ? "bg-corsair-green/10 text-corsair-green hover:bg-corsair-green/20"
+                          : "bg-corsair-crimson/10 text-corsair-crimson hover:bg-corsair-crimson/20"
+                        }>
+                          {result.processProvenance.chainVerified ? "Chain Verified" : "Chain Unverified"}
+                        </Badge>
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {result.processProvenance.format}
+                        </span>
+                      </div>
+                      <div className="font-mono text-xs text-muted-foreground">
+                        <div className="flex gap-4">
+                          <span>
+                            Receipts: {result.processProvenance.receiptCount}
+                          </span>
+                          <span className="text-corsair-green">
+                            {result.processProvenance.reproducibleSteps} reproducible
+                          </span>
+                          <span className="text-corsair-gold">
+                            {result.processProvenance.attestedSteps} attested
+                          </span>
+                        </div>
+                        <div className="mt-1 truncate text-corsair-cyan/60">
+                          Digest: {result.processProvenance.chainDigest}
+                        </div>
+                        {result.processProvenance.scittEntryIds && result.processProvenance.scittEntryIds.length > 0 && (
+                          <div className="mt-1">
+                            SCITT: {result.processProvenance.scittEntryIds.length} entries registered
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Findings */}
               {result.document?.findings && result.document.findings.length > 0 && (
                 <div>
@@ -965,6 +1010,7 @@ export function MarqueVerifier() {
                         doraMetrics: result.doraMetrics,
                         assessmentDepth: result.assessmentDepth,
                         provenanceQuality: result.provenanceQuality,
+                        processProvenance: result.processProvenance,
                         vcMetadata: result.vcMetadata,
                       };
                       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });

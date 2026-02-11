@@ -37,6 +37,9 @@ import {
   computeDoraMetrics,
 } from "../ingestion/assurance-calculator";
 import { EvidenceEngine } from "../evidence";
+import { hashReceipt } from "./process-receipt";
+import type { ProcessReceipt } from "./process-receipt";
+import { computeRootHash } from "./merkle";
 
 const PRIVATE_KEY_FILENAME = "corsair-signing.key";
 
@@ -301,6 +304,27 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
     if (subject.dimensions) {
       subject.doraMetrics = computeDoraMetrics(doc.controls, doc.source, doc.metadata, subject.dimensions);
     }
+  }
+
+  // Process provenance (in-toto/SLSA — from pipeline receipt chain)
+  const processReceipts = input.processReceipts || [];
+  if (processReceipts.length > 0) {
+    const reproducible = processReceipts.filter(r => r.predicate.reproducible).length;
+    const attested = processReceipts.filter(r => r.predicate.llmAttestation).length;
+    const leafHashes = processReceipts.map(r => hashReceipt(r));
+    const scittIds = processReceipts
+      .filter(r => r.scittEntryId)
+      .map(r => r.scittEntryId!);
+
+    subject.processProvenance = {
+      chainDigest: computeRootHash(leafHashes),
+      receiptCount: processReceipts.length,
+      chainVerified: true,
+      format: "in-toto/v1+cose-sign1",
+      reproducibleSteps: reproducible,
+      attestedSteps: attested,
+      ...(scittIds.length > 0 ? { scittEntryIds: scittIds } : {}),
+    };
   }
 
   return subject;

@@ -46,6 +46,9 @@ export interface MarqueGeneratorInput {
   issuer: MarqueIssuer;
   providers: string[];
 
+  /** Process receipt chain from pipeline steps (in-toto/SLSA format) */
+  processReceipts?: import("./process-receipt").ProcessReceipt[];
+
   /** Legacy fields (now optional — not needed for document ingestion) */
   markResults?: MarkResult[];
   raidResults?: RaidResult[];

@@ -15,6 +15,13 @@ export interface APIVerifyResponse {
   scope: string | null;
   summary: { controlsTested: number; controlsPassed: number; controlsFailed: number; overallScore: number } | null;
   timestamps: { issuedAt: string | null; expiresAt: string | null };
+  processProvenance?: {
+    chainDigest: string;
+    receiptCount: number;
+    chainVerified: boolean;
+    reproducibleSteps: number;
+    attestedSteps: number;
+  } | null;
 }
 
 export type APIVerifyResult =

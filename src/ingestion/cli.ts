@@ -14,6 +14,8 @@ import { mapToMarqueInput } from "./mapper";
 import { MarqueGenerator } from "../parley/marque-generator";
 import { MarqueKeyManager } from "../parley/marque-key-manager";
 import { MarqueVerifier } from "../parley/marque-verifier";
+import { ReceiptChain } from "../parley/receipt-chain";
+import { hashData } from "../parley/process-receipt";
 import type { IngestedDocument } from "./types";
 
 // =============================================================================
@@ -137,8 +139,31 @@ export async function runIngest(args: IngestArgs): Promise<void> {
   console.log(`      Ineffective:  ${ingested.controls.filter(c => c.status === "ineffective").length}`);
   console.log(`      Not tested:   ${ingested.controls.filter(c => c.status === "not-tested").length}`);
 
+  // Initialize process receipt chain
+  const keyManager = new MarqueKeyManager();
+  let keypair = await keyManager.loadKeypair();
+  if (!keypair) {
+    keypair = await keyManager.generateKeypair();
+    console.log("      Generated new Ed25519 keypair");
+  }
+
+  const chain = new ReceiptChain(keypair.privateKey.toString());
+
+  // Receipt 1: INGEST (non-deterministic — Claude extraction)
+  await chain.captureStep({
+    step: "ingest",
+    inputData: { fileHash: ingested.metadata.rawTextHash, filename },
+    outputData: { controls: ingested.controls.map(c => ({ id: c.id, status: c.status })) },
+    reproducible: false,
+    llmAttestation: {
+      model: args.model || "claude-sonnet-4-5-20250929",
+      promptDigest: hashData("Extract controls from SOC 2 report"),
+      temperature: 0,
+    },
+  });
+
   // 2. Map to MarqueGeneratorInput
-  console.log(`\n[2/4] Mapping to CPOE input...`);
+  console.log(`\n[2/5] Mapping to CPOE input...`);
   const input = mapToMarqueInput(ingested, { did: args.did });
   const frameworks = new Set<string>();
   for (const chart of input.chartResults) {
@@ -150,14 +175,29 @@ export async function runIngest(args: IngestArgs): Promise<void> {
   }
   console.log(`      Frameworks: ${[...frameworks].join(", ") || "none"}`);
 
+  // Receipt 2: CLASSIFY (deterministic)
+  await chain.captureStep({
+    step: "classify",
+    inputData: ingested,
+    outputData: input.document,
+    reproducible: true,
+    codeVersion: "assurance-calculator@2026-02-09",
+  });
+
+  // Receipt 3: CHART (deterministic)
+  await chain.captureStep({
+    step: "chart",
+    inputData: ingested.controls.map(c => c.frameworkRefs),
+    outputData: input.chartResults,
+    reproducible: true,
+    codeVersion: "chart-engine@1.0",
+  });
+
+  // Pass receipts to CPOE generator
+  input.processReceipts = chain.getReceipts();
+
   // 3. Generate CPOE
-  console.log(`\n[3/4] Generating ${args.format === "vc" ? "JWT-VC" : "JSON"} CPOE...`);
-  const keyManager = new MarqueKeyManager();
-  let keypair = await keyManager.loadKeypair();
-  if (!keypair) {
-    keypair = await keyManager.generateKeypair();
-    console.log("      Generated new Ed25519 keypair");
-  }
+  console.log(`\n[3/5] Generating ${args.format === "vc" ? "JWT-VC" : "JSON"} CPOE...`);
 
   const generator = new MarqueGenerator(keyManager, {
     expiryDays: 90,
@@ -167,8 +207,22 @@ export async function runIngest(args: IngestArgs): Promise<void> {
   const output = await generator.generateOutput(input);
   console.log(`      MARQUE ID: ${output.marqueId}`);
 
-  // 4. Verify
-  console.log(`\n[4/4] Verifying CPOE...`);
+  // Receipt 4: MARQUE (deterministic signing)
+  await chain.captureStep({
+    step: "marque",
+    inputData: { receiptChainDigest: chain.getChainDigest() },
+    outputData: { cpoeHash: hashData(output.jwt || JSON.stringify(output.v1)) },
+    reproducible: true,
+    codeVersion: "vc-generator@2.1",
+  });
+
+  const receipts = chain.getReceipts();
+  const reproducibleCount = receipts.filter(r => r.predicate.reproducible).length;
+  const attestedCount = receipts.filter(r => r.predicate.llmAttestation).length;
+  console.log(`\n[4/5] Process provenance: ${receipts.length} receipts (${reproducibleCount} reproducible, ${attestedCount} attested)`);
+
+  // 5. Verify
+  console.log(`\n[5/5] Verifying CPOE...`);
   const verifier = new MarqueVerifier([keypair.publicKey]);
   const verification = args.format === "vc"
     ? await verifier.verify(output.jwt!)

@@ -158,6 +158,16 @@ export interface MarqueVerificationResult {
     band: string;
     pairingFlags?: string[];
   };
+  /** Process provenance chain (in-toto/SLSA format) */
+  processProvenance?: {
+    chainDigest: string;
+    receiptCount: number;
+    chainVerified: boolean;
+    format: string;
+    reproducibleSteps: number;
+    attestedSteps: number;
+    scittEntryIds?: string[];
+  };
 }
 
 /**
@@ -580,6 +590,7 @@ function extractCPOEFields(payload: {
     assessmentDepth: cs.assessmentDepth as MarqueVerificationResult["assessmentDepth"],
     provenanceQuality: typeof cs.provenanceQuality === "number" ? cs.provenanceQuality : undefined,
     doraMetrics: cs.doraMetrics as MarqueVerificationResult["doraMetrics"],
+    processProvenance: cs.processProvenance as MarqueVerificationResult["processProvenance"],
   };
 }
 

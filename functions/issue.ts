@@ -19,6 +19,8 @@ import type { KeyManager } from "../src/parley/marque-key-manager";
 import type { IngestedDocument, IngestedControl, DocumentSource, DocumentMetadata } from "../src/ingestion/types";
 import { mapToMarqueInput } from "../src/ingestion/mapper";
 import { MarqueGenerator } from "../src/parley/marque-generator";
+import { ReceiptChain } from "../src/parley/receipt-chain";
+import { hashData } from "../src/parley/process-receipt";
 
 export interface IssueRouterDeps {
   keyManager: KeyManager;
@@ -166,6 +168,32 @@ export function createIssueRouter(
       // Map to MarqueGeneratorInput
       const did = body.did || `did:web:${domain}`;
       const input = mapToMarqueInput(doc, { did });
+
+      // Build process receipt chain
+      const keypair = await keyManager.loadKeypair();
+      if (keypair) {
+        const chain = new ReceiptChain(keypair.privateKey.toString());
+
+        // Receipt 1: CLASSIFY (deterministic — evidence mapping)
+        await chain.captureStep({
+          step: "classify",
+          inputData: { controlCount: controls.length, source: body.source },
+          outputData: { assurance: "calculated" },
+          reproducible: true,
+          codeVersion: "assurance-calculator@2026-02-09",
+        });
+
+        // Receipt 2: CHART (deterministic — framework mapping)
+        await chain.captureStep({
+          step: "chart",
+          inputData: controls.map(c => c.frameworkRefs),
+          outputData: input.chartResults,
+          reproducible: true,
+          codeVersion: "chart-engine@1.0",
+        });
+
+        input.processReceipts = chain.getReceipts();
+      }
 
       // Generate signed CPOE
       const generator = new MarqueGenerator(keyManager, {

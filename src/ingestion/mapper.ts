@@ -29,6 +29,9 @@ export interface MapperOptions {
 
   /** Custom organization name */
   organization?: string;
+
+  /** Process receipt chain from pipeline steps */
+  processReceipts?: import("../parley/process-receipt").ProcessReceipt[];
 }
 
 // =============================================================================
@@ -57,6 +60,7 @@ export function mapToMarqueInput(
     evidencePaths: [], // No JSONL evidence files
     issuer,
     providers: [`${doc.source}-document`],
+    processReceipts: options?.processReceipts,
   };
 }
 

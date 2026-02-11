@@ -114,6 +114,28 @@ export function createVerifyRouter(
       }
     }
 
+    // Extract processProvenance from JWT payload
+    let processProvenance: VerifyResponse["processProvenance"] = null;
+    try {
+      const { decodeJwt } = await import("jose");
+      const payload = decodeJwt(jwt) as Record<string, unknown>;
+      const vc = payload.vc as Record<string, unknown> | undefined;
+      const cs = vc?.credentialSubject as Record<string, unknown> | undefined;
+      const pp = cs?.processProvenance as {
+        chainDigest: string; receiptCount: number; chainVerified: boolean;
+        reproducibleSteps: number; attestedSteps: number;
+      } | undefined;
+      if (pp) {
+        processProvenance = {
+          chainDigest: pp.chainDigest,
+          receiptCount: pp.receiptCount,
+          chainVerified: pp.chainVerified,
+          reproducibleSteps: pp.reproducibleSteps,
+          attestedSteps: pp.attestedSteps,
+        };
+      }
+    } catch { /* decode-only, non-critical */ }
+
     // Build response
     const response: VerifyResponse = {
       verified: result.valid,
@@ -129,6 +151,7 @@ export function createVerifyRouter(
         issuedAt: result.generatedAt || null,
         expiresAt: result.expiresAt || null,
       },
+      processProvenance,
     };
 
     if (!result.valid) {
@@ -172,4 +195,11 @@ export interface VerifyResponse {
   scope: string | null;
   summary: { controlsTested: number; controlsPassed: number; controlsFailed: number; overallScore: number } | null;
   timestamps: { issuedAt: string | null; expiresAt: string | null };
+  processProvenance?: {
+    chainDigest: string;
+    receiptCount: number;
+    chainVerified: boolean;
+    reproducibleSteps: number;
+    attestedSteps: number;
+  } | null;
 }

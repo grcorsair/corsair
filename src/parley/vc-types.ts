@@ -385,6 +385,24 @@ export interface CPOECredentialSubject extends CredentialSubject {
     band: "elite" | "high" | "medium" | "low";
     pairingFlags: string[];
   };
+
+  /** Process provenance chain (in-toto/SLSA format) */
+  processProvenance?: {
+    /** Merkle root of all process receipt hashes */
+    chainDigest: string;
+    /** Number of pipeline steps attested */
+    receiptCount: number;
+    /** All COSE signatures verified */
+    chainVerified: boolean;
+    /** Receipt format identifier */
+    format: "in-toto/v1+cose-sign1";
+    /** Count of deterministic (re-runnable) steps */
+    reproducibleSteps: number;
+    /** Count of LLM-attested (committed but not reproducible) steps */
+    attestedSteps: number;
+    /** SCITT entry IDs for each receipt (enables independent verification) */
+    scittEntryIds?: string[];
+  };
 }
 
 // =============================================================================

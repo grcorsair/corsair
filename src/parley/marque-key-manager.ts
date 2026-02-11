@@ -31,6 +31,25 @@ export interface KeyManager {
   generateDIDDocument(domain: string): Promise<DIDDocument>;
 }
 
+/**
+ * Factory: create the appropriate key manager based on environment.
+ *
+ * When KMS_KEY_ARN is set, returns a KMSKeyManager (requires @aws-sdk/client-kms).
+ * Otherwise, returns a file-based MarqueKeyManager.
+ */
+export function createKeyManager(keyDir?: string): KeyManager {
+  const kmsKeyArn = Bun.env.KMS_KEY_ARN;
+  if (kmsKeyArn) {
+    // Lazy import to avoid requiring @aws-sdk/client-kms at startup
+    const { KMSKeyManager } = require("./kms-key-manager");
+    return new KMSKeyManager({
+      keyId: kmsKeyArn,
+      region: Bun.env.AWS_REGION || "us-east-1",
+    });
+  }
+  return new MarqueKeyManager(keyDir);
+}
+
 const PRIVATE_KEY_FILENAME = "corsair-signing.key";
 const PUBLIC_KEY_FILENAME = "corsair-signing.pub";
 const RETIRED_DIR = "retired";
