@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 
 const productLinks = [
+  { href: "/vision", label: "Vision" },
   { href: "/anatomy", label: "How It Works" },
   { href: "/docs", label: "Documentation" },
   { href: "/marque", label: "Verify CPOE" },

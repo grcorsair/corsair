@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { MenuIcon } from "lucide-react";
 
 const navLinks = [
+  { href: "/vision", label: "Vision" },
   { href: "/anatomy", label: "How It Works" },
   { href: "/protocol", label: "Protocol" },
   { href: "/docs", label: "Docs" },
