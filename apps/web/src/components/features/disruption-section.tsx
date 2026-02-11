@@ -83,7 +83,7 @@ export function DisruptionSection() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 text-corsair-green">&#x2713;</span>
-                W3C Verifiable Credential with AI governance review
+                W3C Verifiable Credential with AI-powered evidence review
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 text-corsair-green">&#x2713;</span>

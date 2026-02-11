@@ -178,7 +178,7 @@ export default function AnatomyPage() {
           <StageHeader
             number={4}
             name="QUARTER"
-            subtitle="AI governance review of evidence quality"
+            subtitle="AI-powered evidence review of quality and rigor"
             color="text-corsair-gold"
             icon={<QuarterIcon size={32} />}
           />

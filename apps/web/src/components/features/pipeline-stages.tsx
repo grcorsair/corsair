@@ -35,7 +35,7 @@ const stages = [
   },
   {
     name: "QUARTER",
-    description: "AI governance review evaluates evidence quality, methodology, and completeness",
+    description: "AI-powered review evaluates evidence quality, methodology, and completeness",
     icon: <QuarterIcon size={40} />,
     color: "text-corsair-gold",
     glowColor: "rgba(212,168,83,0.15)",
