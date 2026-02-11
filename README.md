@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/corsair-logo.gif" alt="Corsair — Verify Proof. Not Promises." width="620"/>
+<img src="assets/corsair-logo.gif" alt="Corsair — Verify Proof. Not Promises." width="647"/>
 
 <br/>
 
