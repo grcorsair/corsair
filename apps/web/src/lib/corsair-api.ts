@@ -19,8 +19,10 @@ export interface APIVerifyResponse {
     chainDigest: string;
     receiptCount: number;
     chainVerified: boolean;
+    format: string;
     reproducibleSteps: number;
     attestedSteps: number;
+    scittEntryIds?: string[];
   } | null;
 }
 
