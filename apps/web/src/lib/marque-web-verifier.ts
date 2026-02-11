@@ -199,7 +199,9 @@ export function mergeAPIResultWithDecoded(
     assuranceLevel: apiData.assurance?.level ?? cpoeFields.assuranceLevel,
     assuranceName: apiData.assurance?.name ?? cpoeFields.assuranceName,
     assurance: cpoeFields.assurance,
-    provenance: apiData.provenance ?? cpoeFields.provenance,
+    provenance: apiData.provenance
+      ? { ...apiData.provenance, source: apiData.provenance.source as "self" | "tool" | "auditor" }
+      : cpoeFields.provenance,
     scope: apiData.scope ?? cpoeFields.scope,
     summary: apiData.summary ?? cpoeFields.summary,
     dimensions: cpoeFields.dimensions,
