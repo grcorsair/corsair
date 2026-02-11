@@ -27,6 +27,39 @@ function jsonOk(data: unknown, status = 200): Response {
   });
 }
 
+const MAX_STATEMENT_SIZE = 50_000; // 50KB — typical CPOE is 2-5KB
+const BASE64URL_REGEX = /^[A-Za-z0-9_-]*$/;
+
+/**
+ * Validate that a statement is a well-formed JWT before registering in SCITT.
+ * Returns an error message string if invalid, or null if valid.
+ */
+function validateStatement(statement: string): string | null {
+  if (statement.length > MAX_STATEMENT_SIZE) {
+    return `Statement exceeds maximum size (${MAX_STATEMENT_SIZE} bytes)`;
+  }
+
+  const parts = statement.split(".");
+  if (parts.length !== 3) {
+    return "Statement must be a JWT (3 dot-separated segments: header.payload.signature)";
+  }
+
+  // Validate header is valid base64url and decodable
+  const [header] = parts;
+  if (!header || !BASE64URL_REGEX.test(header)) {
+    return "JWT header is not valid base64url";
+  }
+
+  try {
+    const decoded = atob(header.replace(/-/g, "+").replace(/_/g, "/"));
+    JSON.parse(decoded);
+  } catch {
+    return "JWT header is not valid JSON";
+  }
+
+  return null;
+}
+
 /**
  * Match SCITT entry routes:
  *   /scitt/entries/:id         → { entryId, receipt: false }
@@ -69,6 +102,12 @@ export function createSCITTRouter(
 
       if (!body.statement || typeof body.statement !== "string") {
         return jsonError(400, "Missing required field: statement");
+      }
+
+      // Validate statement is a well-formed JWT (3 base64url-separated parts)
+      const statementError = validateStatement(body.statement);
+      if (statementError) {
+        return jsonError(400, statementError);
       }
 
       const registration = await registry.register(body.statement);

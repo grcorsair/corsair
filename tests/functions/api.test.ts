@@ -479,6 +479,51 @@ describe("SCITT Registration API", () => {
     expect(res.status).toBe(404);
   });
 
+  test("POST /scitt/entries rejects non-JWT statement (no dots)", async () => {
+    const req = jsonRequest("POST", "/scitt/entries", {
+      statement: "this-is-not-a-jwt",
+    });
+    const res = await router(req);
+    expect(res.status).toBe(400);
+    const body = (await jsonResponse(res)) as Record<string, unknown>;
+    expect(body.error).toContain("JWT");
+  });
+
+  test("POST /scitt/entries rejects statement with wrong number of parts", async () => {
+    const req = jsonRequest("POST", "/scitt/entries", {
+      statement: "part1.part2",
+    });
+    const res = await router(req);
+    expect(res.status).toBe(400);
+  });
+
+  test("POST /scitt/entries rejects statement with invalid base64url header", async () => {
+    const req = jsonRequest("POST", "/scitt/entries", {
+      statement: "!!!invalid!!!.payload.signature",
+    });
+    const res = await router(req);
+    expect(res.status).toBe(400);
+  });
+
+  test("POST /scitt/entries rejects oversized statement (>50KB)", async () => {
+    const bigPayload = "a".repeat(51_000);
+    const req = jsonRequest("POST", "/scitt/entries", {
+      statement: `eyJhbGciOiJFZERTQSJ9.${bigPayload}.signature`,
+    });
+    const res = await router(req);
+    expect(res.status).toBe(400);
+    const body = (await jsonResponse(res)) as Record<string, unknown>;
+    expect(body.error).toContain("size");
+  });
+
+  test("POST /scitt/entries accepts valid JWT-format statement", async () => {
+    const req = jsonRequest("POST", "/scitt/entries", {
+      statement: "eyJhbGciOiJFZERTQSJ9.eyJ0ZXN0IjoxfQ.validSignature",
+    });
+    const res = await router(req);
+    expect(res.status).toBe(201);
+  });
+
   test("full SCITT registration flow", async () => {
     const statement = "eyJhbGciOiJFZERTQSJ9.cpoe-payload.ed25519-sig";
 
