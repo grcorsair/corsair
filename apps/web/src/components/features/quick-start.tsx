@@ -29,36 +29,48 @@ export function QuickStart() {
   };
 
   return (
-    <Card className="relative overflow-hidden bg-corsair-surface">
-      {/* Copy button */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleCopy}
-        className="absolute right-3 top-3 gap-1.5 font-mono text-xs"
-      >
-        {copied ? (
-          <>
-            <CheckIcon className="h-3 w-3 text-corsair-green" />
-            Copied!
-          </>
-        ) : (
-          <>
-            <CopyIcon className="h-3 w-3" />
-            Copy
-          </>
-        )}
-      </Button>
+    <Card className="relative overflow-hidden bg-[#0A0A0A] shadow-2xl shadow-corsair-gold/5">
+      {/* Terminal chrome */}
+      <div className="flex items-center gap-2 border-b border-corsair-border px-4 py-3">
+        <div className="h-3 w-3 rounded-full bg-corsair-crimson/80" />
+        <div className="h-3 w-3 rounded-full bg-corsair-gold/80" />
+        <div className="h-3 w-3 rounded-full bg-corsair-green/80" />
+        <span className="ml-3 font-mono text-xs text-corsair-text-dim">
+          parley — quick start
+        </span>
+
+        {/* Copy button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleCopy}
+          className="ml-auto gap-1.5 font-mono text-xs"
+        >
+          {copied ? (
+            <>
+              <CheckIcon className="h-3 w-3 text-corsair-green" />
+              Copied!
+            </>
+          ) : (
+            <>
+              <CopyIcon className="h-3 w-3" />
+              Copy
+            </>
+          )}
+        </Button>
+      </div>
 
       <CardContent className="p-0">
-        <pre className="overflow-x-auto p-6 font-mono text-sm leading-relaxed">
+        <pre className="overflow-x-auto p-5 font-mono text-[12px] leading-relaxed sm:text-[13px]">
           {code.split("\n").map((line, i) => (
             <div
               key={i}
               className={
                 line.startsWith("#")
                   ? "text-corsair-text-dim"
-                  : "text-corsair-cyan"
+                  : line.startsWith("export")
+                    ? "text-corsair-gold"
+                    : "text-corsair-cyan"
               }
             >
               {line}

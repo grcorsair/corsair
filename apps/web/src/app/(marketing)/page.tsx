@@ -5,6 +5,7 @@ import { FrameworkGrid } from "@/components/features/framework-grid";
 import { QuickStart } from "@/components/features/quick-start";
 import { DisruptionSection } from "@/components/features/disruption-section";
 import { FadeIn } from "@/components/motion/fade-in";
+import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 
 export default function Home() {
   return (
@@ -15,8 +16,8 @@ export default function Home() {
       <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
-            <p className="mb-3 text-center text-xs font-medium uppercase tracking-widest text-corsair-gold/60">
-              The Protocol
+            <p className="mb-3 text-center font-pixel text-[7px] tracking-wider text-corsair-gold/60">
+              THE PROTOCOL
             </p>
             <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
               The Parley Protocol
@@ -31,30 +32,54 @@ export default function Home() {
         </div>
       </section>
 
+      <PixelDivider variant="swords" className="mx-auto max-w-5xl px-6" />
+
       {/* Value Props */}
-      <section className="border-t border-corsair-border px-6 py-20">
+      <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
-            <ValueProps />
+            <p className="mb-3 text-center font-pixel text-[7px] tracking-wider text-corsair-cyan/60">
+              WHY CORSAIR
+            </p>
+            <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
+              Three Pillars of Trust
+            </h2>
+            <p className="mb-12 text-center text-corsair-text-dim">
+              Evidence in. Crypto out. Anyone can verify.
+            </p>
           </FadeIn>
+          <ValueProps />
         </div>
       </section>
+
+      <PixelDivider variant="diamond" className="mx-auto max-w-5xl px-6" />
 
       {/* Disruption */}
-      <section className="border-t border-corsair-border px-6 py-20">
+      <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
-            <DisruptionSection />
+            <p className="mb-3 text-center font-pixel text-[7px] tracking-wider text-corsair-crimson/60">
+              DISRUPTION
+            </p>
+            <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
+              Questionnaires Are Dead
+            </h2>
+            <p className="mb-12 text-center text-corsair-text-dim">
+              $8.57B in TPRM spend. Built on trust. Not verification.
+            </p>
           </FadeIn>
+          <DisruptionSection />
         </div>
       </section>
 
+      <PixelDivider variant="swords" className="mx-auto max-w-5xl px-6" />
+
       {/* Framework Grid */}
-      <section className="border-t border-corsair-border px-6 py-20">
+      <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
-            <p className="mb-3 text-center text-xs font-medium uppercase tracking-widest text-corsair-gold/60">
-              Frameworks
+            <p className="mb-3 text-center font-pixel text-[7px] tracking-wider text-corsair-gold/60">
+              FRAMEWORKS
             </p>
             <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
               13+ Compliance Frameworks
@@ -64,18 +89,18 @@ export default function Home() {
               happen.
             </p>
           </FadeIn>
-          <FadeIn delay={0.2}>
-            <FrameworkGrid />
-          </FadeIn>
+          <FrameworkGrid />
         </div>
       </section>
 
+      <PixelDivider variant="diamond" className="mx-auto max-w-5xl px-6" />
+
       {/* Quick Start */}
-      <section className="border-t border-corsair-border px-6 py-20">
+      <section className="px-6 py-20">
         <div className="mx-auto max-w-3xl">
           <FadeIn>
-            <p className="mb-3 text-center text-xs font-medium uppercase tracking-widest text-corsair-green/60">
-              Get Started
+            <p className="mb-3 text-center font-pixel text-[7px] tracking-wider text-corsair-green/60">
+              GET STARTED
             </p>
             <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
               Quick Start

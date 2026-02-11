@@ -1,72 +1,98 @@
+"use client";
+
+import { motion } from "motion/react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.15 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: "easeOut" as const },
+  },
+};
 
 export function DisruptionSection() {
   return (
-    <div className="grid gap-8 md:grid-cols-2">
+    <motion.div
+      className="grid gap-8 md:grid-cols-2"
+      variants={containerVariants}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-80px" }}
+    >
       {/* Old way */}
-      <Card className="bg-corsair-surface">
-        <CardHeader>
-          <Badge variant="destructive" className="w-fit text-xs">
-            THE OLD WAY
-          </Badge>
-          <h3 className="mt-3 font-display text-xl font-bold text-corsair-text">
-            &ldquo;Are you compliant?&rdquo;
-          </h3>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-3 text-sm text-corsair-text-dim">
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-corsair-crimson">✗</span>
-              300-question SIG questionnaires, self-attested
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-corsair-crimson">✗</span>
-              Screenshots of control panels as &ldquo;evidence&rdquo;
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-corsair-crimson">✗</span>
-              Annual audits that are stale immediately
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-corsair-crimson">✗</span>
-              Checkbox theater that proves nothing
-            </li>
-          </ul>
-        </CardContent>
-      </Card>
+      <motion.div variants={itemVariants}>
+        <Card className="h-full bg-corsair-surface">
+          <CardHeader>
+            <span className="w-fit font-pixel text-[7px] tracking-wider text-corsair-crimson">
+              THE OLD WAY
+            </span>
+            <h3 className="mt-3 font-display text-xl font-bold text-corsair-text">
+              &ldquo;Are you compliant?&rdquo;
+            </h3>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-3 text-sm text-corsair-text-dim">
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-corsair-crimson">&#x2717;</span>
+                300-question SIG questionnaires, self-attested
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-corsair-crimson">&#x2717;</span>
+                Screenshots of control panels as &ldquo;evidence&rdquo;
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-corsair-crimson">&#x2717;</span>
+                Annual audits that are stale immediately
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-corsair-crimson">&#x2717;</span>
+                Checkbox theater that proves nothing
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Corsair way */}
-      <Card className="border-corsair-cyan/30 bg-gradient-to-br from-corsair-surface to-corsair-navy/20">
-        <CardHeader>
-          <Badge className="w-fit bg-corsair-cyan/10 text-xs text-corsair-cyan hover:bg-corsair-cyan/20">
-            THE CORSAIR WAY
-          </Badge>
-          <h3 className="mt-3 font-display text-xl font-bold text-corsair-text">
-            &ldquo;Prove it works.&rdquo;
-          </h3>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-3 text-sm text-corsair-text-dim">
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-corsair-green">✓</span>
-              Protocol-based verification proves controls actually work
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-corsair-green">✓</span>
-              SHA-256 evidence chain with cryptographic integrity
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-corsair-green">✓</span>
-              W3C Verifiable Credential with AI governance review
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-0.5 text-corsair-green">✓</span>
-              Continuous proof that controls are operating
-            </li>
-          </ul>
-        </CardContent>
-      </Card>
-    </div>
+      <motion.div variants={itemVariants}>
+        <Card className="h-full border-corsair-gold/20 bg-gradient-to-br from-corsair-surface to-corsair-gold/[0.03]">
+          <CardHeader>
+            <span className="w-fit font-pixel text-[7px] tracking-wider text-corsair-green">
+              THE CORSAIR WAY
+            </span>
+            <h3 className="mt-3 font-display text-xl font-bold text-corsair-text">
+              &ldquo;Prove it works.&rdquo;
+            </h3>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-3 text-sm text-corsair-text-dim">
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-corsair-green">&#x2713;</span>
+                Protocol-based verification proves controls actually work
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-corsair-green">&#x2713;</span>
+                SHA-256 evidence chain with cryptographic integrity
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-corsair-green">&#x2713;</span>
+                W3C Verifiable Credential with AI governance review
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-corsair-green">&#x2713;</span>
+                Continuous proof that controls are operating
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </motion.div>
   );
 }

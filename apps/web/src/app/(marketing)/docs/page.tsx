@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getDocPages } from "@/lib/mdx";
-import { FadeIn } from "@/components/motion/fade-in";
+import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion/fade-in";
+import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 
 export const metadata: Metadata = {
   title: "Documentation",
@@ -10,10 +11,10 @@ export const metadata: Metadata = {
 };
 
 const sections = [
-  { id: "getting-started", title: "Getting Started" },
-  { id: "concepts", title: "Core Concepts" },
-  { id: "protocol", title: "Protocol" },
-  { id: "integrations", title: "Integrations" },
+  { id: "getting-started", title: "Getting Started", label: "ONBOARD", labelColor: "text-corsair-cyan" },
+  { id: "concepts", title: "Core Concepts", label: "CONCEPTS", labelColor: "text-corsair-gold" },
+  { id: "protocol", title: "Protocol", label: "PARLEY", labelColor: "text-corsair-green" },
+  { id: "integrations", title: "Integrations", label: "INTEGRATE", labelColor: "text-corsair-turquoise" },
 ];
 
 export default function DocsPage() {
@@ -29,86 +30,106 @@ export default function DocsPage() {
       <div className="mx-auto max-w-5xl">
         {/* Header */}
         <FadeIn>
-          <div className="mb-12">
-            <h1 className="mb-4 font-display text-4xl font-bold text-corsair-text">
-              Documentation
+          <div className="mb-12 text-center">
+            <p className="mb-3 font-pixel text-[7px] tracking-wider text-corsair-gold/60">
+              DOCUMENTATION
+            </p>
+            <h1 className="mb-4 font-pixel-display text-5xl font-bold text-corsair-text sm:text-6xl">
+              docs
             </h1>
-            <p className="max-w-xl text-corsair-text-dim">
+            <p className="mx-auto max-w-xl text-corsair-text-dim">
               Everything you need to get started with Corsair and integrate it
               into your GRC workflow.
             </p>
           </div>
         </FadeIn>
 
-        {/* Quick start inline */}
-        <FadeIn>
-          <div className="mb-16 rounded-xl border border-corsair-cyan/20 bg-corsair-surface p-8">
-            <h2 className="mb-4 font-display text-2xl font-bold text-corsair-text">
-              Quick Start
-            </h2>
-            <div className="space-y-4 font-mono text-sm">
-              <div>
-                <span className="text-corsair-text-dim"># Install Bun</span>
-                <div className="text-corsair-cyan">
-                  curl -fsSL https://bun.sh/install | bash
-                </div>
-              </div>
-              <div>
-                <span className="text-corsair-text-dim">
-                  # Clone and install
+        {/* Quick start — terminal chrome */}
+        <FadeIn delay={0.2}>
+          <div className="mb-8">
+            <p className="mb-4 font-pixel text-[7px] tracking-wider text-corsair-cyan/60">
+              QUICK START
+            </p>
+            <div className="overflow-hidden rounded-xl border border-corsair-border bg-[#0A0A0A] shadow-2xl shadow-corsair-cyan/5">
+              <div className="flex items-center gap-2 border-b border-corsair-border px-4 py-3">
+                <div className="h-3 w-3 rounded-full bg-corsair-crimson/80" />
+                <div className="h-3 w-3 rounded-full bg-corsair-gold/80" />
+                <div className="h-3 w-3 rounded-full bg-corsair-green/80" />
+                <span className="ml-3 font-mono text-xs text-corsair-text-dim">
+                  parley &mdash; quick start
                 </span>
-                <div className="text-corsair-cyan">
-                  git clone https://github.com/Arudjreis/corsair.git
-                </div>
-                <div className="text-corsair-cyan">
-                  cd corsair && bun install
-                </div>
               </div>
-              <div>
-                <span className="text-corsair-text-dim">
-                  # Verify the example CPOE (no API keys needed)
-                </span>
-                <div className="text-corsair-gold">
-                  bun run bin/corsair-verify.ts examples/example-cpoe.jwt
+              <div className="space-y-4 p-5 font-mono text-[12px] sm:text-[13px]">
+                <div>
+                  <span className="text-corsair-text-dim"># Install Bun</span>
+                  <div className="text-corsair-cyan">
+                    curl -fsSL https://bun.sh/install | bash
+                  </div>
                 </div>
-              </div>
-              <div>
-                <span className="text-corsair-text-dim">
-                  # Ingest a SOC 2 report and generate a signed CPOE
-                </span>
-                <div className="text-corsair-gold">
-                  bun corsair.ts ingest --file report.pdf --type soc2
+                <div>
+                  <span className="text-corsair-text-dim">
+                    # Clone and install
+                  </span>
+                  <div className="text-corsair-cyan">
+                    git clone https://github.com/Arudjreis/corsair.git
+                  </div>
+                  <div className="text-corsair-cyan">
+                    cd corsair && bun install
+                  </div>
+                </div>
+                <div>
+                  <span className="text-corsair-text-dim">
+                    # Verify the example CPOE (no API keys needed)
+                  </span>
+                  <div className="text-corsair-gold">
+                    bun run bin/corsair-verify.ts examples/example-cpoe.jwt
+                  </div>
+                </div>
+                <div>
+                  <span className="text-corsair-text-dim">
+                    # Ingest a SOC 2 report and generate a signed CPOE
+                  </span>
+                  <div className="text-corsair-gold">
+                    bun corsair.ts ingest --file report.pdf --type soc2
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </FadeIn>
 
+        <PixelDivider variant="swords" className="my-16" />
+
         {/* Documentation sections */}
         <div className="space-y-12">
           {groupedDocs.map((section) => (
             <FadeIn key={section.id}>
               <div>
+                <p className={`mb-2 font-pixel text-[7px] tracking-wider ${section.labelColor}/60`}>
+                  {section.label}
+                </p>
                 <h2 className="mb-6 font-display text-2xl font-bold text-corsair-text">
                   {section.title}
                 </h2>
                 {section.docs.length > 0 ? (
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <StaggerChildren className="grid gap-4 sm:grid-cols-2">
                     {section.docs.map((doc) => (
-                      <Link
-                        key={doc.slug.join("/")}
-                        href={`/docs/${doc.slug.join("/")}`}
-                        className="group rounded-xl border border-corsair-border bg-corsair-surface p-5 transition-all hover:border-corsair-cyan/40"
-                      >
-                        <div className="mb-1 font-display font-bold text-corsair-text group-hover:text-corsair-cyan">
-                          {doc.title}
-                        </div>
-                        <div className="text-sm text-corsair-text-dim">
-                          {doc.description}
-                        </div>
-                      </Link>
+                      <StaggerItem key={doc.slug.join("/")}>
+                        <Link
+                          href={`/docs/${doc.slug.join("/")}`}
+                          className="pixel-card-hover group block rounded-xl border border-corsair-border bg-corsair-surface p-5 transition-all"
+                          style={{ "--glow-color": "rgba(212,168,83,0.12)" } as React.CSSProperties}
+                        >
+                          <div className="mb-1 font-display font-bold text-corsair-text group-hover:text-corsair-gold">
+                            {doc.title}
+                          </div>
+                          <div className="text-sm text-corsair-text-dim">
+                            {doc.description}
+                          </div>
+                        </Link>
+                      </StaggerItem>
                     ))}
-                  </div>
+                  </StaggerChildren>
                 ) : (
                   <p className="text-sm text-corsair-text-dim">
                     Documentation for this section is coming soon.
@@ -119,19 +140,21 @@ export default function DocsPage() {
           ))}
         </div>
 
+        <PixelDivider variant="diamond" className="my-16" />
+
         {/* GitHub link */}
         <FadeIn>
-          <div className="mt-16 rounded-xl border border-corsair-border bg-corsair-surface p-8 text-center">
-            <p className="mb-4 text-corsair-text-dim">
+          <div className="text-center">
+            <p className="mb-6 text-corsair-text-dim">
               Full documentation is available in the GitHub repository.
             </p>
             <a
               href="https://github.com/Arudjreis/corsair"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block rounded-lg border border-corsair-border bg-corsair-deep px-6 py-3 font-display text-sm font-semibold text-corsair-text transition-colors hover:border-corsair-cyan hover:text-corsair-cyan"
+              className="inline-block rounded-lg border border-corsair-gold/30 bg-corsair-surface px-8 py-4 font-display text-sm font-semibold text-corsair-text transition-all hover:border-corsair-gold hover:text-corsair-gold hover:shadow-[0_0_20px_rgba(212,168,83,0.1)]"
             >
-              View on GitHub
+              View on GitHub &rarr;
             </a>
           </div>
         </FadeIn>

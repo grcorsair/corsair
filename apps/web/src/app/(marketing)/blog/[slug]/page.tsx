@@ -4,6 +4,8 @@ import { MDXRemote } from "next-mdx-remote/rsc";
 import { getBlogPost, getBlogPosts } from "@/lib/mdx";
 import remarkGfm from "remark-gfm";
 import Link from "next/link";
+import { FadeIn } from "@/components/motion/fade-in";
+import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -40,42 +42,50 @@ export default async function BlogPostPage({ params }: Props) {
     <main className="px-6 py-16">
       <div className="mx-auto max-w-3xl">
         {/* Back link */}
-        <Link
-          href="/blog"
-          className="mb-8 inline-block font-mono text-xs text-corsair-text-dim transition-colors hover:text-corsair-cyan"
-        >
-          ← Back to blog
-        </Link>
+        <FadeIn>
+          <Link
+            href="/blog"
+            className="mb-8 inline-block font-mono text-xs text-corsair-text-dim transition-colors hover:text-corsair-gold"
+          >
+            &larr; Back to blog
+          </Link>
+        </FadeIn>
 
         {/* Post header */}
-        <header className="mb-12">
-          <div className="mb-4 flex items-center gap-3">
-            <span className="rounded-full bg-corsair-cyan/10 px-3 py-1 font-mono text-xs font-semibold text-corsair-cyan">
-              {post.meta.tag}
-            </span>
-            <time className="font-mono text-xs text-corsair-text-dim">
-              {new Date(post.meta.date).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </time>
-          </div>
-          <h1 className="mb-4 font-display text-4xl font-bold leading-tight text-corsair-text">
-            {post.meta.title}
-          </h1>
-          <p className="text-lg text-corsair-text-dim">
-            {post.meta.description}
-          </p>
-        </header>
+        <FadeIn delay={0.1}>
+          <header className="mb-12">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="font-pixel text-[7px] tracking-wider text-corsair-cyan">
+                {post.meta.tag}
+              </span>
+              <time className="font-mono text-xs text-corsair-text-dim">
+                {new Date(post.meta.date).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </time>
+            </div>
+            <h1 className="mb-4 font-display text-4xl font-bold leading-tight text-corsair-text">
+              {post.meta.title}
+            </h1>
+            <p className="text-lg text-corsair-text-dim">
+              {post.meta.description}
+            </p>
+          </header>
+        </FadeIn>
+
+        <PixelDivider variant="swords" className="mb-12" />
 
         {/* Post content */}
-        <article className="mdx-content">
-          <MDXRemote
-            source={post.content}
-            options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
-          />
-        </article>
+        <FadeIn delay={0.2}>
+          <article className="mdx-content">
+            <MDXRemote
+              source={post.content}
+              options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
+            />
+          </article>
+        </FadeIn>
       </div>
     </main>
   );
