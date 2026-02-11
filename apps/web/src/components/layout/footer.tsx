@@ -38,7 +38,7 @@ export function Footer() {
               Open compliance trust exchange protocol. Verify trust. Don&apos;t assume it.
             </p>
             <p className="mt-3 font-pixel text-[7px] tracking-wider text-corsair-text-dim/60">
-              v0.3.0 &middot; Apache-2.0
+              v0.4.0 &middot; Apache-2.0
             </p>
           </div>
 
