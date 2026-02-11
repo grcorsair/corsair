@@ -163,6 +163,7 @@ export function MarqueVerifier() {
           scope: typeof cs?.scope === "string" ? cs.scope : undefined,
           provenance: cs?.provenance as MarqueVerificationResult["provenance"],
           summary: cs?.summary as MarqueVerificationResult["summary"],
+          processProvenance: cs?.processProvenance as MarqueVerificationResult["processProvenance"],
         });
         setVerifyState("api-error");
         return;

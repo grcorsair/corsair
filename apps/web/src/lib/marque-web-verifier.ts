@@ -225,6 +225,7 @@ export function mergeAPIResultWithDecoded(
     assessmentDepth: cpoeFields.assessmentDepth,
     provenanceQuality: cpoeFields.provenanceQuality,
     doraMetrics: cpoeFields.doraMetrics,
+    processProvenance: apiData.processProvenance ?? cpoeFields.processProvenance ?? undefined,
     vcMetadata: vcMetadata ? {
       ...vcMetadata,
       generatedAt: apiData.timestamps.issuedAt ?? vcMetadata.generatedAt,

@@ -127,6 +127,27 @@ async function main(): Promise<void> {
       if (result.reason) {
         console.log(`Reason:      ${result.reason}`);
       }
+
+      // Process provenance (decode from JWT payload)
+      if (isJWT) {
+        try {
+          const payloadB64 = marqueContent.split(".")[1];
+          const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString());
+          const pp = payload.vc?.credentialSubject?.processProvenance;
+          if (pp) {
+            console.log();
+            console.log("Process Provenance");
+            console.log("------------------");
+            console.log(`Chain Verified: ${pp.chainVerified}`);
+            console.log(`Receipts:       ${pp.receiptCount} (${pp.reproducibleSteps} reproducible, ${pp.attestedSteps} attested)`);
+            console.log(`Format:         ${pp.format}`);
+            console.log(`Chain Digest:   ${pp.chainDigest}`);
+            if (pp.scittEntryIds?.length) {
+              console.log(`SCITT Entries:  ${pp.scittEntryIds.join(", ")}`);
+            }
+          }
+        } catch { /* non-critical decode failure */ }
+      }
       console.log();
     }
 

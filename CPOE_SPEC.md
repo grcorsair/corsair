@@ -93,6 +93,7 @@ All claims live under `vc.credentialSubject`.
 | `evidenceChain` | object | Hash chain metadata: `{ hashChainRoot, recordCount, chainVerified }` |
 | `frameworks` | object | Per-framework results (keyed by framework name) |
 | `quartermasterAttestation` | object | AI governance review: `{ confidenceScore, trustTier, dimensions }` |
+| `processProvenance` | object | Pipeline receipt chain: `{ chainDigest, receiptCount, chainVerified, format, reproducibleSteps, attestedSteps, scittEntryIds? }` — in-toto/SLSA provenance trail |
 
 ## 4. Verification Flow
 

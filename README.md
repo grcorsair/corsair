@@ -123,6 +123,14 @@ The credential subject contains the minimum viable attestation:
   "frameworks": {
     "SOC2": { "controlsMapped": 24, "passed": 22, "failed": 2 },
     "NIST-800-53": { "controlsMapped": 22, "passed": 20, "failed": 2 }
+  },
+  "processProvenance": {
+    "chainDigest": "a7f3e2...",
+    "receiptCount": 4,
+    "chainVerified": true,
+    "format": "in-toto/v1+cose-sign1",
+    "reproducibleSteps": 3,
+    "attestedSteps": 1
   }
 }
 ```
@@ -208,6 +216,7 @@ Parley composes open standards so any JWT library can verify a CPOE. Zero vendor
 | [**SCITT**](https://datatracker.ietf.org/wg/scitt/about/) | Transparency log | Postgres-backed registry with COSE receipts + Merkle proofs |
 | [**SSF/CAEP**](https://openid.net/specs/openid-sharedsignals-framework-1_0.html) | Real-time notifications | FLAGSHIP signals compliance changes via signed SETs |
 | **Ed25519** | Signatures | Curve25519 — fast, compact, no weak keys |
+| [**in-toto/SLSA**](https://in-toto.io/) | Process provenance | COSE-signed pipeline receipts with Merkle root chain |
 
 ### FLAGSHIP Events
 
@@ -232,7 +241,7 @@ did:web:acme.com       →  https://acme.com/.well-known/did.json
 ## Testing
 
 ```bash
-bun test                          # All tests (567 tests, 47 files)
+bun test                          # All tests (806 tests, 49 files)
 
 bun test tests/parley/            # Parley protocol (MARQUE, JWT-VC, DID, SCITT)
 bun test tests/flagship/          # FLAGSHIP (SSF/SET/CAEP)
@@ -284,7 +293,7 @@ src/
     types.ts               #   Ingestion type definitions
     index.ts               #   Barrel exports
 
-  parley/                  # Parley trust exchange protocol (19 files)
+  parley/                  # Parley trust exchange protocol (23 files)
     vc-generator.ts        #   JWT-VC generation (jose + Ed25519)
     vc-verifier.ts         #   JWT-VC verification
     vc-types.ts            #   W3C Verifiable Credential 2.0 types
@@ -304,6 +313,10 @@ src/
     auto-bundler.ts        #   Multi-provider MARQUE pipeline
     parley-client.ts       #   HTTP client + SSF streams
     parley-types.ts        #   Protocol types + config
+    process-receipt.ts     #   Process receipt types + COSE signing
+    receipt-chain.ts       #   Pipeline step receipt accumulator
+    receipt-verifier.ts    #   Process chain integrity verification
+    kms-key-manager.ts     #   AWS KMS-backed key manager (env-gated)
 
   flagship/                # Real-time compliance signals (6 files)
     flagship-types.ts      #   CAEP event types with pirate aliases
@@ -359,7 +372,7 @@ functions/                 # Railway Functions (HTTP endpoints)
 apps/
   web/                     # grcorsair.com (Next.js 15 + Tailwind 4 + shadcn/ui)
 
-tests/                     # 567 tests across 47 files
+tests/                     # 806 tests across 49 files
   parley/                  #   MARQUE, JWT-VC, DID, SCITT, CBOR, COSE, Merkle
   flagship/                #   SET generation, SSF streams, delivery
   ingestion/               #   SOC 2 parsing, mapping, batch processing

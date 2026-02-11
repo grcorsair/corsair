@@ -466,6 +466,8 @@ This is strict but correct. It's the whole point -- you can't claim L2 if some c
 | FLAGSHIP signals | `src/flagship/pg-ssf-stream.ts` | Postgres-backed |
 | DID resolution | `src/parley/did-resolver.ts` | Parsing + formatting |
 | Quartermaster review | `src/quartermaster/quartermaster-agent.ts` | Deterministic + LLM |
+| Process provenance | `src/parley/process-receipt.ts` + `receipt-chain.ts` + `receipt-verifier.ts` | in-toto/SLSA receipt chain |
+| KMS key manager | `src/parley/kms-key-manager.ts` | AWS KMS-backed signing (env-gated) |
 
 ### What Needs to Change
 

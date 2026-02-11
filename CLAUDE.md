@@ -15,8 +15,8 @@ Compliance proof infrastructure — cryptographic trust layer for GRC. Parley pr
 ## Commands
 ```bash
 bun install                          # Install dependencies
-bun test                             # Run all tests (556 tests, 47 files)
-bun test tests/parley/               # Parley protocol tests (20 files)
+bun test                             # Run all tests (806 tests, 49 files)
+bun test tests/parley/               # Parley protocol tests (21 files)
 bun test tests/flagship/             # FLAGSHIP SSF/CAEP tests
 bun test tests/ingestion/            # Ingestion pipeline tests
 bun test tests/quartermaster/        # Governance tests
