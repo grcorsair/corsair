@@ -8,8 +8,8 @@
  */
 
 import { describe, test, expect, beforeEach } from "bun:test";
-import { handleHealth } from "../../functions/health";
-import { handleSSFConfiguration } from "../../functions/ssf-configuration";
+import { handleHealth, createHealthHandler } from "../../functions/health";
+import { handleSSFConfiguration, createSSFConfigHandler } from "../../functions/ssf-configuration";
 import {
   createSSFStreamRouter,
   type SSFStreamRouterDeps,
@@ -69,6 +69,46 @@ describe("Health Endpoint", () => {
     const ts = new Date(body.timestamp as string);
     expect(ts.getTime()).not.toBeNaN();
   });
+
+  test("createHealthHandler returns ok with connected DB", async () => {
+    const mockDb = { [Symbol.for("bun.sql.query")]: true } as any;
+    // Mock the tagged template by making db callable as tagged template
+    const db = Object.assign(
+      (strings: TemplateStringsArray, ..._values: unknown[]) => Promise.resolve([{ "?column?": 1 }]),
+      mockDb,
+    );
+    const handler = createHealthHandler({ db });
+    const req = jsonRequest("GET", "/health");
+    const res = await handler(req);
+    expect(res.status).toBe(200);
+    const body = (await jsonResponse(res)) as Record<string, unknown>;
+    expect(body.status).toBe("ok");
+    const checks = body.checks as Record<string, unknown>;
+    expect(checks.database).toBe("connected");
+  });
+
+  test("createHealthHandler returns degraded when DB fails", async () => {
+    const db = Object.assign(
+      (_strings: TemplateStringsArray, ..._values: unknown[]) => Promise.reject(new Error("connection refused")),
+      {},
+    );
+    const handler = createHealthHandler({ db });
+    const req = jsonRequest("GET", "/health");
+    const res = await handler(req);
+    expect(res.status).toBe(503);
+    const body = (await jsonResponse(res)) as Record<string, unknown>;
+    expect(body.status).toBe("degraded");
+    const checks = body.checks as Record<string, unknown>;
+    expect(checks.database).toBe("unreachable");
+  });
+
+  test("legacy handleHealth still works", async () => {
+    const req = jsonRequest("GET", "/health");
+    const res = await handleHealth(req);
+    expect(res.status).toBe(200);
+    const body = (await jsonResponse(res)) as Record<string, unknown>;
+    expect(body.status).toBe("ok");
+  });
 });
 
 // =============================================================================
@@ -119,6 +159,17 @@ describe("SSF Configuration Endpoint", () => {
     expect(body.status_endpoint).toBe(
       "https://api.grcorsair.com/ssf/streams/{stream_id}/status",
     );
+  });
+
+  test("createSSFConfigHandler uses custom domain", async () => {
+    const handler = createSSFConfigHandler("custom.example.com");
+    const req = jsonRequest("GET", "/.well-known/ssf-configuration");
+    const res = await handler(req);
+    expect(res.status).toBe(200);
+    const body = (await jsonResponse(res)) as Record<string, unknown>;
+    expect(body.issuer).toBe("https://custom.example.com");
+    expect(body.jwks_uri).toBe("https://custom.example.com/.well-known/jwks.json");
+    expect(body.configuration_endpoint).toBe("https://api.custom.example.com/ssf/streams");
   });
 });
 

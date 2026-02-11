@@ -232,8 +232,8 @@ export function createIssueRouter(
 
       return jsonOk(response, 201);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      return jsonError(500, `CPOE issuance failed: ${message}`);
+      console.error("CPOE issuance failed:", err instanceof Error ? err.message : err);
+      return jsonError(500, "CPOE issuance failed");
     }
   };
 }

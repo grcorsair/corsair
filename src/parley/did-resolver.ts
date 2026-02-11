@@ -157,7 +157,7 @@ export async function resolveDIDDocument(
   const doFetch = fetchFn || globalThis.fetch;
 
   try {
-    const response = await doFetch(url, { signal: AbortSignal.timeout(5000) });
+    const response = await doFetch(url, { signal: AbortSignal.timeout(5000), redirect: "error" });
     if (!response.ok) {
       return emptyResult(`HTTP ${(response as Response).status}: ${(response as Response).statusText}`);
     }

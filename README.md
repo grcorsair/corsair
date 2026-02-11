@@ -394,6 +394,13 @@ tests/                     # 806 tests across 49 files
 
 ---
 
+## Data Retention
+
+- **SCITT entries** are append-only by design (enforced by database constraints). Entries cannot be deleted or modified after registration.
+- **SSF streams** can be soft-deleted via the API but remain in the database for audit purposes.
+- **Signing keys** are encrypted at rest (AES-256-GCM) and retired keys are preserved for historical CPOE verification.
+- Storage monitoring is recommended via your hosting provider's dashboard. Time-based partitioning will be implemented at >100K SCITT entries.
+
 ## Security
 
 See [SECURITY.md](SECURITY.md) for vulnerability reporting.

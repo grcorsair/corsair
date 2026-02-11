@@ -270,6 +270,18 @@ describe("DID Resolver - did:web Resolution", () => {
       expect(result.didResolutionMetadata.error).toContain("Blocked");
     });
 
+    test("blocks fetch redirects (redirect: error)", async () => {
+      const mockFetch = async (_url: string, opts?: RequestInit) => {
+        // Verify redirect: "error" is passed
+        expect((opts as any)?.redirect).toBe("error");
+        throw new TypeError("fetch failed (redirect blocked)");
+      };
+
+      const result = await resolveDIDDocument("did:web:evil-redirect.example.com", mockFetch as any);
+      expect(result.didDocument).toBeNull();
+      expect(result.didResolutionMetadata.error).toBeDefined();
+    });
+
     test("allows did:web:grcorsair.com (public domain)", async () => {
       const mockFetch = async (_url: string) => ({
         ok: true,

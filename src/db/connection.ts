@@ -18,7 +18,7 @@ let singleton: InstanceType<typeof SQL> | null = null;
  * Does not cache — each call returns a new instance.
  */
 export function createDb(url: string): InstanceType<typeof SQL> {
-  return new SQL({ url });
+  return new SQL({ url, max: 20, idleTimeout: 30 });
 }
 
 /**

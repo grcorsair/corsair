@@ -5,7 +5,7 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import { requireAuth } from "../../src/middleware/auth";
+import { requireAuth, invalidateApiKeyCache } from "../../src/middleware/auth";
 
 // Simple passthrough handler for testing
 const echoHandler = (req: Request) =>
@@ -24,6 +24,7 @@ describe("requireAuth middleware", () => {
     } else {
       delete process.env.CORSAIR_API_KEYS;
     }
+    invalidateApiKeyCache();
   });
 
   test("passes request through with valid Bearer token", async () => {
@@ -127,5 +128,36 @@ describe("requireAuth middleware", () => {
 
     const res = await handler(req);
     expect(res.status).toBe(200);
+  });
+
+  test("caches API keys across calls", async () => {
+    process.env.CORSAIR_API_KEYS = "cached-key";
+    invalidateApiKeyCache();
+    const handler = requireAuth(echoHandler);
+
+    const req1 = new Request("http://localhost/test", {
+      method: "POST",
+      headers: { Authorization: "Bearer cached-key" },
+    });
+    const res1 = await handler(req1);
+    expect(res1.status).toBe(200);
+
+    // Change env — but cache should still use old value
+    process.env.CORSAIR_API_KEYS = "new-key";
+    const req2 = new Request("http://localhost/test", {
+      method: "POST",
+      headers: { Authorization: "Bearer cached-key" },
+    });
+    const res2 = await handler(req2);
+    expect(res2.status).toBe(200); // Still valid from cache
+
+    // Invalidate cache to pick up new keys
+    invalidateApiKeyCache();
+    const req3 = new Request("http://localhost/test", {
+      method: "POST",
+      headers: { Authorization: "Bearer cached-key" },
+    });
+    const res3 = await handler(req3);
+    expect(res3.status).toBe(403); // Now rejected
   });
 });

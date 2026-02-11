@@ -88,6 +88,11 @@ export function createVerifyRouter(
       return jsonError(400, "Empty CPOE. Provide a JWT-VC string.");
     }
 
+    // Reject oversized JWTs (typical CPOE is 2-5KB)
+    if (jwt.length > 20_000) {
+      return jsonError(400, "JWT exceeds maximum size (20KB)");
+    }
+
     // Basic format check
     if (jwt.split(".").length !== 3) {
       return jsonError(400, "Invalid JWT format. Expected three base64url segments separated by dots.");

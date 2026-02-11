@@ -14,13 +14,6 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { createHash } from "crypto";
 
-// TODO: v0.3.0 — Corsair facade deleted. AutoBundler needs rewrite for ingestion pipeline.
-// import { Corsair } from "../engine/index";
-
-/**
- * Minimal Corsair facade interface for AutoBundler compatibility.
- * Will be replaced by the ingestion pipeline in Phase 2.
- */
 interface Corsair {
   recon(targetId: string, options: { source: string }): Promise<{ snapshot: Record<string, unknown> }>;
   threatModel(snapshot: Record<string, unknown>, providerId: string): Promise<ThreatModelResult>;

@@ -50,6 +50,7 @@ export function isBlockedHost(hostname: string): boolean {
 
   // IPv6 checks
   if (host === "::1") return true;                              // loopback
+  if (host === "::" || host === "::0") return true;              // unspecified
   if (host.startsWith("fc") || host.startsWith("fd")) return true; // fc00::/7 (unique local)
   if (host.startsWith("fe8") || host.startsWith("fe9") ||
       host.startsWith("fea") || host.startsWith("feb")) return true; // fe80::/10 (link-local)

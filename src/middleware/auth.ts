@@ -9,10 +9,19 @@
  *   const protectedHandler = requireAuth(originalHandler);
  */
 
+let cachedKeys: Set<string> | null = null;
+
 function loadApiKeys(): Set<string> {
+  if (cachedKeys) return cachedKeys;
   const raw = Bun.env.CORSAIR_API_KEYS || "";
   const keys = raw.split(",").map((k) => k.trim()).filter((k) => k.length > 0);
-  return new Set(keys);
+  cachedKeys = new Set(keys);
+  return cachedKeys;
+}
+
+/** Invalidate cached API keys (for testing or key rotation) */
+export function invalidateApiKeyCache(): void {
+  cachedKeys = null;
 }
 
 /**
