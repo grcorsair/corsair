@@ -112,6 +112,10 @@ function getSourceCeiling(source: DocumentSource): AssuranceLevel {
       // Audit report with evidence = configured (L1)
       return 1;
 
+    case "json":
+      // Generic JSON = configured (L1) — structured data implies tooling
+      return 1;
+
     case "manual":
     default:
       // Self-reported = documented (L0)
@@ -272,6 +276,7 @@ function sourceToProvenanceType(source: DocumentSource): CPOEProvenance["source"
     case "prowler":
     case "securityhub":
     case "pentest":
+    case "json":
       return "tool";
     case "manual":
     default:
@@ -324,6 +329,7 @@ function sourceToMethod(source: DocumentSource): CPOEAssurance["method"] {
       return "self-assessed";
     case "prowler":
     case "securityhub":
+    case "json":
       return "automated-config-check";
     case "pentest":
       return "ai-evidence-review";
@@ -469,6 +475,7 @@ export function scoreMethodology(source: DocumentSource, qmScore?: number): numb
     case "pentest": return 75;        // Active testing = NIST Test-Focused
     case "prowler":
     case "securityhub": return 60;    // Automated scan = NIST Examine-Focused
+    case "json": return 55;           // Structured data = NIST Examine-Basic
     case "soc2":
     case "iso27001": return 50;       // Audit report = NIST Examine-Basic + Interview
     case "manual": return 15;         // Self-reported = minimal
@@ -503,6 +510,7 @@ export function scoreIndependence(source: DocumentSource): number {
     case "pentest": return 75;        // External tester (3rd-4th line)
     case "prowler":
     case "securityhub": return 50;    // Automated tool (2nd line equivalent)
+    case "json": return 40;           // Structured data (2nd line, unknown tool)
     case "manual": return 15;         // Self-assessment (1st line)
     default: return 10;
   }
@@ -565,6 +573,11 @@ export function deriveEvidenceTypes(
       types.add("documented-record");
       // SOC 2 reports typically include interview + inspection evidence
       types.add("interview");
+      break;
+    case "json":
+      // Generic JSON — could be tool-generated or manual
+      types.add("system-generated-record");
+      types.add("documented-record");
       break;
     case "manual":
       types.add("self-attestation");

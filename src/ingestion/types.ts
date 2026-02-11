@@ -27,7 +27,8 @@ export type DocumentSource =
   | "prowler"
   | "securityhub"
   | "pentest"
-  | "manual";
+  | "manual"
+  | "json";
 
 /**
  * Assurance levels per the 5-Level Assurance Ladder.

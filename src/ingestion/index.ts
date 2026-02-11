@@ -23,6 +23,9 @@ export type { MapperOptions } from "./mapper";
 export { parseSOC2, parseSOC2FromText } from "./soc2-parser";
 export type { SOC2ParserOptions } from "./soc2-parser";
 
+export { parseJSON } from "./json-parser";
+export type { ParseJSONOptions } from "./json-parser";
+
 export { readPDF } from "./pdf-extractor";
 export type { ExtractedPDF } from "./pdf-extractor";
 

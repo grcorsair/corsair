@@ -10,6 +10,7 @@
  */
 
 import { parseSOC2 } from "./soc2-parser";
+import { parseJSON } from "./json-parser";
 import { mapToMarqueInput } from "./mapper";
 import { MarqueGenerator } from "../parley/marque-generator";
 import { MarqueKeyManager } from "../parley/marque-key-manager";
@@ -24,7 +25,7 @@ import type { IngestedDocument } from "./types";
 
 export interface IngestArgs {
   file?: string;
-  type: "soc2" | "iso27001" | "prowler" | "manual";
+  type: "soc2" | "iso27001" | "prowler" | "securityhub" | "json" | "manual";
   did?: string;
   output?: string;
   format: "v1" | "vc";
@@ -78,7 +79,7 @@ USAGE:
 
 OPTIONS:
   -f, --file <PATH>     Path to the document (PDF, JSON, CSV)
-  -t, --type <TYPE>     Document type: soc2 (default), iso27001, prowler, manual
+  -t, --type <TYPE>     Document type: soc2 (default), json, prowler, securityhub, iso27001, manual
   --did <DID>           Issuer DID (e.g., "did:web:yourdomain.com")
   -o, --output <PATH>   Write CPOE to file (default: stdout)
   --format <v1|vc>      Output format: JWT-VC (default) or JSON envelope
@@ -125,9 +126,17 @@ export async function runIngest(args: IngestArgs): Promise<void> {
     case "soc2":
       ingested = await parseSOC2(args.file, { model: args.model });
       break;
+    case "json":
+    case "prowler":
+    case "securityhub": {
+      const rawText = await Bun.file(args.file).text();
+      const sourceOverride = args.type !== "json" ? args.type : undefined;
+      ingested = parseJSON(rawText, sourceOverride ? { source: sourceOverride } : undefined);
+      break;
+    }
     default:
       console.error(`Error: Document type "${args.type}" is not yet supported.`);
-      console.error("Supported: soc2");
+      console.error("Supported: soc2, json, prowler, securityhub");
       process.exit(2);
       throw new Error("unreachable");
   }
