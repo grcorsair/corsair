@@ -1,8 +1,12 @@
 /**
  * Marque Verifier — Client-side Ed25519 verification via Web Crypto API.
  * Supports JWT-VC (standard) and JSON envelope formats.
- * Zero server calls. No data leaves the browser.
+ *
+ * Primary flow: decode JWT client-side, verify via API.
+ * Fallback: full client-side verification with user-provided PEM key.
  */
+
+import type { APIVerifyResponse } from "./corsair-api";
 
 export type MarqueFormat = "json" | "jwt";
 
@@ -129,6 +133,93 @@ export interface MarqueVerificationResult {
   ruleTrace?: string[];
   /** Calculation version (e.g., "l0-l4@2026-02-09") */
   calculationVersion?: string;
+  /** Per-control classification with level, methodology, trace */
+  controlClassifications?: Array<{
+    controlId: string;
+    level: number;
+    methodology: string;
+    trace: string;
+    boilerplateFlags?: string[];
+  }>;
+  /** NIST 800-53A assessment depth */
+  assessmentDepth?: {
+    methods: string[];
+    depth: string;
+    rigorScore: number;
+  };
+  /** Provenance quality score (0-100) */
+  provenanceQuality?: number;
+  /** DORA evidence quality metrics */
+  doraMetrics?: {
+    freshness: number;
+    specificity: number;
+    independence: number;
+    reproducibility: number;
+    band: string;
+    pairingFlags?: string[];
+  };
+}
+
+/**
+ * Decode a JWT payload without signature verification.
+ * Returns the full payload for instant UI display, or null on malformed input.
+ */
+export function decodeJWTPayload(jwt: string): Record<string, unknown> | null {
+  const trimmed = jwt.trim();
+  const parts = trimmed.split(".");
+  if (parts.length !== 3) return null;
+
+  try {
+    const payloadJson = base64UrlDecode(parts[1]);
+    return JSON.parse(payloadJson);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Merge API verify response with client-side decoded JWT payload.
+ * API provides: verified, issuerTier. Decoded payload provides: rich L0-L4 fields.
+ */
+export function mergeAPIResultWithDecoded(
+  apiData: APIVerifyResponse,
+  decodedPayload: Record<string, unknown> | null,
+): MarqueVerificationResult {
+  const cpoeFields = decodedPayload ? extractCPOEFields(decodedPayload) : {};
+  const vcMetadata = decodedPayload ? extractVCMetadata(decodedPayload) : undefined;
+  const document = decodedPayload ? mapVCToDocument(decodedPayload) : undefined;
+
+  return {
+    valid: apiData.verified,
+    reason: apiData.verified
+      ? "Signature verified via DID:web. Credential integrity confirmed."
+      : apiData.reason || "Verification failed",
+    format: "jwt",
+    issuerTier: apiData.issuerTier || cpoeFields.issuerTier,
+    assuranceLevel: apiData.assurance?.level ?? cpoeFields.assuranceLevel,
+    assuranceName: apiData.assurance?.name ?? cpoeFields.assuranceName,
+    assurance: cpoeFields.assurance,
+    provenance: apiData.provenance ?? cpoeFields.provenance,
+    scope: apiData.scope ?? cpoeFields.scope,
+    summary: apiData.summary ?? cpoeFields.summary,
+    dimensions: cpoeFields.dimensions,
+    evidenceTypes: cpoeFields.evidenceTypes,
+    observationPeriod: cpoeFields.observationPeriod,
+    riskQuantification: cpoeFields.riskQuantification,
+    frameworks: cpoeFields.frameworks,
+    ruleTrace: cpoeFields.ruleTrace,
+    calculationVersion: cpoeFields.calculationVersion,
+    controlClassifications: cpoeFields.controlClassifications,
+    assessmentDepth: cpoeFields.assessmentDepth,
+    provenanceQuality: cpoeFields.provenanceQuality,
+    doraMetrics: cpoeFields.doraMetrics,
+    vcMetadata: vcMetadata ? {
+      ...vcMetadata,
+      generatedAt: apiData.timestamps.issuedAt ?? vcMetadata.generatedAt,
+      expiresAt: apiData.timestamps.expiresAt ?? vcMetadata.expiresAt,
+    } : undefined,
+    document,
+  };
 }
 
 function base64ToBuffer(base64: string): ArrayBuffer {
@@ -483,6 +574,10 @@ function extractCPOEFields(payload: {
     frameworks: cs.frameworks as MarqueVerificationResult["frameworks"],
     ruleTrace: (cs.assurance as Record<string, unknown>)?.ruleTrace as string[] | undefined,
     calculationVersion: (cs.assurance as Record<string, unknown>)?.calculationVersion as string | undefined,
+    controlClassifications: cs.controlClassifications as MarqueVerificationResult["controlClassifications"],
+    assessmentDepth: cs.assessmentDepth as MarqueVerificationResult["assessmentDepth"],
+    provenanceQuality: typeof cs.provenanceQuality === "number" ? cs.provenanceQuality : undefined,
+    doraMetrics: cs.doraMetrics as MarqueVerificationResult["doraMetrics"],
   };
 }
 
@@ -590,68 +685,11 @@ async function verifyJSON(
   }
 }
 
-/** Sample CPOE in v0.3.0 format for the "Try it" button */
-export const SAMPLE_MARQUE = JSON.stringify(
-  {
-    marque: {
-      id: "mrq_2026-02-09_demo_abc123",
-      version: "2.0.0",
-      issuer: {
-        name: "Security Engineering",
-        organization: "Acme Cloud Platform",
-      },
-      generatedAt: "2026-02-09T10:30:00Z",
-      expiresAt: "2027-02-09T10:30:00Z",
-      scope: "SOC 2 Type II — Acme Cloud Platform",
-      assurance: {
-        declared: 1,
-        verified: true,
-        method: "self-assessed",
-        breakdown: { "0": 2, "1": 22 },
-      },
-      provenance: {
-        source: "auditor",
-        sourceIdentity: "Example Audit Firm LLP",
-        sourceDate: "2026-01-15",
-      },
-      summary: {
-        controlsTested: 24,
-        controlsPassed: 22,
-        controlsFailed: 2,
-        overallScore: 92,
-      },
-      evidenceChain: {
-        hashChainRoot:
-          "a3f2b8c1d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1",
-        recordCount: 12,
-        algorithm: "SHA-256",
-      },
-      quartermasterAttestation: {
-        confidenceScore: 82,
-        trustTier: "AI-VERIFIED",
-        dimensions: {
-          methodology: 0.85,
-          evidence_integrity: 0.9,
-          completeness: 0.78,
-          bias: 0.75,
-        },
-      },
-      findings: [
-        { criterion: "Encryption at rest enabled for all storage", status: "SATISFIED" },
-        { criterion: "Access logging configured and active", status: "SATISFIED" },
-        { criterion: "Password policy meets 14-char minimum", status: "FAILED", severity: "HIGH" },
-        { criterion: "MFA enforced for all user accounts", status: "FAILED", severity: "CRITICAL" },
-        { criterion: "Session timeout under 30 minutes", status: "SATISFIED" },
-        { criterion: "Account lockout after 5 failed attempts", status: "SATISFIED" },
-        { criterion: "CloudTrail logging with integrity validation", status: "SATISFIED" },
-        { criterion: "No public access to user pool", status: "SATISFIED" },
-      ],
-    },
-    signature: "DEMO_SIGNATURE_NOT_CRYPTOGRAPHICALLY_VALID",
-  },
-  null,
-  2
-);
+/** Real CPOE JWT-VC signed by did:web:grcorsair.com — issued via POST api.grcorsair.com/issue */
+export const SAMPLE_CPOE_JWT = "eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCIsImtpZCI6ImRpZDp3ZWI6Z3Jjb3JzYWlyLmNvbSNrZXktMSJ9.eyJ2YyI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL2dyY29yc2Fpci5jb20vY3JlZGVudGlhbHMvdjEiXSwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIkNvcnNhaXJDUE9FIl0sImlzc3VlciI6eyJpZCI6ImRpZDp3ZWI6Z3Jjb3JzYWlyLmNvbSIsIm5hbWUiOiJFeGFtcGxlIEF1ZGl0IEZpcm0gTExQIn0sInZhbGlkRnJvbSI6IjIwMjYtMDItMTFUMTA6MjI6NTUuOTc2WiIsInZhbGlkVW50aWwiOiIyMDI2LTA1LTEyVDEwOjIyOjU1Ljk3NloiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJ0eXBlIjoiQ29yc2FpckNQT0UiLCJzY29wZSI6IlNPQyAyIFR5cGUgSUkgLSBBY21lIENsb3VkIFBsYXRmb3JtIiwiYXNzdXJhbmNlIjp7ImRlY2xhcmVkIjoxLCJ2ZXJpZmllZCI6dHJ1ZSwibWV0aG9kIjoic2VsZi1hc3Nlc3NlZCIsImJyZWFrZG93biI6eyIxIjoxMn0sImNhbGN1bGF0aW9uVmVyc2lvbiI6ImwwLWw0QDIwMjYtMDItMDkiLCJydWxlVHJhY2UiOlsiUlVMRTogMTIgY29udHJvbHMgY2hlY2tlZCIsIlJVTEU6IHNvdXJjZSBcInNvYzJcIiBjZWlsaW5nID0gTDEiLCJSVUxFOiBicmVha2Rvd24gPSB7XCIxXCI6MTJ9IiwiUlVMRTogbWluIG9mIGluLXNjb3BlIGNvbnRyb2xzID0gTDEg4oCUIHNhdGlzZmllZCIsIlJVTEU6IGZyZXNobmVzcyBjaGVja2VkIOKAlCBmcmVzaCAoMjcgZGF5cykiLCJTQUZFR1VBUkQ6IEFsbCAxMiBjb250cm9scyBhcmUgZWZmZWN0aXZlIOKAlCBhbGwtcGFzcyBiaWFzIGZsYWcgYXBwbGllZCAoY29uc2lzdGVuY3kgZGltZW5zaW9uIHBlbmFsdHkpIl19LCJwcm92ZW5hbmNlIjp7InNvdXJjZSI6ImF1ZGl0b3IiLCJzb3VyY2VJZGVudGl0eSI6IkV4YW1wbGUgQXVkaXQgRmlybSBMTFAiLCJzb3VyY2VEYXRlIjoiMjAyNi0wMS0xNSIsImV2aWRlbmNlVHlwZURpc3RyaWJ1dGlvbiI6eyJkb2N1bWVudGVkLXJlY29yZCI6MC42LCJpbnRlcnZpZXciOjAuNH19LCJzdW1tYXJ5Ijp7ImNvbnRyb2xzVGVzdGVkIjowLCJjb250cm9sc1Bhc3NlZCI6MCwiY29udHJvbHNGYWlsZWQiOjAsIm92ZXJhbGxTY29yZSI6MH0sImRpbWVuc2lvbnMiOnsiY2FwYWJpbGl0eSI6MTAwLCJjb3ZlcmFnZSI6NzAsInJlbGlhYmlsaXR5IjoxMDAsIm1ldGhvZG9sb2d5Ijo1MCwiZnJlc2huZXNzIjo5MywiaW5kZXBlbmRlbmNlIjo4NSwiY29uc2lzdGVuY3kiOjg1fSwiZXZpZGVuY2VUeXBlcyI6WyJkb2N1bWVudGVkLXJlY29yZCIsImludGVydmlldyJdLCJvYnNlcnZhdGlvblBlcmlvZCI6eyJzdGFydERhdGUiOiIyMDI1LTEwLTE3IiwiZW5kRGF0ZSI6IjIwMjYtMDEtMTUiLCJkdXJhdGlvbkRheXMiOjkwLCJzdWZmaWNpZW50Ijp0cnVlLCJjb3NvQ2xhc3NpZmljYXRpb24iOiJvcGVyYXRpbmciLCJzb2MyRXF1aXZhbGVudCI6IlR5cGUgSUkgKDNtbykifSwiY29udHJvbENsYXNzaWZpY2F0aW9ucyI6W3siY29udHJvbElkIjoiQ0MxLjEiLCJsZXZlbCI6MSwibWV0aG9kb2xvZ3kiOiJ1bmtub3duIiwidHJhY2UiOiJObyBtZXRob2RvbG9neSBrZXl3b3JkcyBkZXRlY3RlZC4gU291cmNlIGNlaWxpbmc6IEwxLiBNYXggbGV2ZWw6IEwxLiJ9LHsiY29udHJvbElkIjoiQ0MxLjIiLCJsZXZlbCI6MSwibWV0aG9kb2xvZ3kiOiJ1bmtub3duIiwidHJhY2UiOiJObyBtZXRob2RvbG9neSBrZXl3b3JkcyBkZXRlY3RlZC4gU291cmNlIGNlaWxpbmc6IEwxLiBNYXggbGV2ZWw6IEwxLiIsImJvaWxlcnBsYXRlRmxhZ3MiOlsiZ2VuZXJpYy1ib2lsZXJwbGF0ZSJdfSx7ImNvbnRyb2xJZCI6IkNDMi4xIiwibGV2ZWwiOjEsIm1ldGhvZG9sb2d5IjoidW5rbm93biIsInRyYWNlIjoiTm8gbWV0aG9kb2xvZ3kga2V5d29yZHMgZGV0ZWN0ZWQuIFNvdXJjZSBjZWlsaW5nOiBMMS4gTWF4IGxldmVsOiBMMS4iLCJib2lsZXJwbGF0ZUZsYWdzIjpbImdlbmVyaWMtYm9pbGVycGxhdGUiXX0seyJjb250cm9sSWQiOiJDQzMuMSIsImxldmVsIjoxLCJtZXRob2RvbG9neSI6InVua25vd24iLCJ0cmFjZSI6Ik5vIG1ldGhvZG9sb2d5IGtleXdvcmRzIGRldGVjdGVkLiBTb3VyY2UgY2VpbGluZzogTDEuIE1heCBsZXZlbDogTDEuIn0seyJjb250cm9sSWQiOiJDQzUuMSIsImxldmVsIjoxLCJtZXRob2RvbG9neSI6InVua25vd24iLCJ0cmFjZSI6Ik5vIG1ldGhvZG9sb2d5IGtleXdvcmRzIGRldGVjdGVkLiBTb3VyY2UgY2VpbGluZzogTDEuIE1heCBsZXZlbDogTDEuIiwiYm9pbGVycGxhdGVGbGFncyI6WyJnZW5lcmljLWJvaWxlcnBsYXRlIl19LHsiY29udHJvbElkIjoiQ0M2LjEiLCJsZXZlbCI6MSwibWV0aG9kb2xvZ3kiOiJ1bmtub3duIiwidHJhY2UiOiJObyBtZXRob2RvbG9neSBrZXl3b3JkcyBkZXRlY3RlZC4gU291cmNlIGNlaWxpbmc6IEwxLiBNYXggbGV2ZWw6IEwxLiJ9LHsiY29udHJvbElkIjoiQ0M2LjMiLCJsZXZlbCI6MSwibWV0aG9kb2xvZ3kiOiJ1bmtub3duIiwidHJhY2UiOiJObyBtZXRob2RvbG9neSBrZXl3b3JkcyBkZXRlY3RlZC4gU291cmNlIGNlaWxpbmc6IEwxLiBNYXggbGV2ZWw6IEwxLiIsImJvaWxlcnBsYXRlRmxhZ3MiOlsiZ2VuZXJpYy1ib2lsZXJwbGF0ZSJdfSx7ImNvbnRyb2xJZCI6IkNDNi42IiwibGV2ZWwiOjEsIm1ldGhvZG9sb2d5IjoidW5rbm93biIsInRyYWNlIjoiTm8gbWV0aG9kb2xvZ3kga2V5d29yZHMgZGV0ZWN0ZWQuIFNvdXJjZSBjZWlsaW5nOiBMMS4gTWF4IGxldmVsOiBMMS4ifSx7ImNvbnRyb2xJZCI6IkNDNy4xIiwibGV2ZWwiOjEsIm1ldGhvZG9sb2d5IjoidW5rbm93biIsInRyYWNlIjoiTm8gbWV0aG9kb2xvZ3kga2V5d29yZHMgZGV0ZWN0ZWQuIFNvdXJjZSBjZWlsaW5nOiBMMS4gTWF4IGxldmVsOiBMMS4ifSx7ImNvbnRyb2xJZCI6IkNDNy4yIiwibGV2ZWwiOjEsIm1ldGhvZG9sb2d5IjoidW5rbm93biIsInRyYWNlIjoiTm8gbWV0aG9kb2xvZ3kga2V5d29yZHMgZGV0ZWN0ZWQuIFNvdXJjZSBjZWlsaW5nOiBMMS4gTWF4IGxldmVsOiBMMS4iLCJib2lsZXJwbGF0ZUZsYWdzIjpbImdlbmVyaWMtYm9pbGVycGxhdGUiXX0seyJjb250cm9sSWQiOiJDQzcuMyIsImxldmVsIjoxLCJtZXRob2RvbG9neSI6InVua25vd24iLCJ0cmFjZSI6Ik5vIG1ldGhvZG9sb2d5IGtleXdvcmRzIGRldGVjdGVkLiBTb3VyY2UgY2VpbGluZzogTDEuIE1heCBsZXZlbDogTDEuIn0seyJjb250cm9sSWQiOiJDQzguMSIsImxldmVsIjoxLCJtZXRob2RvbG9neSI6InVua25vd24iLCJ0cmFjZSI6Ik5vIG1ldGhvZG9sb2d5IGtleXdvcmRzIGRldGVjdGVkLiBTb3VyY2UgY2VpbGluZzogTDEuIE1heCBsZXZlbDogTDEuIn1dLCJhc3Nlc3NtZW50RGVwdGgiOnsibWV0aG9kcyI6WyJleGFtaW5lIiwidGVzdCJdLCJkZXB0aCI6ImJhc2ljIiwicmlnb3JTY29yZSI6MTV9LCJwcm92ZW5hbmNlUXVhbGl0eSI6NzAsImRvcmFNZXRyaWNzIjp7ImZyZXNobmVzcyI6OTMsInNwZWNpZmljaXR5Ijo1LCJpbmRlcGVuZGVuY2UiOjg1LCJyZXByb2R1Y2liaWxpdHkiOjExLCJiYW5kIjoibG93IiwicGFpcmluZ0ZsYWdzIjpbIkhpZ2ggZnJlc2huZXNzICsgbG93IHJlcHJvZHVjaWJpbGl0eTogZXZpZGVuY2UgcmVmcmVzaGVkIGJ1dCBjYW5ub3QgYmUgcmUtdmVyaWZpZWQiLCJMb3cgc3BlY2lmaWNpdHkgKyBoaWdoIGluZGVwZW5kZW5jZTogaW5kZXBlbmRlbnQgYnV0IHZhZ3VlIGFzc2Vzc21lbnQiXX19fSwicGFybGV5IjoiMi4xIiwiaWF0IjoxNzcwODA1Mzc1LCJpc3MiOiJkaWQ6d2ViOmdyY29yc2Fpci5jb20iLCJzdWIiOiJtYXJxdWUtNTMxZDg4NDItODE3OC00OWVhLWI1ZjQtM2I3MjM1ZTE1MDkzIiwianRpIjoibWFycXVlLTUzMWQ4ODQyLTgxNzgtNDllYS1iNWY0LTNiNzIzNWUxNTA5MyIsImV4cCI6MTc3ODU4MTM3NX0.ZuDZF4LBpjb0Zx3eTvncBuwRsc8oDdLTGeLu7B_23TrcGCmml1OqRgir4TRLH68R2dfuH9bKUhxvvphIZKJmCw";
+
+/** @deprecated Use SAMPLE_CPOE_JWT instead */
+export const SAMPLE_MARQUE = SAMPLE_CPOE_JWT;
 
 export const SAMPLE_NOTE =
-  "This is a demo CPOE. The signature is not cryptographically valid — it demonstrates the verification UI. Real CPOEs are Ed25519-signed W3C Verifiable Credentials generated by the Corsair CLI.";
+  "Real CPOE signed by did:web:grcorsair.com (Ed25519). Verified via DID:web resolution against the live API.";

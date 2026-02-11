@@ -45,7 +45,7 @@ export function Header() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm text-corsair-text-dim transition-colors hover:text-corsair-cyan"
+              className="text-sm text-corsair-text-dim transition-colors hover:text-corsair-gold"
             >
               {link.label}
             </Link>
@@ -93,7 +93,7 @@ export function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="rounded-md px-3 py-2 text-sm text-corsair-text-dim transition-colors hover:bg-corsair-surface hover:text-corsair-cyan"
+                  className="rounded-md px-3 py-2 text-sm text-corsair-text-dim transition-colors hover:bg-corsair-surface hover:text-corsair-gold"
                 >
                   {link.label}
                 </Link>
@@ -103,7 +103,7 @@ export function Header() {
                 href="https://github.com/Arudjreis/corsair"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-corsair-text-dim transition-colors hover:bg-corsair-surface hover:text-corsair-cyan"
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-corsair-text-dim transition-colors hover:bg-corsair-surface hover:text-corsair-gold"
               >
                 <GitHubIcon />
                 GitHub

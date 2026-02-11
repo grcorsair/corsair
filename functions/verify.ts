@@ -104,12 +104,14 @@ export function createVerifyRouter(
       result = await verifyWithTrustedKeys(jwt, keyManager);
     }
 
-    // If DID verification failed due to resolution (not crypto), try trusted keys.
-    // Prefer the trusted-key result even if also invalid — it gives the correct
-    // reason (e.g., "expired") instead of the generic "schema_invalid" from DID resolution.
-    if (!result.valid && result.reason === "schema_invalid" && result.issuerTier === "unverifiable") {
+    // If DID verification failed, try trusted keys as fallback.
+    // DID resolution may return wrong key (e.g., stale static DID doc) or fail entirely.
+    if (!result.valid) {
       const trustedResult = await verifyWithTrustedKeys(jwt, keyManager);
-      result = trustedResult;
+      // Prefer the trusted-key result if it succeeds, or if it gives a more specific error
+      if (trustedResult.valid || result.issuerTier === "unverifiable") {
+        result = trustedResult;
+      }
     }
 
     // Build response

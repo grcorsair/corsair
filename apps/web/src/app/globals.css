@@ -10,9 +10,9 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* ── Primary brand colors (from logo) ────────────────── */
-  --color-corsair-navy: #1B2A4A;
-  --color-corsair-cyan: #00CFFF;
+  /* ── Primary brand colors ────────────────────────────── */
+  --color-corsair-navy: #1A1610;
+  --color-corsair-cyan: #D4A853;
   --color-corsair-gold: #D4A853;
 
   /* ── Semantic colors ─────────────────────────────────── */
@@ -20,16 +20,16 @@
   --color-corsair-green: #2ECC71;
 
   /* ── Neutral backgrounds ─────────────────────────────── */
-  --color-corsair-deep: #0B1022;
-  --color-corsair-surface: #111833;
-  --color-corsair-border: #1E3055;
+  --color-corsair-deep: #000000;
+  --color-corsair-surface: #111111;
+  --color-corsair-border: #2A2218;
 
   /* ── Text colors ─────────────────────────────────────── */
-  --color-corsair-text: #E2DFD6;
-  --color-corsair-text-dim: #8B92A8;
+  --color-corsair-text: #E8E2D6;
+  --color-corsair-text-dim: #9A8F80;
 
-  /* ── Accent colors (from logo background + details) ─── */
-  --color-corsair-turquoise: #7FDBCA;
+  /* ── Accent colors ─────────────────────────────────── */
+  --color-corsair-turquoise: #C4A96A;
   --color-corsair-desert: #C4A882;
   --color-corsair-red-dark: #8B2232;
 
@@ -52,7 +52,7 @@ body {
 
 /* ── Selection highlight ───────────────────────────────── */
 ::selection {
-  background-color: color-mix(in srgb, var(--color-corsair-cyan) 30%, transparent);
+  background-color: color-mix(in srgb, var(--color-corsair-gold) 30%, transparent);
   color: var(--color-corsair-text);
 }
 
@@ -91,7 +91,7 @@ body {
     90deg,
     transparent,
     var(--color-corsair-border) 20%,
-    var(--color-corsair-cyan) 50%,
+    var(--color-corsair-gold) 50%,
     var(--color-corsair-border) 80%,
     transparent
   );
@@ -114,8 +114,8 @@ body {
   height: 4px;
   background: repeating-linear-gradient(
     90deg,
-    var(--color-corsair-cyan) 0px,
-    var(--color-corsair-cyan) 4px,
+    var(--color-corsair-gold) 0px,
+    var(--color-corsair-gold) 4px,
     transparent 4px,
     transparent 8px
   );
@@ -129,10 +129,10 @@ body {
 }
 
 .pixel-card-hover:hover {
-  border-color: var(--glow-color, rgba(0, 207, 255, 0.4));
+  border-color: var(--glow-color, rgba(212, 168, 83, 0.4));
   box-shadow:
-    0 0 12px var(--glow-color, rgba(0, 207, 255, 0.15)),
-    0 0 24px var(--glow-color, rgba(0, 207, 255, 0.05));
+    0 0 12px var(--glow-color, rgba(212, 168, 83, 0.15)),
+    0 0 24px var(--glow-color, rgba(212, 168, 83, 0.05));
   transform: translateY(-2px);
 }
 
@@ -150,10 +150,10 @@ body {
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 8px rgba(0, 207, 255, 0.1);
+    box-shadow: 0 0 8px rgba(212, 168, 83, 0.1);
   }
   50% {
-    box-shadow: 0 0 20px rgba(0, 207, 255, 0.25);
+    box-shadow: 0 0 20px rgba(212, 168, 83, 0.25);
   }
 }
 
@@ -191,7 +191,7 @@ body {
 }
 
 .mdx-content a {
-  color: var(--color-corsair-cyan);
+  color: var(--color-corsair-gold);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -238,7 +238,7 @@ body {
 }
 
 .mdx-content blockquote {
-  border-left: 3px solid var(--color-corsair-cyan);
+  border-left: 3px solid var(--color-corsair-gold);
   padding-left: 1rem;
   margin-bottom: 1rem;
   font-style: italic;
@@ -316,48 +316,48 @@ body {
 /* Always dark — Corsair is a dark-first design system     */
 :root {
   --radius: 0.625rem;
-  /* Background → Corsair deep ocean */
-  --background: #0B1022;
-  --foreground: #E2DFD6;
-  /* Cards → Corsair surface */
-  --card: #111833;
-  --card-foreground: #E2DFD6;
+  /* Background → Pure black */
+  --background: #000000;
+  --foreground: #E8E2D6;
+  /* Cards → Charcoal surface */
+  --card: #111111;
+  --card-foreground: #E8E2D6;
   /* Popovers → same as card */
-  --popover: #111833;
-  --popover-foreground: #E2DFD6;
-  /* Primary → Corsair cyan (action color) */
-  --primary: #00CFFF;
-  --primary-foreground: #0B1022;
-  /* Secondary → Corsair navy */
-  --secondary: #1B2A4A;
-  --secondary-foreground: #E2DFD6;
-  /* Muted → dimmed surface */
-  --muted: #1B2A4A;
-  --muted-foreground: #8B92A8;
-  /* Accent → Corsair gold */
+  --popover: #111111;
+  --popover-foreground: #E8E2D6;
+  /* Primary → Gold (action color) */
+  --primary: #D4A853;
+  --primary-foreground: #000000;
+  /* Secondary → Warm dark */
+  --secondary: #1A1610;
+  --secondary-foreground: #E8E2D6;
+  /* Muted → Warm dark */
+  --muted: #1A1610;
+  --muted-foreground: #9A8F80;
+  /* Accent → Gold */
   --accent: #D4A853;
-  --accent-foreground: #0B1022;
+  --accent-foreground: #000000;
   /* Destructive → Corsair crimson */
   --destructive: #C0392B;
-  /* Borders → Corsair border */
-  --border: #1E3055;
-  --input: #1E3055;
-  --ring: #00CFFF;
-  /* Charts → Corsair palette spread */
-  --chart-1: #00CFFF;
-  --chart-2: #D4A853;
+  /* Borders → Warm dark */
+  --border: #2A2218;
+  --input: #2A2218;
+  --ring: #D4A853;
+  /* Charts → Warm palette */
+  --chart-1: #D4A853;
+  --chart-2: #C4A96A;
   --chart-3: #2ECC71;
-  --chart-4: #7FDBCA;
+  --chart-4: #C4A882;
   --chart-5: #C0392B;
-  /* Sidebar → Corsair deep */
-  --sidebar: #0B1022;
-  --sidebar-foreground: #E2DFD6;
-  --sidebar-primary: #00CFFF;
-  --sidebar-primary-foreground: #0B1022;
-  --sidebar-accent: #1B2A4A;
-  --sidebar-accent-foreground: #E2DFD6;
-  --sidebar-border: #1E3055;
-  --sidebar-ring: #00CFFF;
+  /* Sidebar → Black */
+  --sidebar: #000000;
+  --sidebar-foreground: #E8E2D6;
+  --sidebar-primary: #D4A853;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #1A1610;
+  --sidebar-accent-foreground: #E8E2D6;
+  --sidebar-border: #2A2218;
+  --sidebar-ring: #D4A853;
 }
 
 @layer base {

@@ -5,22 +5,18 @@ import { FrameworkGrid } from "@/components/features/framework-grid";
 import { QuickStart } from "@/components/features/quick-start";
 import { DisruptionSection } from "@/components/features/disruption-section";
 import { FadeIn } from "@/components/motion/fade-in";
-import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 
 export default function Home() {
   return (
     <main>
       <HeroSection />
 
-      {/* Sword divider */}
-      <PixelDivider variant="swords" className="py-4" />
-
       {/* Pipeline Visualization */}
-      <section className="px-6 py-16">
+      <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
-            <p className="mb-3 text-center font-pixel text-[8px] tracking-widest text-corsair-cyan/60">
-              THE PROTOCOL
+            <p className="mb-3 text-center text-xs font-medium uppercase tracking-widest text-corsair-gold/60">
+              The Protocol
             </p>
             <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
               The Parley Protocol
@@ -35,11 +31,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Diamond divider */}
-      <PixelDivider variant="diamond" className="py-4" />
-
       {/* Value Props */}
-      <section className="px-6 py-16">
+      <section className="border-t border-corsair-border px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
             <ValueProps />
@@ -47,11 +40,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Sword divider */}
-      <PixelDivider variant="swords" className="py-4" />
-
       {/* Disruption */}
-      <section className="px-6 py-16">
+      <section className="border-t border-corsair-border px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
             <DisruptionSection />
@@ -59,15 +49,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Diamond divider */}
-      <PixelDivider variant="diamond" className="py-4" />
-
       {/* Framework Grid */}
-      <section className="px-6 py-16">
+      <section className="border-t border-corsair-border px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
-            <p className="mb-3 text-center font-pixel text-[8px] tracking-widest text-corsair-gold/60">
-              FRAMEWORKS
+            <p className="mb-3 text-center text-xs font-medium uppercase tracking-widest text-corsair-gold/60">
+              Frameworks
             </p>
             <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
               13+ Compliance Frameworks
@@ -83,15 +70,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Sword divider */}
-      <PixelDivider variant="swords" className="py-4" />
-
       {/* Quick Start */}
-      <section className="px-6 py-16">
+      <section className="border-t border-corsair-border px-6 py-20">
         <div className="mx-auto max-w-3xl">
           <FadeIn>
-            <p className="mb-3 text-center font-pixel text-[8px] tracking-widest text-corsair-green/60">
-              GET STARTED
+            <p className="mb-3 text-center text-xs font-medium uppercase tracking-widest text-corsair-green/60">
+              Get Started
             </p>
             <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
               Quick Start

@@ -52,7 +52,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-corsair-text-dim transition-colors hover:text-corsair-cyan"
+                    className="text-sm text-corsair-text-dim transition-colors hover:text-corsair-gold"
                   >
                     {link.label}
                   </Link>
@@ -71,7 +71,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-corsair-text-dim transition-colors hover:text-corsair-cyan"
+                    className="text-sm text-corsair-text-dim transition-colors hover:text-corsair-gold"
                   >
                     {link.label}
                   </Link>
@@ -92,7 +92,7 @@ export function Footer() {
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-corsair-text-dim transition-colors hover:text-corsair-cyan"
+                    className="text-sm text-corsair-text-dim transition-colors hover:text-corsair-gold"
                   >
                     {link.label}
                   </a>
@@ -112,13 +112,13 @@ export function Footer() {
           <div className="flex items-center gap-4">
             <Link
               href="/blog/rss.xml"
-              className="text-xs text-corsair-text-dim/60 transition-colors hover:text-corsair-cyan"
+              className="text-xs text-corsair-text-dim/60 transition-colors hover:text-corsair-gold"
             >
               RSS
             </Link>
             <Link
               href="/sitemap.xml"
-              className="text-xs text-corsair-text-dim/60 transition-colors hover:text-corsair-cyan"
+              className="text-xs text-corsair-text-dim/60 transition-colors hover:text-corsair-gold"
             >
               Sitemap
             </Link>

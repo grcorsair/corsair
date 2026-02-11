@@ -1,117 +1,115 @@
 "use client";
 
-import Image from "next/image";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
-import { TerminalDemo } from "./terminal-demo";
+import Link from "next/link";
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden px-6 pb-20 pt-16">
-      {/* Gradient background */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-corsair-navy/20 via-corsair-deep to-corsair-deep" />
+    <section className="relative flex min-h-[100dvh] flex-col justify-center overflow-hidden px-6">
+      {/* Subtle gold glow */}
+      <div className="pointer-events-none absolute left-1/2 top-1/3 h-[600px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-corsair-gold/[0.03] blur-[150px]" />
 
-      {/* Subtle glow behind logo */}
-      <div className="pointer-events-none absolute left-1/2 top-0 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-corsair-cyan/5 blur-[120px]" />
-
-      <div className="relative mx-auto max-w-4xl text-center">
-        {/* Logo */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="mb-8 flex justify-center"
-        >
-          <Image
-            src="/assets/corsair-logo.png"
-            alt="CORSAIR — Open compliance trust exchange protocol"
-            width={280}
-            height={280}
-            priority
-            className="drop-shadow-[0_0_40px_rgba(0,207,255,0.12)]"
-          />
-        </motion.div>
-
-        {/* Headline */}
+      <div className="relative mx-auto w-full max-w-6xl">
+        {/* Massive brand name */}
         <motion.h1
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="mb-4 font-display text-4xl font-bold leading-tight tracking-tight text-corsair-text sm:text-5xl lg:text-6xl"
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="font-display text-[15vw] font-bold leading-[0.9] tracking-tighter text-corsair-text sm:text-[13vw] lg:text-[10vw]"
         >
-          Compliance claims are everywhere.
-          <br />
-          <span className="bg-gradient-to-r from-corsair-cyan to-corsair-turquoise bg-clip-text text-transparent">
-            Cryptographic proof is not.
-          </span>
+          corsair
         </motion.h1>
 
-        {/* Version badge — pixel font accent */}
+        {/* Subtitle */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mb-4 flex justify-center"
-        >
-          <span className="inline-block rounded border border-corsair-cyan/30 bg-corsair-cyan/5 px-3 py-1 font-pixel text-[8px] tracking-wider text-corsair-cyan">
-            v0.3.0 &middot; OPEN PROTOCOL
-          </span>
-        </motion.div>
-
-        {/* Subheadline */}
-        <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="mx-auto mb-8 max-w-2xl text-lg text-corsair-text-dim"
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mt-6 max-w-2xl sm:mt-8"
         >
-          Open protocol for machine-readable, cryptographically verifiable
-          compliance attestations. Verify trust. Don&apos;t assume it.
-        </motion.p>
+          <p className="text-lg text-corsair-text-dim sm:text-xl lg:text-2xl">
+            Compliance trust exchange protocol.
+          </p>
+          <p className="mt-1 text-lg font-medium text-corsair-gold sm:text-xl lg:text-2xl">
+            Verify proof. Not promises.
+          </p>
+        </motion.div>
 
         {/* CTAs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.7 }}
-          className="mb-16 flex flex-wrap justify-center gap-4"
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="mt-8 flex flex-wrap gap-4 sm:mt-10"
         >
-          <Button size="lg" className="font-display font-semibold shadow-[0_0_20px_rgba(0,207,255,0.2)] hover:shadow-[0_0_30px_rgba(0,207,255,0.3)]" asChild>
-            <a
-              href="https://github.com/Arudjreis/corsair"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Get Started
-            </a>
+          <Button
+            size="lg"
+            className="font-display text-base font-semibold"
+            asChild
+          >
+            <Link href="/marque">Verify a CPOE</Link>
           </Button>
-          <Button variant="outline" size="lg" className="font-display font-semibold hover:border-corsair-gold hover:text-corsair-gold" asChild>
-            <a href="#demo">Watch Demo</a>
+          <Button
+            variant="outline"
+            size="lg"
+            className="font-display text-base font-semibold border-corsair-gold/30 text-corsair-text-dim hover:border-corsair-gold hover:text-corsair-gold"
+            asChild
+          >
+            <Link href="/docs">
+              View Documentation
+              <span className="ml-1">&rarr;</span>
+            </Link>
           </Button>
-          <Button variant="secondary" size="lg" className="font-display font-semibold gap-2" asChild>
-            <a
-              href="https://github.com/Arudjreis/corsair"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <svg viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4">
-                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
-              </svg>
-              Star on GitHub
-            </a>
-          </Button>
-        </motion.div>
-
-        {/* Terminal Demo */}
-        <motion.div
-          id="demo"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.9 }}
-        >
-          <TerminalDemo />
         </motion.div>
       </div>
+
+      {/* Feature strip at bottom */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.8 }}
+        className="absolute bottom-0 left-0 right-0 border-t border-corsair-border"
+      >
+        <div className="mx-auto grid max-w-6xl grid-cols-2 lg:grid-cols-4">
+          <FeatureItem
+            title="Ed25519 signed"
+            description="Cryptographic proof"
+          />
+          <FeatureItem
+            title="13+ frameworks"
+            description="SOC 2, NIST, ISO..."
+            className="border-l border-corsair-border"
+          />
+          <FeatureItem
+            title="Machine-readable"
+            description="JWT-VC format"
+            className="border-l border-corsair-border max-lg:border-l-0 max-lg:border-t"
+          />
+          <FeatureItem
+            title="Free to verify"
+            description="No account needed"
+            className="border-l border-corsair-border max-lg:border-t"
+          />
+        </div>
+      </motion.div>
     </section>
+  );
+}
+
+function FeatureItem({
+  title,
+  description,
+  className = "",
+}: {
+  title: string;
+  description: string;
+  className?: string;
+}) {
+  return (
+    <div className={`px-6 py-5 ${className}`}>
+      <p className="text-sm font-medium text-corsair-text">{title}</p>
+      <p className="mt-0.5 text-xs text-corsair-text-dim">{description}</p>
+    </div>
   );
 }
