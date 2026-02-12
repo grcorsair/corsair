@@ -10,9 +10,9 @@
       "type": "JsonWebKey2020",
       "controller": "did:web:grcorsair.com",
       "publicKeyJwk": {
-        "crv": "Ed25519",
         "kty": "OKP",
-        "x": "29TDwe2d31AGUGNHeBbKPkXLym8HyoIwGhdd4JSbMNk"
+        "crv": "Ed25519",
+        "x": "fanPNnNKCykKpZRSPC9Jy-0WGZGgg741TnnHBycGvWw"
       }
     }
   ],

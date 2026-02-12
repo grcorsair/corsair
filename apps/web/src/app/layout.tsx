@@ -42,6 +42,8 @@ export const metadata: Metadata = {
   },
   description:
     "Open protocol for machine-readable, cryptographically verifiable compliance attestations. Verify trust. Don't assume it.",
+  authors: [{ name: "Ayoub Fandi", url: "https://grcengineer.com" }],
+  creator: "Ayoub Fandi",
   keywords: [
     "GRC",
     "compliance verification",
@@ -58,6 +60,7 @@ export const metadata: Metadata = {
     "Marque",
     "SCITT",
     "Parley protocol",
+    "GRC Engineering",
   ],
   metadataBase: new URL("https://grcorsair.com"),
   icons: {

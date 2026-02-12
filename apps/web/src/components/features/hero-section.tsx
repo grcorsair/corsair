@@ -38,6 +38,26 @@ export function HeroSection() {
               <p className="mt-1 text-lg font-medium text-corsair-gold sm:text-xl lg:text-2xl">
                 Verify proof. Not promises.
               </p>
+              <p className="mt-3 text-sm text-corsair-text-dim/60">
+                by{" "}
+                <a
+                  href="https://grcengineer.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-colors hover:text-corsair-gold"
+                >
+                  Ayoub Fandi
+                </a>
+                {" "}&middot;{" "}
+                <a
+                  href="https://grcengineer.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-colors hover:text-corsair-gold"
+                >
+                  GRC Engineering
+                </a>
+              </p>
             </motion.div>
 
             {/* CTAs */}

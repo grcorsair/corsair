@@ -10,38 +10,51 @@
     ],
     "issuer": {
       "id": "did:web:grcorsair.com",
-      "name": "Acme Corporation"
+      "name": "Example Audit Firm LLP"
     },
-    "validFrom": "2026-02-09T11:22:28.757Z",
-    "validUntil": "2026-05-10T11:22:28.757Z",
+    "validFrom": "2026-02-12T08:02:44.805Z",
+    "validUntil": "2026-05-13T08:02:44.805Z",
     "credentialSubject": {
       "type": "CorsairCPOE",
-      "scope": "SOC 2 Type II — Acme Cloud Platform",
+      "scope": "SOC 2 Type II \u2014 Acme Cloud Platform",
       "assurance": {
-        "declared": 0,
+        "declared": 1,
         "verified": true,
         "method": "self-assessed",
         "breakdown": {
-          "0": 2,
-          "1": 22
-        }
+          "1": 11,
+          "2": 1
+        },
+        "calculationVersion": "l0-l4@2026-02-09",
+        "ruleTrace": [
+          "RULE: 12 controls checked",
+          "RULE: source \"soc2\" ceiling = L1",
+          "RULE: breakdown = {\"1\":11,\"2\":1}",
+          "RULE: min of in-scope controls = L1 \u2014 satisfied",
+          "RULE: freshness checked \u2014 fresh (28 days)",
+          "SAFEGUARD: All 12 controls are effective \u2014 all-pass bias flag applied (consistency dimension penalty)"
+        ]
       },
       "provenance": {
         "source": "auditor",
         "sourceIdentity": "Example Audit Firm LLP",
-        "sourceDate": "2026-01-15"
+        "sourceDate": "2026-01-15",
+        "evidenceTypeDistribution": {
+          "documented-record": 0.6,
+          "interview": 0.4
+        }
       },
       "summary": {
-        "controlsTested": 46,
-        "controlsPassed": 42,
-        "controlsFailed": 4,
-        "overallScore": 91
+        "controlsTested": 24,
+        "controlsPassed": 24,
+        "controlsFailed": 0,
+        "overallScore": 100
       },
       "frameworks": {
         "SOC2": {
-          "controlsMapped": 24,
-          "passed": 22,
-          "failed": 2,
+          "controlsMapped": 12,
+          "passed": 12,
+          "failed": 0,
           "controls": [
             {
               "controlId": "CC1.1",
@@ -56,31 +69,7 @@
               "status": "passed"
             },
             {
-              "controlId": "CC2.2",
-              "status": "passed"
-            },
-            {
               "controlId": "CC3.1",
-              "status": "passed"
-            },
-            {
-              "controlId": "CC3.2",
-              "status": "passed"
-            },
-            {
-              "controlId": "CC3.3",
-              "status": "passed"
-            },
-            {
-              "controlId": "CC3.4",
-              "status": "passed"
-            },
-            {
-              "controlId": "CC4.1",
-              "status": "passed"
-            },
-            {
-              "controlId": "CC4.2",
               "status": "passed"
             },
             {
@@ -88,19 +77,7 @@
               "status": "passed"
             },
             {
-              "controlId": "CC5.2",
-              "status": "passed"
-            },
-            {
-              "controlId": "CC5.3",
-              "status": "failed"
-            },
-            {
               "controlId": "CC6.1",
-              "status": "passed"
-            },
-            {
-              "controlId": "CC6.2",
               "status": "passed"
             },
             {
@@ -110,14 +87,6 @@
             {
               "controlId": "CC6.6",
               "status": "passed"
-            },
-            {
-              "controlId": "CC6.7",
-              "status": "passed"
-            },
-            {
-              "controlId": "CC6.8",
-              "status": "failed"
             },
             {
               "controlId": "CC7.1",
@@ -132,19 +101,15 @@
               "status": "passed"
             },
             {
-              "controlId": "CC7.4",
-              "status": "passed"
-            },
-            {
               "controlId": "CC8.1",
               "status": "passed"
             }
           ]
         },
         "NIST-800-53": {
-          "controlsMapped": 22,
-          "passed": 20,
-          "failed": 2,
+          "controlsMapped": 12,
+          "passed": 12,
+          "failed": 0,
           "controls": [
             {
               "controlId": "PL-4",
@@ -159,31 +124,7 @@
               "status": "passed"
             },
             {
-              "controlId": "IR-6",
-              "status": "passed"
-            },
-            {
               "controlId": "RA-3",
-              "status": "passed"
-            },
-            {
-              "controlId": "RA-5",
-              "status": "passed"
-            },
-            {
-              "controlId": "AC-5",
-              "status": "passed"
-            },
-            {
-              "controlId": "CM-3",
-              "status": "passed"
-            },
-            {
-              "controlId": "CA-7",
-              "status": "passed"
-            },
-            {
-              "controlId": "CA-5",
               "status": "passed"
             },
             {
@@ -191,27 +132,11 @@
               "status": "passed"
             },
             {
-              "controlId": "SI-2",
-              "status": "passed"
-            },
-            {
-              "controlId": "PL-1",
-              "status": "failed"
-            },
-            {
-              "controlId": "IA-2",
-              "status": "passed"
-            },
-            {
               "controlId": "AC-2",
               "status": "passed"
             },
             {
-              "controlId": "PS-4",
-              "status": "passed"
-            },
-            {
-              "controlId": "SI-4",
+              "controlId": "AC-5",
               "status": "passed"
             },
             {
@@ -219,30 +144,189 @@
               "status": "passed"
             },
             {
-              "controlId": "CM-7",
-              "status": "failed"
-            },
-            {
-              "controlId": "AU-6",
+              "controlId": "SI-4",
               "status": "passed"
             },
             {
-              "controlId": "CA-8",
+              "controlId": "SI-2",
               "status": "passed"
             },
             {
-              "controlId": "IR-3",
+              "controlId": "IR-6",
+              "status": "passed"
+            },
+            {
+              "controlId": "CM-3",
               "status": "passed"
             }
           ]
         }
+      },
+      "dimensions": {
+        "capability": 100,
+        "coverage": 100,
+        "reliability": 100,
+        "methodology": 50,
+        "freshness": 92,
+        "independence": 85,
+        "consistency": 85
+      },
+      "evidenceTypes": [
+        "documented-record",
+        "interview"
+      ],
+      "observationPeriod": {
+        "startDate": "2025-07-19",
+        "endDate": "2026-01-15",
+        "durationDays": 180,
+        "sufficient": true,
+        "cosoClassification": "operating",
+        "soc2Equivalent": "Type II (6mo)"
+      },
+      "controlClassifications": [
+        {
+          "controlId": "CC1.1",
+          "level": 1,
+          "methodology": "unknown",
+          "trace": "No methodology keywords detected. Source ceiling: L1. Max level: L1.",
+          "boilerplateFlags": [
+            "generic-boilerplate"
+          ]
+        },
+        {
+          "controlId": "CC1.2",
+          "level": 1,
+          "methodology": "unknown",
+          "trace": "No methodology keywords detected. Source ceiling: L1. Max level: L1.",
+          "boilerplateFlags": [
+            "generic-boilerplate"
+          ]
+        },
+        {
+          "controlId": "CC2.1",
+          "level": 1,
+          "methodology": "unknown",
+          "trace": "No methodology keywords detected. Source ceiling: L1. Max level: L1.",
+          "boilerplateFlags": [
+            "generic-boilerplate"
+          ]
+        },
+        {
+          "controlId": "CC3.1",
+          "level": 1,
+          "methodology": "unknown",
+          "trace": "No methodology keywords detected. Source ceiling: L1. Max level: L1.",
+          "boilerplateFlags": [
+            "generic-boilerplate"
+          ]
+        },
+        {
+          "controlId": "CC5.1",
+          "level": 1,
+          "methodology": "unknown",
+          "trace": "No methodology keywords detected. Source ceiling: L1. Max level: L1.",
+          "boilerplateFlags": [
+            "generic-boilerplate"
+          ]
+        },
+        {
+          "controlId": "CC6.1",
+          "level": 1,
+          "methodology": "unknown",
+          "trace": "No methodology keywords detected. Source ceiling: L1. Max level: L1.",
+          "boilerplateFlags": [
+            "generic-boilerplate"
+          ]
+        },
+        {
+          "controlId": "CC6.3",
+          "level": 1,
+          "methodology": "unknown",
+          "trace": "No methodology keywords detected. Source ceiling: L1. Max level: L1.",
+          "boilerplateFlags": [
+            "generic-boilerplate"
+          ]
+        },
+        {
+          "controlId": "CC6.6",
+          "level": 1,
+          "methodology": "unknown",
+          "trace": "No methodology keywords detected. Source ceiling: L1. Max level: L1.",
+          "boilerplateFlags": [
+            "generic-boilerplate"
+          ]
+        },
+        {
+          "controlId": "CC7.1",
+          "level": 1,
+          "methodology": "unknown",
+          "trace": "No methodology keywords detected. Source ceiling: L1. Max level: L1.",
+          "boilerplateFlags": [
+            "generic-boilerplate"
+          ]
+        },
+        {
+          "controlId": "CC7.2",
+          "level": 1,
+          "methodology": "unknown",
+          "trace": "No methodology keywords detected. Source ceiling: L1. Max level: L1.",
+          "boilerplateFlags": [
+            "generic-boilerplate"
+          ]
+        },
+        {
+          "controlId": "CC7.3",
+          "level": 1,
+          "methodology": "unknown",
+          "trace": "No methodology keywords detected. Source ceiling: L1. Max level: L1.",
+          "boilerplateFlags": [
+            "generic-boilerplate"
+          ]
+        },
+        {
+          "controlId": "CC8.1",
+          "level": 2,
+          "methodology": "caat",
+          "trace": "Evidence methodology: caat (detected: caat). Source ceiling: L1. Methodology max: L2. Effective max: L2.",
+          "boilerplateFlags": [
+            "generic-boilerplate"
+          ]
+        }
+      ],
+      "assessmentDepth": {
+        "methods": [
+          "examine",
+          "test"
+        ],
+        "depth": "comprehensive",
+        "rigorScore": 70
+      },
+      "provenanceQuality": 84,
+      "doraMetrics": {
+        "freshness": 92,
+        "specificity": 3,
+        "independence": 85,
+        "reproducibility": 15,
+        "band": "low",
+        "pairingFlags": [
+          "High freshness + low reproducibility: evidence refreshed but cannot be re-verified",
+          "Low specificity + high independence: independent but vague assessment"
+        ]
+      },
+      "processProvenance": {
+        "chainDigest": "e38af275366ef12f52380884ce7a408778c58d037a0072b658bfb3836dc4d506",
+        "receiptCount": 2,
+        "chainVerified": true,
+        "format": "in-toto/v1+cose-sign1",
+        "reproducibleSteps": 2,
+        "attestedSteps": 0
       }
     }
   },
-  "parley": "2.0",
-  "iat": 1770636148,
+  "parley": "2.1",
+  "iat": 1770883364,
   "iss": "did:web:grcorsair.com",
-  "sub": "marque-f6b7fec5-845c-46a4-abc9-f811d98dd55c",
-  "jti": "marque-f6b7fec5-845c-46a4-abc9-f811d98dd55c",
-  "exp": 1778412148
+  "sub": "marque-f7f65d3e-f5c9-4bdb-8825-9bdfe5c34697",
+  "jti": "marque-f7f65d3e-f5c9-4bdb-8825-9bdfe5c34697",
+  "exp": 1778659364
 }

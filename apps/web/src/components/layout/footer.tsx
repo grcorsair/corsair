@@ -18,10 +18,11 @@ const resourceLinks = [
 ];
 
 const communityLinks = [
+  { href: "https://grcengineer.com", label: "GRC Engineer", external: true },
+  { href: "https://grcengineer.com/subscribe", label: "Newsletter", external: true },
   { href: "https://github.com/Arudjreis/corsair", label: "GitHub", external: true },
   { href: "https://github.com/Arudjreis/corsair/blob/main/CONTRIBUTING.md", label: "Contributing Guide", external: true },
   { href: "https://github.com/Arudjreis/corsair/blob/main/SECURITY.md", label: "Security Policy", external: true },
-  { href: "https://grcengineer.com", label: "GRC Engineer", external: true },
 ];
 
 export function Footer() {
@@ -108,7 +109,16 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
           <p className="text-xs text-corsair-text-dim/60">
-            &copy; {new Date().getFullYear()} Corsair. Open. Verifiable. Interoperable.
+            &copy; {new Date().getFullYear()} Corsair. Built by{" "}
+            <a
+              href="https://grcengineer.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-corsair-text-dim/80 transition-colors hover:text-corsair-gold"
+            >
+              Ayoub Fandi
+            </a>
+            . Open. Verifiable. Interoperable.
           </p>
           <div className="flex items-center gap-4">
             <Link

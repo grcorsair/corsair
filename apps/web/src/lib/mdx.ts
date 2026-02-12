@@ -10,6 +10,7 @@ export interface PostMeta {
   description: string;
   date: string;
   tag: string;
+  author: string;
   published: boolean;
 }
 
@@ -37,6 +38,7 @@ export function getBlogPosts(): PostMeta[] {
         description: data.description ?? "",
         date: data.date ?? "",
         tag: data.tag ?? "",
+        author: data.author ?? "Ayoub Fandi",
         published: data.published !== false,
       };
     })
@@ -58,6 +60,7 @@ export function getBlogPost(slug: string): { meta: PostMeta; content: string } |
       description: data.description ?? "",
       date: data.date ?? "",
       tag: data.tag ?? "",
+      author: data.author ?? "Ayoub Fandi",
       published: data.published !== false,
     },
     content,

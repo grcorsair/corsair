@@ -28,6 +28,28 @@ export const metadata: Metadata = {
 
 const links = [
   {
+    name: "GRC Engineer — by Ayoub Fandi",
+    description:
+      "The GRC engineering practice behind Corsair. Strategy, content, and industry analysis from the founder. Subscribe to the newsletter for weekly deep dives on compliance engineering.",
+    href: "https://grcengineer.com",
+    icon: <QuarterIcon size={32} />,
+    cta: "Visit grcengineer.com",
+    glowColor: "rgba(212,168,83,0.15)",
+    label: "FOUNDER",
+    labelColor: "text-corsair-gold",
+  },
+  {
+    name: "GRC Engineer Newsletter",
+    description:
+      "Weekly newsletter on GRC engineering, compliance automation, and the future of trust verification. 30K+ subscribers.",
+    href: "https://grcengineer.com/subscribe",
+    icon: <MarkIcon size={32} />,
+    cta: "Subscribe",
+    glowColor: "rgba(127,219,202,0.15)",
+    label: "NEWSLETTER",
+    labelColor: "text-corsair-turquoise",
+  },
+  {
     name: "GitHub Repository",
     description:
       "Star the repo, file issues, submit pull requests. Protocol and verification are Apache 2.0. Specs are CC BY 4.0.",
@@ -48,17 +70,6 @@ const links = [
     glowColor: "rgba(212,168,83,0.15)",
     label: "PIRATE CODE",
     labelColor: "text-corsair-gold",
-  },
-  {
-    name: "GRC Engineer",
-    description:
-      "Ayoub's GRC engineering practice. Strategy, content, and industry analysis.",
-    href: "https://grcengineer.com",
-    icon: <QuarterIcon size={32} />,
-    cta: "Visit grcengineer.com",
-    glowColor: "rgba(127,219,202,0.15)",
-    label: "FOUNDER",
-    labelColor: "text-corsair-turquoise",
   },
   {
     name: "Security Policy",

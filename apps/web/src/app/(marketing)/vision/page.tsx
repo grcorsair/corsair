@@ -493,6 +493,85 @@ export default function VisionPage() {
         </div>
       </section>
 
+      {/* ═══ FROM GRC ENGINEERING ═══ */}
+      <PixelDivider variant="diamond" className="my-4" />
+      <section className="px-6 py-16">
+        <div className="mx-auto max-w-5xl">
+          <StageHeader
+            number={7}
+            name="FROM GRC ENGINEERING"
+            subtitle="Deep dives on the ideas behind Corsair"
+            color="text-corsair-gold"
+            icon={<QuarterIcon size={32} />}
+          />
+
+          <FadeIn delay={0.1}>
+            <div className="max-w-2xl space-y-2 text-sm text-corsair-text-dim">
+              <p>
+                Corsair was built by{" "}
+                <a
+                  href="https://grcengineer.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-corsair-gold underline decoration-corsair-gold/30 hover:decoration-corsair-gold"
+                >
+                  Ayoub Fandi
+                </a>
+                , the creator of{" "}
+                <a
+                  href="https://grcengineer.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-corsair-gold underline decoration-corsair-gold/30 hover:decoration-corsair-gold"
+                >
+                  GRC Engineer
+                </a>
+                {" "}&mdash; a practice focused on treating compliance as an
+                engineering discipline, not a checkbox exercise. These articles
+                explore the thinking behind the protocol:
+              </p>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.2}>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {grcArticles.map((article) => (
+                <a
+                  key={article.href}
+                  href={article.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group rounded-xl border border-corsair-border bg-[#0A0A0A] p-5 transition-all hover:border-corsair-gold/30"
+                >
+                  <p className="mb-1 font-pixel text-[7px] tracking-wider text-corsair-gold/40">
+                    {article.tag}
+                  </p>
+                  <p className="text-sm font-medium text-corsair-text group-hover:text-corsair-gold">
+                    {article.title}
+                  </p>
+                  <p className="mt-1 text-xs text-corsair-text-dim">
+                    {article.description}
+                  </p>
+                </a>
+              ))}
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.3}>
+            <div className="mt-6 text-center">
+              <a
+                href="https://grcengineer.com/subscribe"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-xs text-corsair-gold transition-colors hover:text-corsair-gold/80"
+              >
+                Subscribe to the GRC Engineer newsletter &rarr;
+              </a>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
       {/* ═══ INVITATION ═══ */}
       <PixelDivider className="my-4" />
       <section className="px-6 py-20">
@@ -552,6 +631,37 @@ const evidenceSources = [
   { label: "Config scans", example: "Terraform state, CloudFormation" },
   { label: "Telemetry", example: "CrowdStrike, Datadog, SIEM feeds" },
   { label: "Agent traces", example: "MCP tool calls, agentic workflows" },
+];
+
+const grcArticles = [
+  {
+    title: "Compliance as Cope: How GRC Engineering Automated the Wrong Thing",
+    description:
+      "Why most GRC automation doesn't reduce risk — it just documents the status quo faster.",
+    href: "https://grcengineer.com/p/compliance-as-cope-how-grc-engineering-automated-the-wrong-thing",
+    tag: "GRC ENGINEERING",
+  },
+  {
+    title: "The Framework Mapping Trap: When Documentation Precedes Reality",
+    description:
+      "Framework mappings look great on paper. But what happens when the map doesn't match the territory?",
+    href: "https://grcengineer.com/p/the-framework-mapping-trap-when-documentation-precedes-reality",
+    tag: "COMPLIANCE",
+  },
+  {
+    title: "Are You Building for Auditors or Attackers?",
+    description:
+      "The GRC engineering shift — from satisfying auditors to actually reducing risk.",
+    href: "https://grcengineer.com/p/are-you-building-for-auditors-or-attackers-the-grc-engineering-shift",
+    tag: "GRC ENGINEERING",
+  },
+  {
+    title: "AI Agents as the Next GRC Frontier",
+    description:
+      "How autonomous agents will reshape compliance — and why the proof layer matters more than the analysis.",
+    href: "https://grcengineer.com/p/ai-agents-as-the-next-grc-frontier",
+    tag: "AI IN GRC",
+  },
 ];
 
 const assuranceLevels = [
