@@ -1,6 +1,6 @@
 ---
 title: "Quick Start"
-description: "Install Corsair, generate your first CPOE, and verify it in under 5 minutes."
+description: "Install Corsair, sign your first CPOE from tool output, and verify it in under 5 minutes."
 section: "getting-started"
 order: 1
 ---
@@ -8,7 +8,6 @@ order: 1
 ## Prerequisites
 
 - [Bun](https://bun.sh/) runtime (v1.0+)
-- An Anthropic API key (for document ingestion via Claude)
 
 ## Installation
 
@@ -31,30 +30,35 @@ bun run bin/corsair-verify.ts examples/example-cpoe.jwt
 
 This verifies the Ed25519 signature, checks expiry, and displays the assurance level and control results.
 
-## Generate a CPOE from a SOC 2 Report
+## Sign Tool Output into a CPOE
+
+Corsair takes structured output from security tools and signs it into a cryptographically verifiable CPOE:
 
 ```bash
-# Set your Anthropic API key
-export ANTHROPIC_API_KEY=your_key_here
+# Sign Prowler scan results
+corsair sign --format prowler --input prowler-results.json
 
-# Ingest a SOC 2 report and generate a signed CPOE
-bun run corsair.ts ingest --file report.pdf --type soc2
+# Sign InSpec compliance results
+corsair sign --format inspec --input inspec-results.json
+
+# Sign Trivy vulnerability scan
+corsair sign --format trivy --input trivy-report.json
 ```
 
-This runs the CPOE lifecycle: INGEST → CHART → QUARTER → MARQUE.
+This runs the CPOE lifecycle: EVIDENCE → CLASSIFY → CHART → QUARTER → MARQUE.
 
 ## Generate Signing Keys
 
 ```bash
 # Generate Ed25519 keypair for CPOE signing
-bun run corsair.ts keygen --output ./keys
+corsair keygen --output ./keys
 ```
 
 ## CLI Commands
 
 | Command | Description |
 |---------|-------------|
-| `corsair ingest` | Ingest a compliance document and generate a signed CPOE |
+| `corsair sign` | Sign security tool output into a verifiable CPOE |
 | `corsair verify` | Verify a CPOE's Ed25519 signature and check validity |
 | `corsair keygen` | Generate Ed25519 signing keypair |
 | `corsair help` | Show available commands |

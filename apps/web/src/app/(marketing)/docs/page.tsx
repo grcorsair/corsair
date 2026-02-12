@@ -61,15 +61,7 @@ export default function DocsPage() {
               </div>
               <div className="space-y-4 p-5 font-mono text-[12px] sm:text-[13px]">
                 <div>
-                  <span className="text-corsair-text-dim"># Install Bun</span>
-                  <div className="text-corsair-cyan">
-                    curl -fsSL https://bun.sh/install | bash
-                  </div>
-                </div>
-                <div>
-                  <span className="text-corsair-text-dim">
-                    # Clone and install
-                  </span>
+                  <span className="text-corsair-text-dim"># Install</span>
                   <div className="text-corsair-cyan">
                     git clone https://github.com/Arudjreis/corsair.git
                   </div>
@@ -79,18 +71,26 @@ export default function DocsPage() {
                 </div>
                 <div>
                   <span className="text-corsair-text-dim">
-                    # Verify the example CPOE (no API keys needed)
+                    # Sign tool output into a CPOE
                   </span>
                   <div className="text-corsair-gold">
-                    bun run bin/corsair-verify.ts examples/example-cpoe.jwt
+                    corsair sign --format prowler --input scan-results.json
                   </div>
                 </div>
                 <div>
                   <span className="text-corsair-text-dim">
-                    # Ingest a SOC 2 report and generate a signed CPOE
+                    # Verify any CPOE (always free)
                   </span>
                   <div className="text-corsair-gold">
-                    bun corsair.ts ingest --file report.pdf --type soc2
+                    corsair verify cpoe.jwt
+                  </div>
+                </div>
+                <div>
+                  <span className="text-corsair-text-dim">
+                    # Generate signing keys
+                  </span>
+                  <div className="text-corsair-cyan">
+                    corsair keygen
                   </div>
                 </div>
               </div>

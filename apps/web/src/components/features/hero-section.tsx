@@ -33,10 +33,13 @@ export function HeroSection() {
               className="mt-6 max-w-2xl sm:mt-8"
             >
               <p className="text-lg text-corsair-text-dim sm:text-xl lg:text-2xl">
-                Compliance trust exchange protocol.
+                HTTPS for Compliance.
               </p>
               <p className="mt-1 text-lg font-medium text-corsair-gold sm:text-xl lg:text-2xl">
                 Verify proof. Not promises.
+              </p>
+              <p className="mt-3 text-sm text-corsair-text-dim/80 leading-relaxed sm:text-base">
+                Your security tools already generate evidence. Corsair signs it into proof anyone can verify.
               </p>
               <p className="mt-3 text-sm text-corsair-text-dim/60">
                 by{" "}
@@ -81,7 +84,7 @@ export function HeroSection() {
                 asChild
               >
                 <Link href="/docs">
-                  View Documentation
+                  corsair sign docs
                   <span className="ml-1">&rarr;</span>
                 </Link>
               </Button>
@@ -108,8 +111,8 @@ export function HeroSection() {
             description="Cryptographic proof"
           />
           <FeatureItem
-            title="13+ frameworks"
-            description="SOC 2, NIST, ISO..."
+            title="Any tool, any platform"
+            description="Prowler, InSpec, Trivy..."
             className="border-l border-corsair-border"
           />
           <FeatureItem

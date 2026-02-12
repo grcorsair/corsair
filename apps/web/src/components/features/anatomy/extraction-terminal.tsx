@@ -11,67 +11,72 @@ interface TerminalLine {
 
 const lines: TerminalLine[] = [
   {
-    text: "$ corsair ingest --file acme-soc2.pdf --type soc2",
+    text: "$ prowler aws --output json | corsair sign --format prowler",
     className: "text-corsair-gold",
     delayMs: 0,
   },
   { text: "", className: "", delayMs: 800 },
   {
-    text: "[INGEST] Scanning 47-page SOC 2 Type II report...",
+    text: "[SIGN] Reading Prowler output from stdin...",
     className: "text-corsair-gold/70",
     delayMs: 1400,
   },
   {
-    text: "[INGEST] Auditor: Example Audit Firm LLP | Period: 6 months",
+    text: "[SIGN] Detected: Prowler v3.12 | AWS account 4821-XXXX-7193",
     className: "text-corsair-text-dim",
     delayMs: 2200,
   },
   { text: "", className: "", delayMs: 2800 },
   {
-    text: "[EXTRACT] CC6.1 — Logical and Physical Access Controls",
+    text: "[CLASSIFY] prowler-iam-1  MFA Enabled for Root Account         L1",
     className: "text-corsair-gold/80",
     delayMs: 3200,
   },
   {
-    text: "[EXTRACT] CC6.2 — User Authentication and Authorization",
+    text: "[CLASSIFY] prowler-iam-4  IAM Password Policy Enforced         L1",
     className: "text-corsair-gold/80",
-    delayMs: 3600,
+    delayMs: 3500,
   },
   {
-    text: "[EXTRACT] CC7.1 — System Monitoring and Alerting",
+    text: "[CLASSIFY] prowler-s3-1   S3 Bucket Encryption at Rest         L1",
     className: "text-corsair-gold/80",
-    delayMs: 4000,
+    delayMs: 3800,
   },
   {
-    text: "[EXTRACT] CC7.2 — Vulnerability Management",
+    text: "[CLASSIFY] prowler-vpc-1  VPC Flow Logs Enabled                L1",
     className: "text-corsair-gold/80",
+    delayMs: 4100,
+  },
+  {
+    text: "[CLASSIFY] prowler-ec2-1  EC2 IMDSv2 Enforced                  FAIL",
+    className: "text-corsair-crimson/80",
     delayMs: 4400,
   },
   {
-    text: "[EXTRACT] CC8.1 — Change Management Process",
-    className: "text-corsair-gold/80",
-    delayMs: 4800,
-  },
-  {
-    text: "         ... 77 more controls",
+    text: "           ... 5 more controls",
     className: "text-corsair-text-dim",
-    delayMs: 5200,
+    delayMs: 4700,
   },
-  { text: "", className: "", delayMs: 5600 },
+  { text: "", className: "", delayMs: 5100 },
   {
-    text: "[INGEST] \u2713 82 controls extracted across 8 TSC categories",
+    text: "[SIGN] \u2713 10 controls classified | L0: 1 | L1: 7 | L2: 2",
     className: "text-corsair-green font-semibold",
+    delayMs: 5500,
+  },
+  {
+    text: "[SIGN] \u2713 Declared assurance: L1 (Configured)",
+    className: "text-corsair-green",
     delayMs: 6000,
   },
   {
-    text: "[INGEST] \u2713 76 effective | 6 ineffective | 0 not tested",
+    text: "[SIGN] \u2713 Ed25519 signature: did:web:grcorsair.com#key-1",
     className: "text-corsair-green",
-    delayMs: 6600,
+    delayMs: 6400,
   },
   {
-    text: "[INGEST] Duration: 3.2s",
+    text: "[SIGN] CPOE written to prowler-cpoe.jwt (1.4 KB)",
     className: "text-corsair-text-dim",
-    delayMs: 7000,
+    delayMs: 6800,
   },
 ];
 
@@ -131,7 +136,7 @@ export function ExtractionTerminal() {
         <div className="h-3 w-3 rounded-full bg-corsair-gold/80" />
         <div className="h-3 w-3 rounded-full bg-corsair-green/80" />
         <span className="ml-3 font-mono text-xs text-corsair-text-dim">
-          parley — ingest
+          parley — sign
         </span>
       </div>
 

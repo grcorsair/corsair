@@ -10,18 +10,18 @@ interface TerminalLine {
 
 const lines: TerminalLine[] = [
   {
-    text: "$ corsair ingest --file report.pdf --type soc2",
+    text: "$ corsair sign --format prowler --input scan-results.json",
     className: "text-corsair-gold",
     delayMs: 0,
   },
   { text: "", className: "", delayMs: 800 },
   {
-    text: "[INGEST]    Extracting controls from SOC 2 Type II report...",
+    text: "[EVIDENCE]  Accepting Prowler scan output (10 controls)...",
     className: "text-corsair-cyan",
     delayMs: 1500,
   },
   {
-    text: "[INGEST]    Found 24 controls across 8 TSC categories",
+    text: "[CLASSIFY]  Assurance levels assigned: L0:1 L1:7 L2:2",
     className: "text-corsair-cyan",
     delayMs: 2500,
   },
@@ -31,7 +31,7 @@ const lines: TerminalLine[] = [
     delayMs: 3500,
   },
   {
-    text: "[CHART]     46 framework mappings generated",
+    text: "[CHART]     28 framework mappings generated",
     className: "text-corsair-turquoise",
     delayMs: 4500,
   },
@@ -52,7 +52,7 @@ const lines: TerminalLine[] = [
   },
   { text: "", className: "", delayMs: 8200 },
   {
-    text: "Verification: bun run bin/corsair-verify.ts output/acme-soc2.jwt",
+    text: "Verification: corsair verify output/acme-prowler.jwt",
     className: "text-corsair-text-dim",
     delayMs: 8500,
   },
@@ -112,7 +112,7 @@ export function TerminalDemo() {
         <div className="h-3 w-3 rounded-full bg-corsair-gold/80" />
         <div className="h-3 w-3 rounded-full bg-corsair-green/80" />
         <span className="ml-3 font-mono text-xs text-corsair-text-dim">
-          corsair — ingest
+          corsair — sign
         </span>
         {isDone && (
           <span className="ml-auto font-mono text-xs text-corsair-text-dim/50">

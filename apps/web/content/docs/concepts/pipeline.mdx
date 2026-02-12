@@ -1,16 +1,16 @@
 ---
 title: "The CPOE Lifecycle"
-description: "How compliance evidence becomes a cryptographically verifiable CPOE."
+description: "How security tool output becomes a cryptographically verifiable CPOE."
 section: "concepts"
 order: 10
 ---
 
 ## Overview
 
-The Corsair pipeline transforms compliance evidence into cryptographically signed, universally verifiable Certificates of Proof of Operational Effectiveness (CPOEs). Each stage builds on the previous one, progressing from raw evidence to a W3C Verifiable Credential signed with Ed25519.
+The Corsair pipeline transforms security tool output into cryptographically signed, universally verifiable Certificates of Proof of Operational Effectiveness (CPOEs). Each stage builds on the previous one, progressing from structured evidence to a W3C Verifiable Credential signed with Ed25519.
 
 ```
-INGEST → CHART → QUARTER → MARQUE
+EVIDENCE → CLASSIFY → CHART → QUARTER → MARQUE
 ```
 
 Two companion systems operate alongside the pipeline:
@@ -20,24 +20,35 @@ Two companion systems operate alongside the pipeline:
 
 ## Stage Details
 
-### INGEST — Evidence Ingestion
+### EVIDENCE — Tool Output Acceptance
 
-Accepts compliance evidence (SOC 2 reports, audit artifacts, configuration exports) and extracts structured control data using Claude.
+Accepts structured output from security scanning tools and compliance platforms, normalizing it into a canonical control format for classification and signing.
 
-**Input sources:**
-- `pdf` — SOC 2 Type II reports, audit reports, compliance documentation
-- `json` — Pre-structured control data, configuration exports
-- `api` — Direct integration with compliance platforms (planned)
+**Supported tool formats:**
+- `prowler` — Prowler AWS/Azure/GCP security scan results (JSON)
+- `inspec` — Chef InSpec compliance test results (JSON)
+- `trivy` — Trivy vulnerability and misconfiguration reports (JSON)
+- `json` — Pre-structured control data from any source
 
 **Output:** An `IngestedDocument` containing structured controls, evidence references, and metadata ready for framework mapping.
 
 ```bash
-bun corsair.ts ingest --input ./soc2-report.pdf
+corsair sign --format prowler --input prowler-results.json
 ```
+
+### CLASSIFY — Assurance Level Assignment
+
+Each control is classified at an assurance level (L0-L4) based on the evidence type and source:
+
+- **L0** — Policy documentation only (self-attested)
+- **L1** — Configuration exports from automated tools (Prowler, InSpec, SecurityHub)
+- **L2** — Test results proving controls work (pentest findings, functional tests)
+- **L3** — Continuous monitoring data (FLAGSHIP active)
+- **L4** — Independent third-party verification
 
 ### CHART — Framework Mapping
 
-Maps ingested controls to 13+ compliance frameworks using a 2-tier resolution system:
+Maps classified controls to 13+ compliance frameworks using a 2-tier resolution system:
 
 1. **CTID ATT&CK-to-NIST data** — 6,300+ mappings from the Center for Threat-Informed Defense
 2. **SCF crosswalk** — Secure Controls Framework mapping to 175+ frameworks

@@ -34,8 +34,14 @@ Every concept in Corsair carries dual meaning — pirate brand on the surface, f
 
 This isn't just branding. The historical parallels are structurally meaningful. Pieces of Eight succeeded because verification was decentralized. CPOEs succeed for the same reason.
 
+## From Tool Output to Signed Proof
+
+Your security tools already generate the evidence. Prowler scans your AWS accounts. InSpec tests your infrastructure configurations. Trivy finds your vulnerabilities. The problem is that none of this output is cryptographically verifiable or machine-exchangeable.
+
+Corsair bridges this gap. Run `corsair sign --format prowler --input scan-results.json` and the tool output becomes a signed CPOE — a W3C Verifiable Credential that anyone can verify with standard JWT libraries and the issuer's public key.
+
 ## What Comes Next
 
-The CPOE is the atomic unit of a new trust infrastructure. When enough organizations generate and exchange CPOEs, the network effect creates a **trust graph** — a web of cryptographically verified security assessments that replaces the current web of unverified questionnaires.
+The CPOE is the atomic unit of a new trust infrastructure. When enough organizations sign their tool output into CPOEs and exchange them, the network effect creates a **trust graph** — a web of cryptographically verified security assessments that replaces the current web of unverified questionnaires.
 
 This is how you disrupt an $8.57 billion market: not by building a better questionnaire, but by making questionnaires obsolete.

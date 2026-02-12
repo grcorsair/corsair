@@ -24,7 +24,7 @@ This is questionnaire theater.
 
 ## How Marque Works
 
-A Marque is a **W3C Verifiable Credential** — a JWT signed with Ed25519 that contains the results of an adversarial assessment:
+A Marque is a **W3C Verifiable Credential** — a JWT signed with Ed25519 that contains the results of a compliance assessment:
 
 ```
 eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCIsImtpZCI6ImRpZDp3ZWI6ZXhhbXBsZS5jb20ja2V5LTEifQ...
@@ -32,7 +32,7 @@ eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCIsImtpZCI6ImRpZDp3ZWI6ZXhhbXBsZS5jb20ja2V5
 
 The JWT payload contains a CPOE credential subject with assessment scope, control test results, evidence chain metadata, and framework mappings. The credential type is `["VerifiableCredential", "CorsairCPOE"]`.
 
-The vendor runs Corsair against their infrastructure, generating adversarial evidence. Corsair signs the results as a JWT-VC with Ed25519. The resulting Marque can be verified by **anyone** — using Corsair tooling, any W3C VC verifier, or any JWT library with EdDSA support. No Corsair account needed, no server calls, no data sharing.
+The vendor runs their security tools (Prowler, InSpec, Trivy) and feeds the structured output to Corsair. Corsair classifies the evidence, maps it to compliance frameworks, and signs the results as a JWT-VC with Ed25519. The resulting Marque can be verified by **anyone** — using Corsair tooling, any W3C VC verifier, or any JWT library with EdDSA support. No Corsair account needed, no server calls, no data sharing.
 
 ## Client-Side Verification
 

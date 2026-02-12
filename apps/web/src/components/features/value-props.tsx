@@ -9,26 +9,26 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import {
-  ReconIcon,
-  QuarterIcon,
   MarqueIcon,
+  QuarterIcon,
+  SpyglassIcon,
 } from "@/components/pixel-art/pixel-icons";
 
 const props = [
   {
-    title: "Ingest Existing Evidence",
+    title: "One Command, Signed Proof",
     description:
-      "INGEST extracts compliance data from SOC 2 reports, pentest results, and audit documents. CHART maps controls to 12+ frameworks automatically. No new data collection required.",
-    accent: "border-t-corsair-cyan",
-    glowColor: "rgba(0,207,255,0.15)",
-    icon: <ReconIcon size={36} />,
-    label: "INGEST",
-    labelColor: "text-corsair-cyan",
+      "corsair sign — Ed25519 JWT-VC, one command, any evidence source. Prowler scans, InSpec profiles, Trivy reports, SecurityHub exports. Your tools already have the data. MARQUE signs it into a CPOE.",
+    accent: "border-t-corsair-crimson",
+    glowColor: "rgba(192,57,43,0.15)",
+    icon: <MarqueIcon size={36} />,
+    label: "MARQUE",
+    labelColor: "text-corsair-crimson",
   },
   {
-    title: "AI-Powered Evidence Review",
+    title: "Governance Gate, Not a Checkbox",
     description:
-      "QUARTERMASTER evaluates evidence quality, methodology rigor, and completeness before any credential is signed. Not a checkbox — a governance gate with deterministic and LLM verification.",
+      "QUARTERMASTER evaluates evidence quality across seven dimensions — methodology, integrity, completeness, bias, and more. Deterministic checks plus AI review before any credential is signed.",
     accent: "border-t-corsair-gold",
     glowColor: "rgba(212,168,83,0.15)",
     icon: <QuarterIcon size={36} />,
@@ -36,14 +36,14 @@ const props = [
     labelColor: "text-corsair-gold",
   },
   {
-    title: "Cryptographic Proof Anyone Can Verify",
+    title: "Real-Time Compliance Signals",
     description:
-      "MARQUE generates Ed25519-signed W3C Verifiable Credentials (JWT-VC). Anyone with a public key can verify a CPOE — no vendor lock-in, no trust assumptions. Open. Verifiable. Interoperable.",
-    accent: "border-t-corsair-crimson",
-    glowColor: "rgba(192,57,43,0.15)",
-    icon: <MarqueIcon size={36} />,
-    label: "MARQUE",
-    labelColor: "text-corsair-crimson",
+      "FLAGSHIP streams compliance state changes via SSF/CAEP — drift detected, assurance tier changed, CPOE revoked. Continuous proof that controls are operating, not just a point-in-time snapshot.",
+    accent: "border-t-corsair-turquoise",
+    glowColor: "rgba(127,219,202,0.15)",
+    icon: <SpyglassIcon size={36} />,
+    label: "FLAGSHIP",
+    labelColor: "text-corsair-turquoise",
   },
 ];
 

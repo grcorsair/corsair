@@ -23,7 +23,7 @@ import {
 export const metadata: Metadata = {
   title: "Community",
   description:
-    "Join the Corsair community. Contribute document parsers, framework mappings, and help build the future of compliance proof infrastructure.",
+    "Join the Corsair community. Contribute tool adapters, framework mappings, and help build the future of compliance proof infrastructure.",
 };
 
 const links = [
@@ -63,7 +63,7 @@ const links = [
   {
     name: "Contributing Guide",
     description:
-      "The Pirate's Code — how to contribute document parsers, framework mappings, and protocol extensions.",
+      "The Pirate's Code — how to contribute tool adapters, framework mappings, and protocol extensions.",
     href: "https://github.com/Arudjreis/corsair/blob/main/CONTRIBUTING.md",
     icon: <ChartIcon size={32} />,
     cta: "Read the Code",
@@ -86,11 +86,11 @@ const links = [
 
 const contributions = [
   {
-    title: "Document Parsers",
+    title: "Tool Adapters",
     description:
-      "Build parsers for new report types — ISO 27001 audit reports, PCI-DSS ROCs, HIPAA assessments, and more. Each parser feeds the INGEST pipeline.",
+      "Build adapters that translate security tool output into the CPOE format — InSpec, Prowler, Trivy, ComplianceAsCode, and more. Each adapter feeds the EVIDENCE pipeline.",
     icon: <ReconIcon size={28} />,
-    label: "INGEST",
+    label: "EVIDENCE",
     labelColor: "text-corsair-cyan",
     glowColor: "rgba(0,207,255,0.12)",
   },
@@ -113,9 +113,9 @@ const contributions = [
     glowColor: "rgba(212,168,83,0.12)",
   },
   {
-    title: "Verification Tools",
+    title: "Verification Tools & Platform Connectors",
     description:
-      "Build CPOE verification integrations — browser extensions, CI/CD plugins, API clients, and third-party platform connectors.",
+      "Build CPOE verification integrations — browser extensions, CI/CD plugins, API clients — and platform connectors for GRC tools like CISO Assistant, Eramba, and Vanta.",
     icon: <MarkIcon size={28} />,
     label: "VERIFY",
     labelColor: "text-corsair-green",
@@ -138,7 +138,7 @@ export default function CommunityPage() {
             </h1>
             <p className="mx-auto max-w-xl text-corsair-text-dim">
               Corsair is open source (Apache 2.0). The CPOE specification is openly
-              licensed (CC BY 4.0). Contribute document parsers, framework
+              licensed (CC BY 4.0). Contribute tool adapters, framework
               mappings, protocol extensions, and help build the future of
               compliance proof infrastructure.
             </p>

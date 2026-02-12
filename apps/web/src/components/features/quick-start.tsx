@@ -12,12 +12,14 @@ curl -fsSL https://bun.sh/install | bash
 git clone https://github.com/Arudjreis/corsair.git
 cd corsair && bun install
 
-# Verify the example CPOE (no API keys needed)
-bun run bin/corsair-verify.ts examples/example-cpoe.jwt
+# Sign tool output into a CPOE
+bun run corsair.ts sign --format prowler --input scan-results.json
 
-# Ingest a SOC 2 report and generate a signed CPOE
-export ANTHROPIC_API_KEY=your_key_here
-bun corsair.ts ingest --file report.pdf --type soc2`;
+# Verify any CPOE (always free, no API keys needed)
+bun run corsair.ts verify cpoe.jwt
+
+# Generate Ed25519 signing keys
+bun run corsair.ts keygen`;
 
 export function QuickStart() {
   const [copied, setCopied] = useState(false);

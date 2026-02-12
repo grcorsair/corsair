@@ -102,7 +102,7 @@ function AnimatedScore({ target }: { target: number }) {
 export function QuartermasterGauge() {
   const dimensions = Object.entries(ANATOMY_DIMENSIONS);
   // Compute weighted average for overall score
-  const overallScore = 69;
+  const overallScore = 91;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_2fr]">
@@ -141,27 +141,27 @@ export function QuartermasterGauge() {
         </p>
         <div className="space-y-2 font-mono text-[12px]">
           <div className="flex items-start gap-2">
-            <span className="text-corsair-gold flex-shrink-0">!!</span>
+            <span className="text-corsair-green flex-shrink-0">{"\u2713"}</span>
             <span className="text-corsair-text-dim">
-              Evidence is 468 days old — freshness score capped at 0/100
+              Evidence freshness: scanned today — 100/100
+            </span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="text-corsair-green flex-shrink-0">{"\u2713"}</span>
+            <span className="text-corsair-text-dim">
+              All 10 controls use automated methodology (Prowler, Trivy, InSpec)
             </span>
           </div>
           <div className="flex items-start gap-2">
             <span className="text-corsair-gold flex-shrink-0">!!</span>
             <span className="text-corsair-text-dim">
-              CC7.3 physical security relies on sub-service org delegation (no direct evidence)
-            </span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="text-corsair-gold flex-shrink-0">!!</span>
-            <span className="text-corsair-text-dim">
-              79 of 82 controls use &ldquo;unknown&rdquo; methodology — only 3 use CAAT
+              2 controls failed — prowler-ec2-1 (IMDSv2) and prowler-kms-1 (key rotation)
             </span>
           </div>
           <div className="flex items-start gap-2">
             <span className="text-corsair-text-dim flex-shrink-0">i</span>
             <span className="text-corsair-text-dim">
-              Evidence distribution: 60% documented-record, 40% interview
+              Evidence sources: 70% config-scan (L1), 20% vulnerability-scan (L2), 10% benchmark-test (L2)
             </span>
           </div>
         </div>

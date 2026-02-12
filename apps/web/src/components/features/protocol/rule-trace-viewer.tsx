@@ -23,7 +23,7 @@ export function RuleTraceViewer() {
       {/* Decision trace */}
       <div className="rounded-xl border border-corsair-border bg-[#0A0A0A] p-5">
         <p className="mb-4 font-pixel text-[8px] tracking-widest text-corsair-gold/60">
-          DECISION TRACE — ACME CORP SOC 2 TYPE II
+          DECISION TRACE — ACME CORP PROWLER SCAN
         </p>
         <div className="space-y-0">
           {RULE_TRACE_EXAMPLE.map((entry, i) => {

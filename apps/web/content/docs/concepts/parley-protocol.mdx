@@ -58,13 +58,14 @@ See the [FLAGSHIP Events](/docs/concepts/flagship-events) page for details.
 ## End-to-End Flow
 
 ```
-1. INGEST    Corsair extracts controls from compliance documents
-2. GENERATE  MARQUE stage produces JWT-VC signed with Ed25519
-3. REGISTER  (Optional) JWT-VC submitted to SCITT transparency log
-4. SHARE     Vendor shares JWT-VC with requesting organization
-5. VERIFY    Requestor verifies locally (Web Crypto, CLI, or any VC verifier)
-6. MONITOR   SSF/CAEP stream delivers real-time compliance change events
-7. RENEW     Periodic re-assessment produces new JWT-VC, old one expires
+1. EVIDENCE  Corsair accepts structured output from security tools (Prowler, InSpec, Trivy)
+2. CLASSIFY  Each control is assigned an assurance level (L0-L4) based on evidence type
+3. GENERATE  MARQUE stage produces JWT-VC signed with Ed25519
+4. REGISTER  (Optional) JWT-VC submitted to SCITT transparency log
+5. SHARE     Vendor shares JWT-VC with requesting organization
+6. VERIFY    Requestor verifies locally (Web Crypto, CLI, or any VC verifier)
+7. MONITOR   SSF/CAEP stream delivers real-time compliance change events
+8. RENEW     Periodic re-assessment produces new JWT-VC, old one expires
 ```
 
 ## TPRM Disruption

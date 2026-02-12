@@ -23,7 +23,7 @@ export default function Home() {
               The Parley Protocol
             </h2>
             <p className="mb-12 text-center text-corsair-text-dim">
-              Five stages. From document to signed proof.
+              Five stages. From tool output to signed proof.
             </p>
           </FadeIn>
           <FadeIn delay={0.2}>
@@ -45,7 +45,7 @@ export default function Home() {
               Three Pillars of Trust
             </h2>
             <p className="mb-12 text-center text-corsair-text-dim">
-              Evidence in. Crypto out. Anyone can verify.
+              Sign. Verify. Signal. The three pillars of the Parley protocol.
             </p>
           </FadeIn>
           <ValueProps />
@@ -85,8 +85,7 @@ export default function Home() {
               13+ Compliance Frameworks
             </h2>
             <p className="mb-12 text-center text-corsair-text-dim">
-              Evidence auto-maps to every framework. You ingest. The mappings
-              happen.
+              Controls auto-map to every framework via CHART. You sign. The mappings happen.
             </p>
           </FadeIn>
           <FrameworkGrid />
@@ -106,7 +105,7 @@ export default function Home() {
               Quick Start
             </h2>
             <p className="mb-8 text-center text-corsair-text-dim">
-              No API keys needed for demo mode.
+              Sign tool output. Verify any CPOE. No API keys needed.
             </p>
           </FadeIn>
           <FadeIn delay={0.2}>

@@ -11,10 +11,11 @@ const productLinks = [
 
 const resourceLinks = [
   { href: "/docs/getting-started/quick-start", label: "Quick Start" },
-  { href: "/docs/concepts/pipeline", label: "Pipeline Architecture" },
+  { href: "/docs/concepts/pipeline", label: "Integration Ladder" },
   { href: "/docs/concepts/parley-protocol", label: "Parley Protocol" },
   { href: "/docs/protocol-spec", label: "Protocol Spec" },
   { href: "/docs/integrations/ci-cd", label: "CI/CD Integration" },
+  { href: "/docs/integrations/tool-adapters", label: "Tool Adapters" },
 ];
 
 const communityLinks = [

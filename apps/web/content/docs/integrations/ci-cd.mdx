@@ -1,18 +1,18 @@
 ---
 title: "CI/CD Integration"
-description: "Run Corsair in your CI/CD pipeline for continuous compliance verification."
+description: "Run Corsair in your CI/CD pipeline for continuous compliance signing and verification."
 section: "integrations"
 order: 32
 ---
 
 ## Overview
 
-Corsair runs in any CI/CD pipeline that supports Bun. Use it for continuous compliance verification — validate that compliance evidence is ingested, mapped, and signed on every release cycle.
+Corsair runs in any CI/CD pipeline that supports Bun. Use it for continuous compliance signing and verification — sign security tool output into CPOEs and verify existing attestations on every release cycle.
 
 ## GitHub Actions
 
 ```yaml
-name: Corsair Compliance Verification
+name: Corsair Compliance Signing
 on:
   schedule:
     - cron: '0 6 * * 1'  # Weekly Monday 6am UTC
@@ -33,20 +33,27 @@ jobs:
           git clone https://github.com/Arudjreis/corsair.git /tmp/corsair
           cd /tmp/corsair && bun install
 
-      - name: Ingest and Sign
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      - name: Run Prowler scan
+        run: |
+          prowler aws --output-formats json --output-directory ./scan-results/
+
+      - name: Sign scan results into CPOE
         run: |
           cd /tmp/corsair
-          bun corsair.ts ingest \
-            --input ${{ github.workspace }}/compliance/soc2-report.pdf \
-            --format oscal \
-            --output /tmp/evidence.json
+          corsair sign \
+            --format prowler \
+            --input ${{ github.workspace }}/scan-results/prowler-output.json \
+            --output /tmp/cpoe.jwt
+
+      - name: Verify CPOE
+        run: |
+          cd /tmp/corsair
+          corsair verify /tmp/cpoe.jwt
 
       - uses: actions/upload-artifact@v4
         with:
-          name: corsair-evidence
-          path: /tmp/evidence.json
+          name: corsair-cpoe
+          path: /tmp/cpoe.jwt
 ```
 
 ## GitLab CI
@@ -60,10 +67,11 @@ corsair:
   script:
     - git clone https://github.com/Arudjreis/corsair.git /tmp/corsair
     - cd /tmp/corsair && bun install
-    - bun corsair.ts ingest --input compliance/soc2-report.pdf --format oscal --output evidence.json
+    - corsair sign --format prowler --input scan-results/prowler-output.json --output cpoe.jwt
+    - corsair verify cpoe.jwt
   artifacts:
     paths:
-      - evidence.json
+      - cpoe.jwt
     expire_in: 90 days
 ```
 
@@ -74,20 +82,25 @@ pipeline {
     agent any
     triggers { cron('H 6 * * 1') }
     stages {
-        stage('Corsair Compliance Verification') {
+        stage('Corsair Compliance Signing') {
             steps {
                 sh '''
-                    bun corsair.ts ingest \
-                        --input compliance/soc2-report.pdf \
-                        --output evidence/corsair-${BUILD_ID}.json \
-                        --quiet
+                    corsair sign \
+                        --format inspec \
+                        --input compliance/inspec-results.json \
+                        --output evidence/cpoe-${BUILD_ID}.jwt
                 '''
+            }
+        }
+        stage('Verify CPOE') {
+            steps {
+                sh 'corsair verify evidence/cpoe-${BUILD_ID}.jwt'
             }
         }
     }
     post {
         always {
-            archiveArtifacts artifacts: 'evidence/*.json'
+            archiveArtifacts artifacts: 'evidence/*.jwt'
         }
     }
 }
@@ -95,8 +108,9 @@ pipeline {
 
 ## Best Practices
 
-1. **Schedule weekly** — Run ingestion and verification on a recurring schedule, not just on deploys
-2. **Archive evidence** — Store OSCAL/JSONL artifacts for audit trail
+1. **Schedule weekly** — Run tool scans and CPOE signing on a recurring schedule, not just on deploys
+2. **Archive CPOEs** — Store signed JWT-VC artifacts for audit trail
 3. **Alert on failures** — Send Slack/email notifications when CPOE assurance level drops
-4. **Verify CPOEs** — Use `bun corsair.ts verify` to validate existing CPOEs in your pipeline
+4. **Verify CPOEs** — Use `corsair verify` to validate existing CPOEs in your pipeline
 5. **Track assurance levels** — Monitor L0-L4 progression across release cycles
+6. **Chain with tool scans** — Run Prowler/InSpec/Trivy first, then sign the results with `corsair sign`

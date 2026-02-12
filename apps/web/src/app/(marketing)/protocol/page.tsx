@@ -43,14 +43,14 @@ export default function ProtocolPage() {
             protocol
           </h1>
           <p className="mx-auto max-w-2xl text-center text-lg text-corsair-text-dim sm:text-xl">
-            Six open standards. Zero vendor lock-in.
+            Five open standards. Zero vendor lock-in.
             Every decision traceable, every proof verifiable.
           </p>
         </FadeIn>
 
         <FadeIn delay={0.3}>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            {["JWT-VC", "DID:web", "Ed25519", "SCITT", "SSF/CAEP", "in-toto/SLSA"].map(
+            {["JWT-VC", "DID:web", "Ed25519", "SCITT", "SSF/CAEP"].map(
               (std) => (
                 <span
                   key={std}
@@ -78,16 +78,16 @@ export default function ProtocolPage() {
           <StageHeader
             number={1}
             name="COMPOSITION"
-            subtitle="Six standards, one protocol"
+            subtitle="Five standards, one protocol"
             color="text-corsair-gold"
             icon={<ChartIcon size={32} />}
           />
 
           <FadeIn delay={0.1}>
             <p className="mb-6 max-w-2xl text-sm text-corsair-text-dim">
-              Parley doesn&apos;t invent new cryptography. It composes six open standards
+              Parley doesn&apos;t invent new cryptography. It composes five open standards
               into a trust exchange protocol. Each standard handles one concern —
-              identity, attestation, logging, signaling, signatures, and process provenance.
+              identity, attestation, logging, signaling, and signatures.
             </p>
           </FadeIn>
 
@@ -244,18 +244,22 @@ export default function ProtocolPage() {
           <StageHeader
             number={7}
             name="PROVENANCE"
-            subtitle="in-toto/SLSA — cryptographic pipeline receipts"
+            subtitle="Advanced — in-toto/SLSA pipeline receipts"
             color="text-corsair-green"
             icon={<MarkIcon size={32} />}
           />
 
           <FadeIn delay={0.1}>
-            <p className="mb-6 max-w-2xl text-sm text-corsair-text-dim">
-              Every CPOE embeds a process provenance chain — COSE-signed receipts for each
-              pipeline step (ingest, classify, chart, quarter, marque). Each receipt captures
-              input/output hashes and links to the previous receipt, forming a tamper-evident
-              chain. The chain digest (Merkle root of all receipt hashes) is embedded in the
-              signed credential, proving not just what the CPOE says, but how it was built.
+            <p className="mb-2 max-w-2xl text-sm text-corsair-text-dim">
+              For advanced use cases, CPOEs can embed a process provenance chain — COSE-signed
+              receipts for each pipeline step (classify, chart, quarter, sign). Each receipt
+              captures input/output hashes and links to the previous receipt, forming a
+              tamper-evident chain. The chain digest is embedded in the signed credential,
+              proving not just what the CPOE says, but how it was built.
+            </p>
+            <p className="mb-6 max-w-2xl text-xs text-corsair-text-dim/60 italic">
+              Process provenance is optional. The five core protocol layers above are sufficient
+              for most verification workflows.
             </p>
           </FadeIn>
 
@@ -271,7 +275,7 @@ export default function ProtocolPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="w-20 text-corsair-text-dim">Steps</span>
-                  <span className="text-corsair-text">ingest → classify → chart → quarter → marque</span>
+                  <span className="text-corsair-text">classify → chart → quarter → sign</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="w-20 text-corsair-text-dim">Linking</span>
@@ -303,8 +307,8 @@ export default function ProtocolPage() {
               From theory to proof
             </h2>
             <p className="mb-8 text-corsair-text-dim">
-              Watch the full pipeline transform a SOC 2 report into a signed,
-              verifiable CPOE — or paste one yourself and check the signature.
+              See how security tool output becomes a signed, verifiable CPOE — or
+              paste one yourself and check the signature.
             </p>
           </FadeIn>
           <FadeIn delay={0.2}>

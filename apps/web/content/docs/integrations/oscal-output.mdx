@@ -13,20 +13,20 @@ Corsair generates [OSCAL](https://pages.nist.gov/OSCAL/) (Open Security Controls
 
 ```bash
 # OSCAL JSON (machine-readable, NIST SP 800-53A compliant)
-bun corsair.ts ingest --input soc2-report.pdf --format oscal
+corsair sign --format prowler --input scan-results.json --output-format oscal
 
 # HTML report (self-contained, no external dependencies)
-bun corsair.ts ingest --input soc2-report.pdf --format html
+corsair sign --format inspec --input inspec-results.json --output-format html
 
 # Markdown report
-bun corsair.ts ingest --input soc2-report.pdf --format md
+corsair sign --format trivy --input trivy-report.json --output-format md
 ```
 
 ## OSCAL Mapping
 
 | Corsair Concept | OSCAL Element |
 |----------------|---------------|
-| Ingestion Findings | Findings (satisfied/not-satisfied) |
+| EVIDENCE Findings | Findings (satisfied/not-satisfied) |
 | CHART Frameworks | Reviewed Controls (control-selections) |
 | QUARTER Governance | Observations (EXAMINE method) |
 | MARQUE Attestation | Assessment Results metadata |

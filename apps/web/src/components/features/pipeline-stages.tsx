@@ -13,8 +13,8 @@ import {
 
 const stages = [
   {
-    name: "INGEST",
-    description: "Extract compliance data from SOC 2 reports, pentest results, and audit documents using Claude AI",
+    name: "EVIDENCE",
+    description: "Accept structured output from security tools and platforms — Prowler, InSpec, Trivy, SecurityHub, and more",
     icon: <ReconIcon size={40} />,
     color: "text-corsair-cyan",
     glowColor: "rgba(0,207,255,0.15)",
@@ -28,7 +28,7 @@ const stages = [
   },
   {
     name: "CHART",
-    description: "Automatically map extracted controls to 13+ compliance frameworks via CTID/SCF crosswalk",
+    description: "Automatically map controls to 13+ compliance frameworks via CTID/SCF crosswalk",
     icon: <ChartIcon size={40} />,
     color: "text-corsair-turquoise",
     glowColor: "rgba(127,219,202,0.15)",

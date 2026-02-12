@@ -3,9 +3,9 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 import {
   ReconIcon,
+  SpyglassIcon,
   ChartIcon,
   QuarterIcon,
-  MarqueIcon,
   RaidIcon,
 } from "@/components/pixel-art/pixel-icons";
 import { StageHeader } from "@/components/features/anatomy/stage-header";
@@ -14,18 +14,19 @@ import { AssuranceLadder } from "@/components/features/anatomy/assurance-ladder"
 import { FrameworkMap } from "@/components/features/anatomy/framework-map";
 import { QuartermasterGauge } from "@/components/features/anatomy/quartermaster-gauge";
 import { MarqueAssembly } from "@/components/features/anatomy/marque-assembly";
-import { ANATOMY_DOCUMENT } from "@/data/anatomy-data";
+import { IntegrationTierCard } from "@/components/features/anatomy/integration-tier-card";
+import { INTEGRATION_TIERS } from "@/data/anatomy-data";
 
 export const metadata: Metadata = {
-  title: "Anatomy of a CPOE",
+  title: "Integration Ladder — How Evidence Becomes Proof",
   description:
-    "See how the Parley protocol analyzes a SOC 2 report — from document extraction to cryptographic proof. Every stage, every decision, every assurance level.",
+    "See how Corsair turns tool and platform output into cryptographic proof. Three evidence tiers, same CPOE format, same Ed25519 signature, same verification.",
 };
 
 export default function AnatomyPage() {
   return (
     <main className="pb-20">
-      {/* ═══ HERO ═══ */}
+      {/* --- HERO --- */}
       <section className="relative flex min-h-[50dvh] flex-col items-center justify-center overflow-hidden px-6 py-20">
         {/* Subtle gold glow */}
         <div className="pointer-events-none absolute left-1/2 top-1/3 h-[400px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-corsair-gold/[0.02] blur-[120px]" />
@@ -35,11 +36,11 @@ export default function AnatomyPage() {
             HOW IT WORKS
           </p>
           <h1 className="mb-4 text-center font-pixel-display text-[10vw] font-bold leading-[0.9] tracking-tighter text-corsair-text sm:text-[8vw] lg:text-[5vw]">
-            anatomy
+            integration ladder
           </h1>
           <p className="mx-auto max-w-2xl text-center text-lg text-corsair-text-dim sm:text-xl">
-            Watch the Parley protocol dissect a compliance report
-            into cryptographic proof.
+            Same CPOE format at every tier. Same Ed25519 signature.
+            Same verification. The evidence source determines the assurance level.
           </p>
         </FadeIn>
 
@@ -47,47 +48,67 @@ export default function AnatomyPage() {
           <div className="mt-8 flex items-center gap-2 rounded-lg border border-corsair-border bg-corsair-surface px-4 py-2.5">
             <div className="h-2 w-2 rounded-full bg-corsair-green animate-pulse" />
             <span className="font-mono text-xs text-corsair-text-dim">
-              Analyzing:
+              Evidence flows in.
             </span>
             <span className="font-mono text-xs text-corsair-gold">
-              {ANATOMY_DOCUMENT.name}
+              Proof flows out.
             </span>
           </div>
         </FadeIn>
 
-        {/* Document metadata strip */}
+        {/* Three-tier summary strip */}
         <FadeIn delay={0.5}>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-xs text-corsair-text-dim">
-            <span>{ANATOMY_DOCUMENT.pages} pages</span>
-            <span className="text-corsair-border">|</span>
-            <span>Auditor: {ANATOMY_DOCUMENT.auditor}</span>
-            <span className="text-corsair-border">|</span>
-            <span>{ANATOMY_DOCUMENT.scope}</span>
+            <span className="text-corsair-gold">LOOKOUT</span>
+            <span className="text-corsair-border">&rarr;</span>
+            <span className="text-corsair-turquoise">SPYGLASS</span>
+            <span className="text-corsair-border">&rarr;</span>
+            <span className="text-corsair-green">QUARTERMASTER</span>
+            <span className="text-corsair-border">&rarr;</span>
+            <span className="text-corsair-crimson">CPOE</span>
           </div>
         </FadeIn>
       </section>
 
-      {/* ═══ STAGE 1: INGEST ═══ */}
+      {/* --- TIER 1: LOOKOUT --- */}
       <PixelDivider className="my-4" />
       <section className="px-6 py-16">
         <div className="mx-auto max-w-4xl">
           <StageHeader
             number={1}
-            name="INGEST"
-            subtitle="Extract controls from the document"
+            name="LOOKOUT"
+            subtitle="Telemetry from source systems"
             color="text-corsair-gold"
             icon={<ReconIcon size={32} />}
           />
 
           <FadeIn delay={0.1}>
-            <p className="mb-6 max-w-2xl text-sm text-corsair-text-dim">
-              Claude AI reads the full {ANATOMY_DOCUMENT.pages}-page report, identifies every security control,
-              extracts evidence, and classifies effectiveness. No templates, no manual mapping —
-              the document speaks for itself.
-            </p>
+            <IntegrationTierCard tier={INTEGRATION_TIERS[0]} />
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* --- TIER 2: SPYGLASS --- */}
+      <PixelDivider variant="diamond" className="my-4" />
+      <section className="px-6 py-16">
+        <div className="mx-auto max-w-4xl">
+          <StageHeader
+            number={2}
+            name="SPYGLASS"
+            subtitle="Output from security tools"
+            color="text-corsair-turquoise"
+            icon={<SpyglassIcon size={32} />}
+          />
+
+          <FadeIn delay={0.1}>
+            <IntegrationTierCard tier={INTEGRATION_TIERS[1]} />
           </FadeIn>
 
+          {/* Live terminal demo — Prowler piped to corsair sign */}
           <FadeIn delay={0.2}>
+            <p className="mb-4 mt-10 font-pixel text-[8px] tracking-widest text-corsair-text-dim">
+              LIVE DEMO — PROWLER TO CPOE
+            </p>
             <ExtractionTerminal />
           </FadeIn>
 
@@ -96,39 +117,81 @@ export default function AnatomyPage() {
             <div className="mt-6 flex flex-wrap items-center justify-center gap-6 text-center">
               <div>
                 <p className="font-pixel-display text-2xl font-bold text-corsair-gold">
-                  {ANATOMY_DOCUMENT.totalControls}
+                  10
                 </p>
-                <p className="text-xs text-corsair-text-dim">controls extracted</p>
+                <p className="text-xs text-corsair-text-dim">controls classified</p>
               </div>
               <div>
                 <p className="font-pixel-display text-2xl font-bold text-corsair-green">
-                  {ANATOMY_DOCUMENT.effective}
+                  8
                 </p>
                 <p className="text-xs text-corsair-text-dim">effective</p>
               </div>
               <div>
                 <p className="font-pixel-display text-2xl font-bold text-corsair-crimson">
-                  {ANATOMY_DOCUMENT.ineffective}
+                  2
                 </p>
                 <p className="text-xs text-corsair-text-dim">ineffective</p>
               </div>
               <div>
                 <p className="font-pixel-display text-2xl font-bold text-corsair-text">
-                  {ANATOMY_DOCUMENT.extractionTime}
+                  0.8s
                 </p>
-                <p className="text-xs text-corsair-text-dim">extraction time</p>
+                <p className="text-xs text-corsair-text-dim">signing time</p>
               </div>
             </div>
           </FadeIn>
         </div>
       </section>
 
-      {/* ═══ STAGE 2: CLASSIFY ═══ */}
-      <PixelDivider variant="diamond" className="my-4" />
+      {/* --- TIER 3: QUARTERMASTER --- */}
+      <PixelDivider className="my-4" />
       <section className="px-6 py-16">
         <div className="mx-auto max-w-4xl">
           <StageHeader
-            number={2}
+            number={3}
+            name="QUARTERMASTER"
+            subtitle="Results from GRC platforms"
+            color="text-corsair-green"
+            icon={<QuarterIcon size={32} />}
+          />
+
+          <FadeIn delay={0.1}>
+            <IntegrationTierCard tier={INTEGRATION_TIERS[2]} />
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* --- UNIVERSAL FORMAT --- */}
+      <PixelDivider variant="diamond" className="my-4" />
+      <section className="px-6 py-16">
+        <div className="mx-auto max-w-4xl">
+          <FadeIn>
+            <div className="mb-10 text-center">
+              <p className="mb-3 font-pixel text-[8px] tracking-widest text-corsair-gold/60">
+                UNIVERSAL FORMAT
+              </p>
+              <h2 className="mb-4 font-display text-3xl font-bold text-corsair-text">
+                Every tier, same CPOE
+              </h2>
+              <p className="mx-auto max-w-2xl text-corsair-text-dim">
+                Whether the evidence comes from a CloudTrail log, a Prowler scan,
+                or a Vanta export — the output is a single JWT-VC signed with Ed25519.
+                The evidence source determines the assurance level. The format is universal.
+              </p>
+            </div>
+          </FadeIn>
+
+          <MarqueAssembly />
+        </div>
+      </section>
+
+      {/* --- CLASSIFY --- */}
+      <PixelDivider className="my-4" />
+      <section className="px-6 py-16">
+        <div className="mx-auto max-w-4xl">
+          <StageHeader
+            number={4}
             name="CLASSIFY"
             subtitle="Assign assurance levels to every control"
             color="text-corsair-gold"
@@ -138,7 +201,9 @@ export default function AnatomyPage() {
           <FadeIn delay={0.1}>
             <p className="mb-6 max-w-2xl text-sm text-corsair-text-dim">
               Each control gets an assurance level from L0 (Documented) to L4 (Attested)
-              based on evidence type, source, and methodology. Click any control to see
+              based on evidence type and source. A raw config check from CloudTrail
+              is L1. A vulnerability scan from Trivy is L2. Continuous monitoring
+              from a GRC platform reaches L3. Click any control to see
               the exact classification logic.
             </p>
           </FadeIn>
@@ -147,12 +212,12 @@ export default function AnatomyPage() {
         </div>
       </section>
 
-      {/* ═══ STAGE 3: CHART ═══ */}
-      <PixelDivider className="my-4" />
+      {/* --- CHART --- */}
+      <PixelDivider variant="diamond" className="my-4" />
       <section className="px-6 py-16">
         <div className="mx-auto max-w-4xl">
           <StageHeader
-            number={3}
+            number={5}
             name="CHART"
             subtitle="Map controls across compliance frameworks"
             color="text-corsair-turquoise"
@@ -161,9 +226,9 @@ export default function AnatomyPage() {
 
           <FadeIn delay={0.1}>
             <p className="mb-6 max-w-2xl text-sm text-corsair-text-dim">
-              CHART automatically maps extracted controls to 13+ compliance frameworks
+              CHART automatically maps classified controls to 13+ compliance frameworks
               using CTID (ATT&amp;CK to NIST) and SCF (NIST to everything else) crosswalk
-              data. One ingestion, every framework.
+              data. One tool scan, every framework.
             </p>
           </FadeIn>
 
@@ -171,12 +236,12 @@ export default function AnatomyPage() {
         </div>
       </section>
 
-      {/* ═══ STAGE 4: QUARTER ═══ */}
-      <PixelDivider variant="diamond" className="my-4" />
+      {/* --- QUARTER --- */}
+      <PixelDivider className="my-4" />
       <section className="px-6 py-16">
         <div className="mx-auto max-w-4xl">
           <StageHeader
-            number={4}
+            number={6}
             name="QUARTER"
             subtitle="AI-powered evidence review of quality and rigor"
             color="text-corsair-gold"
@@ -185,9 +250,10 @@ export default function AnatomyPage() {
 
           <FadeIn delay={0.1}>
             <p className="mb-6 max-w-2xl text-sm text-corsair-text-dim">
-              The Quartermaster evaluates evidence across 7 dimensions — not a checkbox,
-              but a deterministic + LLM governance gate that scores methodology rigor,
-              coverage, reliability, and independence.
+              For L2+ CPOEs, the Quartermaster evaluates evidence across 7 dimensions —
+              not a checkbox, but a deterministic + LLM governance gate that scores
+              methodology rigor, coverage, reliability, and independence. Tool output
+              scores higher on freshness and reliability than manual evidence.
             </p>
           </FadeIn>
 
@@ -195,31 +261,7 @@ export default function AnatomyPage() {
         </div>
       </section>
 
-      {/* ═══ STAGE 5: MARQUE ═══ */}
-      <PixelDivider className="my-4" />
-      <section className="px-6 py-16">
-        <div className="mx-auto max-w-4xl">
-          <StageHeader
-            number={5}
-            name="MARQUE"
-            subtitle="Sign the cryptographic proof"
-            color="text-corsair-crimson"
-            icon={<MarqueIcon size={32} />}
-          />
-
-          <FadeIn delay={0.1}>
-            <p className="mb-6 max-w-2xl text-sm text-corsair-text-dim">
-              Everything converges into a single JWT-VC: the W3C Verifiable Credential
-              signed with Ed25519. Three segments — header, payload, signature — anyone can
-              verify with standard libraries. No Corsair account needed.
-            </p>
-          </FadeIn>
-
-          <MarqueAssembly />
-        </div>
-      </section>
-
-      {/* ═══ FINAL CTA ═══ */}
+      {/* --- FINAL CTA --- */}
       <PixelDivider variant="diamond" className="my-4" />
       <section className="px-6 py-20">
         <div className="mx-auto max-w-2xl text-center">

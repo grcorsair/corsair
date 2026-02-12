@@ -233,14 +233,14 @@ export interface RuleTraceEntry {
 
 export const RULE_TRACE_EXAMPLE: RuleTraceEntry[] = [
   { type: "RULE", text: "82 controls checked across SOC 2 Type II scope" },
-  { type: "RULE", text: 'Source "soc2" ceiling = L1 (document-based evidence)', detail: "SOC 2 PDFs contain config descriptions, not live scans" },
-  { type: "RULE", text: "3 controls have test evidence (tabletop, pentest)", detail: "CC7.1, CC7.2, CC5.1 — these qualify for L2" },
+  { type: "RULE", text: 'Source "prowler" ceiling = L1 (automated config scan)', detail: "Prowler outputs confirm settings are enabled, not test results" },
+  { type: "RULE", text: "3 controls have test evidence (pentest, InSpec profiles)", detail: "CC7.1, CC7.2, CC5.1 — these qualify for L2" },
   { type: "OVERRIDE", text: "Test evidence elevates 3 controls: L1 → L2" },
   { type: "RULE", text: 'Breakdown = { "L0": 6, "L1": 73, "L2": 3 }' },
   { type: "RULE", text: "Minimum of in-scope controls = L0 (6 controls at Documented)" },
   { type: "RULE", text: "Freshness checked — evidence is 468 days old (stale)" },
   { type: "SAFEGUARD", text: "Freshness decay: evidence >180 days — dimension capped at 0/100" },
-  { type: "RULE", text: "Observation period: 365 days (sufficient for Type II)" },
+  { type: "RULE", text: "Observation period: 365 days (sufficient for continuous scan)" },
   { type: "RULE", text: "DORA band: methodology=low, specificity=medium — overall band: low" },
   { type: "ENFORCED", text: "Declared L0 matches floor — no cap enforced" },
   { type: "RESULT", text: "CPOE issued at L0 (Documented) — self-assessed, verified=true" },
@@ -263,7 +263,7 @@ export const BINARY_CHECKS: BinaryCheck[] = [
   { id: "no-expired-evidence", name: "No Expired Evidence", category: "evidence", passed: false, detail: "Evidence is 468 days old (>365 day limit)" },
   { id: "source-identified", name: "Source Identified", category: "provenance", passed: true, detail: "Provenance source is 'auditor'" },
   { id: "source-identity-present", name: "Source Identity Named", category: "provenance", passed: true, detail: "Example Audit Firm LLP" },
-  { id: "document-hash-valid", name: "Document Hash Valid", category: "provenance", passed: true, detail: "SHA-256 hash of source PDF present" },
+  { id: "document-hash-valid", name: "Source Hash Valid", category: "provenance", passed: true, detail: "SHA-256 hash of source evidence present" },
   { id: "no-duplicate-evidence", name: "No Duplicate Evidence", category: "provenance", passed: true, detail: "<3 controls share identical evidence" },
   { id: "methodology-present", name: "Methodology Detected", category: "integrity", passed: true, detail: "3 controls have CAAT methodology" },
   { id: "sample-size-adequate", name: "Sample Size Adequate", category: "integrity", passed: true, detail: "No INADEQUATE sample sizes found" },
@@ -407,10 +407,10 @@ export const PROTOCOL_STANDARDS = [
   {
     name: "in-toto/SLSA",
     fullName: "in-toto Attestation + SLSA Provenance",
-    role: "Process provenance",
+    role: "Process provenance (advanced)",
     spec: "in-toto v1 + SLSA v1.0",
-    what: "COSE-signed receipts for each pipeline step — hash-linked chain proving how the CPOE was built",
-    why: "Proves the pipeline ran correctly, not just that the output looks right. Reproducibility + attestation",
+    what: "Optional COSE-signed receipts for each pipeline step — hash-linked chain proving how the CPOE was built",
+    why: "Advanced layer for high-assurance workflows. Proves the pipeline ran correctly, not just that the output looks right",
   },
 ];
 

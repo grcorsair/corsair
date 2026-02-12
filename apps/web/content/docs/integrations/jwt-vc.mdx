@@ -56,11 +56,10 @@ The document contains your Ed25519 public key:
 ### Via CLI
 
 ```bash
-# Ingest a SOC 2 report and output as JWT-VC
-bun corsair.ts ingest \
-  --file soc2-report.pdf \
-  --type soc2 \
-  --format vc-jwt \
+# Sign tool output and output as JWT-VC
+corsair sign \
+  --format prowler \
+  --input prowler-results.json \
   --did did:web:example.com
 
 # Output: JWT string written to evidence directory

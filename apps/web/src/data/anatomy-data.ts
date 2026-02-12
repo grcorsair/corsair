@@ -1,6 +1,11 @@
 /**
- * Pre-computed anatomy page data from a sample SOC 2 analysis.
- * All data is static — no live API calls on this showcase page.
+ * Pre-computed anatomy page data for the Integration Ladder showcase.
+ * All data is static — no live API calls on this page.
+ *
+ * Three evidence tiers:
+ *   Tier 1: LOOKOUT  — Telemetry from source systems (CloudTrail, Azure Monitor, etc.)
+ *   Tier 2: SPYGLASS — Output from security tools (InSpec, Prowler, Trivy, etc.)
+ *   Tier 3: QUARTERMASTER — Results from GRC platforms (Vanta, Drata, CISO Assistant, etc.)
  */
 
 export interface AnatomyControl {
@@ -13,184 +18,264 @@ export interface AnatomyControl {
   methodology: string;
 }
 
-export const ANATOMY_DOCUMENT = {
-  name: "Acme Corp SOC 2 Type II Report",
-  pages: 47,
-  auditor: "Example Audit Firm LLP",
-  date: "2024-10-31",
-  scope: "Cloud Platform — Security and Availability",
-  extractionTime: "3.2s",
-  totalControls: 82,
-  effective: 76,
-  ineffective: 6,
-};
+/** Integration tier source info shown on the page */
+export interface IntegrationTier {
+  tier: number;
+  pirateName: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  sources: string[];
+  evidenceType: string;
+  assuranceRange: string;
+  cliExample: string;
+  cliLabel: string;
+}
 
+export const INTEGRATION_TIERS: IntegrationTier[] = [
+  {
+    tier: 1,
+    pirateName: "LOOKOUT",
+    title: "Telemetry from Source Systems",
+    subtitle: "Raw signal from the crow's nest",
+    description:
+      "Direct integration pulling raw telemetry from cloud providers and observability platforms. Event logs, API calls, configuration state, and audit trails — the ground truth of what your infrastructure is actually doing.",
+    sources: [
+      "AWS CloudTrail",
+      "Azure Monitor",
+      "GCP Audit Logs",
+      "Datadog",
+      "Splunk",
+      "Elasticsearch",
+    ],
+    evidenceType: "Raw logs, API calls, config state, event streams",
+    assuranceRange: "L1 (Configured)",
+    cliExample: "corsair sign --format cloudtrail --input trail.json",
+    cliLabel: "Sign CloudTrail evidence as L1 CPOE",
+  },
+  {
+    tier: 2,
+    pirateName: "SPYGLASS",
+    title: "Output from Security Tools",
+    subtitle: "Focused assessment of what the lookout spotted",
+    description:
+      "Security scanners and compliance tools that actively test your infrastructure. Vulnerability scans, policy checks, configuration audits — tools that go beyond observation and produce structured compliance findings.",
+    sources: [
+      "InSpec",
+      "Prowler",
+      "Trivy",
+      "ComplianceAsCode",
+      "Wiz",
+      "Snyk",
+    ],
+    evidenceType: "Scan results, compliance checks, vulnerability reports",
+    assuranceRange: "L1-L2 (Configured to Demonstrated)",
+    cliExample: "prowler aws --output json | corsair sign --format prowler",
+    cliLabel: "Pipe Prowler output directly into corsair sign",
+  },
+  {
+    tier: 3,
+    pirateName: "QUARTERMASTER",
+    title: "Results from GRC Platforms",
+    subtitle: "Governed, reviewed, and continuously validated",
+    description:
+      "GRC platforms that aggregate evidence, manage control lifecycles, and provide continuous monitoring. Structured compliance data with governance context — the richest evidence source, producing the highest assurance levels.",
+    sources: [
+      "Vanta",
+      "Drata",
+      "CISO Assistant",
+      "Eramba",
+      "OneTrust",
+      "Conveyor",
+    ],
+    evidenceType: "Control assessments, continuous monitoring, audit results",
+    assuranceRange: "L2-L3 (Demonstrated to Observed)",
+    cliExample:
+      "corsair sign --format ciso-assistant --input controls-export.json",
+    cliLabel: "Sign GRC platform export as L2+ CPOE",
+  },
+];
+
+/** Sample controls from a Prowler scan (Tier 2 example) */
 export const ANATOMY_CONTROLS: AnatomyControl[] = [
   {
-    id: "CC6.1",
-    name: "Logical and Physical Access Controls",
+    id: "prowler-iam-1",
+    name: "MFA Enabled for Root Account",
     level: 1,
     status: "effective",
-    evidence: "MFA enforced for all user accounts. Role-based access control implemented via SSO provider.",
+    evidence:
+      "Prowler check: iam_root_hardware_mfa_enabled — PASS. Hardware MFA device attached to root account.",
     ruleTrace: [
-      'RULE: source "soc2" ceiling = L1',
-      "RULE: evidence type = documented-record (config)",
-      "RULE: control status = effective",
-      "RESULT: L1 (Configured) — config evidence, no test results",
+      'RULE: source "prowler" ceiling = L2',
+      "RULE: evidence type = automated-scan (config check)",
+      "RULE: control status = effective (PASS)",
+      "RESULT: L1 (Configured) — tool verified the setting is on",
     ],
-    methodology: "examine",
+    methodology: "automated-config-check",
   },
   {
-    id: "CC6.2",
-    name: "User Authentication and Authorization",
+    id: "prowler-iam-4",
+    name: "IAM Password Policy Enforced",
     level: 1,
     status: "effective",
-    evidence: "Password complexity requirements enforced. Session timeout after 15 minutes of inactivity.",
+    evidence:
+      "Prowler check: iam_password_policy_minimum_length_14 — PASS. Minimum 14 chars, complexity enabled.",
     ruleTrace: [
-      'RULE: source "soc2" ceiling = L1',
-      "RULE: evidence type = documented-record",
-      "RULE: control status = effective",
-      "RESULT: L1 (Configured) — policy documented with config proof",
+      'RULE: source "prowler" ceiling = L2',
+      "RULE: evidence type = automated-scan (config check)",
+      "RULE: control status = effective (PASS)",
+      "RESULT: L1 (Configured) — password policy scanned and verified",
     ],
-    methodology: "examine",
+    methodology: "automated-config-check",
   },
   {
-    id: "CC6.3",
-    name: "Access Provisioning and Deprovisioning",
+    id: "prowler-s3-1",
+    name: "S3 Bucket Encryption at Rest",
     level: 1,
     status: "effective",
-    evidence: "Automated deprovisioning within 24 hours of termination via HR-IT integration.",
+    evidence:
+      "Prowler check: s3_bucket_default_encryption — PASS. AES-256 (SSE-S3) enabled on all 12 buckets.",
     ruleTrace: [
-      'RULE: source "soc2" ceiling = L1',
-      "RULE: evidence type = documented-record",
-      "RULE: control status = effective",
-      "RESULT: L1 (Configured) — automated process documented",
+      'RULE: source "prowler" ceiling = L2',
+      "RULE: evidence type = automated-scan (config check)",
+      "RULE: control status = effective (PASS)",
+      "RESULT: L1 (Configured) — encryption settings verified by scan",
     ],
-    methodology: "examine",
+    methodology: "automated-config-check",
   },
   {
-    id: "CC7.1",
-    name: "System Monitoring and Alerting",
+    id: "prowler-vpc-1",
+    name: "VPC Flow Logs Enabled",
+    level: 1,
+    status: "effective",
+    evidence:
+      "Prowler check: vpc_flow_logs_enabled — PASS. Flow logs active on all 3 VPCs.",
+    ruleTrace: [
+      'RULE: source "prowler" ceiling = L2',
+      "RULE: evidence type = automated-scan (config check)",
+      "RULE: control status = effective (PASS)",
+      "RESULT: L1 (Configured) — flow log configuration verified",
+    ],
+    methodology: "automated-config-check",
+  },
+  {
+    id: "trivy-vuln-1",
+    name: "Container Image Vulnerability Scan",
     level: 2,
     status: "effective",
-    evidence: "SIEM deployed with 24/7 alerting. Incident response tested via tabletop exercise Q3 2024.",
+    evidence:
+      "Trivy scan: 0 critical, 0 high vulnerabilities in production images. Full scan of 8 images.",
     ruleTrace: [
-      'RULE: source "soc2" ceiling = L1',
-      "RULE: evidence type = test (tabletop exercise)",
-      "OVERRIDE: test evidence elevates to L2",
-      "RESULT: L2 (Demonstrated) — test results prove control works",
+      'RULE: source "trivy" ceiling = L2',
+      "RULE: evidence type = vulnerability-scan (test results)",
+      "RULE: control status = effective (0 critical/high)",
+      "OVERRIDE: test/scan results elevate to L2",
+      "RESULT: L2 (Demonstrated) — scan proves vulnerability posture",
     ],
-    methodology: "caat",
+    methodology: "automated-vulnerability-scan",
   },
   {
-    id: "CC7.2",
-    name: "Vulnerability Management",
+    id: "inspec-cis-1",
+    name: "CIS Benchmark: SSH Configuration",
     level: 2,
     status: "effective",
-    evidence: "Weekly vulnerability scans. Critical findings remediated within 72 hours. Q3 pentest: 0 critical findings.",
+    evidence:
+      "InSpec profile: cis-aws-foundations-baseline — 42/42 controls passed. SSH hardened per CIS L1.",
     ruleTrace: [
-      'RULE: source "soc2" ceiling = L1',
-      "RULE: evidence type = test (pentest results)",
-      "OVERRIDE: test evidence elevates to L2",
-      "RESULT: L2 (Demonstrated) — pentest proves effectiveness",
+      'RULE: source "inspec" ceiling = L2',
+      "RULE: evidence type = compliance-test (CIS benchmark)",
+      "RULE: control status = effective (42/42 passed)",
+      "OVERRIDE: compliance test results elevate to L2",
+      "RESULT: L2 (Demonstrated) — benchmark test proves compliance",
     ],
-    methodology: "caat",
+    methodology: "compliance-benchmark-test",
   },
   {
-    id: "CC7.3",
-    name: "Physical Security Controls",
+    id: "prowler-ct-1",
+    name: "CloudTrail Logging Enabled",
+    level: 1,
+    status: "effective",
+    evidence:
+      "Prowler check: cloudtrail_multi_region_enabled — PASS. Multi-region trail active with S3 delivery.",
+    ruleTrace: [
+      'RULE: source "prowler" ceiling = L2',
+      "RULE: evidence type = automated-scan (config check)",
+      "RULE: control status = effective (PASS)",
+      "RESULT: L1 (Configured) — logging configuration verified",
+    ],
+    methodology: "automated-config-check",
+  },
+  {
+    id: "prowler-guard-1",
+    name: "GuardDuty Threat Detection Active",
+    level: 1,
+    status: "effective",
+    evidence:
+      "Prowler check: guardduty_is_enabled — PASS. GuardDuty active in all 3 regions.",
+    ruleTrace: [
+      'RULE: source "prowler" ceiling = L2',
+      "RULE: evidence type = automated-scan (config check)",
+      "RULE: control status = effective (PASS)",
+      "RESULT: L1 (Configured) — threat detection service enabled",
+    ],
+    methodology: "automated-config-check",
+  },
+  {
+    id: "prowler-ec2-1",
+    name: "EC2 IMDSv2 Enforced",
+    level: 1,
+    status: "ineffective",
+    evidence:
+      "Prowler check: ec2_imdsv2_only — FAIL. 2 of 14 instances still allow IMDSv1.",
+    ruleTrace: [
+      'RULE: source "prowler" ceiling = L2',
+      "RULE: evidence type = automated-scan (config check)",
+      "RULE: control status = ineffective (FAIL)",
+      "SAFEGUARD: failed controls capped at L0",
+      "RESULT: L1 (Configured) — scan ran, finding documented",
+    ],
+    methodology: "automated-config-check",
+  },
+  {
+    id: "prowler-kms-1",
+    name: "KMS Key Rotation Enabled",
     level: 0,
-    status: "effective",
-    evidence: "Cloud-only infrastructure. Physical security delegated to AWS SOC 2.",
+    status: "ineffective",
+    evidence:
+      "Prowler check: kms_cmk_rotation_enabled — FAIL. 1 of 5 CMKs missing automatic rotation.",
     ruleTrace: [
-      "RULE: evidence type = policy reference only",
-      "RULE: no direct config or test evidence",
-      "RULE: delegation to sub-service org = L0",
-      "RESULT: L0 (Documented) — policy assertion, no direct proof",
+      "RULE: evidence type = automated-scan (config check)",
+      "RULE: control status = ineffective (FAIL)",
+      "SAFEGUARD: failed control = L0 ceiling",
+      "RESULT: L0 (Documented) — finding recorded, control not effective",
     ],
-    methodology: "unknown",
-  },
-  {
-    id: "CC8.1",
-    name: "Change Management Process",
-    level: 1,
-    status: "effective",
-    evidence: "All changes require PR approval. CI/CD pipeline enforces automated tests before merge.",
-    ruleTrace: [
-      'RULE: source "soc2" ceiling = L1',
-      "RULE: evidence type = documented-record (CI config)",
-      "RULE: control status = effective",
-      "RESULT: L1 (Configured) — CI/CD pipeline configuration documented",
-    ],
-    methodology: "examine",
-  },
-  {
-    id: "CC3.1",
-    name: "Risk Assessment Process",
-    level: 0,
-    status: "effective",
-    evidence: "Annual risk assessment performed. Risk register maintained.",
-    ruleTrace: [
-      "RULE: evidence type = interview + documented-record",
-      "RULE: no automated/tool evidence",
-      "RULE: interview-only = L0",
-      "RESULT: L0 (Documented) — interview-based, no machine evidence",
-    ],
-    methodology: "unknown",
-  },
-  {
-    id: "CC6.6",
-    name: "Encryption at Rest and Transit",
-    level: 1,
-    status: "effective",
-    evidence: "TLS 1.2+ enforced for all connections. AES-256 encryption for data at rest via AWS KMS.",
-    ruleTrace: [
-      'RULE: source "soc2" ceiling = L1',
-      "RULE: evidence type = documented-record (config)",
-      "RULE: control status = effective",
-      "RESULT: L1 (Configured) — encryption settings documented",
-    ],
-    methodology: "examine",
-  },
-  {
-    id: "CC5.1",
-    name: "Incident Response Program",
-    level: 2,
-    status: "effective",
-    evidence: "IR plan tested via tabletop exercise. Mean time to detect: 4 hours. Mean time to respond: 12 hours.",
-    ruleTrace: [
-      'RULE: source "soc2" ceiling = L1',
-      "RULE: evidence type = test (tabletop + metrics)",
-      "OVERRIDE: test evidence elevates to L2",
-      "RESULT: L2 (Demonstrated) — IR test with measured outcomes",
-    ],
-    methodology: "caat",
+    methodology: "automated-config-check",
   },
 ];
 
 export const ANATOMY_ASSURANCE = {
-  declared: 0 as const,
+  declared: 1 as const,
   verified: true,
-  method: "self-assessed" as const,
-  breakdown: { 0: 6, 1: 73, 2: 3 } as Record<number, number>,
+  method: "automated-config-check" as const,
+  breakdown: { 0: 1, 1: 7, 2: 2 } as Record<number, number>,
   ruleTrace: [
-    "RULE: 82 controls checked",
-    'RULE: source "soc2" ceiling = L1',
-    'RULE: breakdown = {"0":6,"1":73,"2":3}',
-    "RULE: min of in-scope controls = L0 — satisfied",
-    "RULE: freshness checked — stale (468 days)",
-    "SAFEGUARD: Evidence is 468 days old — capped at L1",
+    "RULE: 10 controls checked",
+    'RULE: source "prowler+trivy+inspec" ceiling = L2',
+    'RULE: breakdown = {"0":1,"1":7,"2":2}',
+    "RULE: 1 control excluded (KMS rotation — remediation scheduled)",
+    "RULE: min of in-scope controls = L1 — satisfied",
+    "RESULT: CPOE declared L1 (Configured)",
   ],
 };
 
 export const ANATOMY_DIMENSIONS = {
-  capability: 93,
-  coverage: 100,
-  reliability: 56,
-  methodology: 50,
-  freshness: 0,
-  independence: 85,
-  consistency: 100,
+  capability: 95,
+  coverage: 90,
+  reliability: 88,
+  methodology: 92,
+  freshness: 100,
+  independence: 75,
+  consistency: 96,
 };
 
 export const ANATOMY_FRAMEWORKS = [
@@ -203,10 +288,33 @@ export const ANATOMY_FRAMEWORKS = [
   { name: "MITRE ATT&CK", controlsMapped: 8, passed: 7, failed: 1 },
 ];
 
-export const ASSURANCE_LABELS: Record<number, { name: string; color: string; bgColor: string }> = {
-  0: { name: "Documented", color: "text-corsair-text-dim", bgColor: "bg-corsair-text-dim/20" },
-  1: { name: "Configured", color: "text-corsair-gold", bgColor: "bg-corsair-gold/20" },
-  2: { name: "Demonstrated", color: "text-corsair-green", bgColor: "bg-corsair-green/20" },
-  3: { name: "Observed", color: "text-blue-400", bgColor: "bg-blue-400/20" },
-  4: { name: "Attested", color: "text-purple-400", bgColor: "bg-purple-400/20" },
+export const ASSURANCE_LABELS: Record<
+  number,
+  { name: string; color: string; bgColor: string }
+> = {
+  0: {
+    name: "Documented",
+    color: "text-corsair-text-dim",
+    bgColor: "bg-corsair-text-dim/20",
+  },
+  1: {
+    name: "Configured",
+    color: "text-corsair-gold",
+    bgColor: "bg-corsair-gold/20",
+  },
+  2: {
+    name: "Demonstrated",
+    color: "text-corsair-green",
+    bgColor: "bg-corsair-green/20",
+  },
+  3: {
+    name: "Observed",
+    color: "text-blue-400",
+    bgColor: "bg-blue-400/20",
+  },
+  4: {
+    name: "Attested",
+    color: "text-purple-400",
+    bgColor: "bg-purple-400/20",
+  },
 };

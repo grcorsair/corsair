@@ -17,12 +17,12 @@ const jwtPayloadPreview = `{
   "vc": {
     "type": ["VerifiableCredential", "CorsairCPOE"],
     "credentialSubject": {
-      "scope": "SOC 2 Type II — Acme Corp",
-      "assurance": { "declared": 0 },
+      "scope": "AWS Infrastructure — Prowler Scan",
+      "assurance": { "declared": 1 },
       "summary": {
-        "controlsTested": 82,
-        "controlsPassed": 76,
-        "overallScore": 94
+        "controlsTested": 10,
+        "controlsPassed": 8,
+        "overallScore": 80
       }
     }
   }
@@ -124,12 +124,12 @@ export function MarqueAssembly() {
                 CPOE Issued
               </p>
               <p className="text-sm text-corsair-text-dim">
-                Acme Corp SOC 2 Type II
+                AWS Infrastructure — Prowler Scan
               </p>
             </div>
           </div>
-          <Badge className="bg-corsair-text-dim/20 text-corsair-text-dim border-transparent font-pixel text-[9px]">
-            L0 — Documented
+          <Badge className="bg-corsair-gold/20 text-corsair-gold border-transparent font-pixel text-[9px]">
+            L1 — Configured
           </Badge>
         </div>
 
@@ -140,11 +140,11 @@ export function MarqueAssembly() {
           </div>
           <div>
             <p className="font-pixel text-[7px] text-corsair-text-dim tracking-wider">CONTROLS</p>
-            <p className="mt-1 text-sm text-corsair-text">82 tested, 76 passed</p>
+            <p className="mt-1 text-sm text-corsair-text">10 tested, 8 passed</p>
           </div>
           <div>
             <p className="font-pixel text-[7px] text-corsair-text-dim tracking-wider">SCORE</p>
-            <p className="mt-1 text-sm text-corsair-green">94%</p>
+            <p className="mt-1 text-sm text-corsair-green">80%</p>
           </div>
           <div>
             <p className="font-pixel text-[7px] text-corsair-text-dim tracking-wider">FRAMEWORKS</p>

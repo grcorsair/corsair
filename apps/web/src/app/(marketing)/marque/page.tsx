@@ -122,7 +122,8 @@ export default function MarquePage() {
                 <ol className="space-y-3 p-5 font-mono text-[12px] leading-relaxed text-corsair-text-dim sm:text-[13px]">
                   <li className="flex gap-3">
                     <span className="text-corsair-gold">1.</span>
-                    Organization ingests evidence (SOC 2, scan results) and signs a CPOE — JWT-VC with Ed25519.
+                    Organization runs security tools (Prowler, InSpec, Trivy) and signs evidence into a CPOE via{" "}
+                    <code className="text-corsair-cyan">corsair sign</code> — JWT-VC with Ed25519.
                   </li>
                   <li className="flex gap-3">
                     <span className="text-corsair-gold">2.</span>
@@ -181,11 +182,14 @@ export default function MarquePage() {
               <p className="text-sm leading-relaxed text-corsair-text-dim">
                 Traditional TPRM relies on self-attested questionnaires — 300+
                 questions answered by vendors who have every incentive to
-                overstate their security posture. A CPOE replaces trust with
+                overstate their security posture. Trust Centers store compliance
+                data but can&apos;t share it interoperably — Vanta&apos;s Trust
+                Center can&apos;t verify Drata&apos;s output, and vice versa.
+                CPOE is the universal format. A CPOE replaces trust with
                 verification: the evidence was assessed, the results were
                 recorded at a declared assurance level, and the credential is
                 cryptographically signed. You don&apos;t have to trust the
-                vendor. You verify the proof.
+                vendor or the platform. You verify the proof.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <Badge variant="outline" className="font-pixel text-[7px] text-corsair-gold border-corsair-gold/30">

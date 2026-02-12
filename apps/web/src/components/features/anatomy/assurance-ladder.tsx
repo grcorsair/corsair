@@ -186,7 +186,7 @@ export function AssuranceLadder() {
                   <div className="h-2 w-full overflow-hidden rounded-full bg-corsair-deep">
                     <div
                       className={`h-full rounded-full ${barColors[Number(level)]}`}
-                      style={{ width: `${(count / 82) * 100}%` }}
+                      style={{ width: `${(count / 10) * 100}%` }}
                     />
                   </div>
                 </div>

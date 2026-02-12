@@ -75,19 +75,19 @@ export function DisruptionSection() {
             <ul className="space-y-3 text-sm text-corsair-text-dim">
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 text-corsair-green">&#x2713;</span>
-                Protocol-based verification proves controls actually work
+                Your tools already generate the evidence — Corsair signs it into verifiable proof
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 text-corsair-green">&#x2713;</span>
-                SHA-256 evidence chain with cryptographic integrity
+                Ed25519-signed W3C Verifiable Credentials with SHA-256 evidence chain
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 text-corsair-green">&#x2713;</span>
-                W3C Verifiable Credential with AI-powered evidence review
+                Trust Centers can&apos;t share data. The format is missing. CPOE is that format.
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 text-corsair-green">&#x2713;</span>
-                Continuous proof that controls are operating
+                Continuous proof via FLAGSHIP signals — not annual snapshots
               </li>
             </ul>
           </CardContent>
