@@ -291,8 +291,8 @@ export interface CPOECredentialSubject extends CredentialSubject {
   /** Assessment scope (human-readable description) */
   scope: string;
 
-  /** Assurance metadata (required — every CPOE must declare a level) */
-  assurance: CPOEAssurance;
+  /** Assurance metadata (optional — provenance-first model, assurance via --enrich) */
+  assurance?: CPOEAssurance;
 
   /** Evidence provenance (required — every CPOE must state its source) */
   provenance: CPOEProvenance;

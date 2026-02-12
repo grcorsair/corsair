@@ -9,7 +9,7 @@
 <br/>
 
 ![Tests](https://img.shields.io/github/actions/workflow/status/arudjreis/corsair/test.yml?style=for-the-badge&label=TESTS&labelColor=0A0E17&color=2ECC71)
-![Version](https://img.shields.io/badge/v0.4.0-D4A853?style=for-the-badge&label=VERSION&labelColor=0A0E17)
+![Version](https://img.shields.io/badge/v0.5.0-D4A853?style=for-the-badge&label=VERSION&labelColor=0A0E17)
 ![License](https://img.shields.io/badge/Apache_2.0-D4A853?style=for-the-badge&label=LICENSE&labelColor=0A0E17)
 ![Runtime](https://img.shields.io/badge/Bun-E8E2D6?style=for-the-badge&label=RUNTIME&labelColor=0A0E17&logo=bun&logoColor=E8E2D6)
 ![Language](https://img.shields.io/badge/TypeScript-D4A853?style=for-the-badge&label=LANG&labelColor=0A0E17&logo=typescript&logoColor=D4A853)
@@ -45,9 +45,9 @@ Compliance trust today is exchanged via PDF. SOC 2 reports, pentest results, ISO
 A CPOE is:
 - **Machine-readable** — structured JSON, not a PDF
 - **Cryptographically verifiable** — Ed25519 signature, anyone can check
-- **Assurance-graded** — L0 (documented) to L4 (independently attested)
+- **Provenance-tracked** — records who produced the evidence, not just what it says
 
-Think of it like **HTTPS certificates for compliance**. Anyone can verify a CPOE. Free to check. No account required.
+Think of it like **git for compliance**. Sign evidence (`corsair sign`), diff changes (`corsair diff`), query history (`corsair log`), verify proof (`corsair verify`). Anyone can verify a CPOE. Free to check. No account required.
 
 The protocol composing this is called **Parley**: [JWT-VC](https://www.w3.org/TR/vc-data-model-2.0/) for the attestation, [SCITT](https://datatracker.ietf.org/wg/scitt/about/) for the transparency log, and [SSF/CAEP](https://openid.net/specs/openid-sharedsignals-framework-1_0.html) for real-time compliance signals.
 
@@ -64,9 +64,8 @@ bun install
 # Verify an existing CPOE (always free)
 bun run bin/corsair-verify.ts examples/example-cpoe.jwt
 
-# Generate a CPOE from a SOC 2 report
-export ANTHROPIC_API_KEY=your_key_here
-bun run corsair.ts ingest --file report.pdf --type soc2
+# Sign tool output as a CPOE
+bun run corsair.ts sign --file prowler-findings.json --output cpoe.jwt
 
 # Generate Ed25519 signing keys
 bun run corsair.ts keygen --output ./keys
@@ -74,12 +73,14 @@ bun run corsair.ts keygen --output ./keys
 
 ### CLI Reference
 
-| Command | Description |
-|:--------|:------------|
-| `corsair ingest --file <path> [--type soc2] [--did <did>] [--format vc\|v1]` | Ingest a compliance document and generate a CPOE |
-| `corsair verify --file <cpoe.jwt> [--pubkey <path>]` | Verify a CPOE signature and display results |
-| `corsair keygen [--output <dir>]` | Generate Ed25519 signing keypair |
-| `corsair help` | Show available commands |
+| Command | Description | Analogy |
+|:--------|:------------|:--------|
+| `corsair sign --file <path> [--did <did>] [--enrich]` | Sign evidence as a CPOE (JWT-VC) | `git commit` |
+| `corsair diff --current <new.jwt> --previous <old.jwt>` | Detect compliance regressions | `git diff` |
+| `corsair log [--help]` | Query SCITT transparency log | `git log` |
+| `corsair verify --file <cpoe.jwt> [--pubkey <path>]` | Verify a CPOE signature and display results | |
+| `corsair keygen [--output <dir>]` | Generate Ed25519 signing keypair | |
+| `corsair help` | Show available commands | |
 
 ---
 
@@ -148,19 +149,27 @@ Anyone can do this. No Corsair account needed. Four steps with any JWT library.
 
 ---
 
-## Assurance Levels
+## Provenance Model
 
-Every control in a CPOE is classified at an assurance level. The CPOE's overall level is the **minimum** across all in-scope controls — like an SSL certificate where one unverified domain means rejection.
+Corsair uses a **provenance-first** model. Instead of judging evidence quality, it records where evidence came from and lets buyers decide what's sufficient.
 
-| | Level | Name | Evidence Required | SSL Analogy |
-|:---:|:---:|:-----|:------------------|:------------|
-| ◇ | **L0** | Documented | Policy docs only | Self-signed cert |
-| ◈ | **L1** | Configured | Config exports, tool scans | Domain-validated (DV) |
-| ◆ | **L2** | Demonstrated | Test results, pentest findings | Org-validated (OV) |
-| ◆ | **L3** | Observed | Continuous monitoring, FLAGSHIP active | Extended validation (EV) |
-| ★ | **L4** | Attested | Independent third-party verification | EV + audit letter |
+| Provenance | Source | Example |
+|:-----------|:-------|:--------|
+| **Self** | Organization self-reports | Policy documents, manual attestation |
+| **Tool** | Automated scanning tools | Prowler, InSpec, Trivy, SecurityHub |
+| **Auditor** | Independent third party | SOC 2 auditor, ISO 27001 certification body |
 
-> L0 is free and self-signed. L1+ involves Corsair attestation. L4 requires an independent auditor co-signature via W3C Verifiable Presentation.
+### Assurance Levels (Optional Enrichment)
+
+When `--enrich` is passed, Corsair also classifies evidence at L0-L4 assurance levels. This is optional — the default signing path records provenance without judgment.
+
+| | Level | Name | Evidence Required |
+|:---:|:---:|:-----|:------------------|
+| ◇ | **L0** | Documented | Policy docs only |
+| ◈ | **L1** | Configured | Config exports, tool scans |
+| ◆ | **L2** | Demonstrated | Test results, pentest findings |
+| ◆ | **L3** | Observed | Continuous monitoring |
+| ★ | **L4** | Attested | Independent third-party verification |
 
 ---
 
@@ -168,44 +177,48 @@ Every control in a CPOE is classified at an assurance level. The CPOE's overall 
 
 ```
                     ┌─────────────────────┐
-                    │   PDF / JSON / CSV   │
+                    │  Tool / Platform     │   Prowler, InSpec, Trivy,
+                    │  Evidence Output     │   SecurityHub, CISO Assistant
                     └──────────┬──────────┘
                                │
                     ┌──────────▼──────────┐
-              01    │       INGEST         │  Claude extracts controls from documents
+              01    │       SIGN           │   Parse → Provenance → Sign JWT-VC
                     └──────────┬──────────┘
                                │
                     ┌──────────▼──────────┐
-              02    │      CLASSIFY        │  Assigns L0–L4 assurance per control
+              02    │        LOG           │   Register in SCITT transparency log
                     └──────────┬──────────┘
                                │
                     ┌──────────▼──────────┐
-              03    │       CHART          │  Maps controls to compliance frameworks
+              03    │      VERIFY          │   Anyone verifies (free, no account)
                     └──────────┬──────────┘
                                │
                     ┌──────────▼──────────┐
-              04    │      QUARTER         │  AI reviews governance + evidence quality
-                    └──────────┬──────────┘
-                               │
-                    ┌──────────▼──────────┐
-              05    │       MARQUE         │  Signs as JWT-VC (Ed25519) → CPOE
-                    └─────┬─────┬─────────┘
-                          │     │
-               ┌──────────▼┐   ┌▼──────────┐
-               │   SCITT    │   │  FLAGSHIP  │
-               │ Transparency│   │ Real-time  │
-               │    Log     │   │  Signals   │
-               └────────────┘   └────────────┘
+              04    │       DIFF           │   Compare CPOEs, detect regressions
+                    └──────────┘
+
+           ┌──────────────────────────────────────┐
+           │  Optional enrichment (--enrich):      │
+           │  CLASSIFY → CHART → QUARTER           │
+           │  Adds L0-L4 assurance scoring,        │
+           │  framework mapping, governance review  │
+           └──────────────────────────────────────┘
 ```
+
+| Stage | CLI Command | What It Does |
+|:------|:------------|:-------------|
+| Sign evidence | `corsair sign` | Parse tool output, record provenance, sign as JWT-VC (Ed25519) |
+| Transparency log | `corsair log` | Register CPOEs in SCITT append-only log |
+| Verify proof | `corsair verify` | Verify Ed25519 signature via DID:web resolution |
+| Detect regressions | `corsair diff` | Compare two CPOEs, detect new failures |
+
+### Optional Enrichment (via `--enrich`)
 
 | Stage | Pirate Name | What It Does |
 |:------|:------------|:-------------|
-| Ingestion | **INGEST** | PDF/JSON to structured controls via Claude |
-| Assurance classification | **CLASSIFY** | Assigns L0–L4 assurance level per control based on evidence type |
+| Assurance classification | **CLASSIFY** | Assigns L0-L4 assurance level per control based on evidence type |
 | Framework mapping | **CHART** | Maps controls to 13+ compliance frameworks via CTID/SCF |
 | Governance review | **QUARTER** | Deterministic + LLM evidence quality review (7 dimensions) |
-| Signed proof | **MARQUE** | JWT-VC generation with Ed25519 signing + process provenance chain |
-| Transparency log | **SCITT** | COSE receipts, Merkle proofs, append-only registry |
 | Real-time signals | **FLAGSHIP** | SSF/CAEP notifications for compliance state changes |
 
 ---
@@ -246,7 +259,7 @@ did:web:acme.com       →  https://acme.com/.well-known/did.json
 ## Testing
 
 ```bash
-bun test                          # All tests (806 tests, 49 files)
+bun test                          # All tests (935 tests, 52 files)
 
 bun test tests/parley/            # Parley protocol (MARQUE, JWT-VC, DID, SCITT)
 bun test tests/flagship/          # FLAGSHIP (SSF/SET/CAEP)
@@ -272,7 +285,7 @@ bun test tests/db/                # Database tests (requires Postgres)
 | Hosting | [Railway](https://railway.app/) (Postgres + Functions + Web) |
 | Standards | W3C VC 2.0, IETF SCITT, OpenID SSF/CAEP, NIST OSCAL |
 
-> **Dependencies**: Only 2 runtime deps — `@anthropic-ai/sdk` and `jose`. Everything else is hand-rolled.
+> **Dependencies**: Only 1 runtime dep — `jose` (JWT/JWK). Everything else is hand-rolled. `@anthropic-ai/sdk` is a dev dependency for optional Quartermaster AI enrichment.
 
 ---
 

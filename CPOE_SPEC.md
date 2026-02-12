@@ -70,16 +70,12 @@ A CPOE is a standard JWT with three base64url-encoded segments: `header.payload.
 
 ## 3. Required Claims
 
-All claims live under `vc.credentialSubject`.
+All claims live under `vc.credentialSubject`. The provenance-first model (v0.5.0+) requires only provenance and summary. Assurance scoring is optional enrichment.
 
 | Claim | Type | Description |
 |-------|------|-------------|
 | `type` | `"CorsairCPOE"` | Credential subject discriminator. Always this value. |
 | `scope` | string | Human-readable assessment scope (e.g., "SOC 2 Type II - AWS Production") |
-| `assurance.declared` | 0-4 | Assurance level claimed for this CPOE (see section 5) |
-| `assurance.verified` | boolean | Whether all in-scope controls meet the declared level |
-| `assurance.method` | string | One of: `"self-assessed"`, `"automated-config-check"`, `"ai-evidence-review"`, `"continuous-observation"`, `"third-party-attested"` |
-| `assurance.breakdown` | object | Count of controls at each level, keyed by level number: `{ "0": 2, "1": 18 }` |
 | `provenance.source` | string | Who produced the evidence: `"self"`, `"tool"`, or `"auditor"` |
 | `summary.controlsTested` | number | Total controls assessed |
 | `summary.controlsPassed` | number | Controls that passed |
@@ -93,6 +89,11 @@ All claims live under `vc.credentialSubject`.
 | `provenance.sourceIdentity` | string | Who produced the evidence (e.g., "Deloitte LLP", "Prowler v3.1") |
 | `provenance.sourceDocument` | string | SHA-256 hash of the source document |
 | `provenance.sourceDate` | string | ISO 8601 date of the source assessment |
+| `assurance` | object | **Optional enrichment** (via `--enrich`). Assurance scoring with declared level, breakdown, and method. |
+| `assurance.declared` | 0-4 | Assurance level claimed for this CPOE (see section 5) |
+| `assurance.verified` | boolean | Whether all in-scope controls meet the declared level |
+| `assurance.method` | string | One of: `"self-assessed"`, `"automated-config-check"`, `"ai-evidence-review"`, `"continuous-observation"`, `"third-party-attested"` |
+| `assurance.breakdown` | object | Count of controls at each level, keyed by level number: `{ "0": 2, "1": 18 }` |
 | `assurance.excluded` | array | Controls excluded from scope: `[{ controlId, reason, acceptedBy? }]` |
 | `evidenceChain` | object | Hash chain metadata: `{ hashChainRoot, recordCount, chainVerified }` |
 | `frameworks` | object | Per-framework results (keyed by framework name) |

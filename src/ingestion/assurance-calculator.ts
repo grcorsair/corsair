@@ -104,7 +104,8 @@ function getSourceCeiling(source: DocumentSource): AssuranceLevel {
 
     case "prowler":
     case "securityhub":
-      // Automated config scan = configured (L1) — settings verified by tooling
+    case "ciso-assistant":
+      // Automated config scan / GRC platform = configured (L1) — settings verified by tooling
       return 1;
 
     case "soc2":
@@ -277,6 +278,7 @@ function sourceToProvenanceType(source: DocumentSource): CPOEProvenance["source"
     case "securityhub":
     case "pentest":
     case "json":
+    case "ciso-assistant":
       return "tool";
     case "manual":
     default:
@@ -330,6 +332,7 @@ function sourceToMethod(source: DocumentSource): CPOEAssurance["method"] {
     case "prowler":
     case "securityhub":
     case "json":
+    case "ciso-assistant":
       return "automated-config-check";
     case "pentest":
       return "ai-evidence-review";
@@ -475,6 +478,7 @@ export function scoreMethodology(source: DocumentSource, qmScore?: number): numb
     case "pentest": return 75;        // Active testing = NIST Test-Focused
     case "prowler":
     case "securityhub": return 60;    // Automated scan = NIST Examine-Focused
+    case "ciso-assistant": return 58; // GRC platform = NIST Examine-Focused (structured assessments)
     case "json": return 55;           // Structured data = NIST Examine-Basic
     case "soc2":
     case "iso27001": return 50;       // Audit report = NIST Examine-Basic + Interview
@@ -510,6 +514,7 @@ export function scoreIndependence(source: DocumentSource): number {
     case "pentest": return 75;        // External tester (3rd-4th line)
     case "prowler":
     case "securityhub": return 50;    // Automated tool (2nd line equivalent)
+    case "ciso-assistant": return 45; // GRC platform (2nd line, structured assessments)
     case "json": return 40;           // Structured data (2nd line, unknown tool)
     case "manual": return 15;         // Self-assessment (1st line)
     default: return 10;
@@ -573,6 +578,11 @@ export function deriveEvidenceTypes(
       types.add("documented-record");
       // SOC 2 reports typically include interview + inspection evidence
       types.add("interview");
+      break;
+    case "ciso-assistant":
+      // GRC platform — structured assessments with evidence linkage
+      types.add("system-generated-record");
+      types.add("documented-record");
       break;
     case "json":
       // Generic JSON — could be tool-generated or manual

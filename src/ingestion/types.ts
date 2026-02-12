@@ -28,7 +28,8 @@ export type DocumentSource =
   | "securityhub"
   | "pentest"
   | "manual"
-  | "json";
+  | "json"
+  | "ciso-assistant";
 
 /**
  * Assurance levels per the 5-Level Assurance Ladder.

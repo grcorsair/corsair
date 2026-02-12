@@ -17,9 +17,9 @@ const navLinks = [
   { href: "/vision", label: "Vision" },
   { href: "/anatomy", label: "How It Works" },
   { href: "/protocol", label: "Protocol" },
+  { href: "/pricing", label: "Pricing" },
   { href: "/docs", label: "Docs" },
   { href: "/marque", label: "Verify CPOE" },
-  { href: "/community", label: "Community" },
   { href: "/blog", label: "Blog" },
 ];
 

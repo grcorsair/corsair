@@ -193,18 +193,16 @@ describe("VC Verifier - JWT-VC Verification", () => {
     expect(result.signedBy).toBeDefined();
   });
 
-  test("verifyVCJWT returns enriched result with assurance and provenance", async () => {
+  test("verifyVCJWT returns enriched result with provenance (assurance optional)", async () => {
     const { keyManager, input, publicKey } = await setup();
     const jwt = await generateVCJWT(input, keyManager);
 
     const result = await verifyVCJWT(jwt, [publicKey]);
 
     expect(result.valid).toBe(true);
-    // Assurance is populated from the CPOE credential subject
-    expect(result.assuranceLevel).toBeDefined();
-    expect(typeof result.assuranceLevel).toBe("number");
-    expect(result.assuranceName).toBeDefined();
-    // Provenance is populated
+    // Provenance-first model: assurance is optional (not included by default)
+    expect(result.assuranceLevel).toBeUndefined();
+    // Provenance is always populated
     expect(result.provenance).toBeDefined();
     expect(result.provenance!.source).toBeDefined();
     // Scope is a string
@@ -215,6 +213,18 @@ describe("VC Verifier - JWT-VC Verification", () => {
     expect(result.summary!.controlsTested).toBeDefined();
     // Issuer tier
     expect(result.issuerTier).toBe("corsair-verified");
+  });
+
+  test("verifyVCJWT returns assurance when enrich=true was used for signing", async () => {
+    const { keyManager, input, publicKey } = await setup();
+    const jwt = await generateVCJWT(input, keyManager, { enrich: true });
+
+    const result = await verifyVCJWT(jwt, [publicKey]);
+
+    expect(result.valid).toBe(true);
+    expect(result.assuranceLevel).toBeDefined();
+    expect(typeof result.assuranceLevel).toBe("number");
+    expect(result.assuranceName).toBeDefined();
   });
 });
 
@@ -315,7 +325,7 @@ describe("VC Verifier - verifyVCJWTViaDID", () => {
     expect(result.signedBy).toBeDefined();
     expect(result.generatedAt).toBeDefined();
     expect(result.expiresAt).toBeDefined();
-    expect(result.assuranceLevel).toBeDefined();
+    // Provenance-first: assurance is optional, scope is always present
     expect(result.scope).toBeDefined();
   });
 

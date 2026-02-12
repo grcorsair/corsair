@@ -27,11 +27,17 @@ The CPOE credential subject maps directly to the assessment results:
 ```json
 {
   "type": "CorsairCPOE",
-  "scope": { "providers": ["aws-cognito"], "frameworksCovered": ["NIST 800-53"] },
-  "summary": { "controlsTested": 24, "controlsPassed": 18, "overallScore": 75 },
-  "evidenceChain": { "hashChainRoot": "sha256:...", "recordCount": 12 }
+  "scope": "SOC 2 Type II — Cloud Infrastructure Controls",
+  "provenance": {
+    "source": "tool",
+    "sourceIdentity": "Prowler v3.1",
+    "sourceDate": "2026-01-15T00:00:00Z"
+  },
+  "summary": { "controlsTested": 24, "controlsPassed": 22, "overallScore": 92 }
 }
 ```
+
+The `provenance` field records where the evidence came from. Assurance levels (L0-L4) are available as optional enrichment via `--enrich`.
 
 Any W3C VC 2.0 verifier can validate a Corsair credential — verification is not locked to Corsair tooling.
 
@@ -54,15 +60,17 @@ https://example.com/.well-known/did.json
 
 The DID document contains the Ed25519 public key. During verification, the `kid` in the JWT header points to the DID URL, enabling automatic key discovery.
 
-## Trust Tiers
+## Provenance
 
-The Quartermaster assigns trust tiers based on the governance confidence score:
+Every CPOE records provenance — who produced the underlying evidence:
 
-| Score | Tier | Meaning |
-|-------|------|---------|
-| < 70 | Self-Assessed | Minimal governance review |
-| 70-89 | AI-Verified | Automated governance passed |
-| >= 90 | Auditor-Verified | Human auditor reviewed |
+| Source | Meaning |
+|--------|---------|
+| **self** | Organization self-attests without automated evidence |
+| **tool** | Security tool (Prowler, InSpec, Trivy) produced the evidence |
+| **auditor** | Independent third party reviewed and verified |
+
+Corsair does not judge evidence quality. It records provenance and lets buyers decide what's sufficient.
 
 ## Verification
 

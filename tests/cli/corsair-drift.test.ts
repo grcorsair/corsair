@@ -71,17 +71,17 @@ afterAll(() => {
 // HELP
 // =============================================================================
 
-describe("corsair drift — help", () => {
-  test("drift --help shows drift usage", async () => {
+describe("corsair drift — help (backwards-compatible alias)", () => {
+  test("drift --help shows diff usage (drift is alias)", async () => {
     const proc = Bun.spawn(["bun", "run", "corsair.ts", "drift", "--help"], { cwd });
     const output = await new Response(proc.stdout).text();
     await proc.exited;
-    expect(output).toContain("DRIFT");
+    expect(output).toContain("DIFF");
     expect(output).toContain("--current");
     expect(output).toContain("--previous");
   });
 
-  test("main help includes drift command", async () => {
+  test("main help includes drift as alias", async () => {
     const proc = Bun.spawn(["bun", "run", "corsair.ts", "help"], { cwd });
     const output = await new Response(proc.stdout).text();
     await proc.exited;
@@ -118,7 +118,7 @@ describe("corsair drift — error handling", () => {
 // DRIFT DETECTION
 // =============================================================================
 
-describe("corsair drift — regression detection", () => {
+describe("corsair drift — regression detection (via drift alias)", () => {
   test("detects regression when new failures appear", async () => {
     const proc = Bun.spawn([
       "bun", "run", "corsair.ts", "drift",
@@ -148,5 +148,60 @@ describe("corsair drift — regression detection", () => {
     // No regression — same controls, same statuses
     expect(code).toBe(0);
     expect(stdout).toContain("No regression");
+  });
+});
+
+// =============================================================================
+// DIFF COMMAND (primary name)
+// =============================================================================
+
+describe("corsair diff — primary command", () => {
+  test("diff --help shows diff usage", async () => {
+    const proc = Bun.spawn(["bun", "run", "corsair.ts", "diff", "--help"], { cwd });
+    const output = await new Response(proc.stdout).text();
+    await proc.exited;
+    expect(output).toContain("DIFF");
+    expect(output).toContain("--current");
+    expect(output).toContain("--previous");
+  });
+
+  test("diff detects regression (same as drift)", async () => {
+    const proc = Bun.spawn([
+      "bun", "run", "corsair.ts", "diff",
+      "--current", join(tmpDir, "cpoe-v2.jwt"),
+      "--previous", join(tmpDir, "cpoe-v1.jwt"),
+    ], { cwd, stdout: "pipe" });
+    const stdout = await new Response(proc.stdout).text();
+    const code = await proc.exited;
+
+    expect(stdout).toContain("CC6.6");
+    expect(code).toBe(1);
+  });
+
+  test("diff exits 0 when no regression", async () => {
+    const proc = Bun.spawn([
+      "bun", "run", "corsair.ts", "diff",
+      "--current", join(tmpDir, "cpoe-v3.jwt"),
+      "--previous", join(tmpDir, "cpoe-v1.jwt"),
+    ], { cwd, stdout: "pipe" });
+    const stdout = await new Response(proc.stdout).text();
+    const code = await proc.exited;
+
+    expect(code).toBe(0);
+    expect(stdout).toContain("No regression");
+  });
+});
+
+// =============================================================================
+// LOG COMMAND (stub)
+// =============================================================================
+
+describe("corsair log — stub command", () => {
+  test("log --help shows planned usage", async () => {
+    const proc = Bun.spawn(["bun", "run", "corsair.ts", "log", "--help"], { cwd });
+    const output = await new Response(proc.stdout).text();
+    await proc.exited;
+    expect(output).toContain("LOG");
+    expect(output).toContain("SCITT");
   });
 });

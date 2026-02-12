@@ -62,11 +62,10 @@ export default function MarquePage() {
                 </span>{" "}
                 is a cryptographically signed credential that proves security
                 controls were assessed and the results are tamper-proof. Each
-                CPOE carries an{" "}
-                <span className="text-corsair-gold">assurance level (L0-L4)</span>{" "}
-                reflecting the depth of evidence, and{" "}
+                CPOE carries{" "}
                 <span className="text-corsair-gold">provenance metadata</span>{" "}
-                identifying who produced the underlying evidence.
+                identifying who produced the underlying evidence (self, tool, or
+                auditor), plus a summary of controls tested and passed.
               </p>
             </div>
           </FadeIn>
@@ -74,22 +73,23 @@ export default function MarquePage() {
           <FadeIn>
             <div>
               <p className="mb-2 font-pixel text-[7px] tracking-wider text-corsair-cyan/60">
-                ASSURANCE
+                PROVENANCE
               </p>
               <h2 className="mb-4 font-display text-xl font-bold text-corsair-text">
-                Assurance Levels
+                Evidence Provenance
               </h2>
+              <p className="mb-4 text-sm text-corsair-text-dim">
+                Every CPOE records where the evidence came from. Corsair does not judge — it records provenance and lets the buyer decide what&apos;s sufficient.
+              </p>
               <div className="space-y-2">
                 {[
-                  { level: "L0", name: "Documented", desc: "Policy exists, self-attestation only", color: "text-corsair-text-dim", barWidth: "20%", barColor: "bg-corsair-text-dim/40" },
-                  { level: "L1", name: "Configured", desc: "Automated checks confirm settings are in place", color: "text-corsair-gold", barWidth: "40%", barColor: "bg-corsair-gold/40" },
-                  { level: "L2", name: "Demonstrated", desc: "Test results prove controls work", color: "text-corsair-green", barWidth: "60%", barColor: "bg-corsair-green/40" },
-                  { level: "L3", name: "Observed", desc: "Continuous monitoring active, re-validated quarterly", color: "text-blue-400", barWidth: "80%", barColor: "bg-blue-400/40" },
-                  { level: "L4", name: "Attested", desc: "Independent auditor co-signs the credential", color: "text-purple-400", barWidth: "100%", barColor: "bg-purple-400/40" },
+                  { source: "self", name: "Self-Assessed", desc: "Organization self-attests without automated evidence", color: "text-corsair-text-dim", barWidth: "33%", barColor: "bg-corsair-text-dim/40" },
+                  { source: "tool", name: "Tool-Generated", desc: "Security tool (Prowler, InSpec, Trivy) produced the evidence", color: "text-corsair-green", barWidth: "66%", barColor: "bg-corsair-green/40" },
+                  { source: "auditor", name: "Auditor-Verified", desc: "Independent third party reviewed and verified the assessment", color: "text-corsair-gold", barWidth: "100%", barColor: "bg-corsair-gold/40" },
                 ].map((item) => (
-                  <div key={item.level} className="rounded-lg border border-corsair-border bg-corsair-surface p-3">
+                  <div key={item.source} className="rounded-lg border border-corsair-border bg-corsair-surface p-3">
                     <div className="flex items-center gap-3">
-                      <span className={`w-7 font-mono text-sm font-bold ${item.color}`}>{item.level}</span>
+                      <span className={`w-12 font-mono text-sm font-bold ${item.color}`}>{item.source}</span>
                       <span className="font-display text-sm font-semibold text-corsair-text">{item.name}</span>
                       <span className="ml-auto text-xs text-corsair-text-dim">{item.desc}</span>
                     </div>
@@ -99,6 +99,9 @@ export default function MarquePage() {
                   </div>
                 ))}
               </div>
+              <p className="mt-3 text-xs text-corsair-text-dim/60 italic">
+                Assurance levels (L0-L4) are available as optional enrichment via --enrich but are not part of the default CPOE.
+              </p>
             </div>
           </FadeIn>
 

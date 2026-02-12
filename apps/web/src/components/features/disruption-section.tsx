@@ -75,19 +75,19 @@ export function DisruptionSection() {
             <ul className="space-y-3 text-sm text-corsair-text-dim">
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 text-corsair-green">&#x2713;</span>
-                Your tools already generate the evidence — Corsair signs it into verifiable proof
+                <code className="text-corsair-cyan">corsair sign</code> — your tools generate evidence, Corsair signs it into verifiable proof
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 text-corsair-green">&#x2713;</span>
-                Ed25519-signed W3C Verifiable Credentials with SHA-256 evidence chain
+                <code className="text-corsair-cyan">corsair diff</code> — compare CPOEs over time, detect regressions like git diff detects code changes
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 text-corsair-green">&#x2713;</span>
-                Trust Centers can&apos;t share data. The format is missing. CPOE is that format.
+                <code className="text-corsair-cyan">corsair log</code> — append-only SCITT transparency log with Merkle proofs and COSE receipts
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 text-corsair-green">&#x2713;</span>
-                Continuous proof via FLAGSHIP signals — not annual snapshots
+                <code className="text-corsair-cyan">corsair verify</code> — four-step Ed25519 verification, free forever, no account needed
               </li>
             </ul>
           </CardContent>

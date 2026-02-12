@@ -1071,6 +1071,363 @@ describe("parseJSON — GitLab security report auto-detection", () => {
 });
 
 // =============================================================================
+// CISO ASSISTANT FORMAT
+// =============================================================================
+
+describe("parseJSON — CISO Assistant auto-detection", () => {
+  test("should auto-detect CISO Assistant API response (DRF paginated)", () => {
+    const cisoOutput = {
+      count: 3,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          requirement: "urn:intuitem:risk:req_node:soc2-2017:CC1.1",
+          compliance_assessment: "ca-uuid-1",
+          result: "compliant",
+          observation: "MFA enforced via Okta for all user groups",
+          score: 95,
+          evidences: ["ev-uuid-1", "ev-uuid-2"],
+          applied_controls: ["ac-uuid-1"],
+          folder: "folder-uuid-1",
+          status: "done",
+        },
+        {
+          id: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+          requirement: "urn:intuitem:risk:req_node:soc2-2017:CC6.1",
+          compliance_assessment: "ca-uuid-1",
+          result: "non_compliant",
+          observation: "S3 bucket public access not restricted",
+          score: 20,
+          evidences: [],
+          applied_controls: ["ac-uuid-2"],
+          folder: "folder-uuid-1",
+          status: "done",
+        },
+        {
+          id: "c3d4e5f6-a7b8-9012-cdef-123456789012",
+          requirement: "urn:intuitem:risk:req_node:nist-800-53-rev5:AC-2",
+          compliance_assessment: "ca-uuid-1",
+          result: "not_assessed",
+          observation: "",
+          score: 0,
+          evidences: [],
+          applied_controls: [],
+          folder: "folder-uuid-1",
+          status: "to_do",
+        },
+      ],
+    };
+
+    const result = parseJSON(cisoOutput);
+
+    expect(result.source).toBe("ciso-assistant");
+    expect(result.metadata.title).toContain("CISO Assistant");
+    expect(result.metadata.issuer).toBe("CISO Assistant");
+    expect(result.controls).toHaveLength(3);
+
+    // compliant → effective
+    expect(result.controls[0].id).toBe("CC1.1");
+    expect(result.controls[0].status).toBe("effective");
+    expect(result.controls[0].evidence).toContain("MFA enforced via Okta");
+    expect(result.controls[0].evidence).toContain("Score: 95");
+
+    // non_compliant → ineffective
+    expect(result.controls[1].id).toBe("CC6.1");
+    expect(result.controls[1].status).toBe("ineffective");
+
+    // not_assessed → not-tested
+    expect(result.controls[2].id).toBe("AC-2");
+    expect(result.controls[2].status).toBe("not-tested");
+  });
+
+  test("should extract framework refs from CISO Assistant URNs", () => {
+    const cisoOutput = {
+      count: 3,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: "uuid-1",
+          requirement: "urn:intuitem:risk:req_node:soc2-2017:CC1.1",
+          result: "compliant",
+          observation: "Test",
+          score: 90,
+          evidences: [],
+          applied_controls: [],
+          folder: "f",
+          status: "done",
+        },
+        {
+          id: "uuid-2",
+          requirement: "urn:intuitem:risk:req_node:nist-800-53-rev5:AC-2",
+          result: "compliant",
+          observation: "Test",
+          score: 85,
+          evidences: [],
+          applied_controls: [],
+          folder: "f",
+          status: "done",
+        },
+        {
+          id: "uuid-3",
+          requirement: "urn:intuitem:risk:req_node:iso-27001-2022:A.5.1",
+          result: "compliant",
+          observation: "Test",
+          score: 80,
+          evidences: [],
+          applied_controls: [],
+          folder: "f",
+          status: "done",
+        },
+      ],
+    };
+
+    const result = parseJSON(cisoOutput);
+
+    // SOC2 URN
+    expect(result.controls[0].frameworkRefs).toBeDefined();
+    expect(result.controls[0].frameworkRefs![0].framework).toBe("SOC2");
+    expect(result.controls[0].frameworkRefs![0].controlId).toBe("CC1.1");
+
+    // NIST URN
+    expect(result.controls[1].frameworkRefs![0].framework).toBe("NIST-800-53");
+    expect(result.controls[1].frameworkRefs![0].controlId).toBe("AC-2");
+
+    // ISO 27001 URN
+    expect(result.controls[2].frameworkRefs![0].framework).toBe("ISO27001");
+    expect(result.controls[2].frameworkRefs![0].controlId).toBe("A.5.1");
+  });
+
+  test("should map partially_compliant to ineffective", () => {
+    const cisoOutput = {
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: "uuid-1",
+          requirement: "urn:intuitem:risk:req_node:soc2-2017:CC2.1",
+          result: "partially_compliant",
+          observation: "Partially implemented — missing backup region",
+          score: 50,
+          evidences: ["ev-1"],
+          applied_controls: [],
+          folder: "f",
+          status: "done",
+        },
+      ],
+    };
+
+    const result = parseJSON(cisoOutput);
+    expect(result.controls[0].status).toBe("ineffective");
+    expect(result.controls[0].evidence).toContain("Partially implemented");
+  });
+
+  test("should map not_applicable to not-tested", () => {
+    const cisoOutput = {
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: "uuid-1",
+          requirement: "urn:intuitem:risk:req_node:soc2-2017:CC7.3",
+          result: "not_applicable",
+          observation: "No on-premise infrastructure",
+          score: 0,
+          evidences: [],
+          applied_controls: [],
+          folder: "f",
+          status: "done",
+        },
+      ],
+    };
+
+    const result = parseJSON(cisoOutput);
+    expect(result.controls[0].status).toBe("not-tested");
+  });
+
+  test("should build evidence from observation + score + evidence/control counts", () => {
+    const cisoOutput = {
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: "uuid-1",
+          requirement: "urn:intuitem:risk:req_node:soc2-2017:CC1.1",
+          result: "compliant",
+          observation: "Verified MFA policy in Okta admin console",
+          score: 88,
+          evidences: ["ev-1", "ev-2", "ev-3"],
+          applied_controls: ["ac-1", "ac-2"],
+          folder: "f",
+          status: "done",
+        },
+      ],
+    };
+
+    const result = parseJSON(cisoOutput);
+    const evidence = result.controls[0].evidence!;
+    expect(evidence).toContain("Verified MFA policy");
+    expect(evidence).toContain("Score: 88");
+    expect(evidence).toContain("3 evidence");
+    expect(evidence).toContain("2 applied controls");
+  });
+
+  test("should handle CISO Assistant domain export format", () => {
+    const cisoExport = {
+      meta: {
+        media_version: "0.6",
+        exported_at: "2026-02-12T10:00:00Z",
+      },
+      requirement_assessments: [
+        {
+          id: "uuid-1",
+          requirement: "urn:intuitem:risk:req_node:soc2-2017:CC1.1",
+          result: "compliant",
+          observation: "Control is effective",
+          score: 90,
+          evidences: [],
+          applied_controls: [],
+          folder: "f",
+          status: "done",
+        },
+      ],
+    };
+
+    const result = parseJSON(cisoExport);
+
+    expect(result.source).toBe("ciso-assistant");
+    expect(result.metadata.title).toContain("CISO Assistant");
+    expect(result.controls).toHaveLength(1);
+    expect(result.controls[0].status).toBe("effective");
+  });
+
+  test("should produce output compatible with assurance calculator", () => {
+    const cisoOutput = {
+      count: 2,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: "uuid-1",
+          requirement: "urn:intuitem:risk:req_node:soc2-2017:CC1.1",
+          result: "compliant",
+          observation: "Config verified via Okta admin panel",
+          score: 90,
+          evidences: ["ev-1"],
+          applied_controls: ["ac-1"],
+          folder: "f",
+          status: "done",
+        },
+        {
+          id: "uuid-2",
+          requirement: "urn:intuitem:risk:req_node:soc2-2017:CC6.1",
+          result: "non_compliant",
+          observation: "Public access not restricted",
+          score: 10,
+          evidences: [],
+          applied_controls: [],
+          folder: "f",
+          status: "done",
+        },
+      ],
+    };
+
+    const doc = parseJSON(cisoOutput);
+    const classified = calculateDocumentAssurance(doc.controls, doc.source, doc.metadata);
+
+    expect(classified).toHaveLength(2);
+    // Effective control with evidence from ciso-assistant (L1 ceiling)
+    expect(classified[0].assuranceLevel).toBeGreaterThanOrEqual(0);
+    // Non-compliant control = L0
+    expect(classified[1].assuranceLevel).toBe(0);
+  });
+
+  test("should produce correct provenance for ciso-assistant source", () => {
+    const cisoOutput = {
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: "uuid-1",
+          requirement: "urn:intuitem:risk:req_node:soc2-2017:CC1.1",
+          result: "compliant",
+          observation: "OK",
+          score: 90,
+          evidences: [],
+          applied_controls: [],
+          folder: "f",
+          status: "done",
+        },
+      ],
+    };
+
+    const doc = parseJSON(cisoOutput);
+    const classified = calculateDocumentAssurance(doc.controls, doc.source, doc.metadata);
+    const { provenance, assurance } = calculateDocumentRollup(classified, doc.source, doc.metadata);
+
+    expect(provenance.source).toBe("tool");
+    expect(assurance.method).toBe("automated-config-check");
+  });
+
+  test("should handle unknown URN framework slug gracefully", () => {
+    const cisoOutput = {
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: "uuid-1",
+          requirement: "urn:intuitem:risk:req_node:custom-framework-v1:CTRL-42",
+          result: "compliant",
+          observation: "OK",
+          score: 90,
+          evidences: [],
+          applied_controls: [],
+          folder: "f",
+          status: "done",
+        },
+      ],
+    };
+
+    const result = parseJSON(cisoOutput);
+    expect(result.controls[0].frameworkRefs).toBeDefined();
+    expect(result.controls[0].frameworkRefs![0].framework).toBe("custom-framework-v1");
+    expect(result.controls[0].frameworkRefs![0].controlId).toBe("CTRL-42");
+  });
+
+  test("should use requirement URN control ID as control id (not UUID)", () => {
+    const cisoOutput = {
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: "a1b2c3d4-long-uuid-that-is-not-useful",
+          requirement: "urn:intuitem:risk:req_node:pci-dss-4.0:1.2.3",
+          result: "compliant",
+          observation: "Firewall rules verified",
+          score: 85,
+          evidences: [],
+          applied_controls: [],
+          folder: "f",
+          status: "done",
+        },
+      ],
+    };
+
+    const result = parseJSON(cisoOutput);
+    expect(result.controls[0].id).toBe("1.2.3");
+    expect(result.controls[0].frameworkRefs![0].framework).toBe("PCI-DSS");
+  });
+});
+
+// =============================================================================
 // ASSESSMENT CONTEXT
 // =============================================================================
 

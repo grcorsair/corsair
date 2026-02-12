@@ -11,39 +11,39 @@ import {
 import {
   MarqueIcon,
   QuarterIcon,
-  SpyglassIcon,
+  RaidIcon,
 } from "@/components/pixel-art/pixel-icons";
 
 const props = [
   {
-    title: "One Command, Signed Proof",
+    title: "Sign (like git commit)",
     description:
-      "corsair sign — Ed25519 JWT-VC, one command, any evidence source. Prowler scans, InSpec profiles, Trivy reports, SecurityHub exports. Your tools already have the data. MARQUE signs it into a CPOE.",
+      "corsair sign — record provenance and sign as a JWT-VC with Ed25519. Your tools already have the data. Corsair records where it came from and signs it into a CPOE anyone can verify.",
     accent: "border-t-corsair-crimson",
     glowColor: "rgba(192,57,43,0.15)",
     icon: <MarqueIcon size={36} />,
-    label: "MARQUE",
+    label: "SIGN",
     labelColor: "text-corsair-crimson",
   },
   {
-    title: "Governance Gate, Not a Checkbox",
+    title: "Verify (like HTTPS)",
     description:
-      "QUARTERMASTER evaluates evidence quality across seven dimensions — methodology, integrity, completeness, bias, and more. Deterministic checks plus AI review before any credential is signed.",
+      "corsair verify — four steps with any JWT library. Decode the JWT, resolve the issuer's DID:web, extract the public key, verify the Ed25519 signature. Free forever. No account needed.",
     accent: "border-t-corsair-gold",
     glowColor: "rgba(212,168,83,0.15)",
     icon: <QuarterIcon size={36} />,
-    label: "QUARTER",
+    label: "VERIFY",
     labelColor: "text-corsair-gold",
   },
   {
-    title: "Real-Time Compliance Signals",
+    title: "Diff (like git diff)",
     description:
-      "FLAGSHIP streams compliance state changes via SSF/CAEP — drift detected, assurance tier changed, CPOE revoked. Continuous proof that controls are operating, not just a point-in-time snapshot.",
-    accent: "border-t-corsair-turquoise",
-    glowColor: "rgba(127,219,202,0.15)",
-    icon: <SpyglassIcon size={36} />,
-    label: "FLAGSHIP",
-    labelColor: "text-corsair-turquoise",
+      "corsair diff — compare two CPOEs to detect regressions, improvements, and scope changes over time. Track compliance history the way you track code history. Evidence fingerprinting catches drift.",
+    accent: "border-t-corsair-green",
+    glowColor: "rgba(46,204,113,0.15)",
+    icon: <RaidIcon size={36} />,
+    label: "DIFF",
+    labelColor: "text-corsair-green",
   },
 ];
 

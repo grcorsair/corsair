@@ -5,8 +5,8 @@
 > Copyright 2026 Corsair (grcorsair.com)
 
 **Date**: February 9, 2026
-**Status**: Refined, ready to implement
-**Context**: This spec captures the full L0-L4 issuance design + week 1 deliverable for the Corsair proof infrastructure pivot.
+**Status**: Historical reference (v0.5.0+ uses provenance-first model)
+**Context**: This spec captures the original L0-L4 issuance design. As of v0.5.0, Corsair adopted a provenance-first model where assurance scoring is optional enrichment (`--enrich`). The default signing path records provenance (who produced the evidence) and lets buyers decide what's sufficient. L0-L4 assurance levels remain available as an enrichment layer but are not required for CPOE issuance. See [CPOE_SPEC.md](CPOE_SPEC.md) for the current specification.
 
 ---
 

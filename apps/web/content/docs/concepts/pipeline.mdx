@@ -7,22 +7,23 @@ order: 10
 
 ## Overview
 
-The Corsair pipeline transforms security tool output into cryptographically signed, universally verifiable Certificates of Proof of Operational Effectiveness (CPOEs). Each stage builds on the previous one, progressing from structured evidence to a W3C Verifiable Credential signed with Ed25519.
+The Corsair pipeline transforms security tool output into cryptographically signed, universally verifiable Certificates of Proof of Operational Effectiveness (CPOEs). The default signing path is fully deterministic — no AI, no judgment, just provenance recording and Ed25519 signing.
 
 ```
-EVIDENCE → CLASSIFY → CHART → QUARTER → MARQUE
+EVIDENCE → SIGN → LOG → VERIFY → DIFF
 ```
 
-Two companion systems operate alongside the pipeline:
+Optional enrichment layers (available via `--enrich`):
 
+- **CHART** — Map controls to 13+ compliance frameworks
+- **QUARTER** — AI-powered evidence governance review
 - **FLAGSHIP** — Real-time compliance change notifications via SSF/SET/CAEP
-- **SCITT** — Append-only transparency log for CPOE registration and auditability
 
-## Stage Details
+## Core Pipeline
 
 ### EVIDENCE — Tool Output Acceptance
 
-Accepts structured output from security scanning tools and compliance platforms, normalizing it into a canonical control format for classification and signing.
+Accepts structured output from security scanning tools and compliance platforms, normalizing it into a canonical control format for signing.
 
 **Supported tool formats:**
 - `prowler` — Prowler AWS/Azure/GCP security scan results (JSON)
@@ -30,25 +31,69 @@ Accepts structured output from security scanning tools and compliance platforms,
 - `trivy` — Trivy vulnerability and misconfiguration reports (JSON)
 - `json` — Pre-structured control data from any source
 
-**Output:** An `IngestedDocument` containing structured controls, evidence references, and metadata ready for framework mapping.
+**Output:** Structured controls with evidence references, provenance metadata, and pass/fail status.
 
 ```bash
 corsair sign --format prowler --input prowler-results.json
 ```
 
-### CLASSIFY — Assurance Level Assignment
+### SIGN — Provenance Recording + Ed25519 Signing
 
-Each control is classified at an assurance level (L0-L4) based on the evidence type and source:
+The signing stage records provenance (who produced the evidence) and signs the result as a JWT-VC:
 
-- **L0** — Policy documentation only (self-attested)
-- **L1** — Configuration exports from automated tools (Prowler, InSpec, SecurityHub)
-- **L2** — Test results proving controls work (pentest findings, functional tests)
-- **L3** — Continuous monitoring data (FLAGSHIP active)
-- **L4** — Independent third-party verification
+| Provenance | Meaning |
+|------------|---------|
+| **self** | Organization self-attests without automated evidence |
+| **tool** | Security tool (Prowler, InSpec, Trivy) produced the evidence |
+| **auditor** | Independent third party reviewed and verified the assessment |
+
+**CPOE format:**
+
+```
+Header:  { "alg": "EdDSA", "typ": "vc+jwt", "kid": "did:web:grcorsair.com#key-1" }
+Payload: { "iss": "did:web:grcorsair.com", "vc": { ... CPOE ... }, "parley": "2.0" }
+Signature: Ed25519
+```
+
+Corsair does not judge evidence quality. It records where the evidence came from, signs it, and lets buyers decide what's sufficient.
+
+### LOG — SCITT Transparency Registration
+
+CPOEs are registered with an IETF SCITT transparency log. Registration produces a COSE receipt proving inclusion in the append-only log:
+
+- **Non-repudiation** — The issuer cannot deny having issued the attestation at the recorded time
+- **Discoverability** — Third parties can audit the transparency log to verify CPOE history
+
+The SCITT registry uses SHA-256 Merkle tree hashing with COSE_Sign1 signed receipts (RFC 9052, Ed25519).
+
+### VERIFY — Signature + Provenance Verification
+
+Anyone with the issuer's public key (resolved via `did:web`) can verify a CPOE:
+
+1. Decode the JWT header + payload (base64url)
+2. Resolve the issuer's DID document via HTTPS
+3. Extract the public key matching `header.kid`
+4. Verify Ed25519 signature
+
+No server, no account, no data sharing required.
+
+### DIFF — Compare CPOEs Over Time
+
+Track compliance changes between assessments — like `git diff` for compliance:
+
+```bash
+corsair diff --current cpoe-v2.jwt --previous cpoe-v1.jwt
+```
+
+Shows control-level additions, removals, status changes, and score deltas.
+
+## Optional Enrichment (--enrich)
+
+These layers are available via the `--enrich` flag but are not part of the default signing path:
 
 ### CHART — Framework Mapping
 
-Maps classified controls to 13+ compliance frameworks using a 2-tier resolution system:
+Maps controls to 13+ compliance frameworks using a 2-tier resolution system:
 
 1. **CTID ATT&CK-to-NIST data** — 6,300+ mappings from the Center for Threat-Informed Defense
 2. **SCF crosswalk** — Secure Controls Framework mapping to 175+ frameworks
@@ -66,54 +111,8 @@ AI-powered governance assessment evaluating four dimensions:
 | Completeness | 25% | Coverage of in-scope controls |
 | Bias | 20% | Independence and objectivity of evidence |
 
-Produces a confidence score (0-100) and trust tier (self-assessed, ai-verified, or auditor-verified).
+Produces a confidence score (0-100) and trust tier.
 
-### MARQUE — Signed Attestation
+### FLAGSHIP — Real-Time Compliance Signals
 
-Generates an Ed25519-signed CPOE as a W3C Verifiable Credential (JWT-VC). The signed attestation includes the assessment scope, control test results, evidence chain metadata, framework mappings, and the Quartermaster governance attestation.
-
-**CPOE format:**
-
-```
-Header:  { "alg": "EdDSA", "typ": "vc+jwt", "kid": "did:web:grcorsair.com#key-1" }
-Payload: { "iss": "did:web:grcorsair.com", "vc": { ... CPOE ... }, "parley": "2.0" }
-Signature: Ed25519
-```
-
-**Verification:** Anyone with the issuer's public key (resolved via `did:web`) can verify the CPOE without any server, account, or data sharing.
-
-## Assurance Levels (L0-L4)
-
-Every CPOE is issued at an assurance level reflecting the depth of evidence behind it:
-
-| Level | Name | Evidence Basis |
-|-------|------|---------------|
-| **L0** | Documented | Policy documents, self-attestation |
-| **L1** | Configured | Automated configuration checks, non-manual evidence |
-| **L2** | Demonstrated | Test results with Quartermaster confidence >= 70 |
-| **L3** | Observed | Continuous monitoring via FLAGSHIP, re-validated within 90 days |
-| **L4** | Attested | Independent auditor co-signature (Verifiable Presentation) |
-
-The CPOE assurance level is the **minimum** across all in-scope controls. Controls can be explicitly excluded with documented rationale.
-
-## FLAGSHIP — Real-Time Compliance Signals
-
-FLAGSHIP delivers standardized compliance change notifications via the OpenID Shared Signals Framework (SSF) and Continuous Access Evaluation Protocol (CAEP). When a CPOE's compliance posture changes, subscribers are notified immediately.
-
-Four event types:
-
-| Event | CAEP Mapping | Trigger |
-|-------|-------------|---------|
-| COLORS_CHANGED | assurance-level-change | Trust tier transition |
-| FLEET_ALERT | compliance-change | Compliance drift detected |
-| PAPERS_CHANGED | credential-change | CPOE issued, renewed, revoked, or expired |
-| MARQUE_REVOKED | session-revoked | Emergency CPOE revocation |
-
-## SCITT — Transparency Log
-
-CPOEs are registered with an IETF SCITT (Supply Chain Integrity, Transparency, and Trust) transparency service. Registration produces a COSE receipt proving inclusion in the append-only log, providing:
-
-- **Non-repudiation** — The issuer cannot deny having issued the attestation at the recorded time
-- **Discoverability** — Third parties can audit the transparency log to verify CPOE history
-
-The SCITT registry uses SHA-256 Merkle tree hashing with COSE_Sign1 signed receipts (RFC 9052, Ed25519).
+FLAGSHIP delivers standardized compliance change notifications via the OpenID Shared Signals Framework (SSF) and Continuous Access Evaluation Protocol (CAEP). See [FLAGSHIP Events](/docs/concepts/flagship-events) for details.

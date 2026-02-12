@@ -1,6 +1,6 @@
 {
   "name": "corsair",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "CORSAIR - CPOE ingestion and trust exchange platform",
   "type": "module",
   "packageManager": "bun@1.3.8",
@@ -42,13 +42,13 @@
   "author": "GRC Engineer",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.72.1",
     "bun-types": "latest"
   },
   "exports": {
     ".": "./src/ingestion/index.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.72.1",
     "jose": "^6.1.3"
   }
 }

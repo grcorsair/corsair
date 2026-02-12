@@ -12,11 +12,14 @@ curl -fsSL https://bun.sh/install | bash
 git clone https://github.com/Arudjreis/corsair.git
 cd corsair && bun install
 
-# Sign tool output into a CPOE
-bun run corsair.ts sign --format prowler --input scan-results.json
+# Sign tool output into a CPOE (like git commit)
+prowler scan | bun run corsair.ts sign
 
-# Verify any CPOE (always free, no API keys needed)
-bun run corsair.ts verify cpoe.jwt
+# Compare two CPOEs (like git diff)
+bun run corsair.ts diff --current new.jwt --previous old.jwt
+
+# Verify any CPOE (always free, no account needed)
+bun run corsair.ts verify --file cpoe.jwt
 
 # Generate Ed25519 signing keys
 bun run corsair.ts keygen`;
@@ -38,7 +41,7 @@ export function QuickStart() {
         <div className="h-3 w-3 rounded-full bg-corsair-gold/80" />
         <div className="h-3 w-3 rounded-full bg-corsair-green/80" />
         <span className="ml-3 font-mono text-xs text-corsair-text-dim">
-          parley — quick start
+          corsair — quick start
         </span>
 
         {/* Copy button */}

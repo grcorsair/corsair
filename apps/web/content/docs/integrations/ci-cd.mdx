@@ -110,7 +110,7 @@ pipeline {
 
 1. **Schedule weekly** — Run tool scans and CPOE signing on a recurring schedule, not just on deploys
 2. **Archive CPOEs** — Store signed JWT-VC artifacts for audit trail
-3. **Alert on failures** — Send Slack/email notifications when CPOE assurance level drops
+3. **Diff between runs** — Use `corsair diff` to compare CPOEs across release cycles
 4. **Verify CPOEs** — Use `corsair verify` to validate existing CPOEs in your pipeline
-5. **Track assurance levels** — Monitor L0-L4 progression across release cycles
+5. **Track provenance** — Record which tools produced the evidence at each cycle
 6. **Chain with tool scans** — Run Prowler/InSpec/Trivy first, then sign the results with `corsair sign`

@@ -1,10 +1,11 @@
 #!/usr/bin/env bun
 /**
- * CORSAIR CLI — CPOE Trust Exchange Platform
+ * CORSAIR CLI — Git for Compliance
  *
  * Usage:
- *   corsair sign --file <evidence.json> [--output <cpoe.jwt>] [--did <did>]
- *   corsair drift --current <new.jwt> --previous <old.jwt>
+ *   corsair sign --file <evidence.json> [--output <cpoe.jwt>] [--did <did>] [--enrich]
+ *   corsair diff --current <new.jwt> --previous <old.jwt>
+ *   corsair log [--help]
  *   corsair verify --file <cpoe.jwt> [--pubkey <path>]
  *   corsair keygen [--output <dir>]
  *   corsair help
@@ -22,8 +23,12 @@ switch (subcommand) {
   case "sign":
     await handleSign();
     break;
+  case "diff":
   case "drift":
-    await handleDrift();
+    await handleDiff();
+    break;
+  case "log":
+    await handleLog();
     break;
   case "verify":
     await handleVerify();
@@ -55,6 +60,7 @@ async function handleSign(): Promise<void> {
   let did: string | undefined;
   let scope: string | undefined;
   let expiryDays = 7;
+  let enrich = false;
   let showHelp = false;
 
   for (let i = 0; i < args.length; i++) {
@@ -79,6 +85,9 @@ async function handleSign(): Promise<void> {
       case "--expiry-days":
         expiryDays = parseInt(args[++i], 10) || 7;
         break;
+      case "--enrich":
+        enrich = true;
+        break;
       case "--help":
       case "-h":
         showHelp = true;
@@ -100,6 +109,7 @@ OPTIONS:
       --did <DID>           Issuer DID (default: derived from key)
       --scope <TEXT>        Override scope string
       --expiry-days <N>     CPOE validity in days (default: 7)
+      --enrich              Add assurance scoring, dimensions, and enrichment layers
   -h, --help                Show this help
 
 SUPPORTED FORMATS (auto-detected):
@@ -195,7 +205,7 @@ EXAMPLES:
 
   // Generate JWT-VC
   const { generateVCJWT } = await import("./src/parley/vc-generator");
-  const jwt = await generateVCJWT(marqueInput, keyManager, { expiryDays });
+  const jwt = await generateVCJWT(marqueInput, keyManager, { expiryDays, enrich });
 
   // Output
   if (outputPath) {
@@ -217,7 +227,7 @@ interface DriftControl {
   status: string;
 }
 
-async function handleDrift(): Promise<void> {
+async function handleDiff(): Promise<void> {
   const args = process.argv.slice(3);
   let currentPath: string | undefined;
   let previousPath: string | undefined;
@@ -242,10 +252,10 @@ async function handleDrift(): Promise<void> {
 
   if (showHelp) {
     console.log(`
-CORSAIR DRIFT — Detect compliance regressions between CPOEs
+CORSAIR DIFF — Detect compliance regressions between CPOEs
 
 USAGE:
-  corsair drift --current <cpoe.jwt> --previous <cpoe.jwt>
+  corsair diff --current <cpoe.jwt> --previous <cpoe.jwt>
 
 OPTIONS:
   -c, --current <PATH>      Path to the current (new) CPOE
@@ -254,12 +264,15 @@ OPTIONS:
 
 EXIT CODES:
   0    No regression detected
-  1    Regression detected (new failures or assurance downgrade)
+  1    Regression detected (new failures or score downgrade)
   2    Invalid arguments or missing files
 
+ALIASES:
+  corsair drift              (backwards-compatible alias)
+
 EXAMPLES:
-  corsair drift --current cpoe-v2.jwt --previous cpoe-v1.jwt
-  corsair drift -c pipeline-latest.jwt -p pipeline-previous.jwt
+  corsair diff --current cpoe-v2.jwt --previous cpoe-v1.jwt
+  corsair diff -c pipeline-latest.jwt -p pipeline-previous.jwt
 `);
     return;
   }
@@ -353,8 +366,8 @@ EXAMPLES:
   // Output results
   const hasRegression = newFailures.length > 0 || assuranceChange < 0;
 
-  console.log("CORSAIR DRIFT REPORT");
-  console.log("====================");
+  console.log("CORSAIR DIFF REPORT");
+  console.log("===================");
   console.log("");
 
   if (assuranceChange !== 0) {
@@ -456,6 +469,50 @@ function extractControls(subject: Record<string, unknown>): Map<string, DriftCon
   }
 
   return controls;
+}
+
+// =============================================================================
+// LOG
+// =============================================================================
+
+async function handleLog(): Promise<void> {
+  const args = process.argv.slice(3);
+  let showHelp = false;
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--help" || args[i] === "-h") {
+      showHelp = true;
+    }
+  }
+
+  if (showHelp || args.length === 0) {
+    console.log(`
+CORSAIR LOG — Query the SCITT transparency log
+
+USAGE:
+  corsair log [options]
+
+OPTIONS:
+  -h, --help                Show this help
+
+STATUS:
+  This command will query the SCITT transparency log for CPOE history.
+  SCITT backend: src/parley/pg-scitt-registry.ts (Postgres-backed, operational)
+
+  Planned features:
+    corsair log                       List recent CPOE registrations
+    corsair log --issuer <did>        Filter by issuer DID
+    corsair log --entry <id>          Show specific SCITT entry + receipt
+    corsair log --verify <id>         Verify Merkle inclusion proof
+
+  Implementation tracked at: github.com/arudjreis/corsair
+`);
+    return;
+  }
+
+  console.error("Error: corsair log is not yet implemented");
+  console.error('Run "corsair log --help" for planned usage');
+  process.exit(2);
 }
 
 // =============================================================================
@@ -604,25 +661,29 @@ OPTIONS:
 
 function printHelp(): void {
   console.log(`
-CORSAIR — CPOE Trust Exchange Platform
+CORSAIR — Git for Compliance
 
 USAGE:
   corsair <command> [options]
 
 COMMANDS:
-  sign      Sign evidence as a CPOE (JWT-VC)
-  drift     Detect compliance regressions between CPOEs
+  sign      Sign evidence as a CPOE (JWT-VC)        like git commit
+  diff      Detect compliance regressions            like git diff
+  log       Query SCITT transparency log             like git log
   verify    Verify a CPOE signature and integrity
   keygen    Generate Ed25519 signing keypair
   help      Show this help message
 
+ALIASES:
+  drift     Backwards-compatible alias for diff
+
 EXAMPLES:
   corsair sign --file evidence.json --output cpoe.jwt
   corsair sign --file gl-sast-report.json --did did:web:acme.com
-  corsair drift --current cpoe-new.jwt --previous cpoe-old.jwt
+  corsair diff --current cpoe-new.jwt --previous cpoe-old.jwt
   corsair verify --file cpoe.jwt --pubkey keys/corsair-signing.pub
   corsair keygen --output ./my-keys
 
-VERSION: 0.4.0
+VERSION: 0.5.0
 `);
 }

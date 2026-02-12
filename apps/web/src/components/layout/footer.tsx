@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 const productLinks = [
   { href: "/vision", label: "Vision" },
   { href: "/anatomy", label: "How It Works" },
+  { href: "/pricing", label: "Pricing" },
   { href: "/docs", label: "Documentation" },
   { href: "/marque", label: "Verify CPOE" },
   { href: "/blog", label: "Blog" },
@@ -11,7 +12,7 @@ const productLinks = [
 
 const resourceLinks = [
   { href: "/docs/getting-started/quick-start", label: "Quick Start" },
-  { href: "/docs/concepts/pipeline", label: "Integration Ladder" },
+  { href: "/docs/concepts/pipeline", label: "CPOE Lifecycle" },
   { href: "/docs/concepts/parley-protocol", label: "Parley Protocol" },
   { href: "/docs/protocol-spec", label: "Protocol Spec" },
   { href: "/docs/integrations/ci-cd", label: "CI/CD Integration" },
@@ -41,7 +42,7 @@ export function Footer() {
               Open compliance trust exchange protocol. Verify trust. Don&apos;t assume it.
             </p>
             <p className="mt-3 font-pixel text-[7px] tracking-wider text-corsair-text-dim/60">
-              v0.4.0 &middot; Apache-2.0
+              v0.5.0 &middot; Apache-2.0
             </p>
           </div>
 

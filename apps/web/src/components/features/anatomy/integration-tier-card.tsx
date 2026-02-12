@@ -63,7 +63,7 @@ export function IntegrationTierCard({ tier }: { tier: IntegrationTier }) {
         </div>
       </div>
 
-      {/* Evidence type + Assurance range */}
+      {/* Evidence type + Provenance */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <div>
           <p className="font-pixel text-[7px] tracking-wider text-corsair-text-dim">
@@ -75,12 +75,12 @@ export function IntegrationTierCard({ tier }: { tier: IntegrationTier }) {
         </div>
         <div>
           <p className="font-pixel text-[7px] tracking-wider text-corsair-text-dim">
-            ASSURANCE RANGE
+            PROVENANCE
           </p>
           <Badge
             className={`mt-1 border-transparent font-pixel text-[9px] ${badgeColor}`}
           >
-            {tier.assuranceRange}
+            {tier.provenanceType}
           </Badge>
         </div>
       </div>

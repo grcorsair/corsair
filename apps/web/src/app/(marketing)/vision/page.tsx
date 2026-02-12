@@ -117,7 +117,7 @@ export default function VisionPage() {
           <StageHeader
             number={2}
             name="THE THESIS"
-            subtitle="What if compliance worked like HTTPS?"
+            subtitle="What if compliance worked like git?"
             color="text-corsair-gold"
             icon={<ChartIcon size={32} />}
           />
@@ -125,31 +125,24 @@ export default function VisionPage() {
           <FadeIn delay={0.1}>
             <div className="max-w-2xl space-y-4 text-sm text-corsair-text-dim">
               <p>
-                Every website you visit is cryptographically authenticated.
-                Your browser checks the certificate, verifies the signature,
-                confirms the identity — automatically, instantly, for free. No
-                one emails SSL certificates as PDF attachments. The protocol
-                handles it.
+                Every line of code you write is tracked. Git records who changed
+                what, when, and why. You can diff any two commits. You can verify
+                the history. The entire software industry runs on this model —
+                not because developers asked for it, but because the alternative
+                (emailing tarballs) was insane.
               </p>
               <p>
-                Compliance has no equivalent. No standard format for
-                attestations. No signature to check. No resolution protocol for
-                issuer identity. Every exchange is manual, bespoke, and
-                trust-based.
+                Compliance is still emailing tarballs. No standard format for
+                attestations. No signature to check. No way to diff two
+                assessments. No history you can verify. Every exchange is manual,
+                bespoke, and trust-based.
               </p>
               <p className="text-corsair-text">
-                Parley is that missing protocol. An open standard for compliance
-                attestations that are{" "}
-                <span className="text-corsair-gold">machine-readable</span>,{" "}
-                <span className="text-corsair-gold">
-                  cryptographically signed
-                </span>
-                , and{" "}
-                <span className="text-corsair-gold">
-                  verifiable by anyone
-                </span>{" "}
-                with standard libraries. No vendor account. No proprietary
-                platform. Four steps with any JWT library.
+                Parley is git for compliance. Sign evidence like a commit. Diff
+                two CPOEs like two commits. Log every attestation in an
+                append-only transparency log. Verify any CPOE with{" "}
+                <span className="text-corsair-gold">standard JWT libraries</span>.
+                No vendor account. No proprietary platform. Four steps.
               </p>
             </div>
           </FadeIn>
@@ -165,7 +158,7 @@ export default function VisionPage() {
                     Vanta / Drata
                   </span>
                   <span className="text-corsair-text">
-                    Salesforce — manages compliance{" "}
+                    GitHub — manages compliance{" "}
                     <span className="text-corsair-text-dim">within</span> an
                     organization
                   </span>
@@ -175,7 +168,7 @@ export default function VisionPage() {
                     Parley
                   </span>
                   <span className="text-corsair-gold">
-                    SMTP — moves trust{" "}
+                    Git — tracks, signs, and diffs trust{" "}
                     <span className="text-corsair-text-dim">between</span>{" "}
                     organizations
                   </span>
@@ -383,8 +376,8 @@ export default function VisionPage() {
         <div className="mx-auto max-w-5xl">
           <StageHeader
             number={5}
-            name="THE LADDER"
-            subtitle="Five levels of assurance — FICO for compliance"
+            name="THE MODEL"
+            subtitle="Provenance, not judgment — record where evidence came from"
             color="text-corsair-green"
             icon={<QuarterIcon size={32} />}
           />
@@ -393,31 +386,32 @@ export default function VisionPage() {
             <div className="max-w-2xl space-y-4 text-sm text-corsair-text-dim">
               <p>
                 Not all compliance evidence is equal. A policy PDF is not the
-                same as a pentest result. A config scan is not the same as
-                continuous monitoring. The assurance ladder makes this explicit —
-                five levels, from self-declared to independently attested.
+                same as a Prowler scan. A self-assessment is not the same as a
+                third-party audit. But judging that quality is the buyer&apos;s
+                job — not the protocol&apos;s. Corsair records{" "}
+                <span className="text-corsair-green">provenance</span>: who
+                produced the evidence, what tool generated it, and when.
               </p>
               <p>
-                The CPOE&apos;s declared level is the{" "}
-                <span className="text-corsair-green">minimum</span> across all
-                in-scope controls. Like an SSL certificate where one unverified
-                domain means rejection. You cannot claim L2 if any control has
-                only policy evidence.
+                Three provenance types — self, tool, auditor — give buyers the
+                information they need to set their own thresholds. An enterprise
+                might require tool-generated evidence for all vendors. A startup
+                might accept self-assessed for low-risk suppliers. The CPOE
+                carries the facts. The buyer makes the decision.
               </p>
               <p>
-                This is{" "}
-                <span className="text-corsair-green">FICO for compliance</span>
-                . A standardized score — L0 through L4 — consumed by every
-                platform, every CRQ model, every procurement workflow. The same
-                way FICO (300-850) is consumed by every lender, regardless of
-                their internal risk models.
+                Assurance scoring (L0-L4) is available as{" "}
+                <span className="text-corsair-green">optional enrichment</span>{" "}
+                via the <code>--enrich</code> flag for organizations that want
+                graduated levels. But the default path is provenance-first:
+                record, sign, and let the market decide.
               </p>
             </div>
           </FadeIn>
 
           <FadeIn delay={0.2}>
             <div className="mt-8 space-y-2">
-              {assuranceLevels.map((level) => (
+              {provenanceTypes.map((level) => (
                 <div
                   key={level.level}
                   className="flex items-start gap-4 rounded-lg border border-corsair-border bg-[#0A0A0A] p-4"
@@ -671,44 +665,28 @@ const grcArticles = [
   },
 ];
 
-const assuranceLevels = [
+const provenanceTypes = [
   {
-    level: "L0",
-    name: "Documented",
-    description: "Policy says so. No config evidence. No test results.",
+    level: "S",
+    name: "Self-Assessed",
+    description: "Organization self-attests without automated evidence. Policy-level only.",
     analogy: "Self-signed cert",
     badgeClass: "bg-corsair-text-dim/10 text-corsair-text-dim",
   },
   {
-    level: "L1",
-    name: "Configured",
+    level: "T",
+    name: "Tool-Generated",
     description:
-      "Settings confirm it's on. Config exports, tool scans, SecurityHub.",
+      "Security tool (Prowler, InSpec, Trivy) produced the evidence automatically.",
     analogy: "Domain-validated (DV)",
-    badgeClass: "bg-corsair-gold/10 text-corsair-gold",
+    badgeClass: "bg-corsair-green/10 text-corsair-green",
   },
   {
-    level: "L2",
-    name: "Demonstrated",
+    level: "A",
+    name: "Auditor-Verified",
     description:
-      "Test results prove it works. Pentest findings, adversarial testing.",
-    analogy: "Org-validated (OV)",
-    badgeClass: "bg-corsair-gold/10 text-corsair-gold",
-  },
-  {
-    level: "L3",
-    name: "Observed",
-    description:
-      "Continuous monitoring confirms effectiveness. Real-time signals active.",
+      "Independent third party reviewed and verified the assessment.",
     analogy: "Extended validation (EV)",
-    badgeClass: "bg-corsair-green/10 text-corsair-green",
-  },
-  {
-    level: "L4",
-    name: "Attested",
-    description:
-      "Independent third party verified and co-signed the credential.",
-    analogy: "EV + audit letter",
-    badgeClass: "bg-corsair-green/10 text-corsair-green",
+    badgeClass: "bg-corsair-gold/10 text-corsair-gold",
   },
 ];

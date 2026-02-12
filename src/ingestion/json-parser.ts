@@ -54,6 +54,22 @@ export function parseJSON(
   const rawHash = computeHash(parsed);
 
   // Auto-detect format (order matters — most specific first)
+  if (isCISOAssistantAPI(parsed)) {
+    return parseCISOAssistant(
+      (parsed as CISOAssistantAPIResponse).results,
+      rawHash,
+      options?.source,
+    );
+  }
+
+  if (isCISOAssistantExport(parsed)) {
+    return parseCISOAssistant(
+      (parsed as CISOAssistantDomainExport).requirement_assessments,
+      rawHash,
+      options?.source,
+    );
+  }
+
   if (isProwlerOCSF(parsed)) {
     return parseProwler(parsed as ProwlerFinding[], rawHash, options?.source);
   }
@@ -244,6 +260,35 @@ interface GitLabVulnerability {
   links?: Array<{ url: string; name?: string }>;
 }
 
+// =============================================================================
+// CISO ASSISTANT FORMAT TYPES
+// =============================================================================
+
+interface CISOAssistantRequirementAssessment {
+  id: string;
+  requirement: string;  // "urn:intuitem:risk:req_node:soc2-2017:CC1.1"
+  compliance_assessment?: string;
+  result: string;  // "compliant" | "non_compliant" | "partially_compliant" | "not_assessed" | "not_applicable"
+  observation?: string;
+  score?: number;
+  evidences?: string[];
+  applied_controls?: string[];
+  folder?: string;
+  status?: string;
+}
+
+interface CISOAssistantAPIResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: CISOAssistantRequirementAssessment[];
+}
+
+interface CISOAssistantDomainExport {
+  meta: { media_version: string; exported_at?: string };
+  requirement_assessments: CISOAssistantRequirementAssessment[];
+}
+
 function isGitLabSecurityReport(parsed: unknown): boolean {
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return false;
   const obj = parsed as Record<string, unknown>;
@@ -292,6 +337,41 @@ function isSecurityHubASFF(parsed: unknown): boolean {
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return false;
   const obj = parsed as Record<string, unknown>;
   return Array.isArray(obj.Findings) && obj.Findings.length > 0;
+}
+
+/**
+ * Detect CISO Assistant API response: DRF paginated envelope
+ * Shape: { count: number, next, previous, results: RequirementAssessment[] }
+ */
+function isCISOAssistantAPI(parsed: unknown): boolean {
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return false;
+  const obj = parsed as Record<string, unknown>;
+  return (
+    typeof obj.count === "number" &&
+    Array.isArray(obj.results) &&
+    obj.results.length > 0 &&
+    typeof obj.results[0] === "object" &&
+    obj.results[0] !== null &&
+    "requirement" in (obj.results[0] as Record<string, unknown>) &&
+    "result" in (obj.results[0] as Record<string, unknown>) &&
+    typeof (obj.results[0] as Record<string, unknown>).requirement === "string" &&
+    ((obj.results[0] as Record<string, unknown>).requirement as string).startsWith("urn:intuitem:")
+  );
+}
+
+/**
+ * Detect CISO Assistant domain export: Django serialized format
+ * Shape: { meta: { media_version }, requirement_assessments: [] }
+ */
+function isCISOAssistantExport(parsed: unknown): boolean {
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return false;
+  const obj = parsed as Record<string, unknown>;
+  return (
+    typeof obj.meta === "object" &&
+    obj.meta !== null &&
+    "media_version" in (obj.meta as Record<string, unknown>) &&
+    Array.isArray(obj.requirement_assessments)
+  );
 }
 
 // =============================================================================
@@ -638,6 +718,128 @@ function parseTrivy(
     },
     controls,
   };
+}
+
+// =============================================================================
+// CISO ASSISTANT PARSER
+// =============================================================================
+
+function parseCISOAssistant(
+  assessments: CISOAssistantRequirementAssessment[],
+  rawHash: string,
+  sourceOverride?: DocumentSource,
+): IngestedDocument {
+  const controls: IngestedControl[] = assessments.map((a) => {
+    const { framework, controlId } = parseCISOAssistantURN(a.requirement);
+    const frameworkRefs: FrameworkRef[] = framework
+      ? [{ framework, controlId }]
+      : [];
+
+    // Build evidence from observation + score + evidence/control counts
+    const evidenceParts: string[] = [];
+    if (a.observation) evidenceParts.push(a.observation);
+    if (a.score !== undefined && a.score !== null) evidenceParts.push(`Score: ${a.score}`);
+    if (a.evidences && a.evidences.length > 0) {
+      evidenceParts.push(`${a.evidences.length} evidence artifact${a.evidences.length > 1 ? "s" : ""}`);
+    }
+    if (a.applied_controls && a.applied_controls.length > 0) {
+      evidenceParts.push(`${a.applied_controls.length} applied control${a.applied_controls.length > 1 ? "s" : ""}`);
+    }
+
+    return {
+      id: controlId || a.id,
+      description: a.observation || `Assessment: ${controlId || a.id}`,
+      status: normalizeCISOAssistantResult(a.result),
+      evidence: evidenceParts.join(". ") || undefined,
+      frameworkRefs: frameworkRefs.length > 0 ? frameworkRefs : undefined,
+    };
+  });
+
+  return {
+    source: sourceOverride || "ciso-assistant",
+    metadata: {
+      title: `CISO Assistant — ${assessments.length} requirement assessments`,
+      issuer: "CISO Assistant",
+      date: new Date().toISOString().split("T")[0],
+      scope: "CISO Assistant Compliance Assessment",
+      reportType: "CISO Assistant",
+      rawTextHash: rawHash,
+    },
+    controls,
+  };
+}
+
+/**
+ * Parse CISO Assistant URN into framework + control ID.
+ *
+ * Format: urn:intuitem:risk:req_node:<framework-slug>:<control-id>
+ * Examples:
+ *   urn:intuitem:risk:req_node:soc2-2017:CC1.1 → { SOC2, CC1.1 }
+ *   urn:intuitem:risk:req_node:nist-800-53-rev5:AC-2 → { NIST-800-53, AC-2 }
+ *   urn:intuitem:risk:req_node:iso-27001-2022:A.5.1 → { ISO27001, A.5.1 }
+ */
+function parseCISOAssistantURN(urn: string): { framework: string; controlId: string } {
+  // Split on colons: urn:intuitem:risk:req_node:<slug>:<controlId>
+  const parts = urn.split(":");
+  if (parts.length < 6 || parts[0] !== "urn" || parts[1] !== "intuitem") {
+    return { framework: "", controlId: urn };
+  }
+
+  const slug = parts[4];
+  const controlId = parts.slice(5).join(":");  // Rejoin in case controlId has colons
+
+  return {
+    framework: mapCISOAssistantFrameworkSlug(slug),
+    controlId,
+  };
+}
+
+/**
+ * Map CISO Assistant framework slug to Corsair framework name.
+ * Falls through to raw slug for unknown frameworks.
+ */
+function mapCISOAssistantFrameworkSlug(slug: string): string {
+  // Normalize: remove version suffixes and map to canonical names
+  const lower = slug.toLowerCase();
+
+  if (lower.startsWith("soc2")) return "SOC2";
+  if (lower.startsWith("nist-800-53")) return "NIST-800-53";
+  if (lower.startsWith("nist-800-171")) return "NIST-800-171";
+  if (lower.startsWith("iso-27001")) return "ISO27001";
+  if (lower.startsWith("iso-27002")) return "ISO27002";
+  if (lower.startsWith("cis-controls")) return "CIS";
+  if (lower.startsWith("pci-dss")) return "PCI-DSS";
+  if (lower.startsWith("hipaa")) return "HIPAA";
+  if (lower.startsWith("gdpr")) return "GDPR";
+  if (lower.startsWith("cmmc")) return "CMMC";
+  if (lower.startsWith("fedramp")) return "FedRAMP";
+
+  // Unknown framework — pass through the slug as-is
+  return slug;
+}
+
+/**
+ * Map CISO Assistant result enum to Corsair control status.
+ *
+ * CISO Assistant uses:
+ *   compliant → effective
+ *   non_compliant → ineffective
+ *   partially_compliant → ineffective (partial = not meeting bar)
+ *   not_assessed → not-tested
+ *   not_applicable → not-tested
+ */
+function normalizeCISOAssistantResult(result: string): "effective" | "ineffective" | "not-tested" {
+  switch (result) {
+    case "compliant":
+      return "effective";
+    case "non_compliant":
+    case "partially_compliant":
+      return "ineffective";
+    case "not_assessed":
+    case "not_applicable":
+    default:
+      return "not-tested";
+  }
 }
 
 // =============================================================================

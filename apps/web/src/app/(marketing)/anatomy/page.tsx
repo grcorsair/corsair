@@ -6,21 +6,18 @@ import {
   SpyglassIcon,
   ChartIcon,
   QuarterIcon,
-  RaidIcon,
 } from "@/components/pixel-art/pixel-icons";
 import { StageHeader } from "@/components/features/anatomy/stage-header";
 import { ExtractionTerminal } from "@/components/features/anatomy/extraction-terminal";
-import { AssuranceLadder } from "@/components/features/anatomy/assurance-ladder";
 import { FrameworkMap } from "@/components/features/anatomy/framework-map";
-import { QuartermasterGauge } from "@/components/features/anatomy/quartermaster-gauge";
 import { MarqueAssembly } from "@/components/features/anatomy/marque-assembly";
 import { IntegrationTierCard } from "@/components/features/anatomy/integration-tier-card";
 import { INTEGRATION_TIERS } from "@/data/anatomy-data";
 
 export const metadata: Metadata = {
-  title: "Integration Ladder — How Evidence Becomes Proof",
+  title: "How Signing Works — From Evidence to Proof",
   description:
-    "See how Corsair turns tool and platform output into cryptographic proof. Three evidence tiers, same CPOE format, same Ed25519 signature, same verification.",
+    "See how Corsair turns tool and platform output into cryptographic proof. Three provenance types, same CPOE format, same Ed25519 signature, same verification.",
 };
 
 export default function AnatomyPage() {
@@ -36,11 +33,11 @@ export default function AnatomyPage() {
             HOW IT WORKS
           </p>
           <h1 className="mb-4 text-center font-pixel-display text-[10vw] font-bold leading-[0.9] tracking-tighter text-corsair-text sm:text-[8vw] lg:text-[5vw]">
-            integration ladder
+            how signing works
           </h1>
           <p className="mx-auto max-w-2xl text-center text-lg text-corsair-text-dim sm:text-xl">
             Same CPOE format at every tier. Same Ed25519 signature.
-            Same verification. The evidence source determines the assurance level.
+            Same verification. The provenance records where the evidence came from.
           </p>
         </FadeIn>
 
@@ -186,40 +183,14 @@ export default function AnatomyPage() {
         </div>
       </section>
 
-      {/* --- CLASSIFY --- */}
-      <PixelDivider className="my-4" />
-      <section className="px-6 py-16">
-        <div className="mx-auto max-w-4xl">
-          <StageHeader
-            number={4}
-            name="CLASSIFY"
-            subtitle="Assign assurance levels to every control"
-            color="text-corsair-gold"
-            icon={<RaidIcon size={32} />}
-          />
-
-          <FadeIn delay={0.1}>
-            <p className="mb-6 max-w-2xl text-sm text-corsair-text-dim">
-              Each control gets an assurance level from L0 (Documented) to L4 (Attested)
-              based on evidence type and source. A raw config check from CloudTrail
-              is L1. A vulnerability scan from Trivy is L2. Continuous monitoring
-              from a GRC platform reaches L3. Click any control to see
-              the exact classification logic.
-            </p>
-          </FadeIn>
-
-          <AssuranceLadder />
-        </div>
-      </section>
-
-      {/* --- CHART --- */}
+      {/* --- CHART (Optional Enrichment) --- */}
       <PixelDivider variant="diamond" className="my-4" />
       <section className="px-6 py-16">
         <div className="mx-auto max-w-4xl">
           <StageHeader
-            number={5}
+            number={4}
             name="CHART"
-            subtitle="Map controls across compliance frameworks"
+            subtitle="Optional enrichment — map controls across frameworks"
             color="text-corsair-turquoise"
             icon={<ChartIcon size={32} />}
           />
@@ -233,31 +204,6 @@ export default function AnatomyPage() {
           </FadeIn>
 
           <FrameworkMap />
-        </div>
-      </section>
-
-      {/* --- QUARTER --- */}
-      <PixelDivider className="my-4" />
-      <section className="px-6 py-16">
-        <div className="mx-auto max-w-4xl">
-          <StageHeader
-            number={6}
-            name="QUARTER"
-            subtitle="AI-powered evidence review of quality and rigor"
-            color="text-corsair-gold"
-            icon={<QuarterIcon size={32} />}
-          />
-
-          <FadeIn delay={0.1}>
-            <p className="mb-6 max-w-2xl text-sm text-corsair-text-dim">
-              For L2+ CPOEs, the Quartermaster evaluates evidence across 7 dimensions —
-              not a checkbox, but a deterministic + LLM governance gate that scores
-              methodology rigor, coverage, reliability, and independence. Tool output
-              scores higher on freshness and reliability than manual evidence.
-            </p>
-          </FadeIn>
-
-          <QuartermasterGauge />
         </div>
       </section>
 

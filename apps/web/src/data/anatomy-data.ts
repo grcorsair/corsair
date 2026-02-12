@@ -11,10 +11,9 @@
 export interface AnatomyControl {
   id: string;
   name: string;
-  level: 0 | 1 | 2;
   status: "effective" | "ineffective" | "not-tested";
   evidence: string;
-  ruleTrace: string[];
+  provenanceType: "self" | "tool" | "auditor";
   methodology: string;
 }
 
@@ -27,7 +26,7 @@ export interface IntegrationTier {
   description: string;
   sources: string[];
   evidenceType: string;
-  assuranceRange: string;
+  provenanceType: string;
   cliExample: string;
   cliLabel: string;
 }
@@ -49,7 +48,7 @@ export const INTEGRATION_TIERS: IntegrationTier[] = [
       "Elasticsearch",
     ],
     evidenceType: "Raw logs, API calls, config state, event streams",
-    assuranceRange: "L1 (Configured)",
+    provenanceType: "tool (telemetry)",
     cliExample: "corsair sign --format cloudtrail --input trail.json",
     cliLabel: "Sign CloudTrail evidence as L1 CPOE",
   },
@@ -69,7 +68,7 @@ export const INTEGRATION_TIERS: IntegrationTier[] = [
       "Snyk",
     ],
     evidenceType: "Scan results, compliance checks, vulnerability reports",
-    assuranceRange: "L1-L2 (Configured to Demonstrated)",
+    provenanceType: "tool (scanner)",
     cliExample: "prowler aws --output json | corsair sign --format prowler",
     cliLabel: "Pipe Prowler output directly into corsair sign",
   },
@@ -89,7 +88,7 @@ export const INTEGRATION_TIERS: IntegrationTier[] = [
       "Conveyor",
     ],
     evidenceType: "Control assessments, continuous monitoring, audit results",
-    assuranceRange: "L2-L3 (Demonstrated to Observed)",
+    provenanceType: "tool (platform)",
     cliExample:
       "corsair sign --format ciso-assistant --input controls-export.json",
     cliLabel: "Sign GRC platform export as L2+ CPOE",
@@ -101,182 +100,94 @@ export const ANATOMY_CONTROLS: AnatomyControl[] = [
   {
     id: "prowler-iam-1",
     name: "MFA Enabled for Root Account",
-    level: 1,
     status: "effective",
     evidence:
       "Prowler check: iam_root_hardware_mfa_enabled — PASS. Hardware MFA device attached to root account.",
-    ruleTrace: [
-      'RULE: source "prowler" ceiling = L2',
-      "RULE: evidence type = automated-scan (config check)",
-      "RULE: control status = effective (PASS)",
-      "RESULT: L1 (Configured) — tool verified the setting is on",
-    ],
+    provenanceType: "tool",
     methodology: "automated-config-check",
   },
   {
     id: "prowler-iam-4",
     name: "IAM Password Policy Enforced",
-    level: 1,
     status: "effective",
     evidence:
       "Prowler check: iam_password_policy_minimum_length_14 — PASS. Minimum 14 chars, complexity enabled.",
-    ruleTrace: [
-      'RULE: source "prowler" ceiling = L2',
-      "RULE: evidence type = automated-scan (config check)",
-      "RULE: control status = effective (PASS)",
-      "RESULT: L1 (Configured) — password policy scanned and verified",
-    ],
+    provenanceType: "tool",
     methodology: "automated-config-check",
   },
   {
     id: "prowler-s3-1",
     name: "S3 Bucket Encryption at Rest",
-    level: 1,
     status: "effective",
     evidence:
       "Prowler check: s3_bucket_default_encryption — PASS. AES-256 (SSE-S3) enabled on all 12 buckets.",
-    ruleTrace: [
-      'RULE: source "prowler" ceiling = L2',
-      "RULE: evidence type = automated-scan (config check)",
-      "RULE: control status = effective (PASS)",
-      "RESULT: L1 (Configured) — encryption settings verified by scan",
-    ],
+    provenanceType: "tool",
     methodology: "automated-config-check",
   },
   {
     id: "prowler-vpc-1",
     name: "VPC Flow Logs Enabled",
-    level: 1,
     status: "effective",
     evidence:
       "Prowler check: vpc_flow_logs_enabled — PASS. Flow logs active on all 3 VPCs.",
-    ruleTrace: [
-      'RULE: source "prowler" ceiling = L2',
-      "RULE: evidence type = automated-scan (config check)",
-      "RULE: control status = effective (PASS)",
-      "RESULT: L1 (Configured) — flow log configuration verified",
-    ],
+    provenanceType: "tool",
     methodology: "automated-config-check",
   },
   {
     id: "trivy-vuln-1",
     name: "Container Image Vulnerability Scan",
-    level: 2,
     status: "effective",
     evidence:
       "Trivy scan: 0 critical, 0 high vulnerabilities in production images. Full scan of 8 images.",
-    ruleTrace: [
-      'RULE: source "trivy" ceiling = L2',
-      "RULE: evidence type = vulnerability-scan (test results)",
-      "RULE: control status = effective (0 critical/high)",
-      "OVERRIDE: test/scan results elevate to L2",
-      "RESULT: L2 (Demonstrated) — scan proves vulnerability posture",
-    ],
+    provenanceType: "tool",
     methodology: "automated-vulnerability-scan",
   },
   {
     id: "inspec-cis-1",
     name: "CIS Benchmark: SSH Configuration",
-    level: 2,
     status: "effective",
     evidence:
       "InSpec profile: cis-aws-foundations-baseline — 42/42 controls passed. SSH hardened per CIS L1.",
-    ruleTrace: [
-      'RULE: source "inspec" ceiling = L2',
-      "RULE: evidence type = compliance-test (CIS benchmark)",
-      "RULE: control status = effective (42/42 passed)",
-      "OVERRIDE: compliance test results elevate to L2",
-      "RESULT: L2 (Demonstrated) — benchmark test proves compliance",
-    ],
+    provenanceType: "tool",
     methodology: "compliance-benchmark-test",
   },
   {
     id: "prowler-ct-1",
     name: "CloudTrail Logging Enabled",
-    level: 1,
     status: "effective",
     evidence:
       "Prowler check: cloudtrail_multi_region_enabled — PASS. Multi-region trail active with S3 delivery.",
-    ruleTrace: [
-      'RULE: source "prowler" ceiling = L2',
-      "RULE: evidence type = automated-scan (config check)",
-      "RULE: control status = effective (PASS)",
-      "RESULT: L1 (Configured) — logging configuration verified",
-    ],
+    provenanceType: "tool",
     methodology: "automated-config-check",
   },
   {
     id: "prowler-guard-1",
     name: "GuardDuty Threat Detection Active",
-    level: 1,
     status: "effective",
     evidence:
       "Prowler check: guardduty_is_enabled — PASS. GuardDuty active in all 3 regions.",
-    ruleTrace: [
-      'RULE: source "prowler" ceiling = L2',
-      "RULE: evidence type = automated-scan (config check)",
-      "RULE: control status = effective (PASS)",
-      "RESULT: L1 (Configured) — threat detection service enabled",
-    ],
+    provenanceType: "tool",
     methodology: "automated-config-check",
   },
   {
     id: "prowler-ec2-1",
     name: "EC2 IMDSv2 Enforced",
-    level: 1,
     status: "ineffective",
     evidence:
       "Prowler check: ec2_imdsv2_only — FAIL. 2 of 14 instances still allow IMDSv1.",
-    ruleTrace: [
-      'RULE: source "prowler" ceiling = L2',
-      "RULE: evidence type = automated-scan (config check)",
-      "RULE: control status = ineffective (FAIL)",
-      "SAFEGUARD: failed controls capped at L0",
-      "RESULT: L1 (Configured) — scan ran, finding documented",
-    ],
+    provenanceType: "tool",
     methodology: "automated-config-check",
   },
   {
     id: "prowler-kms-1",
     name: "KMS Key Rotation Enabled",
-    level: 0,
     status: "ineffective",
     evidence:
       "Prowler check: kms_cmk_rotation_enabled — FAIL. 1 of 5 CMKs missing automatic rotation.",
-    ruleTrace: [
-      "RULE: evidence type = automated-scan (config check)",
-      "RULE: control status = ineffective (FAIL)",
-      "SAFEGUARD: failed control = L0 ceiling",
-      "RESULT: L0 (Documented) — finding recorded, control not effective",
-    ],
+    provenanceType: "tool",
     methodology: "automated-config-check",
   },
 ];
-
-export const ANATOMY_ASSURANCE = {
-  declared: 1 as const,
-  verified: true,
-  method: "automated-config-check" as const,
-  breakdown: { 0: 1, 1: 7, 2: 2 } as Record<number, number>,
-  ruleTrace: [
-    "RULE: 10 controls checked",
-    'RULE: source "prowler+trivy+inspec" ceiling = L2',
-    'RULE: breakdown = {"0":1,"1":7,"2":2}',
-    "RULE: 1 control excluded (KMS rotation — remediation scheduled)",
-    "RULE: min of in-scope controls = L1 — satisfied",
-    "RESULT: CPOE declared L1 (Configured)",
-  ],
-};
-
-export const ANATOMY_DIMENSIONS = {
-  capability: 95,
-  coverage: 90,
-  reliability: 88,
-  methodology: 92,
-  freshness: 100,
-  independence: 75,
-  consistency: 96,
-};
 
 export const ANATOMY_FRAMEWORKS = [
   { name: "SOC 2", controlsMapped: 24, passed: 22, failed: 2 },
@@ -288,33 +199,23 @@ export const ANATOMY_FRAMEWORKS = [
   { name: "MITRE ATT&CK", controlsMapped: 8, passed: 7, failed: 1 },
 ];
 
-export const ASSURANCE_LABELS: Record<
-  number,
+export const PROVENANCE_LABELS: Record<
+  string,
   { name: string; color: string; bgColor: string }
 > = {
-  0: {
-    name: "Documented",
+  self: {
+    name: "Self-Assessed",
     color: "text-corsair-text-dim",
     bgColor: "bg-corsair-text-dim/20",
   },
-  1: {
-    name: "Configured",
-    color: "text-corsair-gold",
-    bgColor: "bg-corsair-gold/20",
-  },
-  2: {
-    name: "Demonstrated",
+  tool: {
+    name: "Tool-Generated",
     color: "text-corsair-green",
     bgColor: "bg-corsair-green/20",
   },
-  3: {
-    name: "Observed",
-    color: "text-blue-400",
-    bgColor: "bg-blue-400/20",
-  },
-  4: {
-    name: "Attested",
-    color: "text-purple-400",
-    bgColor: "bg-purple-400/20",
+  auditor: {
+    name: "Auditor-Verified",
+    color: "text-corsair-gold",
+    bgColor: "bg-corsair-gold/20",
   },
 };

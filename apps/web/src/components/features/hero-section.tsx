@@ -33,13 +33,13 @@ export function HeroSection() {
               className="mt-6 max-w-2xl sm:mt-8"
             >
               <p className="text-lg text-corsair-text-dim sm:text-xl lg:text-2xl">
-                HTTPS for Compliance.
+                Git for Compliance.
               </p>
               <p className="mt-1 text-lg font-medium text-corsair-gold sm:text-xl lg:text-2xl">
-                Verify proof. Not promises.
+                Sign. Diff. Log. Verify.
               </p>
               <p className="mt-3 text-sm text-corsair-text-dim/80 leading-relaxed sm:text-base">
-                Your security tools already generate evidence. Corsair signs it into proof anyone can verify.
+                Your security tools already check compliance. Corsair makes it cryptographically verifiable and historically traceable.
               </p>
               <p className="mt-3 text-sm text-corsair-text-dim/60">
                 by{" "}
@@ -107,22 +107,22 @@ export function HeroSection() {
       >
         <div className="mx-auto grid max-w-6xl grid-cols-2 lg:grid-cols-4">
           <FeatureItem
-            title="Ed25519 signed"
-            description="Cryptographic proof"
+            title="corsair sign"
+            description="Like git commit"
           />
           <FeatureItem
-            title="Any tool, any platform"
-            description="Prowler, InSpec, Trivy..."
+            title="corsair diff"
+            description="Like git diff"
             className="border-l border-corsair-border"
           />
           <FeatureItem
-            title="Machine-readable"
-            description="JWT-VC format"
+            title="corsair log"
+            description="Like git log (SCITT)"
             className="border-l border-corsair-border max-lg:border-l-0 max-lg:border-t"
           />
           <FeatureItem
-            title="Free to verify"
-            description="No account needed"
+            title="corsair verify"
+            description="Free, no account needed"
             className="border-l border-corsair-border max-lg:border-t"
           />
         </div>

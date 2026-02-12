@@ -88,7 +88,7 @@ const contributions = [
   {
     title: "Tool Adapters",
     description:
-      "Build adapters that translate security tool output into the CPOE format — InSpec, Prowler, Trivy, ComplianceAsCode, and more. Each adapter feeds the EVIDENCE pipeline.",
+      "Build adapters that translate security tool output into the CPOE format — InSpec, Prowler, Trivy, ComplianceAsCode, and more. Each adapter feeds directly into corsair sign.",
     icon: <ReconIcon size={28} />,
     label: "EVIDENCE",
     labelColor: "text-corsair-cyan",

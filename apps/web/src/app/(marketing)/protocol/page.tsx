@@ -16,8 +16,6 @@ import {
   JWTVCStructure,
   DIDResolutionFlow,
 } from "@/components/features/protocol/trust-stack";
-import { DimensionRadar } from "@/components/features/protocol/dimension-radar";
-import { RuleTraceViewer } from "@/components/features/protocol/rule-trace-viewer";
 import { MerkleViz } from "@/components/features/protocol/merkle-viz";
 import { SignalTimeline } from "@/components/features/protocol/signal-timeline";
 
@@ -143,45 +141,49 @@ export default function ProtocolPage() {
         </div>
       </section>
 
-      {/* ═══ LAYER 4: ASSURANCE — 7 Dimensions + Decision Pipeline ═══ */}
+      {/* ═══ LAYER 4: PROVENANCE — Who produced the evidence ═══ */}
       <PixelDivider variant="diamond" className="my-4" />
       <section className="px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <StageHeader
             number={4}
-            name="ASSURANCE"
-            subtitle="Seven dimensions, five safeguards, one decision trace"
+            name="PROVENANCE"
+            subtitle="Who produced the evidence, recorded in the credential"
             color="text-corsair-gold"
             icon={<QuarterIcon size={32} />}
           />
 
           <FadeIn delay={0.1}>
             <p className="mb-2 max-w-2xl text-sm text-corsair-text-dim">
-              Every CPOE carries a declared assurance level (L0–L4) determined by a
-              seven-dimension model grounded in FAIR-CAM, GRADE, and COSO frameworks.
-              Five anti-gaming safeguards prevent level inflation. The full decision
-              trace is embedded in the signed credential — every rule, every override,
-              every safeguard that fired.
+              Every CPOE records provenance — who produced the evidence, what tool
+              generated it, and when. Corsair does not judge evidence quality. It
+              records where the evidence came from, signs it, and lets buyers decide
+              what&apos;s sufficient. The provenance model is simple:
             </p>
             <p className="mb-8 max-w-2xl text-xs text-corsair-text-dim/60 italic">
-              The declared level is the minimum across all in-scope controls — like an SSL
-              certificate where one unverified domain means rejection.
+              Assurance scoring (L0-L4) is available as optional enrichment via the
+              --enrich flag, but it is not part of the default signing path.
             </p>
           </FadeIn>
 
-          {/* Radar chart + thresholds */}
           <FadeIn delay={0.2}>
-            <div className="mb-12">
-              <p className="mb-4 font-pixel text-[8px] tracking-widest text-corsair-gold/60">
-                SEVEN-DIMENSION ASSURANCE MODEL
-              </p>
-              <DimensionRadar />
+            <div className="space-y-3">
+              {[
+                { source: "self", desc: "Organization self-attests compliance without automated evidence", color: "text-corsair-text-dim", bgColor: "bg-corsair-text-dim/10" },
+                { source: "tool", desc: "Security tool (Prowler, InSpec, Trivy) generated the evidence automatically", color: "text-corsair-green", bgColor: "bg-corsair-green/10" },
+                { source: "auditor", desc: "Independent third party reviewed and verified the assessment", color: "text-corsair-gold", bgColor: "bg-corsair-gold/10" },
+              ].map((item) => (
+                <div key={item.source} className="flex items-start gap-4 rounded-lg border border-corsair-border bg-[#0A0A0A] p-4">
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded font-mono text-xs font-bold ${item.bgColor} ${item.color}`}>
+                    {item.source.charAt(0).toUpperCase()}
+                  </span>
+                  <div>
+                    <p className={`text-sm font-medium ${item.color}`}>{item.source}</p>
+                    <p className="text-xs text-corsair-text-dim">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-          </FadeIn>
-
-          {/* Decision pipeline */}
-          <FadeIn delay={0.1}>
-            <RuleTraceViewer />
           </FadeIn>
         </div>
       </section>

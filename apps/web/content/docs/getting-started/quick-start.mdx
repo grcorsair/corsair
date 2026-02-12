@@ -28,7 +28,7 @@ The fastest way to see Corsair in action — verify the example CPOE:
 bun run bin/corsair-verify.ts examples/example-cpoe.jwt
 ```
 
-This verifies the Ed25519 signature, checks expiry, and displays the assurance level and control results.
+This verifies the Ed25519 signature, checks expiry, and displays the provenance and control results.
 
 ## Sign Tool Output into a CPOE
 
@@ -45,7 +45,14 @@ corsair sign --format inspec --input inspec-results.json
 corsair sign --format trivy --input trivy-report.json
 ```
 
-This runs the CPOE lifecycle: EVIDENCE → CLASSIFY → CHART → QUARTER → MARQUE.
+## Compare CPOEs Over Time
+
+Track how your compliance posture changes between assessments:
+
+```bash
+# Compare two CPOEs (like git diff for compliance)
+corsair diff --current cpoe-v2.jwt --previous cpoe-v1.jwt
+```
 
 ## Generate Signing Keys
 
@@ -60,11 +67,12 @@ corsair keygen --output ./keys
 |---------|-------------|
 | `corsair sign` | Sign security tool output into a verifiable CPOE |
 | `corsair verify` | Verify a CPOE's Ed25519 signature and check validity |
+| `corsair diff` | Compare two CPOEs and show control-level changes |
 | `corsair keygen` | Generate Ed25519 signing keypair |
 | `corsair help` | Show available commands |
 
 ## Next Steps
 
 - Learn about the [CPOE lifecycle](/docs/concepts/pipeline)
-- Understand [assurance levels (L0-L4)](/docs/getting-started/core-concepts)
+- Understand the [provenance model](/docs/getting-started/core-concepts)
 - Explore the [Parley protocol](/docs/concepts/parley-protocol)

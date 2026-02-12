@@ -52,7 +52,7 @@ const PRIVATE_KEY_FILENAME = "corsair-signing.key";
 export async function generateVCJWT(
   input: MarqueGeneratorInput,
   keyManager: MarqueKeyManager,
-  options?: { expiryDays?: number },
+  options?: { expiryDays?: number; enrich?: boolean },
 ): Promise<string> {
   const expiryDays = options?.expiryDays ?? 7;
   const now = new Date();
@@ -62,7 +62,8 @@ export async function generateVCJWT(
   const issuerDid = input.issuer.did || input.issuer.id;
 
   // Build CPOE credential subject
-  const rawSubject = buildCredentialSubject(input);
+  const enrich = options?.enrich ?? false;
+  const rawSubject = buildCredentialSubject(input, enrich);
   const sanitizedSubject = sanitize(rawSubject) as CPOECredentialSubject;
 
   // Build VC payload (without proof — proof is the JWT itself)
@@ -107,8 +108,12 @@ export async function generateVCJWT(
 
 /**
  * Build CPOE credential subject from assessment input.
+ *
+ * Default (enrich=false): provenance-first — scope, provenance, summary only.
+ * Enriched (enrich=true): adds assurance, dimensions, evidenceTypes,
+ * observationPeriod, controlClassifications, assessmentDepth, provenanceQuality, doraMetrics.
  */
-function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubject {
+function buildCredentialSubject(input: MarqueGeneratorInput, enrich: boolean = false): CPOECredentialSubject {
   // Build frameworks
   const frameworks: CPOECredentialSubject["frameworks"] = {};
   for (const chart of input.chartResults) {
@@ -137,10 +142,7 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
   }
   const overallScore = totalTested > 0 ? Math.round((totalPassed / totalTested) * 100) : 0;
 
-  // Build assurance
-  const assurance = buildAssurance(input);
-
-  // Build provenance
+  // Build provenance (always — provenance-first model)
   const provenance = buildProvenance(input);
 
   // Build scope (now a string)
@@ -149,7 +151,6 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
   const subject: CPOECredentialSubject = {
     type: "CorsairCPOE",
     scope,
-    assurance,
     provenance,
     summary: {
       controlsTested: totalTested,
@@ -158,6 +159,11 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
       overallScore,
     },
   };
+
+  // Build assurance only when enrichment is requested
+  if (enrich) {
+    subject.assurance = buildAssurance(input);
+  }
 
   // Evidence chain — only include if there are evidence paths with data
   const evidencePaths = input.evidencePaths || [];
@@ -206,8 +212,8 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
     };
   }
 
-  // Wire in framework-grounded assurance dimensions (optional, informational)
-  if (input.document) {
+  // Wire in framework-grounded assurance dimensions (only when enrichment is requested)
+  if (enrich && input.document) {
     const doc = input.document;
 
     // Extract QM scores for dimension calculation if available

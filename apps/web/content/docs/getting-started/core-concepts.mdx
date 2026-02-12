@@ -1,6 +1,6 @@
 ---
 title: "Core Concepts"
-description: "Understanding the Corsair pipeline, CPOE assurance levels, tool adapters, and Marque signing."
+description: "Understanding the Corsair pipeline, provenance model, tool adapters, and Marque signing."
 section: "getting-started"
 order: 2
 ---
@@ -16,19 +16,21 @@ The proof that emerges from tool-generated evidence and cryptographic signing is
 
 ## The Pipeline
 
-Every Corsair assessment flows through four stages:
+Every Corsair signing flows through a simple pipeline:
 
 | Stage | Purpose | Output |
 |-------|---------|--------|
 | **EVIDENCE** | Accept structured tool output (Prowler, InSpec, Trivy, etc.) | Structured controls and evidence |
-| **CHART** | Compliance framework mapping | MITRE, NIST, SOC 2, ISO 27001, 10+ frameworks |
-| **QUARTER** | AI-powered evidence review | Confidence score and trust tier |
-| **MARQUE** | Ed25519 signed attestation | Signed CPOE (W3C Verifiable Credential) |
+| **SIGN** | Ed25519 signed attestation with provenance | Signed CPOE (W3C Verifiable Credential) |
+| **LOG** | Register in SCITT transparency log | Append-only audit trail |
+| **VERIFY** | Verify signature and provenance | Verification result |
+| **DIFF** | Compare CPOEs over time | Control-level changes |
 
-Two companion systems operate alongside:
+Optional enrichment layers (available via `--enrich`):
 
+- **CHART** — Map controls to 13+ compliance frameworks
+- **QUARTER** — AI-powered evidence governance review
 - **FLAGSHIP** — Real-time compliance change notifications (SSF/CAEP)
-- **SCITT** — Append-only transparency log for CPOE registration
 
 ## Tool Adapters
 
@@ -40,19 +42,17 @@ Corsair accepts structured output from security scanning tools and compliance pl
 - **ComplianceAsCode** — OpenSCAP-based compliance automation
 - **Platform APIs** — CISO Assistant, Eramba, and other GRC platforms
 
-## CPOE Assurance Levels (L0-L4)
+## Provenance Model
 
-Every CPOE is issued at an assurance level reflecting the depth of evidence:
+Every CPOE records **provenance** — where the evidence came from. Corsair does not judge evidence quality. It records provenance, signs the result, and lets buyers decide what's sufficient.
 
-| Level | Name | What It Means |
-|-------|------|---------------|
-| **L0** | Documented | Policy exists, self-attestation only |
-| **L1** | Configured | Automated checks confirm settings are in place |
-| **L2** | Demonstrated | Test results prove controls work, AI-verified (confidence >= 70) |
-| **L3** | Observed | Continuous monitoring active, re-validated within 90 days |
-| **L4** | Attested | Independent auditor co-signs the credential |
+| Source | Name | What It Means |
+|--------|------|---------------|
+| **self** | Self-Assessed | Organization self-attests without automated evidence |
+| **tool** | Tool-Generated | Security tool (Prowler, InSpec, Trivy) produced the evidence |
+| **auditor** | Auditor-Verified | Independent third party reviewed and verified the assessment |
 
-The CPOE level is the minimum across all in-scope controls. Buyers set their own acceptance thresholds.
+Assurance levels (L0-L4) are available as optional enrichment via the `--enrich` flag but are not part of the default signing path.
 
 ## Evidence Chain
 

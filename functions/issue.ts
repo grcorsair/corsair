@@ -262,7 +262,7 @@ function validateIssueRequest(body: IssueRequest): string | null {
     return "Missing required field: source (soc2, iso27001, prowler, pentest, manual)";
   }
 
-  const validSources: DocumentSource[] = ["soc2", "iso27001", "prowler", "securityhub", "pentest", "manual"];
+  const validSources: DocumentSource[] = ["soc2", "iso27001", "prowler", "securityhub", "pentest", "manual", "ciso-assistant"];
   if (!validSources.includes(body.source)) {
     return `Invalid source: "${body.source}". Must be one of: ${validSources.join(", ")}`;
   }
