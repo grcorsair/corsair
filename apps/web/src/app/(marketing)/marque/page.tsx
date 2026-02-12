@@ -31,6 +31,11 @@ export default function MarquePage() {
               </span>
               . No account needed.
             </p>
+            <p className="mx-auto mt-3 max-w-md text-sm text-corsair-text-dim/60">
+              First time? Click{" "}
+              <span className="font-semibold text-corsair-gold/80">&ldquo;Try with Sample&rdquo;</span>
+              {" "}below to see a live CPOE verification in action.
+            </p>
           </div>
         </FadeIn>
 
