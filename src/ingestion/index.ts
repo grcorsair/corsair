@@ -1,8 +1,12 @@
 /**
- * Ingestion Module — Document → CPOE Pipeline
+ * Ingestion Module — Evidence → Classification → CPOE Pipeline
  *
  * Barrel exports for the ingestion layer.
- * New parsers should be added here as they're built.
+ * Core: types (canonical format), assurance-calculator (L0-L4 classification),
+ * mapper (IngestedDocument → MarqueGeneratorInput), json-parser (tool adapters).
+ *
+ * PDF-specific code (pdf-extractor, soc2-parser, batch-processor, cli)
+ * was DELETED on Feb 12, 2026 — see memory/corsair-pdf-scrapped.md
  */
 
 export type {
@@ -15,19 +19,17 @@ export type {
   AssessmentContext,
   TechStackEntry,
   CompensatingControl,
+  MethodologyTier,
+  EvidenceClassification,
+  SampleSizeResult,
+  BoilerplateResult,
 } from "./types";
 
 export { mapToMarqueInput } from "./mapper";
 export type { MapperOptions } from "./mapper";
 
-export { parseSOC2, parseSOC2FromText } from "./soc2-parser";
-export type { SOC2ParserOptions } from "./soc2-parser";
-
 export { parseJSON } from "./json-parser";
 export type { ParseJSONOptions } from "./json-parser";
-
-export { readPDF } from "./pdf-extractor";
-export type { ExtractedPDF } from "./pdf-extractor";
 
 export {
   calculateAssuranceLevel,
@@ -45,13 +47,3 @@ export {
   computeDoraMetrics,
 } from "./assurance-calculator";
 export type { FreshnessAssessment } from "./assurance-calculator";
-
-export type {
-  MethodologyTier,
-  EvidenceClassification,
-  SampleSizeResult,
-  BoilerplateResult,
-} from "./types";
-
-export { processBatch } from "./batch-processor";
-export type { BatchOptions, BatchResult } from "./batch-processor";

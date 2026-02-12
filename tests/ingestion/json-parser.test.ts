@@ -528,6 +528,549 @@ describe("parseJSON — pipeline integration", () => {
 });
 
 // =============================================================================
+// INSPEC FORMAT
+// =============================================================================
+
+describe("parseJSON — InSpec auto-detection", () => {
+  test("should auto-detect InSpec format from profiles/controls structure", () => {
+    const inspecOutput = {
+      platform: { name: "aws", release: "aws-sdk-v3" },
+      profiles: [
+        {
+          name: "aws-cis-level1",
+          title: "CIS AWS Foundations Benchmark Level 1",
+          controls: [
+            {
+              id: "cis-aws-1.1",
+              title: "Avoid the use of the root account",
+              desc: "The root account has unrestricted access.",
+              impact: 1.0,
+              tags: { nist: ["IA-2"], cis_controls: [{ id: "1.1" }] },
+              results: [{ status: "passed", code_desc: "Root account has no access keys", run_time: 0.5 }],
+            },
+            {
+              id: "cis-aws-1.4",
+              title: "Ensure MFA is enabled for root",
+              desc: "Enable MFA on root.",
+              impact: 1.0,
+              tags: { nist: ["IA-2(1)"] },
+              results: [{ status: "passed", code_desc: "Root MFA is active", run_time: 0.3 }],
+            },
+            {
+              id: "cis-aws-2.1",
+              title: "Ensure CloudTrail is enabled",
+              desc: "CloudTrail should be enabled.",
+              impact: 0.7,
+              tags: { nist: ["AU-2"] },
+              results: [{ status: "failed", code_desc: "CloudTrail not enabled in eu-west-1", run_time: 0.4 }],
+            },
+          ],
+        },
+      ],
+      statistics: { duration: 12.5 },
+      version: "5.22.36",
+    };
+
+    const result = parseJSON(inspecOutput);
+
+    expect(result.source).toBe("json");
+    expect(result.metadata.title).toContain("InSpec");
+    expect(result.controls).toHaveLength(3);
+
+    expect(result.controls[0].id).toBe("cis-aws-1.1");
+    expect(result.controls[0].status).toBe("effective");
+    expect(result.controls[0].description).toBe("Avoid the use of the root account");
+    expect(result.controls[0].evidence).toContain("Root account has no access keys");
+
+    expect(result.controls[2].id).toBe("cis-aws-2.1");
+    expect(result.controls[2].status).toBe("ineffective");
+    expect(result.controls[2].evidence).toContain("CloudTrail not enabled");
+  });
+
+  test("should extract NIST framework refs from InSpec tags", () => {
+    const inspecOutput = {
+      platform: { name: "aws" },
+      profiles: [
+        {
+          name: "test",
+          controls: [
+            {
+              id: "test-1",
+              title: "Test control",
+              desc: "Desc",
+              impact: 0.7,
+              tags: { nist: ["IA-2", "AC-3"] },
+              results: [{ status: "passed", code_desc: "OK", run_time: 0.1 }],
+            },
+          ],
+        },
+      ],
+      statistics: { duration: 1.0 },
+      version: "5.0.0",
+    };
+
+    const result = parseJSON(inspecOutput);
+    expect(result.controls[0].frameworkRefs).toBeDefined();
+    expect(result.controls[0].frameworkRefs!.length).toBeGreaterThanOrEqual(1);
+    const frameworks = result.controls[0].frameworkRefs!.map(r => r.framework);
+    expect(frameworks).toContain("NIST-800-53");
+  });
+
+  test("should handle InSpec control with multiple results (worst-case wins)", () => {
+    const inspecOutput = {
+      platform: { name: "os" },
+      profiles: [
+        {
+          name: "test",
+          controls: [
+            {
+              id: "multi-result",
+              title: "Control with mixed results",
+              desc: "Desc",
+              impact: 0.5,
+              tags: {},
+              results: [
+                { status: "passed", code_desc: "Check 1 OK", run_time: 0.1 },
+                { status: "failed", code_desc: "Check 2 failed", run_time: 0.1 },
+                { status: "passed", code_desc: "Check 3 OK", run_time: 0.1 },
+              ],
+            },
+          ],
+        },
+      ],
+      statistics: { duration: 0.5 },
+      version: "5.0.0",
+    };
+
+    const result = parseJSON(inspecOutput);
+    // One failed result means the control is ineffective
+    expect(result.controls[0].status).toBe("ineffective");
+    // Evidence should include all code_desc entries
+    expect(result.controls[0].evidence).toContain("Check 1 OK");
+    expect(result.controls[0].evidence).toContain("Check 2 failed");
+  });
+
+  test("should handle InSpec control with skipped results", () => {
+    const inspecOutput = {
+      platform: { name: "os" },
+      profiles: [
+        {
+          name: "test",
+          controls: [
+            {
+              id: "skipped-ctrl",
+              title: "Skipped control",
+              desc: "Desc",
+              impact: 0.0,
+              tags: {},
+              results: [{ status: "skipped", code_desc: "N/A for this platform", run_time: 0.0 }],
+            },
+          ],
+        },
+      ],
+      statistics: { duration: 0.2 },
+      version: "5.0.0",
+    };
+
+    const result = parseJSON(inspecOutput);
+    expect(result.controls[0].status).toBe("not-tested");
+  });
+
+  test("should flatten controls from multiple InSpec profiles", () => {
+    const inspecOutput = {
+      platform: { name: "aws" },
+      profiles: [
+        {
+          name: "profile-1",
+          controls: [
+            { id: "p1-c1", title: "Profile 1 Control 1", desc: "D", impact: 0.5, tags: {}, results: [{ status: "passed", code_desc: "OK", run_time: 0.1 }] },
+          ],
+        },
+        {
+          name: "profile-2",
+          controls: [
+            { id: "p2-c1", title: "Profile 2 Control 1", desc: "D", impact: 0.5, tags: {}, results: [{ status: "passed", code_desc: "OK", run_time: 0.1 }] },
+          ],
+        },
+      ],
+      statistics: { duration: 1.0 },
+      version: "5.0.0",
+    };
+
+    const result = parseJSON(inspecOutput);
+    expect(result.controls).toHaveLength(2);
+    expect(result.controls[0].id).toBe("p1-c1");
+    expect(result.controls[1].id).toBe("p2-c1");
+  });
+});
+
+// =============================================================================
+// TRIVY FORMAT
+// =============================================================================
+
+describe("parseJSON — Trivy auto-detection", () => {
+  test("should auto-detect Trivy format from SchemaVersion + Results", () => {
+    const trivyOutput = {
+      SchemaVersion: 2,
+      ArtifactName: "myapp:latest",
+      Results: [
+        {
+          Target: "Dockerfile",
+          Class: "config",
+          Misconfigurations: [
+            {
+              Type: "dockerfile",
+              ID: "DS001",
+              AVDID: "AVD-DS-0001",
+              Title: "Running as root user",
+              Description: "Running containers as root increases attack surface.",
+              Severity: "HIGH",
+              Status: "FAIL",
+              Resolution: "Use USER instruction to set non-root user",
+            },
+            {
+              Type: "dockerfile",
+              ID: "DS005",
+              AVDID: "AVD-DS-0005",
+              Title: "COPY uses ADD",
+              Description: "ADD has extra functionality.",
+              Severity: "LOW",
+              Status: "PASS",
+              Resolution: "Use COPY instead of ADD",
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = parseJSON(trivyOutput);
+
+    expect(result.source).toBe("json");
+    expect(result.metadata.title).toContain("Trivy");
+    expect(result.controls).toHaveLength(2);
+
+    expect(result.controls[0].id).toBe("DS001");
+    expect(result.controls[0].status).toBe("ineffective");
+    expect(result.controls[0].severity).toBe("HIGH");
+    expect(result.controls[0].description).toBe("Running as root user");
+    expect(result.controls[0].evidence).toContain("Running containers as root");
+
+    expect(result.controls[1].id).toBe("DS005");
+    expect(result.controls[1].status).toBe("effective");
+  });
+
+  test("should handle Trivy vulnerability results", () => {
+    const trivyOutput = {
+      SchemaVersion: 2,
+      ArtifactName: "myapp:latest",
+      Results: [
+        {
+          Target: "package-lock.json",
+          Class: "lang-pkgs",
+          Vulnerabilities: [
+            {
+              VulnerabilityID: "CVE-2023-1234",
+              PkgName: "lodash",
+              InstalledVersion: "4.17.20",
+              FixedVersion: "4.17.21",
+              Severity: "CRITICAL",
+              Title: "Prototype pollution in lodash",
+              Description: "Lodash before 4.17.21 has prototype pollution.",
+            },
+            {
+              VulnerabilityID: "CVE-2023-5678",
+              PkgName: "express",
+              InstalledVersion: "4.18.0",
+              FixedVersion: "4.18.2",
+              Severity: "MEDIUM",
+              Title: "Open redirect in express",
+              Description: "Express before 4.18.2 has open redirect.",
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = parseJSON(trivyOutput);
+
+    expect(result.controls).toHaveLength(2);
+    expect(result.controls[0].id).toBe("CVE-2023-1234");
+    expect(result.controls[0].status).toBe("ineffective"); // Vulns are always ineffective
+    expect(result.controls[0].severity).toBe("CRITICAL");
+    expect(result.controls[0].evidence).toContain("lodash");
+
+    expect(result.controls[1].id).toBe("CVE-2023-5678");
+    expect(result.controls[1].status).toBe("ineffective");
+  });
+
+  test("should handle Trivy mixed results (misconfigs + vulns)", () => {
+    const trivyOutput = {
+      SchemaVersion: 2,
+      ArtifactName: "myapp:latest",
+      Results: [
+        {
+          Target: "Dockerfile",
+          Class: "config",
+          Misconfigurations: [
+            { Type: "dockerfile", ID: "DS001", Title: "Root user", Description: "Bad", Severity: "HIGH", Status: "FAIL", Resolution: "Fix" },
+          ],
+        },
+        {
+          Target: "package.json",
+          Class: "lang-pkgs",
+          Vulnerabilities: [
+            { VulnerabilityID: "CVE-2023-9999", PkgName: "pkg", InstalledVersion: "1.0", Severity: "LOW", Title: "Minor issue", Description: "Desc" },
+          ],
+        },
+      ],
+    };
+
+    const result = parseJSON(trivyOutput);
+    expect(result.controls).toHaveLength(2);
+    expect(result.controls[0].id).toBe("DS001");
+    expect(result.controls[1].id).toBe("CVE-2023-9999");
+  });
+
+  test("should handle empty Trivy results", () => {
+    const trivyOutput = {
+      SchemaVersion: 2,
+      ArtifactName: "clean-image:latest",
+      Results: [],
+    };
+
+    const result = parseJSON(trivyOutput);
+    expect(result.controls).toHaveLength(0);
+  });
+});
+
+// =============================================================================
+// GITLAB SECURITY REPORT FORMAT
+// =============================================================================
+
+describe("parseJSON — GitLab security report auto-detection", () => {
+  test("should auto-detect GitLab SAST report format", () => {
+    const glReport = {
+      version: "15.0.7",
+      scan: {
+        analyzer: { id: "semgrep", name: "Semgrep", version: "1.0.0", vendor: { name: "GitLab" } },
+        scanner: { id: "semgrep", name: "Semgrep", version: "1.0.0", vendor: { name: "GitLab" } },
+        type: "sast",
+        start_time: "2026-02-12T08:00:00Z",
+        end_time: "2026-02-12T08:01:00Z",
+        status: "success",
+      },
+      vulnerabilities: [
+        {
+          id: "vuln-001",
+          category: "sast",
+          name: "SQL Injection in login handler",
+          description: "User input passed directly to SQL query without sanitization",
+          severity: "Critical",
+          scanner: { id: "semgrep", name: "Semgrep" },
+          location: { file: "src/auth/login.ts", start_line: 42 },
+          identifiers: [
+            { type: "cwe", name: "CWE-89", value: "89", url: "https://cwe.mitre.org/data/definitions/89.html" },
+          ],
+        },
+        {
+          id: "vuln-002",
+          category: "sast",
+          name: "Hardcoded secret in config",
+          description: "API key hardcoded in configuration file",
+          severity: "High",
+          scanner: { id: "semgrep", name: "Semgrep" },
+          location: { file: "src/config.ts", start_line: 15 },
+          identifiers: [
+            { type: "cwe", name: "CWE-798", value: "798" },
+          ],
+        },
+        {
+          id: "vuln-003",
+          category: "sast",
+          name: "Unused variable",
+          description: "Variable declared but never used",
+          severity: "Info",
+          scanner: { id: "semgrep", name: "Semgrep" },
+          location: { file: "src/utils.ts", start_line: 3 },
+          identifiers: [
+            { type: "cwe", name: "CWE-561", value: "561" },
+          ],
+        },
+      ],
+    };
+
+    const result = parseJSON(glReport);
+
+    expect(result.source).toBe("json");
+    expect(result.metadata.title).toContain("GitLab");
+    expect(result.metadata.title).toContain("SAST");
+    expect(result.controls).toHaveLength(3);
+
+    // SQL Injection — Critical severity
+    expect(result.controls[0].id).toBe("vuln-001");
+    expect(result.controls[0].description).toBe("SQL Injection in login handler");
+    expect(result.controls[0].status).toBe("ineffective"); // Vulnerabilities = findings
+    expect(result.controls[0].severity).toBe("CRITICAL");
+    expect(result.controls[0].evidence).toContain("SQL query");
+
+    // Hardcoded secret
+    expect(result.controls[1].severity).toBe("HIGH");
+
+    // Info-level finding
+    expect(result.controls[2].severity).toBe("LOW"); // Info maps to LOW
+  });
+
+  test("should extract CWE framework refs from identifiers", () => {
+    const glReport = {
+      version: "15.0.7",
+      scan: {
+        analyzer: { id: "a", name: "A", version: "1", vendor: { name: "GL" } },
+        scanner: { id: "s", name: "S", version: "1", vendor: { name: "GL" } },
+        type: "sast",
+        start_time: "2026-01-01T00:00:00Z",
+        end_time: "2026-01-01T00:01:00Z",
+        status: "success",
+      },
+      vulnerabilities: [
+        {
+          id: "v1",
+          name: "Test vuln",
+          severity: "Medium",
+          location: { file: "test.ts", start_line: 1 },
+          identifiers: [
+            { type: "cwe", name: "CWE-89", value: "89" },
+            { type: "cve", name: "CVE-2026-1234", value: "CVE-2026-1234" },
+          ],
+        },
+      ],
+    };
+
+    const result = parseJSON(glReport);
+    const refs = result.controls[0].frameworkRefs!;
+    expect(refs).toBeDefined();
+    expect(refs.length).toBeGreaterThanOrEqual(1);
+
+    const cweRef = refs.find(r => r.framework === "CWE");
+    expect(cweRef).toBeDefined();
+    expect(cweRef!.controlId).toBe("89");
+  });
+
+  test("should handle GitLab dependency scanning report", () => {
+    const glReport = {
+      version: "15.0.7",
+      scan: {
+        analyzer: { id: "gemnasium", name: "Gemnasium", version: "4.0", vendor: { name: "GitLab" } },
+        scanner: { id: "gemnasium", name: "Gemnasium", version: "4.0", vendor: { name: "GitLab" } },
+        type: "dependency_scanning",
+        start_time: "2026-02-12T08:00:00Z",
+        end_time: "2026-02-12T08:02:00Z",
+        status: "success",
+      },
+      vulnerabilities: [
+        {
+          id: "dep-001",
+          name: "Prototype pollution in lodash",
+          description: "lodash before 4.17.21 has prototype pollution",
+          severity: "High",
+          location: {
+            file: "package-lock.json",
+            dependency: { package: { name: "lodash" }, version: "4.17.20" },
+          },
+          identifiers: [
+            { type: "cve", name: "CVE-2021-23337", value: "CVE-2021-23337" },
+          ],
+        },
+      ],
+    };
+
+    const result = parseJSON(glReport);
+
+    expect(result.metadata.title).toContain("DEPENDENCY SCANNING");
+    expect(result.controls).toHaveLength(1);
+    expect(result.controls[0].id).toBe("dep-001");
+    expect(result.controls[0].status).toBe("ineffective");
+    expect(result.controls[0].evidence).toContain("lodash");
+  });
+
+  test("should handle clean GitLab scan with zero vulnerabilities", () => {
+    const glReport = {
+      version: "15.0.7",
+      scan: {
+        analyzer: { id: "semgrep", name: "Semgrep", version: "1.0", vendor: { name: "GitLab" } },
+        scanner: { id: "semgrep", name: "Semgrep", version: "1.0", vendor: { name: "GitLab" } },
+        type: "sast",
+        start_time: "2026-02-12T08:00:00Z",
+        end_time: "2026-02-12T08:00:30Z",
+        status: "success",
+      },
+      vulnerabilities: [],
+    };
+
+    const result = parseJSON(glReport);
+    expect(result.controls).toHaveLength(0);
+    expect(result.metadata.title).toContain("GitLab");
+  });
+
+  test("should map GitLab severity Unknown correctly", () => {
+    const glReport = {
+      version: "15.0.7",
+      scan: {
+        analyzer: { id: "a", name: "A", version: "1", vendor: { name: "GL" } },
+        scanner: { id: "s", name: "S", version: "1", vendor: { name: "GL" } },
+        type: "sast",
+        start_time: "2026-01-01T00:00:00Z",
+        end_time: "2026-01-01T00:01:00Z",
+        status: "success",
+      },
+      vulnerabilities: [
+        {
+          id: "v1",
+          name: "Unknown severity vuln",
+          severity: "Unknown",
+          location: { file: "test.ts", start_line: 1 },
+          identifiers: [{ type: "cwe", name: "CWE-1", value: "1" }],
+        },
+      ],
+    };
+
+    const result = parseJSON(glReport);
+    expect(result.controls[0].severity).toBe("LOW"); // Unknown → LOW
+  });
+
+  test("should produce output compatible with assurance calculator", () => {
+    const glReport = {
+      version: "15.0.7",
+      scan: {
+        analyzer: { id: "semgrep", name: "Semgrep", version: "1.0", vendor: { name: "GitLab" } },
+        scanner: { id: "semgrep", name: "Semgrep", version: "1.0", vendor: { name: "GitLab" } },
+        type: "sast",
+        start_time: "2026-02-12T08:00:00Z",
+        end_time: "2026-02-12T08:01:00Z",
+        status: "success",
+      },
+      vulnerabilities: [
+        {
+          id: "v1",
+          name: "XSS in template",
+          description: "Cross-site scripting via unescaped output",
+          severity: "High",
+          location: { file: "src/views/index.html", start_line: 10 },
+          identifiers: [{ type: "cwe", name: "CWE-79", value: "79" }],
+        },
+      ],
+    };
+
+    const doc = parseJSON(glReport);
+    const classified = calculateDocumentAssurance(doc.controls, doc.source, doc.metadata);
+    expect(classified).toHaveLength(1);
+    expect(classified[0].assuranceLevel).toBe(0); // Ineffective control = L0
+
+    const marqueInput = mapToMarqueInput(doc);
+    expect(marqueInput.document).toBeDefined();
+  });
+});
+
+// =============================================================================
 // ASSESSMENT CONTEXT
 // =============================================================================
 

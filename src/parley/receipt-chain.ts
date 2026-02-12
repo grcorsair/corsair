@@ -7,13 +7,13 @@
  *
  * Usage:
  *   const chain = new ReceiptChain(privateKeyPem);
- *   await chain.captureStep({ step: "ingest", inputData, outputData, reproducible: false, ... });
+ *   await chain.captureStep({ step: "evidence", inputData, outputData, reproducible: true, ... });
  *   await chain.captureStep({ step: "classify", inputData, outputData, reproducible: true, ... });
  *   const digest = chain.getChainDigest();  // Merkle root of all receipt hashes
  */
 
 import { generateReceipt, hashReceipt } from "./process-receipt";
-import type { ProcessReceipt, PipelineStep } from "./process-receipt";
+import type { ProcessReceipt, PipelineStep, ToolAttestation } from "./process-receipt";
 import { computeRootHash } from "./merkle";
 import type { SCITTRegistry } from "./scitt-types";
 
@@ -33,6 +33,7 @@ export interface CaptureStepInput {
     promptDigest: string;
     temperature: number;
   };
+  toolAttestation?: ToolAttestation;
   keyAttestation?: {
     type: string;
     provider: string;

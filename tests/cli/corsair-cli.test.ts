@@ -1,6 +1,6 @@
 import { describe, test, expect } from "bun:test";
 
-describe("Corsair CLI v0.3.0", () => {
+describe("Corsair CLI v0.4.0", () => {
   const cwd = "/Users/ayoubfandi/projects/corsair";
 
   test("help command shows usage", async () => {
@@ -8,7 +8,6 @@ describe("Corsair CLI v0.3.0", () => {
     const output = await new Response(proc.stdout).text();
     await proc.exited;
     expect(output).toContain("CORSAIR");
-    expect(output).toContain("ingest");
     expect(output).toContain("verify");
     expect(output).toContain("keygen");
   });
@@ -35,14 +34,6 @@ describe("Corsair CLI v0.3.0", () => {
     expect(stderr).toContain("Unknown command");
   });
 
-  test("ingest --help shows ingest usage", async () => {
-    const proc = Bun.spawn(["bun", "run", "corsair.ts", "ingest", "--help"], { cwd });
-    const output = await new Response(proc.stdout).text();
-    await proc.exited;
-    expect(output).toContain("INGEST");
-    expect(output).toContain("--file");
-  });
-
   test("verify --help shows verify usage", async () => {
     const proc = Bun.spawn(["bun", "run", "corsair.ts", "verify", "--help"], { cwd });
     const output = await new Response(proc.stdout).text();
@@ -67,11 +58,10 @@ describe("Corsair CLI v0.3.0", () => {
     expect(stderr).toContain("--file is required");
   });
 
-  test("ingest without --file shows error", async () => {
-    const proc = Bun.spawn(["bun", "run", "corsair.ts", "ingest"], { cwd, stderr: "pipe" });
-    const stderr = await new Response(proc.stderr).text();
-    const code = await proc.exited;
-    expect(code).toBe(2);
-    expect(stderr).toContain("--file");
+  test("version is 0.4.0", async () => {
+    const proc = Bun.spawn(["bun", "run", "corsair.ts", "help"], { cwd });
+    const output = await new Response(proc.stdout).text();
+    await proc.exited;
+    expect(output).toContain("0.4.0");
   });
 });

@@ -400,6 +400,8 @@ export interface CPOECredentialSubject extends CredentialSubject {
     reproducibleSteps: number;
     /** Count of LLM-attested (committed but not reproducible) steps */
     attestedSteps: number;
+    /** Count of steps with tool attestation metadata */
+    toolAttestedSteps?: number;
     /** SCITT entry IDs for each receipt (enables independent verification) */
     scittEntryIds?: string[];
   };

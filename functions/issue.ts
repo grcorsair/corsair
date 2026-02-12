@@ -174,6 +174,22 @@ export function createIssueRouter(
       if (keypair) {
         const chain = new ReceiptChain(keypair.privateKey.toString());
 
+        // Receipt 0: EVIDENCE (captures tool/platform provenance)
+        await chain.captureStep({
+          step: "evidence",
+          inputData: { source: body.source, controlCount: controls.length },
+          outputData: { controlHashes: controls.map(c => hashData(c)) },
+          reproducible: body.source !== "manual",
+          codeVersion: `corsair-issue@2026-02-12`,
+          toolAttestation: {
+            toolName: body.source,
+            toolVersion: body.metadata?.rawTextHash ? "hashed" : "unknown",
+            scanTimestamp: body.metadata?.date || new Date().toISOString(),
+            scanTarget: body.metadata?.scope || "unknown",
+            outputFormat: body.source,
+          },
+        });
+
         // Receipt 1: CLASSIFY (deterministic — evidence mapping)
         await chain.captureStep({
           step: "classify",

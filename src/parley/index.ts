@@ -11,6 +11,7 @@
 export {
   type ProcessReceipt,
   type PipelineStep,
+  type ToolAttestation,
   type GenerateReceiptInput,
   hashData,
   hashReceipt,

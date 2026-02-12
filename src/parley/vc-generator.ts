@@ -311,6 +311,7 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
   if (processReceipts.length > 0) {
     const reproducible = processReceipts.filter(r => r.predicate.reproducible).length;
     const attested = processReceipts.filter(r => r.predicate.llmAttestation).length;
+    const toolAttested = processReceipts.filter(r => r.predicate.toolAttestation).length;
     const leafHashes = processReceipts.map(r => hashReceipt(r));
     const scittIds = processReceipts
       .filter(r => r.scittEntryId)
@@ -323,6 +324,7 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
       format: "in-toto/v1+cose-sign1",
       reproducibleSteps: reproducible,
       attestedSteps: attested,
+      ...(toolAttested > 0 ? { toolAttestedSteps: toolAttested } : {}),
       ...(scittIds.length > 0 ? { scittEntryIds: scittIds } : {}),
     };
   }

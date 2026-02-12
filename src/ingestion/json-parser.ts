@@ -2,7 +2,11 @@
  * JSON Parser — Generic Evidence Ingestion
  *
  * Accepts any JSON payload and normalizes it into IngestedDocument format.
- * Auto-detects Prowler OCSF and SecurityHub ASFF formats from structure.
+ * Auto-detects tool output formats from JSON structure:
+ *   - Prowler OCSF (array with StatusCode + FindingInfo)
+ *   - SecurityHub ASFF (object with Findings[])
+ *   - InSpec (object with profiles[].controls[])
+ *   - Trivy (object with SchemaVersion + Results[])
  * Falls back to a generic { metadata, controls } format.
  *
  * This is the evidence-agnostic ingestion entry point: any tool, scanner,
@@ -38,6 +42,9 @@ export interface ParseJSONOptions {
  *   - A parsed object with { metadata?, controls[] }
  *   - A Prowler OCSF array (auto-detected)
  *   - A SecurityHub ASFF object with { Findings[] } (auto-detected)
+ *   - A GitLab security report with { version, vulnerabilities[], scan } (auto-detected)
+ *   - An InSpec report with { profiles[].controls[] } (auto-detected)
+ *   - A Trivy report with { SchemaVersion, Results[] } (auto-detected)
  */
 export function parseJSON(
   input: string | object,
@@ -46,9 +53,21 @@ export function parseJSON(
   const parsed = resolveInput(input);
   const rawHash = computeHash(parsed);
 
-  // Auto-detect format
+  // Auto-detect format (order matters — most specific first)
   if (isProwlerOCSF(parsed)) {
     return parseProwler(parsed as ProwlerFinding[], rawHash, options?.source);
+  }
+
+  if (isGitLabSecurityReport(parsed)) {
+    return parseGitLab(parsed as GitLabSecurityReport, rawHash, options?.source);
+  }
+
+  if (isInSpec(parsed)) {
+    return parseInSpec(parsed as InSpecReport, rawHash, options?.source);
+  }
+
+  if (isTrivy(parsed)) {
+    return parseTrivy(parsed as TrivyReport, rawHash, options?.source);
   }
 
   if (isSecurityHubASFF(parsed)) {
@@ -131,6 +150,131 @@ interface GenericControl {
   controlId?: string;
   controlName?: string;
   frameworks?: Array<{ framework: string; controlId: string; controlName?: string }>;
+}
+
+interface InSpecReport {
+  platform?: { name?: string; release?: string };
+  profiles: InSpecProfile[];
+  statistics?: { duration?: number };
+  version?: string;
+}
+
+interface InSpecProfile {
+  name?: string;
+  title?: string;
+  controls: InSpecControl[];
+}
+
+interface InSpecControl {
+  id: string;
+  title?: string;
+  desc?: string;
+  impact?: number;
+  tags?: Record<string, unknown>;
+  results?: InSpecResult[];
+}
+
+interface InSpecResult {
+  status: string;
+  code_desc?: string;
+  run_time?: number;
+  message?: string;
+}
+
+interface TrivyReport {
+  SchemaVersion: number;
+  ArtifactName?: string;
+  Results: TrivyResult[];
+}
+
+interface TrivyResult {
+  Target?: string;
+  Class?: string;
+  Misconfigurations?: TrivyMisconfiguration[];
+  Vulnerabilities?: TrivyVulnerability[];
+}
+
+interface TrivyMisconfiguration {
+  Type?: string;
+  ID: string;
+  AVDID?: string;
+  Title: string;
+  Description?: string;
+  Severity: string;
+  Status: string;
+  Resolution?: string;
+}
+
+interface TrivyVulnerability {
+  VulnerabilityID: string;
+  PkgName?: string;
+  InstalledVersion?: string;
+  FixedVersion?: string;
+  Severity: string;
+  Title?: string;
+  Description?: string;
+}
+
+interface GitLabSecurityReport {
+  version: string;
+  scan: {
+    analyzer?: { id: string; name: string; version?: string; vendor?: { name: string } };
+    scanner?: { id: string; name: string; version?: string; vendor?: { name: string } };
+    type: string;
+    start_time?: string;
+    end_time?: string;
+    status?: string;
+  };
+  vulnerabilities: GitLabVulnerability[];
+  remediations?: Array<{ fixes: Array<{ id: string }>; summary: string; diff?: string }>;
+}
+
+interface GitLabVulnerability {
+  id: string;
+  category?: string;
+  name?: string;
+  message?: string;
+  description?: string;
+  severity?: string;
+  confidence?: string;
+  scanner?: { id: string; name: string };
+  location?: Record<string, unknown>;
+  identifiers?: Array<{ type: string; name: string; value: string; url?: string }>;
+  solution?: string;
+  links?: Array<{ url: string; name?: string }>;
+}
+
+function isGitLabSecurityReport(parsed: unknown): boolean {
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return false;
+  const obj = parsed as Record<string, unknown>;
+  return (
+    typeof obj.version === "string" &&
+    Array.isArray(obj.vulnerabilities) &&
+    typeof obj.scan === "object" &&
+    obj.scan !== null &&
+    "type" in (obj.scan as Record<string, unknown>)
+  );
+}
+
+function isInSpec(parsed: unknown): boolean {
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return false;
+  const obj = parsed as Record<string, unknown>;
+  return (
+    Array.isArray(obj.profiles) &&
+    obj.profiles.length > 0 &&
+    typeof obj.profiles[0] === "object" &&
+    obj.profiles[0] !== null &&
+    "controls" in (obj.profiles[0] as Record<string, unknown>)
+  );
+}
+
+function isTrivy(parsed: unknown): boolean {
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return false;
+  const obj = parsed as Record<string, unknown>;
+  return (
+    typeof obj.SchemaVersion === "number" &&
+    Array.isArray(obj.Results)
+  );
 }
 
 function isProwlerOCSF(parsed: unknown): boolean {
@@ -217,6 +361,101 @@ function parseProwlerCompliance(requirements?: string[]): FrameworkRef[] {
 }
 
 // =============================================================================
+// GITLAB SECURITY REPORT PARSER
+// =============================================================================
+
+function parseGitLab(
+  report: GitLabSecurityReport,
+  rawHash: string,
+  sourceOverride?: DocumentSource,
+): IngestedDocument {
+  const controls: IngestedControl[] = report.vulnerabilities.map((vuln) => {
+    const frameworkRefs = extractGitLabFrameworkRefs(vuln.identifiers);
+    const evidence = buildGitLabEvidence(vuln);
+    const severity = vuln.severity ? normalizeGitLabSeverity(vuln.severity) : undefined;
+
+    return {
+      id: vuln.id,
+      description: vuln.name || vuln.message || vuln.id,
+      status: "ineffective" as const, // Vulnerabilities are findings = ineffective
+      severity,
+      evidence,
+      frameworkRefs: frameworkRefs.length > 0 ? frameworkRefs : undefined,
+    };
+  });
+
+  const scanType = report.scan.type;
+  const scanTypeDisplay = scanType.toUpperCase().replace(/_/g, " ");
+  const scannerName = report.scan.scanner?.name || report.scan.analyzer?.name || "Unknown";
+
+  return {
+    source: sourceOverride || "json",
+    metadata: {
+      title: `GitLab ${scanTypeDisplay} — ${scannerName} (${report.vulnerabilities.length} findings)`,
+      issuer: scannerName,
+      date: report.scan.end_time
+        ? report.scan.end_time.split("T")[0]
+        : new Date().toISOString().split("T")[0],
+      scope: `GitLab ${scanType} scan`,
+      reportType: `GitLab ${scanType}`,
+      rawTextHash: rawHash,
+    },
+    controls,
+  };
+}
+
+/** Extract CWE/CVE framework refs from GitLab identifiers */
+function extractGitLabFrameworkRefs(
+  identifiers?: Array<{ type: string; name: string; value: string }>,
+): FrameworkRef[] {
+  if (!identifiers) return [];
+  const refs: FrameworkRef[] = [];
+
+  for (const id of identifiers) {
+    const type = id.type.toLowerCase();
+    if (type === "cwe") {
+      refs.push({ framework: "CWE", controlId: id.value, controlName: id.name });
+    } else if (type === "cve") {
+      refs.push({ framework: "CVE", controlId: id.value, controlName: id.name });
+    } else if (type === "owasp") {
+      refs.push({ framework: "OWASP", controlId: id.value, controlName: id.name });
+    }
+  }
+
+  return refs;
+}
+
+/** Build evidence string from GL vulnerability fields */
+function buildGitLabEvidence(vuln: GitLabVulnerability): string {
+  const parts: string[] = [];
+  if (vuln.description) parts.push(vuln.description);
+  if (vuln.solution) parts.push(`Solution: ${vuln.solution}`);
+  if (vuln.location) {
+    const loc = vuln.location;
+    if (loc.file) parts.push(`File: ${loc.file}:${loc.start_line || "?"}`);
+    if (loc.dependency && typeof loc.dependency === "object") {
+      const dep = loc.dependency as Record<string, unknown>;
+      const pkg = dep.package as Record<string, unknown> | undefined;
+      if (pkg?.name) parts.push(`Package: ${pkg.name}@${dep.version || "?"}`);
+    }
+  }
+  return parts.join(". ") || vuln.name || "";
+}
+
+/** Map GitLab severity (Critical/High/Medium/Low/Info/Unknown) to Corsair severity */
+function normalizeGitLabSeverity(severity: string): Severity {
+  switch (severity) {
+    case "Critical": return "CRITICAL";
+    case "High": return "HIGH";
+    case "Medium": return "MEDIUM";
+    case "Low": return "LOW";
+    case "Info": return "LOW";
+    case "Unknown": return "LOW";
+    default: return normalizeSeverity(severity);
+  }
+}
+
+// =============================================================================
 // SECURITYHUB ASFF PARSER
 // =============================================================================
 
@@ -241,6 +480,160 @@ function parseSecurityHub(
       date: new Date().toISOString().split("T")[0],
       scope: "AWS Environment",
       reportType: "SecurityHub ASFF",
+      rawTextHash: rawHash,
+    },
+    controls,
+  };
+}
+
+// =============================================================================
+// INSPEC PARSER
+// =============================================================================
+
+function parseInSpec(
+  report: InSpecReport,
+  rawHash: string,
+  sourceOverride?: DocumentSource,
+): IngestedDocument {
+  const controls: IngestedControl[] = [];
+
+  for (const profile of report.profiles) {
+    for (const ctrl of profile.controls) {
+      const results = ctrl.results || [];
+      const status = resolveInSpecStatus(results);
+      const evidence = results.map(r => r.code_desc || r.message || "").filter(Boolean).join("; ");
+      const frameworkRefs = extractInSpecFrameworkRefs(ctrl.tags);
+      const severity = inspecImpactToSeverity(ctrl.impact);
+
+      controls.push({
+        id: ctrl.id,
+        description: ctrl.title || ctrl.desc || ctrl.id,
+        status,
+        severity,
+        evidence: evidence || ctrl.desc || "",
+        frameworkRefs: frameworkRefs.length > 0 ? frameworkRefs : undefined,
+      });
+    }
+  }
+
+  const profileNames = report.profiles.map(p => p.title || p.name || "unknown").join(", ");
+
+  return {
+    source: sourceOverride || "json",
+    metadata: {
+      title: `InSpec Report — ${profileNames}`,
+      issuer: "InSpec",
+      date: new Date().toISOString().split("T")[0],
+      scope: report.platform?.name || "Unknown Platform",
+      reportType: "InSpec",
+      rawTextHash: rawHash,
+    },
+    controls,
+  };
+}
+
+/** Resolve InSpec control status from results (worst-case wins) */
+function resolveInSpecStatus(results: InSpecResult[]): "effective" | "ineffective" | "not-tested" {
+  if (results.length === 0) return "not-tested";
+
+  let hasPassed = false;
+  for (const r of results) {
+    const s = normalizeStatus(r.status);
+    if (s === "ineffective") return "ineffective"; // One failure = failed
+    if (s === "effective") hasPassed = true;
+  }
+
+  return hasPassed ? "effective" : "not-tested";
+}
+
+/** Extract NIST framework refs from InSpec tags.nist */
+function extractInSpecFrameworkRefs(tags?: Record<string, unknown>): FrameworkRef[] {
+  if (!tags) return [];
+  const refs: FrameworkRef[] = [];
+
+  // tags.nist = ["IA-2", "AC-3", ...]
+  if (Array.isArray(tags.nist)) {
+    for (const nistId of tags.nist) {
+      if (typeof nistId === "string") {
+        refs.push({ framework: "NIST-800-53", controlId: nistId });
+      }
+    }
+  }
+
+  // tags.cis_controls = [{ id: "1.1" }, ...]
+  if (Array.isArray(tags.cis_controls)) {
+    for (const cis of tags.cis_controls) {
+      if (typeof cis === "object" && cis !== null && "id" in cis) {
+        refs.push({ framework: "CIS", controlId: String((cis as Record<string, unknown>).id) });
+      }
+    }
+  }
+
+  return refs;
+}
+
+/** Map InSpec impact score (0.0-1.0) to severity */
+function inspecImpactToSeverity(impact?: number): Severity | undefined {
+  if (impact === undefined || impact === null) return undefined;
+  if (impact >= 0.9) return "CRITICAL";
+  if (impact >= 0.7) return "HIGH";
+  if (impact >= 0.4) return "MEDIUM";
+  if (impact > 0) return "LOW";
+  return "LOW"; // impact 0.0 = informational
+}
+
+// =============================================================================
+// TRIVY PARSER
+// =============================================================================
+
+function parseTrivy(
+  report: TrivyReport,
+  rawHash: string,
+  sourceOverride?: DocumentSource,
+): IngestedDocument {
+  const controls: IngestedControl[] = [];
+
+  for (const result of report.Results) {
+    // Parse misconfigurations
+    if (Array.isArray(result.Misconfigurations)) {
+      for (const m of result.Misconfigurations) {
+        controls.push({
+          id: m.ID,
+          description: m.Title,
+          status: normalizeStatus(m.Status),
+          severity: normalizeSeverity(m.Severity),
+          evidence: [m.Description, m.Resolution].filter(Boolean).join(". "),
+        });
+      }
+    }
+
+    // Parse vulnerabilities (always ineffective — they are findings)
+    if (Array.isArray(result.Vulnerabilities)) {
+      for (const v of result.Vulnerabilities) {
+        const evidenceParts = [v.Description];
+        if (v.PkgName) evidenceParts.push(`Package: ${v.PkgName}`);
+        if (v.InstalledVersion) evidenceParts.push(`Installed: ${v.InstalledVersion}`);
+        if (v.FixedVersion) evidenceParts.push(`Fixed in: ${v.FixedVersion}`);
+
+        controls.push({
+          id: v.VulnerabilityID,
+          description: v.Title || v.VulnerabilityID,
+          status: "ineffective", // Vulnerabilities are findings = ineffective
+          severity: normalizeSeverity(v.Severity),
+          evidence: evidenceParts.filter(Boolean).join(". "),
+        });
+      }
+    }
+  }
+
+  return {
+    source: sourceOverride || "json",
+    metadata: {
+      title: `Trivy Scan — ${report.ArtifactName || "unknown artifact"}`,
+      issuer: "Trivy",
+      date: new Date().toISOString().split("T")[0],
+      scope: report.ArtifactName || "Unknown",
+      reportType: "Trivy",
       rawTextHash: rawHash,
     },
     controls,

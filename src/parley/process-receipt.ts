@@ -1,7 +1,7 @@
 /**
  * Process Receipt — in-toto/SLSA Provenance for Pipeline Steps
  *
- * Each pipeline step (ingest, classify, chart, quarter, marque) produces a
+ * Each pipeline step (evidence, classify, chart, quarter, sign) produces a
  * COSE-signed receipt following in-toto Statement v1 and SLSA Provenance v1.
  * Receipts form a hash-linked chain registered in SCITT.
  *
@@ -21,7 +21,17 @@ import { sortKeysDeep } from "./marque-generator";
 // TYPES
 // =============================================================================
 
-export type PipelineStep = "ingest" | "classify" | "chart" | "quarter" | "marque";
+export type PipelineStep = "evidence" | "classify" | "chart" | "quarter" | "sign";
+
+export interface ToolAttestation {
+  toolName: string;           // "Prowler", "InSpec", "Vanta Monitor"
+  toolVersion: string;        // "4.2.1"
+  scanTimestamp: string;      // ISO 8601
+  scanTarget: string;         // "aws:123456789012", "acme-corp-workspace"
+  scanProfile?: string;       // "cis-aws-benchmark-v3.0"
+  outputFormat: string;       // "prowler-jsonl", "inspec-json", "trivy-json"
+  registeredMethodologyId?: string;  // Links to methodology registry (future)
+}
 
 export interface ProcessReceipt {
   _type: "https://in-toto.io/Statement/v1";
@@ -46,6 +56,7 @@ export interface ProcessReceipt {
       promptDigest: { sha256: string };
       temperature: number;
     };
+    toolAttestation?: ToolAttestation;
     previousReceipt?: {
       digest: { sha256: string };
       scittEntryId?: string;
@@ -97,6 +108,7 @@ export interface GenerateReceiptInput {
     promptDigest: string;
     temperature: number;
   };
+  toolAttestation?: ToolAttestation;
   previousReceipt?: ProcessReceipt;
   keyAttestation?: {
     type: string;
@@ -163,6 +175,11 @@ export function generateReceipt(
       promptDigest: { sha256: input.llmAttestation.promptDigest },
       temperature: input.llmAttestation.temperature,
     };
+  }
+
+  // Optional tool attestation
+  if (input.toolAttestation) {
+    receipt.predicate.toolAttestation = input.toolAttestation;
   }
 
   // Optional link to previous receipt

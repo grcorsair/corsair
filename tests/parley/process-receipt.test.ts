@@ -88,10 +88,10 @@ describe("hashData", () => {
 describe("hashReceipt", () => {
   test("should produce same hash with or without signature", () => {
     const receipt = generateReceipt({
-      step: "ingest",
-      inputData: { file: "test.pdf" },
+      step: "evidence",
+      inputData: { file: "test.json" },
       outputData: { controls: [] },
-      reproducible: false,
+      reproducible: true,
     }, keypair.privateKeyPem);
 
     const hashWithSig = hashReceipt(receipt);
@@ -126,20 +126,20 @@ describe("hashReceipt", () => {
 describe("generateReceipt", () => {
   test("should generate receipt with all required fields", () => {
     const receipt = generateReceipt({
-      step: "ingest",
-      inputData: { file: "soc2.pdf" },
+      step: "evidence",
+      inputData: { file: "prowler-findings.json" },
       outputData: { controls: [{ id: "CC1.1" }] },
-      reproducible: false,
+      reproducible: true,
     }, keypair.privateKeyPem);
 
     expect(receipt._type).toBe("https://in-toto.io/Statement/v1");
     expect(receipt.predicateType).toBe("https://grcorsair.com/provenance/v1");
-    expect(receipt.predicate.step).toBe("ingest");
-    expect(receipt.predicate.reproducible).toBe(false);
+    expect(receipt.predicate.step).toBe("evidence");
+    expect(receipt.predicate.reproducible).toBe(true);
     expect(receipt.predicate.builder.id).toBe("https://grcorsair.com/pipeline/v1");
-    expect(receipt.subject[0].name).toBe("ingest-output");
+    expect(receipt.subject[0].name).toBe("evidence-output");
     expect(receipt.subject[0].digest.sha256).toMatch(/^[a-f0-9]{64}$/);
-    expect(receipt.predicate.materials[0].uri).toBe("ingest-input");
+    expect(receipt.predicate.materials[0].uri).toBe("evidence-input");
     expect(receipt.predicate.materials[0].digest.sha256).toMatch(/^[a-f0-9]{64}$/);
     expect(receipt.predicate.metadata.startedOn).toBeTruthy();
     expect(receipt.predicate.metadata.finishedOn).toBeTruthy();
@@ -172,7 +172,7 @@ describe("generateReceipt", () => {
 
   test("should include LLM attestation for non-deterministic steps", () => {
     const receipt = generateReceipt({
-      step: "ingest",
+      step: "evidence",
       inputData: { file: "report.pdf" },
       outputData: { controls: [] },
       reproducible: false,
@@ -189,6 +189,30 @@ describe("generateReceipt", () => {
     expect(receipt.predicate.llmAttestation!.temperature).toBe(0);
   });
 
+  test("should include toolAttestation when provided", () => {
+    const receipt = generateReceipt({
+      step: "evidence",
+      inputData: { source: "prowler" },
+      outputData: { controls: [{ id: "CC1.1" }] },
+      reproducible: true,
+      toolAttestation: {
+        toolName: "Prowler",
+        toolVersion: "4.2.1",
+        scanTimestamp: "2026-02-12T10:00:00Z",
+        scanTarget: "aws:123456789012",
+        scanProfile: "cis-aws-benchmark-v3.0",
+        outputFormat: "prowler-jsonl",
+      },
+    }, keypair.privateKeyPem);
+
+    expect(receipt.predicate.toolAttestation).toBeDefined();
+    expect(receipt.predicate.toolAttestation!.toolName).toBe("Prowler");
+    expect(receipt.predicate.toolAttestation!.toolVersion).toBe("4.2.1");
+    expect(receipt.predicate.toolAttestation!.scanTarget).toBe("aws:123456789012");
+    expect(receipt.predicate.toolAttestation!.scanProfile).toBe("cis-aws-benchmark-v3.0");
+    expect(receipt.predicate.toolAttestation!.outputFormat).toBe("prowler-jsonl");
+  });
+
   test("should NOT include LLM attestation for deterministic steps", () => {
     const receipt = generateReceipt({
       step: "classify",
@@ -202,10 +226,10 @@ describe("generateReceipt", () => {
 
   test("should link to previous receipt when provided", () => {
     const first = generateReceipt({
-      step: "ingest",
+      step: "evidence",
       inputData: "in",
       outputData: "out",
-      reproducible: false,
+      reproducible: true,
     }, keypair.privateKeyPem);
 
     const second = generateReceipt({
@@ -222,10 +246,10 @@ describe("generateReceipt", () => {
 
   test("should include SCITT entry ID in previous receipt link", () => {
     const first = generateReceipt({
-      step: "ingest",
+      step: "evidence",
       inputData: "in",
       outputData: "out",
-      reproducible: false,
+      reproducible: true,
     }, keypair.privateKeyPem);
     first.scittEntryId = "entry-abc123";
 
@@ -242,7 +266,7 @@ describe("generateReceipt", () => {
 
   test("should include key attestation when provided", () => {
     const receipt = generateReceipt({
-      step: "marque",
+      step: "sign",
       inputData: "in",
       outputData: "out",
       reproducible: true,
@@ -262,10 +286,10 @@ describe("generateReceipt", () => {
 
   test("should produce valid COSE_Sign1 signature", () => {
     const receipt = generateReceipt({
-      step: "ingest",
+      step: "evidence",
       inputData: "test",
       outputData: "result",
-      reproducible: false,
+      reproducible: true,
     }, keypair.privateKeyPem);
 
     const result = verifyReceipt(receipt, keypair.publicKeyPem);
@@ -305,10 +329,10 @@ describe("verifyReceipt", () => {
 
   test("should fail verification if receipt body is tampered", () => {
     const receipt = generateReceipt({
-      step: "ingest",
+      step: "evidence",
       inputData: "original",
       outputData: "result",
-      reproducible: false,
+      reproducible: true,
     }, keypair.privateKeyPem);
 
     // Tamper with the receipt body
@@ -320,10 +344,10 @@ describe("verifyReceipt", () => {
 
   test("should fail verification if signature is missing", () => {
     const receipt = generateReceipt({
-      step: "ingest",
+      step: "evidence",
       inputData: "in",
       outputData: "out",
-      reproducible: false,
+      reproducible: true,
     }, keypair.privateKeyPem);
 
     delete receipt.signature;
@@ -334,10 +358,10 @@ describe("verifyReceipt", () => {
 
   test("should fail verification if signature is corrupted", () => {
     const receipt = generateReceipt({
-      step: "ingest",
+      step: "evidence",
       inputData: "in",
       outputData: "out",
-      reproducible: false,
+      reproducible: true,
     }, keypair.privateKeyPem);
 
     // Corrupt the signature
@@ -372,13 +396,13 @@ describe("ReceiptChain", () => {
     const chain = new ReceiptChain(keypair.privateKeyPem);
 
     const receipt = await chain.captureStep({
-      step: "ingest",
-      inputData: { file: "test.pdf" },
+      step: "evidence",
+      inputData: { file: "prowler-findings.json" },
       outputData: { controls: [{ id: "CC1.1" }] },
-      reproducible: false,
+      reproducible: true,
     });
 
-    expect(receipt.predicate.step).toBe("ingest");
+    expect(receipt.predicate.step).toBe("evidence");
     expect(chain.getReceipts()).toHaveLength(1);
   });
 
@@ -386,10 +410,10 @@ describe("ReceiptChain", () => {
     const chain = new ReceiptChain(keypair.privateKeyPem);
 
     const first = await chain.captureStep({
-      step: "ingest",
+      step: "evidence",
       inputData: "input1",
       outputData: "output1",
-      reproducible: false,
+      reproducible: true,
     });
 
     const second = await chain.captureStep({
@@ -410,10 +434,10 @@ describe("ReceiptChain", () => {
   test("should build a multi-step chain", async () => {
     const chain = new ReceiptChain(keypair.privateKeyPem);
 
-    await chain.captureStep({ step: "ingest", inputData: "a", outputData: "b", reproducible: false });
+    await chain.captureStep({ step: "evidence", inputData: "a", outputData: "b", reproducible: true });
     await chain.captureStep({ step: "classify", inputData: "b", outputData: "c", reproducible: true });
     await chain.captureStep({ step: "chart", inputData: "c", outputData: "d", reproducible: true });
-    await chain.captureStep({ step: "marque", inputData: "d", outputData: "e", reproducible: true });
+    await chain.captureStep({ step: "sign", inputData: "d", outputData: "e", reproducible: true });
 
     expect(chain.getReceipts()).toHaveLength(4);
   });
@@ -421,7 +445,7 @@ describe("ReceiptChain", () => {
   test("should compute chain digest as Merkle root", async () => {
     const chain = new ReceiptChain(keypair.privateKeyPem);
 
-    await chain.captureStep({ step: "ingest", inputData: "a", outputData: "b", reproducible: false });
+    await chain.captureStep({ step: "evidence", inputData: "a", outputData: "b", reproducible: true });
     await chain.captureStep({ step: "classify", inputData: "b", outputData: "c", reproducible: true });
 
     const digest = chain.getChainDigest();
@@ -437,7 +461,7 @@ describe("ReceiptChain", () => {
     // Two chains with identical steps should get different digests
     // because timestamps differ, but the structure is correct
     const chain1 = new ReceiptChain(keypair.privateKeyPem);
-    await chain1.captureStep({ step: "ingest", inputData: "a", outputData: "b", reproducible: true });
+    await chain1.captureStep({ step: "evidence", inputData: "a", outputData: "b", reproducible: true });
     const digest1 = chain1.getChainDigest();
     expect(digest1).toMatch(/^[a-f0-9]{64}$/);
   });
@@ -447,10 +471,10 @@ describe("ReceiptChain", () => {
     const chain = new ReceiptChain(keypair.privateKeyPem, { scittRegistry: registry });
 
     const receipt = await chain.captureStep({
-      step: "ingest",
+      step: "evidence",
       inputData: "in",
       outputData: "out",
-      reproducible: false,
+      reproducible: true,
     });
 
     expect(receipt.scittEntryId).toBeTruthy();
@@ -460,7 +484,7 @@ describe("ReceiptChain", () => {
   test("should verify chain internally", async () => {
     const chain = new ReceiptChain(keypair.privateKeyPem);
 
-    await chain.captureStep({ step: "ingest", inputData: "a", outputData: "b", reproducible: false });
+    await chain.captureStep({ step: "evidence", inputData: "a", outputData: "b", reproducible: true });
     await chain.captureStep({ step: "classify", inputData: "b", outputData: "c", reproducible: true });
 
     const valid = await chain.verifyChain(keypair.publicKeyPem);
@@ -469,12 +493,33 @@ describe("ReceiptChain", () => {
 
   test("should return a copy of receipts (not internal array)", async () => {
     const chain = new ReceiptChain(keypair.privateKeyPem);
-    await chain.captureStep({ step: "ingest", inputData: "a", outputData: "b", reproducible: false });
+    await chain.captureStep({ step: "evidence", inputData: "a", outputData: "b", reproducible: true });
 
     const receipts = chain.getReceipts();
     receipts.push({} as ProcessReceipt); // Mutate returned array
 
     expect(chain.getReceipts()).toHaveLength(1); // Internal unchanged
+  });
+
+  test("should pass toolAttestation through to receipt", async () => {
+    const chain = new ReceiptChain(keypair.privateKeyPem);
+
+    const receipt = await chain.captureStep({
+      step: "evidence",
+      inputData: { source: "prowler" },
+      outputData: { controls: 24 },
+      reproducible: true,
+      toolAttestation: {
+        toolName: "Prowler",
+        toolVersion: "4.2.1",
+        scanTimestamp: "2026-02-12T10:00:00Z",
+        scanTarget: "aws:123456789012",
+        outputFormat: "prowler-jsonl",
+      },
+    });
+
+    expect(receipt.predicate.toolAttestation).toBeDefined();
+    expect(receipt.predicate.toolAttestation!.toolName).toBe("Prowler");
   });
 });
 
@@ -486,7 +531,7 @@ describe("verifyProcessChain", () => {
   test("should verify a valid chain", async () => {
     const chain = new ReceiptChain(keypair.privateKeyPem);
 
-    await chain.captureStep({ step: "ingest", inputData: "a", outputData: "b", reproducible: false });
+    await chain.captureStep({ step: "evidence", inputData: "a", outputData: "b", reproducible: true });
     await chain.captureStep({ step: "classify", inputData: "b", outputData: "c", reproducible: true });
     await chain.captureStep({ step: "chart", inputData: "c", outputData: "d", reproducible: true });
 
@@ -495,7 +540,7 @@ describe("verifyProcessChain", () => {
     expect(result.chainValid).toBe(true);
     expect(result.receiptsTotal).toBe(3);
     expect(result.receiptsVerified).toBe(3);
-    expect(result.reproducibleVerified).toBe(2);
+    expect(result.reproducibleVerified).toBe(3);
     expect(result.attestedVerified).toBe(0);
     expect(result.chainDigest).toMatch(/^[a-f0-9]{64}$/);
   });
@@ -504,7 +549,7 @@ describe("verifyProcessChain", () => {
     const chain = new ReceiptChain(keypair.privateKeyPem);
 
     await chain.captureStep({
-      step: "ingest",
+      step: "evidence",
       inputData: "a",
       outputData: "b",
       reproducible: false,
@@ -521,7 +566,7 @@ describe("verifyProcessChain", () => {
   test("should detect tampered receipt in chain", async () => {
     const chain = new ReceiptChain(keypair.privateKeyPem);
 
-    await chain.captureStep({ step: "ingest", inputData: "a", outputData: "b", reproducible: false });
+    await chain.captureStep({ step: "evidence", inputData: "a", outputData: "b", reproducible: true });
     await chain.captureStep({ step: "classify", inputData: "b", outputData: "c", reproducible: true });
 
     const receipts = chain.getReceipts();
@@ -537,7 +582,7 @@ describe("verifyProcessChain", () => {
   test("should detect broken hash link", async () => {
     const chain = new ReceiptChain(keypair.privateKeyPem);
 
-    await chain.captureStep({ step: "ingest", inputData: "a", outputData: "b", reproducible: false });
+    await chain.captureStep({ step: "evidence", inputData: "a", outputData: "b", reproducible: true });
     await chain.captureStep({ step: "classify", inputData: "b", outputData: "c", reproducible: true });
 
     const receipts = chain.getReceipts();
@@ -555,7 +600,7 @@ describe("verifyProcessChain", () => {
   test("should fail on wrong public key", async () => {
     const chain = new ReceiptChain(keypair.privateKeyPem);
 
-    await chain.captureStep({ step: "ingest", inputData: "a", outputData: "b", reproducible: false });
+    await chain.captureStep({ step: "evidence", inputData: "a", outputData: "b", reproducible: true });
 
     const result = verifyProcessChain(chain.getReceipts(), otherKeypair.publicKeyPem);
 
@@ -574,7 +619,7 @@ describe("verifyProcessChain", () => {
   test("should verify single-receipt chain", async () => {
     const chain = new ReceiptChain(keypair.privateKeyPem);
 
-    await chain.captureStep({ step: "marque", inputData: "a", outputData: "b", reproducible: true });
+    await chain.captureStep({ step: "sign", inputData: "a", outputData: "b", reproducible: true });
 
     const result = verifyProcessChain(chain.getReceipts(), keypair.publicKeyPem);
 
@@ -587,7 +632,7 @@ describe("verifyProcessChain", () => {
     const registry = new MockSCITTRegistry();
     const chain = new ReceiptChain(keypair.privateKeyPem, { scittRegistry: registry });
 
-    await chain.captureStep({ step: "ingest", inputData: "a", outputData: "b", reproducible: false });
+    await chain.captureStep({ step: "evidence", inputData: "a", outputData: "b", reproducible: true });
     await chain.captureStep({ step: "classify", inputData: "b", outputData: "c", reproducible: true });
 
     const result = verifyProcessChain(chain.getReceipts(), keypair.publicKeyPem);
@@ -599,7 +644,7 @@ describe("verifyProcessChain", () => {
   test("should match chain digest with ReceiptChain.getChainDigest()", async () => {
     const chain = new ReceiptChain(keypair.privateKeyPem);
 
-    await chain.captureStep({ step: "ingest", inputData: "a", outputData: "b", reproducible: false });
+    await chain.captureStep({ step: "evidence", inputData: "a", outputData: "b", reproducible: true });
     await chain.captureStep({ step: "classify", inputData: "b", outputData: "c", reproducible: true });
 
     const result = verifyProcessChain(chain.getReceipts(), keypair.publicKeyPem);
@@ -611,11 +656,17 @@ describe("verifyProcessChain", () => {
     const chain = new ReceiptChain(keypair.privateKeyPem);
 
     await chain.captureStep({
-      step: "ingest",
+      step: "evidence",
       inputData: "a",
       outputData: "b",
-      reproducible: false,
-      llmAttestation: { model: "claude", promptDigest: "hash", temperature: 0 },
+      reproducible: true,
+      toolAttestation: {
+        toolName: "InSpec",
+        toolVersion: "5.0",
+        scanTimestamp: "2026-02-12T00:00:00Z",
+        scanTarget: "aws-production",
+        outputFormat: "inspec-json",
+      },
     });
     await chain.captureStep({
       step: "classify",
@@ -626,8 +677,8 @@ describe("verifyProcessChain", () => {
 
     const result = verifyProcessChain(chain.getReceipts(), keypair.publicKeyPem);
 
-    expect(result.steps[0]!.step).toBe("ingest");
-    expect(result.steps[0]!.reproducible).toBe(false);
+    expect(result.steps[0]!.step).toBe("evidence");
+    expect(result.steps[0]!.reproducible).toBe(true);
     expect(result.steps[1]!.step).toBe("classify");
     expect(result.steps[1]!.reproducible).toBe(true);
   });
@@ -638,19 +689,22 @@ describe("verifyProcessChain", () => {
 // =============================================================================
 
 describe("full pipeline simulation", () => {
-  test("should simulate INGEST → CLASSIFY → CHART → MARQUE pipeline", async () => {
+  test("should simulate EVIDENCE → CLASSIFY → CHART → SIGN pipeline", async () => {
     const chain = new ReceiptChain(keypair.privateKeyPem);
 
-    // Step 1: INGEST (non-deterministic — uses Claude)
+    // Step 1: EVIDENCE (tool scan — reproducible)
     await chain.captureStep({
-      step: "ingest",
-      inputData: { fileHash: "abc123", filename: "soc2-report.pdf" },
+      step: "evidence",
+      inputData: { source: "prowler", scanTarget: "aws:123456789012" },
       outputData: { controls: [{ id: "CC1.1", status: "effective" }, { id: "CC1.2", status: "effective" }] },
-      reproducible: false,
-      llmAttestation: {
-        model: "claude-sonnet-4-5-20250929",
-        promptDigest: hashData("Extract controls from SOC 2 report"),
-        temperature: 0,
+      reproducible: true,
+      toolAttestation: {
+        toolName: "Prowler",
+        toolVersion: "4.2.1",
+        scanTimestamp: "2026-02-12T10:00:00Z",
+        scanTarget: "aws:123456789012",
+        scanProfile: "cis-aws-benchmark-v3.0",
+        outputFormat: "prowler-jsonl",
       },
     });
 
@@ -672,10 +726,10 @@ describe("full pipeline simulation", () => {
       codeVersion: "chart-engine@1.0",
     });
 
-    // Step 4: MARQUE (deterministic signing)
+    // Step 4: SIGN (deterministic signing)
     const chainDigest = chain.getChainDigest();
     await chain.captureStep({
-      step: "marque",
+      step: "sign",
       inputData: { receiptChainDigest: chainDigest },
       outputData: { cpoeHash: hashData("sample.jwt") },
       reproducible: true,
@@ -688,22 +742,22 @@ describe("full pipeline simulation", () => {
     expect(result.chainValid).toBe(true);
     expect(result.receiptsTotal).toBe(4);
     expect(result.receiptsVerified).toBe(4);
-    expect(result.reproducibleVerified).toBe(3);
-    expect(result.attestedVerified).toBe(1);
+    expect(result.reproducibleVerified).toBe(4);  // All 4 steps reproducible (tool-first)
+    expect(result.attestedVerified).toBe(0);
     expect(result.chainDigest).toMatch(/^[a-f0-9]{64}$/);
 
     // Verify chain digest matches
-    // Note: chain digest changes after adding MARQUE receipt
+    // Note: chain digest changes after adding SIGN receipt
     const finalDigest = chain.getChainDigest();
     expect(result.chainDigest).toBe(finalDigest);
 
     // Verify each step
-    expect(result.steps[0]!.step).toBe("ingest");
-    expect(result.steps[0]!.reproducible).toBe(false);
+    expect(result.steps[0]!.step).toBe("evidence");
+    expect(result.steps[0]!.reproducible).toBe(true);
     expect(result.steps[1]!.step).toBe("classify");
     expect(result.steps[1]!.reproducible).toBe(true);
     expect(result.steps[2]!.step).toBe("chart");
-    expect(result.steps[3]!.step).toBe("marque");
+    expect(result.steps[3]!.step).toBe("sign");
   });
 
   test("should simulate pipeline with SCITT registration", async () => {
@@ -711,14 +765,14 @@ describe("full pipeline simulation", () => {
     const chain = new ReceiptChain(keypair.privateKeyPem, { scittRegistry: registry });
 
     await chain.captureStep({
-      step: "ingest",
-      inputData: "pdf",
+      step: "evidence",
+      inputData: "tool-output",
       outputData: "controls",
-      reproducible: false,
+      reproducible: true,
     });
 
     await chain.captureStep({
-      step: "marque",
+      step: "sign",
       inputData: "controls",
       outputData: "cpoe",
       reproducible: true,
@@ -737,5 +791,48 @@ describe("full pipeline simulation", () => {
     const result = verifyProcessChain(receipts, keypair.publicKeyPem);
     expect(result.chainValid).toBe(true);
     expect(result.steps.every(s => s.scittRegistered)).toBe(true);
+  });
+
+  test("should verify chain with evidence + toolAttestation end-to-end", async () => {
+    const chain = new ReceiptChain(keypair.privateKeyPem);
+
+    await chain.captureStep({
+      step: "evidence",
+      inputData: { source: "trivy" },
+      outputData: { vulnerabilities: 0, controls: 12 },
+      reproducible: true,
+      toolAttestation: {
+        toolName: "Trivy",
+        toolVersion: "0.50.0",
+        scanTimestamp: "2026-02-12T08:00:00Z",
+        scanTarget: "registry.example.com/app:latest",
+        outputFormat: "trivy-json",
+      },
+    });
+
+    await chain.captureStep({
+      step: "classify",
+      inputData: { controlCount: 12 },
+      outputData: { levels: { "1": 12 } },
+      reproducible: true,
+    });
+
+    await chain.captureStep({
+      step: "sign",
+      inputData: { digest: chain.getChainDigest() },
+      outputData: { jwt: "eyJ..." },
+      reproducible: true,
+    });
+
+    const result = verifyProcessChain(chain.getReceipts(), keypair.publicKeyPem);
+
+    expect(result.chainValid).toBe(true);
+    expect(result.receiptsTotal).toBe(3);
+    expect(result.reproducibleVerified).toBe(3);
+
+    // Verify tool attestation is present on first receipt
+    const receipts = chain.getReceipts();
+    expect(receipts[0]!.predicate.toolAttestation?.toolName).toBe("Trivy");
+    expect(receipts[1]!.predicate.toolAttestation).toBeUndefined();
   });
 });
