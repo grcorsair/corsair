@@ -27,10 +27,12 @@ export async function GET(request: NextRequest) {
     });
 
     if (!res.ok) {
-      return NextResponse.json(
-        { error: `Upstream error: ${res.status}` },
-        { status: res.status },
-      );
+      // Return empty array when upstream is unavailable (not deployed yet)
+      return NextResponse.json([], {
+        headers: {
+          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+        },
+      });
     }
 
     const data = await res.json();
@@ -40,10 +42,12 @@ export async function GET(request: NextRequest) {
         "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
       },
     });
-  } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to fetch SCITT entries" },
-      { status: 502 },
-    );
+  } catch {
+    // Return empty array when upstream is unreachable
+    return NextResponse.json([], {
+      headers: {
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+      },
+    });
   }
 }

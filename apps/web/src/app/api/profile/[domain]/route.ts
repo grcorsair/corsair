@@ -22,9 +22,10 @@ export async function GET(
     }
 
     if (!res.ok) {
+      // Return 404 when upstream is unavailable (not deployed yet)
       return NextResponse.json(
-        { error: `Upstream error: ${res.status}` },
-        { status: res.status },
+        { error: "No CPOEs found for this issuer" },
+        { status: 404 },
       );
     }
 
@@ -35,10 +36,10 @@ export async function GET(
         "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
       },
     });
-  } catch (err) {
+  } catch {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to fetch profile" },
-      { status: 502 },
+      { error: "No CPOEs found for this issuer" },
+      { status: 404 },
     );
   }
 }

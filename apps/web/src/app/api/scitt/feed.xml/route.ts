@@ -10,7 +10,24 @@ export async function GET() {
     });
 
     if (!res.ok) {
-      return new NextResponse("Feed unavailable", { status: 502 });
+      // Return empty feed when upstream is unavailable (not deployed yet)
+      const emptyRss = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Corsair SCITT Transparency Log</title>
+    <link>https://grcorsair.com/log</link>
+    <description>Public feed of CPOEs registered in the SCITT transparency log. Append-only, tamper-evident, publicly auditable.</description>
+    <language>en-us</language>
+    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+    <atom:link href="https://grcorsair.com/api/scitt/feed.xml" rel="self" type="application/rss+xml"/>
+  </channel>
+</rss>`;
+      return new NextResponse(emptyRss, {
+        headers: {
+          "Content-Type": "application/rss+xml; charset=utf-8",
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+        },
+      });
     }
 
     const entries = await res.json() as Array<{
@@ -58,7 +75,24 @@ ${items}
       },
     });
   } catch {
-    return new NextResponse("Feed unavailable", { status: 502 });
+    // Return empty feed when upstream is unreachable
+    const emptyRss = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Corsair SCITT Transparency Log</title>
+    <link>https://grcorsair.com/log</link>
+    <description>Public feed of CPOEs registered in the SCITT transparency log. Append-only, tamper-evident, publicly auditable.</description>
+    <language>en-us</language>
+    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+    <atom:link href="https://grcorsair.com/api/scitt/feed.xml" rel="self" type="application/rss+xml"/>
+  </channel>
+</rss>`;
+    return new NextResponse(emptyRss, {
+      headers: {
+        "Content-Type": "application/rss+xml; charset=utf-8",
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      },
+    });
   }
 }
 
