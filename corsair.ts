@@ -16,6 +16,9 @@
 
 import { existsSync, readFileSync } from "fs";
 
+// Singleton CertificationEngine instance (declared early to avoid TDZ with top-level await)
+let _certEngineInstance: unknown;
+
 // =============================================================================
 // SUBCOMMAND ROUTING
 // =============================================================================
@@ -47,6 +50,9 @@ switch (subcommand) {
     break;
   case "audit":
     await handleAudit();
+    break;
+  case "cert":
+    await handleCert();
     break;
   case "help":
   case "--help":
@@ -1217,6 +1223,594 @@ EXAMPLES:
 }
 
 // =============================================================================
+// CERT
+// =============================================================================
+
+async function handleCert(): Promise<void> {
+  const args = process.argv.slice(3);
+  const certSubcommand = args[0];
+
+  // Handle help flags and no subcommand
+  if (!certSubcommand || certSubcommand === "--help" || certSubcommand === "-h") {
+    printCertHelp();
+    return;
+  }
+
+  switch (certSubcommand) {
+    case "create":
+      await handleCertCreate(args.slice(1));
+      break;
+    case "check":
+      await handleCertCheck(args.slice(1));
+      break;
+    case "list":
+      await handleCertList(args.slice(1));
+      break;
+    case "renew":
+      await handleCertRenew(args.slice(1));
+      break;
+    case "suspend":
+      await handleCertSuspend(args.slice(1));
+      break;
+    case "revoke":
+      await handleCertRevoke(args.slice(1));
+      break;
+    case "history":
+      await handleCertHistory(args.slice(1));
+      break;
+    case "expiring":
+      await handleCertExpiring(args.slice(1));
+      break;
+    default:
+      console.error(`Unknown cert subcommand: ${certSubcommand}`);
+      console.error('Run "corsair cert --help" for usage');
+      process.exit(1);
+  }
+}
+
+function printCertHelp(): void {
+  console.log(`
+CORSAIR CERT — Manage continuous compliance certifications
+
+USAGE:
+  corsair cert <subcommand> [options]
+
+SUBCOMMANDS:
+  create    Create a new certification
+  check     Check certification status
+  list      List all certifications
+  renew     Renew a certification (re-run audit)
+  suspend   Suspend a certification
+  revoke    Revoke a certification
+  history   Show certification status history
+  expiring  Show certifications expiring soon
+
+EXAMPLES:
+  corsair cert create --scope "AWS Production" --frameworks SOC2,NIST-800-53 --files evidence/*.json
+  corsair cert check <cert-id>
+  corsair cert list --status active
+  corsair cert renew <cert-id> --files evidence/*.json
+  corsair cert suspend <cert-id> --reason "Compliance drift detected"
+  corsair cert revoke <cert-id> --reason "Critical vulnerability found"
+  corsair cert history <cert-id>
+  corsair cert expiring --within 30
+
+OPTIONS:
+  -h, --help    Show this help
+`);
+}
+
+async function getCertEngine() {
+  if (!_certEngineInstance) {
+    const { CertificationEngine } = await import("./src/certification/certification-engine");
+    _certEngineInstance = new CertificationEngine();
+  }
+  return _certEngineInstance as import("./src/certification/certification-engine").CertificationEngine;
+}
+
+// ---------------------------------------------------------------------------
+// CERT CREATE
+// ---------------------------------------------------------------------------
+
+async function handleCertCreate(args: string[]): Promise<void> {
+  const files: string[] = [];
+  let scope: string | undefined;
+  let frameworks: string[] = [];
+  let minScore = 70;
+  let warningThreshold = 80;
+  let auditInterval = 90;
+  let jsonOutput = false;
+  let orgId = "default";
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "--files":
+        // Consume all subsequent args that don't start with "--" as file paths
+        i++;
+        while (i < args.length && !args[i].startsWith("--")) {
+          files.push(args[i]);
+          i++;
+        }
+        i--; // Back up one since the for loop will increment
+        break;
+      case "--scope":
+        scope = args[++i];
+        break;
+      case "--frameworks":
+        frameworks = (args[++i] || "").split(",").filter(Boolean);
+        break;
+      case "--min-score":
+        minScore = parseInt(args[++i], 10) || 70;
+        break;
+      case "--warning-threshold":
+        warningThreshold = parseInt(args[++i], 10) || 80;
+        break;
+      case "--audit-interval":
+        auditInterval = parseInt(args[++i], 10) || 90;
+        break;
+      case "--org":
+        orgId = args[++i];
+        break;
+      case "--json":
+        jsonOutput = true;
+        break;
+    }
+  }
+
+  if (!scope) {
+    console.error("Error: --scope is required");
+    console.error('Run "corsair cert create --help" for usage');
+    process.exit(2);
+  }
+
+  if (files.length === 0) {
+    console.error("Error: --files is required");
+    console.error('Run "corsair cert create --help" for usage');
+    process.exit(2);
+  }
+
+  // Validate files exist
+  for (const file of files) {
+    if (!existsSync(file)) {
+      console.error(`Error: File not found: ${file}`);
+      process.exit(2);
+    }
+  }
+
+  // Run initial audit
+  const { runAudit } = await import("./src/audit/audit-engine");
+  type AuditScope = import("./src/audit/types").AuditScope;
+  type CertificationPolicy = import("./src/certification/types").CertificationPolicy;
+
+  const auditScope: AuditScope = {
+    name: scope,
+    frameworks,
+    evidencePaths: files,
+  };
+
+  const auditResult = await runAudit(auditScope, {
+    includeScore: true,
+    generateFindings: true,
+  });
+
+  // Build certification policy
+  const { randomUUID } = await import("crypto");
+  const policyId = `policy-${randomUUID()}`;
+
+  const policy: CertificationPolicy = {
+    id: policyId,
+    name: `${scope} Policy`,
+    scope: auditScope,
+    minimumScore: minScore,
+    warningThreshold,
+    auditIntervalDays: auditInterval,
+    freshnessMaxDays: 7,
+    gracePeriodDays: 14,
+    autoRenew: false,
+    autoSuspend: false,
+    notifyOnChange: false,
+  };
+
+  // Create certification
+  const engine = await getCertEngine();
+  const cert = engine.createCertification(orgId, policy, auditResult);
+
+  if (jsonOutput) {
+    process.stdout.write(JSON.stringify(cert, null, 2));
+  } else {
+    console.log("Certification created successfully.");
+    console.log(`  ID:       ${cert.id}`);
+    console.log(`  Status:   ${cert.status}`);
+    console.log(`  Score:    ${cert.currentScore}/100 (${cert.currentGrade})`);
+    console.log(`  Scope:    ${scope}`);
+    console.log(`  Expires:  ${cert.expiresAt}`);
+    console.log(`  Next audit: ${cert.nextAuditAt}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// CERT CHECK
+// ---------------------------------------------------------------------------
+
+async function handleCertCheck(args: string[]): Promise<void> {
+  const certId = args.find((a) => !a.startsWith("--"));
+
+  if (!certId) {
+    console.error("Error: certification ID is required");
+    console.error('Usage: corsair cert check <cert-id>');
+    process.exit(2);
+  }
+
+  const engine = await getCertEngine();
+  const result = engine.checkCertification(certId);
+
+  if (!result) {
+    console.error(`Error: Certification not found: ${certId}`);
+    process.exit(1);
+  }
+
+  const statusIndicators: Record<string, string> = {
+    active: "[ACTIVE]",
+    warning: "[WARNING]",
+    degraded: "[DEGRADED]",
+    suspended: "[SUSPENDED]",
+    expired: "[EXPIRED]",
+    revoked: "[REVOKED]",
+  };
+
+  const indicator = statusIndicators[result.status] || `[${result.status.toUpperCase()}]`;
+
+  console.log(`CERTIFICATION CHECK: ${certId}`);
+  console.log(`  Status:              ${indicator} ${result.status}`);
+  console.log(`  Score:               ${result.currentScore}/100`);
+  console.log(`  Needs re-audit:      ${result.needsReaudit ? "Yes" : "No"}`);
+  console.log(`  Grace period expired: ${result.gracePeriodExpired ? "Yes" : "No"}`);
+}
+
+// ---------------------------------------------------------------------------
+// CERT LIST
+// ---------------------------------------------------------------------------
+
+async function handleCertList(args: string[]): Promise<void> {
+  let orgId: string | undefined;
+  let statusFilter: string | undefined;
+  let jsonOutput = false;
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "--org":
+        orgId = args[++i];
+        break;
+      case "--status":
+        statusFilter = args[++i];
+        break;
+      case "--json":
+        jsonOutput = true;
+        break;
+    }
+  }
+
+  const engine = await getCertEngine();
+  let certs = engine.listCertifications(orgId);
+
+  // Apply status filter
+  if (statusFilter) {
+    certs = certs.filter((c) => c.status === statusFilter);
+  }
+
+  if (certs.length === 0) {
+    if (jsonOutput) {
+      process.stdout.write("[]");
+    } else {
+      console.log("No certifications found.");
+    }
+    return;
+  }
+
+  if (jsonOutput) {
+    process.stdout.write(JSON.stringify(certs, null, 2));
+    return;
+  }
+
+  console.log("CERTIFICATIONS");
+  console.log("==============");
+  console.log("");
+  console.log(
+    "  ID".padEnd(44) +
+    "Status".padEnd(12) +
+    "Score".padEnd(8) +
+    "Grade".padEnd(8) +
+    "Expires",
+  );
+  console.log("  " + "-".repeat(80));
+
+  for (const cert of certs) {
+    const expiresDate = cert.expiresAt
+      ? new Date(cert.expiresAt).toISOString().split("T")[0]
+      : "N/A";
+    console.log(
+      `  ${cert.id.padEnd(42)}${cert.status.padEnd(12)}${String(cert.currentScore).padEnd(8)}${cert.currentGrade.padEnd(8)}${expiresDate}`,
+    );
+  }
+  console.log("");
+}
+
+// ---------------------------------------------------------------------------
+// CERT RENEW
+// ---------------------------------------------------------------------------
+
+async function handleCertRenew(args: string[]): Promise<void> {
+  const files: string[] = [];
+  let certId: string | undefined;
+  let jsonOutput = false;
+
+  // First non-flag arg is the cert ID
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--files") {
+      i++;
+      while (i < args.length && !args[i].startsWith("--")) {
+        files.push(args[i]);
+        i++;
+      }
+      i--;
+    } else if (args[i] === "--json") {
+      jsonOutput = true;
+    } else if (!args[i].startsWith("--") && !certId) {
+      certId = args[i];
+    }
+  }
+
+  if (!certId) {
+    console.error("Error: certification ID is required");
+    console.error('Usage: corsair cert renew <cert-id> --files <paths...>');
+    process.exit(2);
+  }
+
+  if (files.length === 0) {
+    console.error("Error: --files is required");
+    console.error('Usage: corsair cert renew <cert-id> --files <paths...>');
+    process.exit(2);
+  }
+
+  // Validate files exist
+  for (const file of files) {
+    if (!existsSync(file)) {
+      console.error(`Error: File not found: ${file}`);
+      process.exit(2);
+    }
+  }
+
+  const engine = await getCertEngine();
+  const existing = engine.getCertification(certId);
+  if (!existing) {
+    console.error(`Error: Certification not found: ${certId}`);
+    process.exit(1);
+  }
+
+  // Run new audit
+  const { runAudit } = await import("./src/audit/audit-engine");
+  const auditResult = await runAudit({
+    name: existing.policyId,
+    frameworks: [],
+    evidencePaths: files,
+  }, {
+    includeScore: true,
+    generateFindings: true,
+  });
+
+  // Detect drift before renewal
+  const drift = engine.detectDrift(certId, auditResult);
+
+  // Renew
+  const renewed = engine.renewCertification(certId, auditResult);
+  if (!renewed) {
+    console.error(`Error: Failed to renew certification: ${certId}`);
+    process.exit(1);
+  }
+
+  if (jsonOutput) {
+    const output: Record<string, unknown> = { certification: renewed };
+    if (drift) {
+      output.drift = drift;
+    }
+    process.stdout.write(JSON.stringify(output, null, 2));
+  } else {
+    console.log("Certification renewed successfully.");
+    console.log(`  ID:       ${renewed.id}`);
+    console.log(`  Status:   ${renewed.status}`);
+    console.log(`  Score:    ${renewed.currentScore}/100 (${renewed.currentGrade})`);
+    console.log(`  Expires:  ${renewed.expiresAt}`);
+    console.log(`  Next audit: ${renewed.nextAuditAt}`);
+
+    if (drift && drift.degradedControls.length > 0) {
+      console.log("");
+      console.log("  DRIFT DETECTED:");
+      console.log(`    Score delta: ${drift.scoreDelta > 0 ? "+" : ""}${drift.scoreDelta}`);
+      console.log(`    Recommendation: ${drift.recommendation}`);
+      for (const ctrl of drift.degradedControls) {
+        console.log(`    - ${ctrl.controlId}: ${ctrl.previousStatus} -> ${ctrl.currentStatus} (${ctrl.severity})`);
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// CERT SUSPEND
+// ---------------------------------------------------------------------------
+
+async function handleCertSuspend(args: string[]): Promise<void> {
+  let certId: string | undefined;
+  let reason: string | undefined;
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--reason") {
+      reason = args[++i];
+    } else if (!args[i].startsWith("--") && !certId) {
+      certId = args[i];
+    }
+  }
+
+  if (!certId) {
+    console.error("Error: certification ID is required");
+    console.error('Usage: corsair cert suspend <cert-id> --reason "reason"');
+    process.exit(2);
+  }
+
+  if (!reason) {
+    console.error("Error: --reason is required");
+    console.error('Usage: corsair cert suspend <cert-id> --reason "reason"');
+    process.exit(2);
+  }
+
+  const engine = await getCertEngine();
+  const existing = engine.getCertification(certId);
+  if (!existing) {
+    console.error(`Error: Certification not found: ${certId}`);
+    process.exit(1);
+  }
+
+  const result = engine.updateStatus(certId, "suspended", reason);
+  if (!result) {
+    console.error(`Error: Cannot suspend certification in "${existing.status}" state`);
+    process.exit(1);
+  }
+
+  console.log("Certification suspended.");
+  console.log(`  ID:     ${result.id}`);
+  console.log(`  Status: ${result.status}`);
+  console.log(`  Reason: ${reason}`);
+}
+
+// ---------------------------------------------------------------------------
+// CERT REVOKE
+// ---------------------------------------------------------------------------
+
+async function handleCertRevoke(args: string[]): Promise<void> {
+  let certId: string | undefined;
+  let reason: string | undefined;
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--reason") {
+      reason = args[++i];
+    } else if (!args[i].startsWith("--") && !certId) {
+      certId = args[i];
+    }
+  }
+
+  if (!certId) {
+    console.error("Error: certification ID is required");
+    console.error('Usage: corsair cert revoke <cert-id> --reason "reason"');
+    process.exit(2);
+  }
+
+  if (!reason) {
+    console.error("Error: --reason is required");
+    console.error('Usage: corsair cert revoke <cert-id> --reason "reason"');
+    process.exit(2);
+  }
+
+  const engine = await getCertEngine();
+  const existing = engine.getCertification(certId);
+  if (!existing) {
+    console.error(`Error: Certification not found: ${certId}`);
+    process.exit(1);
+  }
+
+  const result = engine.updateStatus(certId, "revoked", reason);
+  if (!result) {
+    console.error(`Error: Cannot revoke certification in "${existing.status}" state`);
+    process.exit(1);
+  }
+
+  console.log("Certification revoked.");
+  console.log(`  ID:     ${result.id}`);
+  console.log(`  Status: ${result.status}`);
+  console.log(`  Reason: ${reason}`);
+}
+
+// ---------------------------------------------------------------------------
+// CERT HISTORY
+// ---------------------------------------------------------------------------
+
+async function handleCertHistory(args: string[]): Promise<void> {
+  const certId = args.find((a) => !a.startsWith("--"));
+
+  if (!certId) {
+    console.error("Error: certification ID is required");
+    console.error('Usage: corsair cert history <cert-id>');
+    process.exit(2);
+  }
+
+  const engine = await getCertEngine();
+  const cert = engine.getCertification(certId);
+
+  if (!cert) {
+    console.error(`Error: Certification not found: ${certId}`);
+    process.exit(1);
+  }
+
+  console.log(`CERTIFICATION HISTORY: ${certId}`);
+  console.log("=".repeat(50));
+  console.log("");
+
+  for (const entry of cert.statusHistory) {
+    const date = new Date(entry.changedAt).toISOString().replace("T", " ").split(".")[0];
+    const scoreStr = entry.score !== undefined ? ` (score: ${entry.score})` : "";
+    console.log(`  ${date}  [${entry.status.toUpperCase()}]  ${entry.reason}${scoreStr}`);
+  }
+  console.log("");
+}
+
+// ---------------------------------------------------------------------------
+// CERT EXPIRING
+// ---------------------------------------------------------------------------
+
+async function handleCertExpiring(args: string[]): Promise<void> {
+  let withinDays = 30;
+  let jsonOutput = false;
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "--within":
+        withinDays = parseInt(args[++i], 10) || 30;
+        break;
+      case "--json":
+        jsonOutput = true;
+        break;
+    }
+  }
+
+  const engine = await getCertEngine();
+  const expiring = engine.getExpiringCertifications(withinDays);
+
+  if (expiring.length === 0) {
+    if (jsonOutput) {
+      process.stdout.write("[]");
+    } else {
+      console.log(`No expiring certifications within ${withinDays} days.`);
+    }
+    return;
+  }
+
+  if (jsonOutput) {
+    process.stdout.write(JSON.stringify(expiring, null, 2));
+    return;
+  }
+
+  console.log(`EXPIRING CERTIFICATIONS (within ${withinDays} days)`);
+  console.log("=".repeat(50));
+  console.log("");
+
+  for (const cert of expiring) {
+    const expiresDate = cert.expiresAt
+      ? new Date(cert.expiresAt).toISOString().split("T")[0]
+      : "N/A";
+    console.log(`  ${cert.id}  ${cert.status}  score:${cert.currentScore}  expires:${expiresDate}`);
+  }
+  console.log("");
+}
+
+// =============================================================================
 // HELP
 // =============================================================================
 
@@ -1238,6 +1832,7 @@ COMMANDS:
   diff      Detect compliance regressions            like git diff
   log       List signed CPOEs (SCITT log)            like git log
   audit     Run a full compliance audit              like git bisect
+  cert      Manage continuous compliance certifications
   renew     Re-sign a CPOE with fresh dates          like git commit --amend
   signal    FLAGSHIP real-time notifications         like git webhooks
   keygen    Generate Ed25519 signing keypair
