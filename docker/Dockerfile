@@ -21,7 +21,7 @@ LABEL org.opencontainers.image.title="Corsair"
 LABEL org.opencontainers.image.description="Open protocol for machine-readable, cryptographically verifiable compliance attestations"
 LABEL org.opencontainers.image.url="https://grcorsair.com"
 LABEL org.opencontainers.image.source="https://github.com/Arudjreis/corsair"
-LABEL org.opencontainers.image.version="0.5.0"
+LABEL org.opencontainers.image.version="0.5.1"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.vendor="Corsair"
 

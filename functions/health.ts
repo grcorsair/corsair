@@ -29,7 +29,7 @@ export function createHealthHandler(deps: { db: unknown }): (req: Request) => Pr
     return Response.json(
       {
         status,
-        version: "0.4.0",
+        version: "0.5.1",
         timestamp: new Date().toISOString(),
         checks: {
           database: dbOk ? "connected" : "unreachable",
@@ -51,7 +51,7 @@ export function handleHealth(_req: Request): Response {
   return Response.json(
     {
       status: "ok",
-      version: "0.4.0",
+      version: "0.5.1",
       timestamp: new Date().toISOString(),
       checks: {
         database: "not-checked",

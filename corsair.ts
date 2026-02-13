@@ -2282,7 +2282,7 @@ async function handleTprmDashboard(args: string[]): Promise<void> {
 // =============================================================================
 
 function printHelp(): void {
-  let version = "0.5.0";
+  let version = "0.5.1";
   try {
     const pkg = JSON.parse(readFileSync("package.json", "utf-8"));
     version = pkg.version || version;
