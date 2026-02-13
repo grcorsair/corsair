@@ -166,7 +166,7 @@ export function HeroTerminal() {
         >
           <span className="text-corsair-gold">$</span>{" "}
           <span className="text-corsair-text">corsair verify</span>{" "}
-          <span className="text-corsair-text-dim">cpoe-v2.jwt</span>
+          <span className="text-corsair-text-dim">--file cpoe-v2.jwt</span>
         </motion.div>
 
         <div className="h-2" />
@@ -194,8 +194,7 @@ export function HeroTerminal() {
           transition={{ duration: 0.3, delay: signalStart - 0.2 }}
         >
           <span className="text-corsair-gold">$</span>{" "}
-          <span className="text-corsair-text">corsair signal</span>{" "}
-          <span className="text-corsair-text-dim">--subscribe acme-aws-prod</span>
+          <span className="text-corsair-text">corsair signal</span>
         </motion.div>
 
         <div className="h-2" />

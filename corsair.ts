@@ -6,9 +6,10 @@
  *   corsair sign --file <evidence.json> [--output <cpoe.jwt>] [--did <did>]
  *   corsair sign --file - < evidence.json          (stdin)
  *   cat evidence.json | corsair sign               (pipe)
- *   corsair diff --current <new.jwt> --previous <old.jwt>
- *   corsair log [--help]
  *   corsair verify --file <cpoe.jwt> [--pubkey <path>]
+ *   corsair diff --current <new.jwt> --previous <old.jwt>
+ *   corsair log [--last <N>] [--dir <DIR>]
+ *   corsair signal [--help]
  *   corsair keygen [--output <dir>]
  *   corsair help
  */
@@ -31,6 +32,9 @@ switch (subcommand) {
     break;
   case "log":
     await handleLog();
+    break;
+  case "signal":
+    await handleSignal();
     break;
   case "verify":
     await handleVerify();
@@ -551,6 +555,116 @@ function extractControls(subject: Record<string, unknown>): Map<string, DriftCon
 async function handleLog(): Promise<void> {
   const args = process.argv.slice(3);
   let showHelp = false;
+  let last = 10;
+  let dir = ".";
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "--help":
+      case "-h":
+        showHelp = true;
+        break;
+      case "--last":
+      case "-n":
+        last = parseInt(args[++i], 10) || 10;
+        break;
+      case "--dir":
+      case "-d":
+        dir = args[++i];
+        break;
+    }
+  }
+
+  if (showHelp) {
+    console.log(`
+CORSAIR LOG — List signed CPOEs (local SCITT transparency log)
+
+USAGE:
+  corsair log [options]
+
+OPTIONS:
+  -n, --last <N>            Show last N entries (default: 10)
+  -d, --dir <DIR>           Directory to scan for .jwt files (default: .)
+  -h, --help                Show this help
+
+EXAMPLES:
+  corsair log                         List recent CPOEs in current directory
+  corsair log --last 5                Show last 5 CPOEs
+  corsair log --dir ./cpoes           Scan specific directory
+
+NOTE:
+  Local mode scans .jwt files on disk. For remote SCITT log queries,
+  use the API: POST /scitt/register (see docs).
+`);
+    return;
+  }
+
+  // Scan for .jwt files in the directory
+  const { readdirSync, statSync } = await import("fs");
+  const { join, resolve } = await import("path");
+
+  const targetDir = resolve(dir);
+  let jwtFiles: Array<{ path: string; mtime: Date; size: number }> = [];
+
+  try {
+    const files = readdirSync(targetDir);
+    for (const file of files) {
+      if (!file.endsWith(".jwt")) continue;
+      const fullPath = join(targetDir, file);
+      const stat = statSync(fullPath);
+      if (stat.isFile()) {
+        jwtFiles.push({ path: fullPath, mtime: stat.mtime, size: stat.size });
+      }
+    }
+  } catch {
+    console.error(`Error: Cannot read directory: ${targetDir}`);
+    process.exit(2);
+  }
+
+  // Sort by modification time (newest first)
+  jwtFiles.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+  jwtFiles = jwtFiles.slice(0, last);
+
+  if (jwtFiles.length === 0) {
+    console.log("No .jwt files found in " + targetDir);
+    console.log('Sign evidence with: corsair sign --file <path> --output cpoe.jwt');
+    return;
+  }
+
+  console.log("CORSAIR LOG");
+  console.log("===========");
+  console.log(`  Directory: ${targetDir}`);
+  console.log(`  Entries:   ${jwtFiles.length}`);
+  console.log("");
+
+  for (let i = 0; i < jwtFiles.length; i++) {
+    const entry = jwtFiles[i];
+    const jwt = readFileSync(entry.path, "utf-8").trim();
+    const payload = decodeJwtPayload(jwt);
+    const fileName = entry.path.split("/").pop() || entry.path;
+
+    const iss = payload?.iss as string || "unknown";
+    const subject = payload?.vc as Record<string, unknown> | undefined;
+    const credSubject = subject?.credentialSubject as Record<string, unknown> | undefined;
+    const summary = credSubject?.summary as Record<string, unknown> | undefined;
+    const provenance = credSubject?.provenance as Record<string, unknown> | undefined;
+    const score = summary?.overallScore ?? "?";
+    const source = provenance?.source ?? "?";
+    const date = entry.mtime.toISOString().split("T")[0];
+
+    const marker = i === 0 ? " ← LATEST" : "";
+    console.log(`  #${i + 1}  ${date}  ${fileName}  ${source}  ${iss}  score:${score}%${marker}`);
+  }
+  console.log("");
+}
+
+// =============================================================================
+// SIGNAL
+// =============================================================================
+
+async function handleSignal(): Promise<void> {
+  const args = process.argv.slice(3);
+  let showHelp = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--help" || args[i] === "-h") {
@@ -560,32 +674,46 @@ async function handleLog(): Promise<void> {
 
   if (showHelp || args.length === 0) {
     console.log(`
-CORSAIR LOG — Query the SCITT transparency log
+CORSAIR SIGNAL — FLAGSHIP real-time compliance change notifications
 
 USAGE:
-  corsair log [options]
+  corsair signal [options]
 
-OPTIONS:
-  -h, --help                Show this help
+ABOUT:
+  FLAGSHIP delivers compliance change notifications via the OpenID Shared
+  Signals Framework (SSF) and Continuous Access Evaluation Protocol (CAEP).
+  Events are Ed25519-signed Security Event Tokens (SETs).
 
-STATUS:
-  This command will query the SCITT transparency log for CPOE history.
-  SCITT backend: src/parley/pg-scitt-registry.ts (Postgres-backed, operational)
+EVENT TYPES:
+  FLEET_ALERT       compliance-change        Control drift detected
+  COLORS_CHANGED    assurance-level-change   Trust tier transition
+  PAPERS_CHANGED    credential-change        CPOE issued/renewed/revoked
+  MARQUE_REVOKED    session-revoked          Emergency revocation
 
-  Planned features:
-    corsair log                       List recent CPOE registrations
-    corsair log --issuer <did>        Filter by issuer DID
-    corsair log --entry <id>          Show specific SCITT entry + receipt
-    corsair log --verify <id>         Verify Merkle inclusion proof
+DELIVERY:
+  Push (webhook) and poll modes with retry and circuit breaker.
 
-  Implementation tracked at: github.com/arudjreis/corsair
+API ENDPOINTS:
+  GET  /.well-known/ssf-configuration    SSF discovery
+  POST /ssf/stream                       Create/manage streams
+  POST /scitt/register                   Register CPOE + trigger signals
+
+NOTE:
+  FLAGSHIP operates via the API layer (SSF/CAEP over HTTP).
+  See https://grcorsair.com/docs for stream configuration.
 `);
     return;
   }
 
-  console.error("Error: corsair log is not yet implemented");
-  console.error('Run "corsair log --help" for planned usage');
-  process.exit(2);
+  // For now, signal is informational — show what's available
+  console.error("CORSAIR SIGNAL — FLAGSHIP SSF/CAEP");
+  console.error("");
+  console.error("  FLAGSHIP streams are managed via the API layer.");
+  console.error("  Available endpoints:");
+  console.error("    GET  /.well-known/ssf-configuration");
+  console.error("    POST /ssf/stream (create, read, update, delete)");
+  console.error("");
+  console.error('  Run "corsair signal --help" for details.');
 }
 
 // =============================================================================
@@ -746,9 +874,10 @@ USAGE:
 
 COMMANDS:
   sign      Sign evidence as a CPOE (JWT-VC)        like git commit
-  diff      Detect compliance regressions            like git diff
-  log       Query SCITT transparency log             like git log
   verify    Verify a CPOE signature and integrity
+  diff      Detect compliance regressions            like git diff
+  log       List signed CPOEs (SCITT log)            like git log
+  signal    FLAGSHIP real-time notifications         like git webhooks
   keygen    Generate Ed25519 signing keypair
   help      Show this help message
 

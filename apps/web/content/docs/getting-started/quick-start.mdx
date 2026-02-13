@@ -36,13 +36,13 @@ Corsair takes structured output from security tools and signs it into a cryptogr
 
 ```bash
 # Sign Prowler scan results
-corsair sign --format prowler --input prowler-results.json
+corsair sign --file prowler-results.json --format prowler
 
 # Sign InSpec compliance results
-corsair sign --format inspec --input inspec-results.json
+corsair sign --file inspec-results.json --format inspec
 
 # Sign Trivy vulnerability scan
-corsair sign --format trivy --input trivy-report.json
+corsair sign --file trivy-report.json --format trivy
 ```
 
 ## Compare CPOEs Over Time
@@ -68,6 +68,8 @@ corsair keygen --output ./keys
 | `corsair sign` | Sign security tool output into a verifiable CPOE |
 | `corsair verify` | Verify a CPOE's Ed25519 signature and check validity |
 | `corsair diff` | Compare two CPOEs and show control-level changes |
+| `corsair log` | List signed CPOEs (local SCITT log) |
+| `corsair signal` | FLAGSHIP real-time compliance notifications |
 | `corsair keygen` | Generate Ed25519 signing keypair |
 | `corsair help` | Show available commands |
 

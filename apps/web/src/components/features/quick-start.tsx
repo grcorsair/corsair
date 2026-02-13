@@ -12,8 +12,11 @@ curl -fsSL https://bun.sh/install | bash
 git clone https://github.com/Arudjreis/corsair.git
 cd corsair && bun install
 
+# Generate Ed25519 signing keys
+bun run corsair.ts keygen
+
 # Sign tool output into a CPOE (like git commit)
-prowler scan | bun run corsair.ts sign
+bun run corsair.ts sign --file prowler-findings.json --output cpoe.jwt
 
 # Verify any CPOE (always free, no account needed)
 bun run corsair.ts verify --file cpoe.jwt
@@ -21,14 +24,11 @@ bun run corsair.ts verify --file cpoe.jwt
 # Compare two CPOEs (like git diff)
 bun run corsair.ts diff --current new.jwt --previous old.jwt
 
-# Query the SCITT transparency log (like git log)
+# List signed CPOEs (like git log)
 bun run corsair.ts log --last 10
 
-# Subscribe to real-time compliance signals (like git webhooks)
-bun run corsair.ts signal --subscribe stream-id
-
-# Generate Ed25519 signing keys
-bun run corsair.ts keygen`;
+# View FLAGSHIP signal info (like git webhooks)
+bun run corsair.ts signal --help`;
 
 export function QuickStart() {
   const [copied, setCopied] = useState(false);

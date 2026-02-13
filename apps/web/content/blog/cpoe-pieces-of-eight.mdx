@@ -38,7 +38,7 @@ This isn't just branding. The historical parallels are structurally meaningful. 
 
 Your security tools already generate the evidence. Prowler scans your AWS accounts. InSpec tests your infrastructure configurations. Trivy finds your vulnerabilities. The problem is that none of this output is cryptographically verifiable or machine-exchangeable.
 
-Corsair bridges this gap. Run `corsair sign --format prowler --input scan-results.json` and the tool output becomes a signed CPOE — a W3C Verifiable Credential that anyone can verify with standard JWT libraries and the issuer's public key.
+Corsair bridges this gap. Run `corsair sign --format prowler --file scan-results.json` and the tool output becomes a signed CPOE — a W3C Verifiable Credential that anyone can verify with standard JWT libraries and the issuer's public key.
 
 ## What Comes Next
 

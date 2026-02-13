@@ -42,13 +42,13 @@ jobs:
           cd /tmp/corsair
           corsair sign \
             --format prowler \
-            --input ${{ github.workspace }}/scan-results/prowler-output.json \
+            --file ${{ github.workspace }}/scan-results/prowler-output.json \
             --output /tmp/cpoe.jwt
 
       - name: Verify CPOE
         run: |
           cd /tmp/corsair
-          corsair verify /tmp/cpoe.jwt
+          corsair verify --file /tmp/cpoe.jwt
 
       - uses: actions/upload-artifact@v4
         with:
@@ -67,8 +67,8 @@ corsair:
   script:
     - git clone https://github.com/Arudjreis/corsair.git /tmp/corsair
     - cd /tmp/corsair && bun install
-    - corsair sign --format prowler --input scan-results/prowler-output.json --output cpoe.jwt
-    - corsair verify cpoe.jwt
+    - corsair sign --format prowler --file scan-results/prowler-output.json --output cpoe.jwt
+    - corsair verify --file cpoe.jwt
   artifacts:
     paths:
       - cpoe.jwt
@@ -87,14 +87,14 @@ pipeline {
                 sh '''
                     corsair sign \
                         --format inspec \
-                        --input compliance/inspec-results.json \
+                        --file compliance/inspec-results.json \
                         --output evidence/cpoe-${BUILD_ID}.jwt
                 '''
             }
         }
         stage('Verify CPOE') {
             steps {
-                sh 'corsair verify evidence/cpoe-${BUILD_ID}.jwt'
+                sh 'corsair verify --file evidence/cpoe-${BUILD_ID}.jwt'
             }
         }
     }

@@ -25,16 +25,20 @@ Optional enrichment layers (available via `--enrich`):
 
 Accepts structured output from security scanning tools and compliance platforms, normalizing it into a canonical control format for signing.
 
-**Supported tool formats:**
-- `prowler` — Prowler AWS/Azure/GCP security scan results (JSON)
+**Supported tool formats (8 total, auto-detected):**
+- `prowler` — Prowler AWS/Azure/GCP security scan results (OCSF JSON)
+- `securityhub` — AWS SecurityHub findings (ASFF JSON)
 - `inspec` — Chef InSpec compliance test results (JSON)
 - `trivy` — Trivy vulnerability and misconfiguration reports (JSON)
-- `json` — Pre-structured control data from any source
+- `gitlab` — GitLab SAST vulnerability reports (JSON)
+- `ciso-assistant-api` — CISO Assistant API response (DRF paginated JSON)
+- `ciso-assistant-export` — CISO Assistant export (Django JSON)
+- `generic` — Pre-structured control data from any source `{ metadata, controls[] }`
 
 **Output:** Structured controls with evidence references, provenance metadata, and pass/fail status.
 
 ```bash
-corsair sign --format prowler --input prowler-results.json
+corsair sign --file prowler-results.json --format prowler
 ```
 
 ### SIGN — Provenance Recording + Ed25519 Signing

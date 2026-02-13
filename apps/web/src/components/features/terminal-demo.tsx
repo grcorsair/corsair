@@ -10,7 +10,7 @@ interface TerminalLine {
 
 const lines: TerminalLine[] = [
   {
-    text: "$ corsair sign --format prowler --input scan-results.json",
+    text: "$ corsair sign --format prowler --file scan-results.json",
     className: "text-corsair-gold",
     delayMs: 0,
   },
@@ -52,7 +52,7 @@ const lines: TerminalLine[] = [
   },
   { text: "", className: "", delayMs: 8200 },
   {
-    text: "Verification: corsair verify output/acme-prowler.jwt",
+    text: "Verification: corsair verify --file output/acme-prowler.jwt",
     className: "text-corsair-text-dim",
     delayMs: 8500,
   },

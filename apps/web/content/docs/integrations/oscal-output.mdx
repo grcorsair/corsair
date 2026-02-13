@@ -1,25 +1,27 @@
 ---
-title: "OSCAL Output"
+title: "OSCAL Output (Coming Soon)"
 description: "Generate machine-readable NIST OSCAL Assessment Results from Corsair assessments."
 section: "integrations"
 order: 31
 ---
 
+> **Coming Soon** — OSCAL output formats are planned but not yet implemented. The examples below show the intended design.
+
 ## Overview
 
-Corsair generates [OSCAL](https://pages.nist.gov/OSCAL/) (Open Security Controls Assessment Language) Assessment Results — the NIST standard for machine-readable security assessment data.
+Corsair will generate [OSCAL](https://pages.nist.gov/OSCAL/) (Open Security Controls Assessment Language) Assessment Results — the NIST standard for machine-readable security assessment data.
 
 ## Output Formats
 
 ```bash
 # OSCAL JSON (machine-readable, NIST SP 800-53A compliant)
-corsair sign --format prowler --input scan-results.json --output-format oscal
+corsair sign --format prowler --file scan-results.json --output-format oscal
 
 # HTML report (self-contained, no external dependencies)
-corsair sign --format inspec --input inspec-results.json --output-format html
+corsair sign --format inspec --file inspec-results.json --output-format html
 
 # Markdown report
-corsair sign --format trivy --input trivy-report.json --output-format md
+corsair sign --format trivy --file trivy-report.json --output-format md
 ```
 
 ## OSCAL Mapping

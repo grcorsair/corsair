@@ -74,7 +74,7 @@ export default function DocsPage() {
                     # Sign tool output into a CPOE
                   </span>
                   <div className="text-corsair-gold">
-                    corsair sign --format prowler --input scan-results.json
+                    corsair sign --format prowler --file scan-results.json
                   </div>
                 </div>
                 <div>
@@ -82,7 +82,7 @@ export default function DocsPage() {
                     # Verify any CPOE (always free)
                   </span>
                   <div className="text-corsair-gold">
-                    corsair verify cpoe.jwt
+                    corsair verify --file cpoe.jwt
                   </div>
                 </div>
                 <div>
@@ -90,23 +90,23 @@ export default function DocsPage() {
                     # Diff two CPOEs — see what changed
                   </span>
                   <div className="text-corsair-turquoise">
-                    corsair diff old-cpoe.jwt new-cpoe.jwt
+                    corsair diff --current new-cpoe.jwt --previous old-cpoe.jwt
                   </div>
                 </div>
                 <div>
                   <span className="text-corsair-text-dim">
-                    # Browse the SCITT transparency log
+                    # List recent signed CPOEs
                   </span>
                   <div className="text-corsair-cyan">
-                    corsair log --issuer did:web:acme.com
+                    corsair log --last 5
                   </div>
                 </div>
                 <div>
                   <span className="text-corsair-text-dim">
-                    # Subscribe to FLAGSHIP real-time compliance signals
+                    # FLAGSHIP real-time compliance signals
                   </span>
                   <div className="text-corsair-crimson">
-                    corsair signal --subscribe did:web:acme.com
+                    corsair signal
                   </div>
                 </div>
                 <div>

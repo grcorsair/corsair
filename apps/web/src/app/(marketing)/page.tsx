@@ -110,7 +110,7 @@ export default function Home() {
               13+ Compliance Frameworks
             </h2>
             <p className="mb-12 text-center text-corsair-text-dim">
-              Controls auto-map to every framework via CHART. You sign. The mappings happen.
+              Optional enrichment via CHART maps controls across frameworks using CTID and SCF crosswalk data.
             </p>
           </FadeIn>
           <FrameworkGrid />
