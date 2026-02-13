@@ -9,7 +9,7 @@
 <br/>
 
 ![Tests](https://img.shields.io/github/actions/workflow/status/arudjreis/corsair/test.yml?style=for-the-badge&label=TESTS&labelColor=0A0E17&color=2ECC71)
-![Version](https://img.shields.io/badge/v0.5.0-D4A853?style=for-the-badge&label=VERSION&labelColor=0A0E17)
+![Version](https://img.shields.io/badge/v0.5.1-D4A853?style=for-the-badge&label=VERSION&labelColor=0A0E17)
 ![License](https://img.shields.io/badge/Apache_2.0-D4A853?style=for-the-badge&label=LICENSE&labelColor=0A0E17)
 ![Runtime](https://img.shields.io/badge/Bun-E8E2D6?style=for-the-badge&label=RUNTIME&labelColor=0A0E17&logo=bun&logoColor=E8E2D6)
 ![Language](https://img.shields.io/badge/TypeScript-D4A853?style=for-the-badge&label=LANG&labelColor=0A0E17&logo=typescript&logoColor=D4A853)
@@ -83,6 +83,8 @@ bun run corsair.ts keygen --output ./keys
 | `corsair diff --current <new.jwt> --previous <old.jwt>` | Detect compliance regressions | `git diff` |
 | `corsair log [--help]` | Query SCITT transparency log | `git log` |
 | `corsair verify --file <cpoe.jwt> [--pubkey <path>]` | Verify a CPOE signature and display results | |
+| `corsair audit --files <paths> --scope <name> [--frameworks] [--score] [--governance] [--json]` | Run compliance audit | `git bisect` |
+| `corsair cert create\|check\|list\|renew\|suspend\|revoke\|history\|expiring` | Manage certifications | |
 | `corsair keygen [--output <dir>]` | Generate Ed25519 signing keypair | |
 | `corsair help` | Show available commands | |
 
@@ -274,6 +276,33 @@ When `--enrich` is passed, Corsair also classifies evidence at L0-L4 assurance l
 | Verify proof | `corsair verify` | Verify Ed25519 signature via DID:web resolution |
 | Detect regressions | `corsair diff` | Compare two CPOEs, detect new failures |
 
+### Layer 2: Intelligence (optional `--enrich` / `--score`)
+
+```
+                    ┌─────────────────────┐
+                    │     NORMALIZE        │   Tool output → Canonical form
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │       SCORE          │   7-dimension evidence quality (FICO)
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │       QUERY          │   Search, filter, aggregate evidence
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │   QUARTERMASTER      │   Governance checks + scoring
+                    └─────────────────────┘
+```
+
+| Stage | What It Does |
+|:------|:-------------|
+| Normalize | 8 tool formats → CanonicalControlEvidence canonical type |
+| Score | 7-dimension evidence quality assessment (5 deterministic, 2 model-assisted) |
+| Query | Search, filter, and aggregate across normalized evidence |
+| Quartermaster | Governance review with deterministic + LLM evidence quality checks |
+
 ### Optional Enrichment (via `--enrich`)
 
 | Stage | Pirate Name | What It Does |
@@ -321,7 +350,7 @@ did:web:acme.com       →  https://acme.com/.well-known/did.json
 ## Testing
 
 ```bash
-bun test                          # All tests (1057 tests, 54 files)
+bun test                          # All tests (1820 tests, 73 files)
 
 bun test tests/parley/            # Parley protocol (MARQUE, JWT-VC, DID, SCITT, cert chain, CAA)
 bun test tests/flagship/          # FLAGSHIP (SSF/SET/CAEP)
@@ -330,10 +359,17 @@ bun test tests/sign/              # Sign engine + batch signing
 bun test tests/mcp/               # MCP server tool handlers
 bun test tests/normalize/         # Evidence normalization engine
 bun test tests/scoring/           # Evidence quality scoring engine
+bun test tests/audit/             # Audit engine + orchestrator
+bun test tests/benchmark/         # Scoring benchmark corpus
+bun test tests/billing/           # Billing + subscriptions
+bun test tests/certification/     # Continuous certification
+bun test tests/tprm/              # Third-party risk management
+bun test tests/webhooks/          # Webhook delivery
 bun test tests/api/               # Versioned API endpoint tests
 bun test tests/functions/         # API endpoints (SSF, SCITT, health, sign, verify)
 bun test tests/cli/               # CLI integration tests
 bun test tests/db/                # Database tests (requires Postgres)
+bun test tests/distribution/      # Dockerfile, npm, wrappers
 ```
 
 ---
@@ -349,6 +385,7 @@ bun test tests/db/                # Database tests (requires Postgres)
 | Database | Postgres via [Bun.sql](https://bun.sh/docs/api/sql) — zero-dependency driver |
 | Web | [Next.js 15](https://nextjs.org/) + Tailwind 4 + shadcn/ui |
 | Hosting | [Railway](https://railway.app/) (Postgres + Functions + Web) |
+| SDK | [@corsair/sdk](packages/sdk/) — TypeScript client for sign/verify/score/query |
 | Standards | W3C VC 2.0, IETF SCITT, OpenID SSF/CAEP, NIST OSCAL |
 
 > **Dependencies**: Only 1 runtime dep — `jose` (JWT/JWK). Everything else is hand-rolled. `@anthropic-ai/sdk` is a dev dependency for optional Quartermaster AI enrichment.
@@ -431,9 +468,54 @@ src/
     types.ts               #   Canonical types (CanonicalControlEvidence, NormalizedEvidence)
     index.ts               #   Barrel exports
 
-  scoring/                 # 7-dimension evidence quality engine (3 files)
+  scoring/                 # 7-dimension evidence quality engine (4 files)
     scoring-engine.ts      #   scoreEvidence() — FICO-like composite score
+    scoring-signals.ts     #   Signal extraction from evidence
     types.ts               #   EvidenceQualityScore, dimension types
+    index.ts               #   Barrel exports
+
+  query/                   # Evidence query engine (3 files)
+    query-engine.ts        #   Search, filter, aggregate normalized evidence
+    types.ts               #   QueryFilter, QueryResult types
+    index.ts               #   Barrel exports
+
+  audit/                   # Audit engine + orchestrator (5 files)
+    audit-engine.ts        #   Multi-file compliance audit runner
+    audit-orchestrator.ts  #   Pipeline coordination (normalize → score → govern)
+    audit-types.ts         #   AuditResult, AuditConfig types
+    audit-report.ts        #   Human-readable audit report generation
+    index.ts               #   Barrel exports
+
+  quartermaster/           # Governance checks (4 files)
+    quartermaster.ts       #   7-dimension governance review engine
+    quartermaster-types.ts #   GovernanceResult, dimension types
+    quartermaster-rules.ts #   Deterministic rule evaluation
+    index.ts               #   Barrel exports
+
+  benchmark/               # Scoring calibration corpus (3 files)
+    benchmark-runner.ts    #   Run scoring against known-good corpus
+    corpus.ts              #   Reference evidence samples + expected scores
+    index.ts               #   Barrel exports
+
+  billing/                 # Subscription management (4 files)
+    billing-engine.ts      #   Free/Pro/Platform tier logic
+    billing-types.ts       #   Plan, Subscription, Usage types
+    billing-limits.ts      #   Rate limits and quotas per tier
+    index.ts               #   Barrel exports
+
+  certification/           # Continuous certification (3 files)
+    certification-engine.ts #  Policy-based continuous compliance monitoring
+    certification-types.ts #   CertPolicy, CertStatus types
+    index.ts               #   Barrel exports
+
+  tprm/                    # Third-party risk management (3 files)
+    tprm-engine.ts         #   Automated vendor assessment from CPOEs
+    tprm-types.ts          #   VendorRisk, TPRMResult types
+    index.ts               #   Barrel exports
+
+  webhooks/                # Webhook delivery (3 files)
+    webhook-engine.ts      #   HMAC-SHA256 signed event delivery
+    webhook-types.ts       #   WebhookConfig, WebhookEvent types
     index.ts               #   Barrel exports
 
   api/                     # Versioned API router (3 files)
@@ -478,20 +560,35 @@ action.yml                 # GitHub Action for CI/CD integration
 apps/
   web/                     # grcorsair.com (Next.js 15 + Tailwind 4 + shadcn/ui)
 
-tests/                     # 1057 tests across 54 files
+packages/
+  sdk/                     # @corsair/sdk — TypeScript client for sign/verify/score/query
+
+scripts/
+  wrappers/                # Tool wrapper scripts (prowler, inspec, trivy)
+
+docker/
+  Dockerfile               # CLI container image
+
+tests/                     # 1820 tests across 73 files
   parley/                  #   MARQUE, JWT-VC, DID, SCITT, CBOR, COSE, Merkle, cert chain, CAA
   flagship/                #   SET generation, SSF streams, delivery
   ingestion/               #   Evidence parsing, mapping, classification
   sign/                    #   Sign engine + batch signing
   normalize/               #   Evidence normalization engine
   scoring/                 #   7-dimension evidence quality scoring
+  audit/                   #   Audit engine + orchestrator
+  benchmark/               #   Scoring benchmark corpus
+  billing/                 #   Billing + subscriptions
+  certification/           #   Continuous certification
+  tprm/                    #   Third-party risk management
+  webhooks/                #   Webhook delivery
   api/                     #   Versioned API endpoint tests
   mcp/                     #   MCP server tool handlers
   db/                      #   Database connection + migrations
   functions/               #   API endpoint tests (sign, verify, health)
   cli/                     #   CLI integration tests
   middleware/              #   Auth, rate-limit, security headers
-  distribution/            #   Dockerfile, package.json, install script validation
+  distribution/            #   Dockerfile, npm, wrappers
 ```
 
 </details>

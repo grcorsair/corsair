@@ -19,6 +19,9 @@ import { existsSync, readFileSync } from "fs";
 // Singleton CertificationEngine instance (declared early to avoid TDZ with top-level await)
 let _certEngineInstance: unknown;
 
+// Singleton TPRMEngine instance (same lazy pattern as CertificationEngine)
+let _tprmEngineInstance: unknown;
+
 // =============================================================================
 // SUBCOMMAND ROUTING
 // =============================================================================
@@ -53,6 +56,9 @@ switch (subcommand) {
     break;
   case "cert":
     await handleCert();
+    break;
+  case "tprm":
+    await handleTprm();
     break;
   case "help":
   case "--help":
@@ -1811,6 +1817,467 @@ async function handleCertExpiring(args: string[]): Promise<void> {
 }
 
 // =============================================================================
+// TPRM
+// =============================================================================
+
+async function handleTprm(): Promise<void> {
+  const args = process.argv.slice(3);
+  const tprmSubcommand = args[0];
+
+  // Handle help flags and no subcommand
+  if (!tprmSubcommand || tprmSubcommand === "--help" || tprmSubcommand === "-h") {
+    printTprmHelp();
+    return;
+  }
+
+  switch (tprmSubcommand) {
+    case "register":
+      await handleTprmRegister(args.slice(1));
+      break;
+    case "assess":
+      await handleTprmAssess(args.slice(1));
+      break;
+    case "vendors":
+      await handleTprmVendors(args.slice(1));
+      break;
+    case "assessment":
+      await handleTprmAssessment(args.slice(1));
+      break;
+    case "dashboard":
+      await handleTprmDashboard(args.slice(1));
+      break;
+    default:
+      console.error(`Unknown tprm subcommand: ${tprmSubcommand}`);
+      console.error('Run "corsair tprm --help" for usage');
+      process.exit(1);
+  }
+}
+
+function printTprmHelp(): void {
+  console.log(`
+CORSAIR TPRM -- Third-Party Risk Management Automation
+
+USAGE:
+  corsair tprm <subcommand> [options]
+
+SUBCOMMANDS:
+  register    Register a new vendor
+  assess      Assess a vendor using CPOEs
+  vendors     List registered vendors
+  assessment  Get a single assessment result
+  dashboard   Show TPRM dashboard summary
+
+EXAMPLES:
+  corsair tprm register --name "Acme Cloud" --domain acme.com --risk-tier high --tags cloud,saas
+  corsair tprm assess --vendor <id> --frameworks SOC2,NIST-800-53 --cpoes cpoe1.jwt cpoe2.jwt
+  corsair tprm vendors [--risk-tier high] [--tag cloud]
+  corsair tprm assessment <id>
+  corsair tprm dashboard
+
+OPTIONS:
+  -h, --help    Show this help
+`);
+}
+
+async function getTprmEngine() {
+  if (!_tprmEngineInstance) {
+    const { TPRMEngine } = await import("./src/tprm/tprm-engine");
+    _tprmEngineInstance = new TPRMEngine();
+  }
+  return _tprmEngineInstance as import("./src/tprm/tprm-engine").TPRMEngine;
+}
+
+// ---------------------------------------------------------------------------
+// TPRM REGISTER
+// ---------------------------------------------------------------------------
+
+async function handleTprmRegister(args: string[]): Promise<void> {
+  let name: string | undefined;
+  let domain: string | undefined;
+  let riskTier = "medium";
+  let tags: string[] = [];
+  let jsonOutput = false;
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "--name":
+        name = args[++i];
+        break;
+      case "--domain":
+        domain = args[++i];
+        break;
+      case "--risk-tier":
+        riskTier = args[++i] || "medium";
+        break;
+      case "--tags":
+        tags = (args[++i] || "").split(",").filter(Boolean);
+        break;
+      case "--json":
+        jsonOutput = true;
+        break;
+    }
+  }
+
+  if (!name) {
+    console.error("Error: --name is required");
+    console.error('Run "corsair tprm register --help" for usage');
+    process.exit(2);
+  }
+
+  if (!domain) {
+    console.error("Error: --domain is required");
+    console.error('Run "corsair tprm register --help" for usage');
+    process.exit(2);
+  }
+
+  const engine = await getTprmEngine();
+  type RiskTier = import("./src/tprm/types").RiskTier;
+
+  const vendor = engine.registerVendor({
+    name,
+    domain,
+    did: `did:web:${domain}`,
+    riskTier: riskTier as RiskTier,
+    tags,
+  });
+
+  if (jsonOutput) {
+    process.stdout.write(JSON.stringify(vendor, null, 2));
+  } else {
+    console.log("Vendor registered successfully.");
+    console.log(`  ID:        ${vendor.id}`);
+    console.log(`  Name:      ${vendor.name}`);
+    console.log(`  Domain:    ${vendor.domain}`);
+    console.log(`  DID:       ${vendor.did}`);
+    console.log(`  Risk Tier: ${vendor.riskTier}`);
+    console.log(`  Tags:      ${vendor.tags.length > 0 ? vendor.tags.join(", ") : "(none)"}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// TPRM ASSESS
+// ---------------------------------------------------------------------------
+
+async function handleTprmAssess(args: string[]): Promise<void> {
+  let vendorId: string | undefined;
+  let frameworks: string[] = [];
+  const cpoePaths: string[] = [];
+  let jsonOutput = false;
+  let minimumScore = 70;
+  let minimumAssurance = 0;
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "--vendor":
+        vendorId = args[++i];
+        break;
+      case "--frameworks":
+        frameworks = (args[++i] || "").split(",").filter(Boolean);
+        break;
+      case "--cpoes":
+        // Consume all subsequent args that don't start with "--" as file paths
+        i++;
+        while (i < args.length && !args[i].startsWith("--")) {
+          cpoePaths.push(args[i]);
+          i++;
+        }
+        i--; // Back up one since the for loop will increment
+        break;
+      case "--min-score":
+        minimumScore = parseInt(args[++i], 10) || 70;
+        break;
+      case "--min-assurance":
+        minimumAssurance = parseInt(args[++i], 10) || 0;
+        break;
+      case "--json":
+        jsonOutput = true;
+        break;
+    }
+  }
+
+  if (!vendorId) {
+    console.error("Error: --vendor is required");
+    console.error('Run "corsair tprm assess --help" for usage');
+    process.exit(2);
+  }
+
+  if (frameworks.length === 0) {
+    console.error("Error: --frameworks is required");
+    console.error('Run "corsair tprm assess --help" for usage');
+    process.exit(2);
+  }
+
+  if (cpoePaths.length === 0) {
+    console.error("Error: --cpoes is required");
+    console.error('Run "corsair tprm assess --help" for usage');
+    process.exit(2);
+  }
+
+  const engine = await getTprmEngine();
+  const vendor = engine.getVendor(vendorId);
+  if (!vendor) {
+    console.error(`Error: Vendor not found: ${vendorId}`);
+    process.exit(1);
+  }
+
+  // Validate CPOE files exist
+  for (const cpoePath of cpoePaths) {
+    if (!existsSync(cpoePath)) {
+      console.error(`Error: CPOE file not found: ${cpoePath}`);
+      process.exit(2);
+    }
+  }
+
+  // Read and decode CPOEs
+  const cpoes: Array<{
+    score: import("./src/scoring/types").EvidenceQualityScore;
+    iat: number;
+    exp: number;
+    vc: {
+      credentialSubject: {
+        frameworks?: Record<string, unknown>;
+        assurance?: { declared?: number };
+        summary?: {
+          controlsTested?: number;
+          controlsPassed?: number;
+          controlsFailed?: number;
+          overallScore?: number;
+        };
+      };
+    };
+  }> = [];
+
+  for (const cpoePath of cpoePaths) {
+    const jwt = readFileSync(cpoePath, "utf-8").trim();
+    const payload = decodeJwtPayload(jwt);
+    if (!payload) {
+      console.error(`Error: Could not decode CPOE: ${cpoePath}`);
+      process.exit(2);
+    }
+
+    // Extract minimal CPOE input shape
+    const vc = payload.vc as Record<string, unknown> | undefined;
+    const credentialSubject = (vc?.credentialSubject as Record<string, unknown>) || {};
+    const summary = credentialSubject.summary as Record<string, unknown> | undefined;
+
+    cpoes.push({
+      score: {
+        composite: (summary?.overallScore as number) || 0,
+        grade: "C",
+        dimensions: [],
+        controlCount: (summary?.controlsTested as number) || 0,
+      },
+      iat: (payload.iat as number) || Math.floor(Date.now() / 1000),
+      exp: (payload.exp as number) || Math.floor(Date.now() / 1000) + 86400 * 90,
+      vc: {
+        credentialSubject: {
+          frameworks: credentialSubject.frameworks as Record<string, unknown> | undefined,
+          assurance: credentialSubject.assurance as { declared?: number } | undefined,
+          summary: summary as {
+            controlsTested?: number;
+            controlsPassed?: number;
+            controlsFailed?: number;
+            overallScore?: number;
+          } | undefined,
+        },
+      },
+    });
+  }
+
+  // Request and run assessment
+  const request = engine.requestAssessment(vendorId, {
+    requestedBy: "corsair-cli",
+    frameworks,
+    minimumScore,
+    minimumAssurance,
+  });
+
+  const result = engine.runAssessment(request.id, cpoes);
+
+  if (jsonOutput) {
+    process.stdout.write(JSON.stringify(result, null, 2));
+  } else {
+    console.log("ASSESSMENT RESULT");
+    console.log("=================");
+    console.log(`  Assessment ID: ${result.id}`);
+    console.log(`  Vendor:        ${vendor.name} (${vendorId})`);
+    console.log(`  CPOEs:         ${result.cpoeCount}`);
+    console.log(`  Composite:     ${result.compositeScore}/100`);
+    console.log(`  Decision:      ${result.decision.toUpperCase()}`);
+    console.log(`  Reason:        ${result.decisionReason}`);
+    console.log("");
+
+    console.log("  SCORE BREAKDOWN:");
+    const bd = result.scoreBreakdown;
+    console.log(`    Evidence Quality:      ${bd.evidenceQuality}`);
+    console.log(`    Certification Status:  ${bd.certificationStatus}`);
+    console.log(`    Framework Coverage:    ${bd.frameworkCoverage}`);
+    console.log(`    Freshness:             ${bd.freshness}`);
+    console.log(`    Historical Trend:      ${bd.historicalTrend}`);
+
+    if (result.findings.length > 0) {
+      console.log("");
+      console.log(`  FINDINGS (${result.findings.length}):`);
+      for (const f of result.findings) {
+        console.log(`    [${f.severity.toUpperCase()}] ${f.title}`);
+      }
+    }
+
+    if (result.conditions && result.conditions.length > 0) {
+      console.log("");
+      console.log("  CONDITIONS:");
+      for (const c of result.conditions) {
+        console.log(`    - ${c}`);
+      }
+    }
+    console.log("");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// TPRM VENDORS
+// ---------------------------------------------------------------------------
+
+async function handleTprmVendors(args: string[]): Promise<void> {
+  let riskTier: string | undefined;
+  let tag: string | undefined;
+  let jsonOutput = false;
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "--risk-tier":
+        riskTier = args[++i];
+        break;
+      case "--tag":
+        tag = args[++i];
+        break;
+      case "--json":
+        jsonOutput = true;
+        break;
+    }
+  }
+
+  const engine = await getTprmEngine();
+  type RiskTier = import("./src/tprm/types").RiskTier;
+
+  const vendors = engine.listVendors({
+    riskTier: riskTier as RiskTier | undefined,
+    tag,
+  });
+
+  if (vendors.length === 0) {
+    if (jsonOutput) {
+      process.stdout.write("[]");
+    } else {
+      console.log("No vendors registered.");
+    }
+    return;
+  }
+
+  if (jsonOutput) {
+    process.stdout.write(JSON.stringify(vendors, null, 2));
+    return;
+  }
+
+  console.log("VENDORS");
+  console.log("=======");
+  console.log("");
+  console.log(
+    "  ID".padEnd(44) +
+    "Name".padEnd(20) +
+    "Risk".padEnd(12) +
+    "Domain",
+  );
+  console.log("  " + "-".repeat(80));
+
+  for (const v of vendors) {
+    console.log(
+      `  ${v.id.padEnd(42)}${v.name.padEnd(20)}${v.riskTier.padEnd(12)}${v.domain}`,
+    );
+  }
+  console.log("");
+}
+
+// ---------------------------------------------------------------------------
+// TPRM ASSESSMENT
+// ---------------------------------------------------------------------------
+
+async function handleTprmAssessment(args: string[]): Promise<void> {
+  const assessmentId = args.find((a) => !a.startsWith("--"));
+  let jsonOutput = args.includes("--json");
+
+  if (!assessmentId) {
+    console.error("Error: assessment ID is required");
+    console.error('Usage: corsair tprm assessment <id>');
+    process.exit(2);
+  }
+
+  const engine = await getTprmEngine();
+  const result = engine.getAssessment(assessmentId);
+
+  if (!result) {
+    console.error(`Error: Assessment not found: ${assessmentId}`);
+    process.exit(1);
+  }
+
+  if (jsonOutput) {
+    process.stdout.write(JSON.stringify(result, null, 2));
+  } else {
+    console.log(`ASSESSMENT: ${result.id}`);
+    console.log(`  Vendor:    ${result.vendorId}`);
+    console.log(`  Score:     ${result.compositeScore}/100`);
+    console.log(`  Decision:  ${result.decision.toUpperCase()}`);
+    console.log(`  CPOEs:     ${result.cpoeCount}`);
+    console.log(`  Assessed:  ${result.assessedAt}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// TPRM DASHBOARD
+// ---------------------------------------------------------------------------
+
+async function handleTprmDashboard(args: string[]): Promise<void> {
+  let jsonOutput = args.includes("--json");
+
+  const engine = await getTprmEngine();
+  const dashboard = engine.getDashboard();
+
+  if (jsonOutput) {
+    process.stdout.write(JSON.stringify(dashboard, null, 2));
+  } else {
+    console.log("TPRM DASHBOARD");
+    console.log("==============");
+    console.log("");
+    console.log(`  Total Vendors:         ${dashboard.totalVendors}`);
+    console.log(`  Average Score:         ${dashboard.averageScore}`);
+    console.log(`  Vendors Needing Review: ${dashboard.vendorsNeedingReview}`);
+    console.log(`  Expiring Assessments:  ${dashboard.expiringAssessments}`);
+    console.log("");
+
+    console.log("  BY RISK TIER:");
+    for (const [tier, count] of Object.entries(dashboard.byRiskTier)) {
+      console.log(`    ${tier.padEnd(12)} ${count}`);
+    }
+    console.log("");
+
+    console.log("  BY DECISION:");
+    for (const [decision, count] of Object.entries(dashboard.byDecision)) {
+      console.log(`    ${decision.padEnd(18)} ${count}`);
+    }
+
+    if (dashboard.recentAssessments.length > 0) {
+      console.log("");
+      console.log("  RECENT ASSESSMENTS:");
+      for (const a of dashboard.recentAssessments) {
+        const date = a.assessedAt.split("T")[0];
+        console.log(`    ${date}  ${a.vendorId}  score:${a.compositeScore}  ${a.decision}`);
+      }
+    }
+    console.log("");
+  }
+}
+
+// =============================================================================
 // HELP
 // =============================================================================
 
@@ -1833,6 +2300,7 @@ COMMANDS:
   log       List signed CPOEs (SCITT log)            like git log
   audit     Run a full compliance audit              like git bisect
   cert      Manage continuous compliance certifications
+  tprm      Third-party risk management automation
   renew     Re-sign a CPOE with fresh dates          like git commit --amend
   signal    FLAGSHIP real-time notifications         like git webhooks
   keygen    Generate Ed25519 signing keypair

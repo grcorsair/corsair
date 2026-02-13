@@ -15,7 +15,7 @@ Compliance proof infrastructure — cryptographic trust layer for GRC. Parley pr
 ## Commands
 ```bash
 bun install                          # Install dependencies
-bun test                             # Run all tests (1057 tests, 54 files)
+bun test                             # Run all tests (1820 tests, 73 files)
 bun test tests/parley/               # Parley protocol tests (cert chain, CAA, SCITT, etc.)
 bun test tests/flagship/             # FLAGSHIP SSF/CAEP tests
 bun test tests/ingestion/            # Evidence parsing + classification tests
@@ -23,13 +23,24 @@ bun test tests/sign/                 # Sign engine + batch tests
 bun test tests/mcp/                  # MCP server tests
 bun test tests/normalize/            # Evidence normalization engine
 bun test tests/scoring/              # 7-dimension evidence quality scoring
+bun test tests/audit/                # Audit engine + orchestrator
+bun test tests/benchmark/            # Scoring benchmark corpus
+bun test tests/billing/              # Billing + subscriptions
+bun test tests/certification/        # Continuous certification
+bun test tests/tprm/                 # Third-party risk management
+bun test tests/webhooks/             # Webhook delivery
 bun test tests/api/                  # Versioned /v1/ API endpoint tests
+bun test tests/distribution/         # Dockerfile, npm, wrappers
 bun run corsair.ts sign --file <path>  # Sign evidence as CPOE
 bun run corsair.ts sign --file - < data.json  # Sign from stdin
 bun run corsair.ts sign --file <path> --format prowler --json  # Force format, JSON output
 bun run corsair.ts sign --file <path> --dry-run  # Preview without signing
 bun run corsair.ts sign --file <path> --score    # Include 7-dimension evidence quality score
 bun run corsair.ts verify cpoe.jwt   # Verify a CPOE
+bun run corsair.ts audit --files <paths> --scope <name>  # Run compliance audit
+bun run corsair.ts audit --files <paths> --scope <name> --score --governance --json  # Full audit with scoring + governance
+bun run corsair.ts cert create --scope <name> --policy <path>  # Create continuous certification
+bun run corsair.ts cert check|list|renew|suspend|revoke|history|expiring  # Manage certifications
 bun run corsair.ts keygen            # Generate Ed25519 keypair
 bun run bin/corsair-mcp.ts           # Start MCP server (stdio)
 ```
@@ -58,7 +69,15 @@ Optional enrichment (--enrich): CLASSIFY + CHART + QUARTER
 - **Certificate chain**: Root key → org key attestation → CPOE signing (src/parley/key-attestation.ts)
 - **CAA-in-DID**: Scope constraints per signing key in DID documents (src/parley/caa-did.ts)
 - **Normalization**: 8 parser formats → CanonicalControlEvidence canonical type (src/normalize/)
+- **Scoring**: 7-dimension evidence quality assessment (FICO model) — 5 deterministic, 2 model-assisted (src/scoring/)
+- **Audit**: Multi-file compliance audit orchestrator (normalize → score → govern) (src/audit/)
+- **Quartermaster**: Governance checks with deterministic rules + LLM review (src/quartermaster/)
+- **Certification**: Policy-based continuous compliance monitoring (src/certification/)
+- **TPRM**: Automated third-party vendor assessment from CPOEs (src/tprm/)
+- **Webhooks**: HMAC-SHA256 signed event delivery (src/webhooks/)
+- **Billing**: Free/Pro/Platform tier management with rate limits (src/billing/)
 - **API platform**: Versioned /v1/ routes with APIEnvelope<T> responses (src/api/)
+- **SDK**: @corsair/sdk TypeScript client for sign/verify/score/query (packages/sdk/)
 - **Assurance levels** (optional enrichment): L0=Documented, L1=Configured, L2=Demonstrated, L3=Observed, L4=Attested
 - **Type-only imports**: Use `import type { }` to avoid circular dependencies
 - **Bun-native**: Prefer `Bun.env`, `Bun.file()`, `Bun.write()` over Node.js equivalents
