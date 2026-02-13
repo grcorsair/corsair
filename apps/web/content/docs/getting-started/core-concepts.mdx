@@ -14,9 +14,19 @@ Corsair asks: "Can you prove your controls are effective with a signed, verifiab
 
 The proof that emerges from tool-generated evidence and cryptographic signing is fundamentally different from self-reported questionnaires.
 
-## The Pipeline
+## Three Layers. One Protocol.
 
-Every Corsair signing flows through a simple pipeline:
+Corsair operates across three layers. Layer 1 is the infrastructure that signs and verifies. Layer 2 adds intelligence on top of signed data. Layer 3 automates decisions using that intelligence.
+
+```
+L1 Infrastructure  -->  L2 Intelligence  -->  L3 Decision
+(sign, verify,          (score, normalize,     (audit, certify,
+ log, diff)              query, govern)         tprm, automate)
+```
+
+### Layer 1 — Cryptographic Infrastructure (Default Path)
+
+The default pipeline. Every `corsair sign` invocation flows through these stages. No flags required.
 
 | Stage | Purpose | Output |
 |-------|---------|--------|
@@ -26,21 +36,44 @@ Every Corsair signing flows through a simple pipeline:
 | **VERIFY** | Verify signature and provenance | Verification result |
 | **DIFF** | Compare CPOEs over time | Control-level changes |
 
-Optional enrichment layers (available via `--enrich`):
+### Layer 2 — Evidence Intelligence (via `--score` / `--enrich`)
 
-- **CHART** — Map controls to 13+ compliance frameworks
-- **QUARTER** — AI-powered evidence governance review
-- **FLAGSHIP** — Real-time compliance change notifications (SSF/CAEP)
+Intelligence layers that normalize, score, and govern evidence. Activated with `--score` or `--enrich` flags.
+
+| Stage | Purpose | Output |
+|-------|---------|--------|
+| **NORMALIZE** | Translate tool-native formats into canonical evidence | `CanonicalControlEvidence` |
+| **SCORE** | 7-dimension evidence quality assessment | Composite score (0-100) with letter grade |
+| **QUERY** | Search and filter across signed evidence | Filtered results by framework, score, date |
+| **QUARTER** | Quartermaster governance review | Confidence score + dimension breakdown |
+
+The `--score` flag on `corsair sign` runs a 7-dimension evidence quality assessment, producing a FICO-style composite score (0-100) with letter grade. Five of the seven dimensions are fully deterministic. Two use model-assisted analysis. Like FICO, it uses models but is not defined by them.
+
+### Layer 3 — Automated Decisions (Workflow Commands)
+
+Decision workflows that consume signed, scored evidence to produce actionable outcomes.
+
+| Stage | Purpose | Output |
+|-------|---------|--------|
+| **AUDIT** | Multi-source compliance audit | Scored audit result with framework targeting |
+| **CERTIFY** | Continuous certification lifecycle | Create, check, renew, suspend, revoke |
+| **TPRM** | Vendor risk assessment from signed scores | Approve / conditional / reject decision |
+| **AUTOMATE** | Event-driven webhooks and integrations | Automated workflows on compliance state changes |
 
 ## Tool Adapters
 
-Corsair accepts structured output from security scanning tools and compliance platforms. Each adapter translates tool-native formats into the canonical evidence format for signing:
+Corsair accepts structured output from security scanning tools and compliance platforms. Each adapter translates tool-native formats into the canonical evidence format for signing. Override auto-detection with `--format <name>`.
 
-- **Prowler** — AWS/Azure/GCP security scanning (JSON output)
-- **InSpec** — Infrastructure compliance testing (JSON results)
-- **Trivy** — Vulnerability and misconfiguration scanning (JSON reports)
-- **ComplianceAsCode** — OpenSCAP-based compliance automation
-- **Platform APIs** — CISO Assistant, Eramba, and other GRC platforms
+| Format | Tool | Detection |
+|--------|------|-----------|
+| `generic` | Any JSON with `{ metadata, controls[] }` | Default fallback |
+| `prowler` | AWS Prowler OCSF | Array with `StatusCode` + `FindingInfo` |
+| `securityhub` | AWS SecurityHub ASFF | `{ Findings[] }` |
+| `inspec` | Chef InSpec | `{ profiles[].controls[] }` |
+| `trivy` | Aqua Trivy | `{ Results[].Vulnerabilities[] }` |
+| `gitlab` | GitLab SAST | `{ vulnerabilities[] }` |
+| `ciso-assistant-api` | CISO Assistant (API) | `{ results[] }` with compliance fields |
+| `ciso-assistant-export` | CISO Assistant (Export) | `{ requirement_assessments[] }` |
 
 ## Provenance Model
 
@@ -75,19 +108,6 @@ A Marque is signed with Ed25519 (elliptic curve digital signature):
 
 No server, no account, no data sharing required for verification.
 
-## Higher-Level Workflows
-
-Built on the core pipeline, Corsair provides end-to-end workflows for compliance operations:
-
-| Command | Purpose | What It Does |
-|---------|---------|--------------|
-| `corsair audit` | Full compliance audit | Combines multiple evidence files into a scored audit result with framework targeting and governance checks |
-| `corsair cert` | Continuous certifications | Manages certification lifecycle: create, check, renew, suspend, revoke. Tracks status and detects drift |
-| `corsair tprm` | Vendor risk management | Registers vendors, assesses CPOEs, produces approve/conditional/deny decisions with composite scoring |
-| `corsair renew` | CPOE renewal | Re-signs existing CPOEs with fresh dates, optionally with new evidence |
-
-The `--score` flag on `corsair sign` runs a 7-dimension evidence quality assessment, producing a FICO-style composite score (0-100) with letter grade.
-
 ## Parley Protocol
 
 Parley is the trust exchange protocol that composes three open standards:
@@ -95,7 +115,7 @@ Parley is the trust exchange protocol that composes three open standards:
 | Standard | Role | What It Provides |
 |----------|------|-----------------|
 | **JWT-VC** (W3C) | Proof | CPOE as a Verifiable Credential, Ed25519-signed |
-| **SCITT** (IETF) | Audit trail | Append-only transparency log with COSE receipts |
-| **SSF/CAEP** (OpenID) | Signals | Real-time compliance change notifications |
+| **SCITT** (IETF) | Audit trail | Append-only transparency log with COSE receipts and Merkle proofs |
+| **SSF/CAEP** (OpenID) | Signals | Real-time compliance change notifications via FLAGSHIP |
 
-Together, these ensure that compliance proofs are verifiable, auditable, and communicated in real time.
+Together, these ensure that compliance proofs are verifiable, auditable, and communicated in real time. Any JWT library can verify a CPOE. Zero vendor lock-in.

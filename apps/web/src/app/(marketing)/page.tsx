@@ -5,6 +5,7 @@ import { FrameworkGrid } from "@/components/features/framework-grid";
 import { QuickStart } from "@/components/features/quick-start";
 import { DisruptionSection } from "@/components/features/disruption-section";
 import { ComplianceTimeline } from "@/components/features/compliance-timeline";
+import { ProjectStats } from "@/components/features/project-stats";
 import { FadeIn } from "@/components/motion/fade-in";
 import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 
@@ -12,6 +13,9 @@ export default function Home() {
   return (
     <main>
       <HeroSection />
+
+      {/* Project Stats Strip */}
+      <ProjectStats />
 
       {/* Pipeline Visualization */}
       <section className="px-6 py-20">

@@ -1,0 +1,280 @@
+---
+title: "TypeScript SDK"
+description: "Use @corsair/sdk to integrate Corsair signing, verification, and management into your applications."
+section: "integrations"
+order: 33
+---
+
+## Overview
+
+The `@corsair/sdk` package provides a typed TypeScript client for programmatic access to Corsair's signing, verification, scoring, and querying capabilities. It wraps the core engines into a clean API surface with full type exports.
+
+## Installation
+
+```bash
+# Bun (recommended)
+bun add @corsair/sdk
+
+# npm
+npm install @corsair/sdk
+```
+
+## Configuration
+
+```typescript
+import { CorsairClient } from "@corsair/sdk";
+
+const corsair = new CorsairClient({
+  keyDir: "./keys",                    // Directory for Ed25519 signing keys
+  did: "did:web:acme.com",            // Default issuer DID
+});
+```
+
+Both fields are optional. If `keyDir` is omitted, the client uses the default key location. If `did` is omitted, individual operations can specify it.
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `keyDir` | `string` | Directory where Ed25519 signing keys are stored |
+| `did` | `string` | Default issuer DID (e.g., `"did:web:acme.com"`) |
+
+## Key Generation
+
+Generate an Ed25519 keypair for CPOE signing:
+
+```typescript
+const keys = await corsair.keygen("./keys");
+console.log(keys.publicKey);   // PEM-encoded public key
+console.log(keys.privateKey);  // PEM-encoded private key
+```
+
+If no output directory is provided, keys are stored in the configured `keyDir`.
+
+## Sign Evidence
+
+Sign structured evidence as a CPOE (JWT-VC with Ed25519):
+
+```typescript
+import { readFileSync } from "fs";
+
+const evidence = JSON.parse(readFileSync("prowler-findings.json", "utf-8"));
+
+const result = await corsair.sign(evidence, {
+  format: "prowler",           // Optional: force format (auto-detected by default)
+  did: "did:web:acme.com",    // Override issuer DID
+  scope: "AWS Production",    // Assessment scope
+  expiryDays: 90,             // CPOE validity (default: 90)
+  dryRun: false,              // Set true to preview without signing
+});
+
+console.log(result.jwt);              // Signed JWT-VC string
+console.log(result.marqueId);         // CPOE identifier
+console.log(result.detectedFormat);   // "prowler"
+console.log(result.summary);          // { controlsTested, controlsPassed, controlsFailed, overallScore }
+console.log(result.provenance);       // { source: "tool", sourceIdentity: "prowler" }
+console.log(result.warnings);         // Any warnings from parsing
+```
+
+### SignOptions
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `format` | `EvidenceFormat` | auto-detect | Force evidence format |
+| `did` | `string` | config default | Override issuer DID |
+| `scope` | `string` | from evidence | Override scope string |
+| `expiryDays` | `number` | `90` | CPOE validity in days |
+| `dryRun` | `boolean` | `false` | Parse and classify without signing |
+
+### Supported Formats
+
+Call `corsair.formats()` to get the full list:
+
+```typescript
+const formats = corsair.formats();
+// ["generic", "prowler", "securityhub", "inspec", "trivy", "gitlab", "ciso-assistant-api", "ciso-assistant-export"]
+```
+
+## Verify CPOEs
+
+Verify a CPOE signature and structure:
+
+```typescript
+const result = await corsair.verify(jwtString);
+
+if (result.valid) {
+  console.log("Issuer:", result.signedBy);
+  console.log("Trust tier:", result.issuerTier);   // "corsair-verified" | "self-signed" | "unverifiable" | "invalid"
+  console.log("Scope:", result.scope);
+  console.log("Score:", result.summary?.overallScore);
+  console.log("Provenance:", result.provenance?.source);
+  console.log("Expires:", result.expiresAt);
+} else {
+  console.log("Invalid:", result.reason);
+  // "signature_invalid" | "expired" | "schema_invalid" | "evidence_mismatch"
+}
+```
+
+### VerifyResult
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `valid` | `boolean` | Whether the CPOE passed verification |
+| `reason` | `string` | Failure reason (only when invalid) |
+| `signedBy` | `string` | Issuer DID |
+| `issuerTier` | `string` | Trust tier: `corsair-verified`, `self-signed`, `unverifiable`, `invalid` |
+| `scope` | `string` | Assessment scope |
+| `summary` | `object` | Controls tested/passed/failed and overall score |
+| `provenance` | `object` | Source, identity, and date |
+| `generatedAt` | `string` | Issuance timestamp |
+| `expiresAt` | `string` | Expiry timestamp |
+
+## Score Evidence
+
+Run a 7-dimension evidence quality assessment (the "FICO score for compliance"):
+
+```typescript
+const score = await corsair.score(evidence, {
+  format: "prowler",                 // Optional format override
+  hasProcessProvenance: true,        // +10 reproducibility bonus if provenance receipts present
+});
+
+console.log(score.composite);       // 0-100 composite score
+console.log(score.grade);           // "A" | "B" | "C" | "D" | "F"
+console.log(score.controlsScored);  // Number of controls scored
+console.log(score.engineVersion);   // "1.0.0"
+
+// Per-dimension breakdown
+for (const dim of score.dimensions) {
+  console.log(`${dim.name}: ${dim.score}/100 (weight: ${dim.weight}, method: ${dim.method})`);
+}
+```
+
+### Scoring Dimensions
+
+| Dimension | Weight | Method | What It Measures |
+|-----------|--------|--------|------------------|
+| Source Independence | 0.20 | deterministic | Provenance quality: auditor (100), tool (80), self (30) |
+| Recency | 0.15 | deterministic | Evidence freshness (100 = today, 0 = 365+ days old) |
+| Coverage | 0.15 | deterministic | Percentage of controls with evidence |
+| Reproducibility | 0.15 | deterministic | Evidence type quality: scan/test (90), config (70), document (40) |
+| Consistency | 0.10 | deterministic | Agreement across multiple sources for same control |
+| Evidence Quality | 0.15 | model-assisted | Baseline by evidence type (model enhancement planned) |
+| Completeness | 0.10 | model-assisted | Percentage of non-skipped controls |
+
+### Letter Grades
+
+| Grade | Score Range |
+|-------|-------------|
+| A | 90-100 |
+| B | 80-89 |
+| C | 70-79 |
+| D | 60-69 |
+| F | Below 60 |
+
+## Query Evidence
+
+Search, filter, and aggregate across normalized evidence controls:
+
+```typescript
+const result = await corsair.query(evidence, {
+  status: "fail",                    // Filter by status
+  severity: ["critical", "high"],    // Filter by severity
+  framework: "SOC2",                 // Filter by framework
+  provenance: "tool",                // Filter by provenance source
+  minAssurance: 1,                   // Minimum assurance level
+  evidenceType: "scan",              // Filter by evidence type
+  search: "encryption",             // Text search across controlId, title, description
+  sortBy: "severity",               // Sort field: "controlId" | "severity" | "status" | "assurance"
+  sortDirection: "desc",            // Sort direction
+  limit: 20,                        // Pagination: max results
+  offset: 0,                        // Pagination: skip N results
+});
+
+console.log(result.total);          // Total matches before pagination
+console.log(result.controls);       // Matched controls
+
+// Aggregations computed on the filtered set
+console.log(result.aggregations.byStatus);      // { pass: 12, fail: 5, skip: 1, error: 0 }
+console.log(result.aggregations.bySeverity);     // { critical: 2, high: 3, medium: 8, low: 4, info: 1 }
+console.log(result.aggregations.byFramework);    // { SOC2: 10, "NIST-800-53": 8 }
+console.log(result.aggregations.byProvenance);   // { tool: 15, self: 2, auditor: 1 }
+console.log(result.aggregations.byAssurance);    // { "0": 2, "1": 16 }
+```
+
+## TypeScript Types
+
+All types are exported from the package for type-safe integration:
+
+```typescript
+import type {
+  // SDK types
+  CorsairClientConfig,
+  SignOptions,
+  SignResult,
+  VerifyResult,
+  ScoreResult,
+  ScoreInputOptions,
+
+  // Evidence format
+  EvidenceFormat,
+
+  // Scoring types
+  EvidenceQualityScore,
+  ScoredDimension,
+  LetterGrade,
+  ScoringMethod,
+
+  // Query types
+  EvidenceQuery,
+  QueryResult,
+  QueryAggregations,
+
+  // Canonical evidence types
+  CanonicalControlEvidence,
+  CanonicalStatus,       // "pass" | "fail" | "skip" | "error"
+  CanonicalSeverity,     // "critical" | "high" | "medium" | "low" | "info"
+  EvidenceType,          // "config" | "scan" | "test" | "observation" | "attestation" | "document"
+  ProvenanceSource,      // "self" | "tool" | "auditor"
+  NormalizedEvidence,
+
+  // Verification types
+  MarqueVerificationResult,
+} from "@corsair/sdk";
+```
+
+## Complete Example
+
+End-to-end workflow: generate keys, sign evidence, score it, query failures, and verify the output:
+
+```typescript
+import { CorsairClient } from "@corsair/sdk";
+import { readFileSync } from "fs";
+
+// Initialize
+const corsair = new CorsairClient({ keyDir: "./keys", did: "did:web:acme.com" });
+
+// Generate keys (first time only)
+await corsair.keygen();
+
+// Load evidence
+const evidence = JSON.parse(readFileSync("prowler-findings.json", "utf-8"));
+
+// Sign
+const signed = await corsair.sign(evidence, { format: "prowler", scope: "AWS Production" });
+console.log(`Signed CPOE: ${signed.marqueId} (${signed.summary.overallScore}/100)`);
+
+// Score
+const score = await corsair.score(evidence, { format: "prowler" });
+console.log(`Evidence quality: ${score.composite}/100 (${score.grade})`);
+
+// Query critical failures
+const failures = await corsair.query(evidence, {
+  status: "fail",
+  severity: "critical",
+  sortBy: "severity",
+}, "prowler");
+console.log(`Critical failures: ${failures.total}`);
+
+// Verify the signed CPOE
+const verification = await corsair.verify(signed.jwt);
+console.log(`Valid: ${verification.valid}, Tier: ${verification.issuerTier}`);
+```

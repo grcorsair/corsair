@@ -1,0 +1,305 @@
+---
+title: "Layer 2: Intelligence"
+description: "Evidence normalization, quality scoring, and the Quartermaster governance engine."
+section: "concepts"
+order: 12
+---
+
+## Overview
+
+Layer 2 adds intelligence on top of Layer 1's cryptographic signing infrastructure. While Layer 1 answers "is this evidence signed and verifiable?", Layer 2 answers "how good is this evidence?"
+
+The intelligence pipeline transforms raw tool output into a standardized, scored, queryable format:
+
+```
+Tool Output -> Normalize -> Score -> Query -> Signal
+```
+
+Every step is deterministic by default. No AI in the critical path. 5 of 7 scoring dimensions are fully deterministic; 2 have deterministic baselines with future model-assisted enhancement.
+
+## Normalize
+
+The normalization engine transforms any of Corsair's 8 supported parser formats into a single canonical representation: `CanonicalControlEvidence`. This is the foundation that scoring, querying, and governance build on.
+
+### What Normalization Does
+
+1. **Status mapping** -- Tool-specific statuses become canonical: `pass`, `fail`, `skip`, `error`
+2. **Severity normalization** -- Mapped to CVSS-aligned scale: `critical`, `high`, `medium`, `low`, `info`
+3. **Framework deduplication** -- Framework references are deduplicated by `framework:controlId` composite key
+4. **Evidence type inference** -- Classified as `scan`, `test`, `config`, `observation`, `attestation`, or `document` based on source tool and assurance level
+5. **Provenance inference** -- Derived from document source: `self` (manual/L0), `tool` (automated scanners), `auditor` (SOC 2/ISO 27001)
+6. **Evidence hashing** -- Each evidence summary gets a SHA-256 hash for integrity tracking
+
+### Canonical Control Evidence
+
+Every control from every tool normalizes to this shape:
+
+```typescript
+interface CanonicalControlEvidence {
+  controlId: string;            // Unique control identifier
+  title: string;                // Human-readable title
+  description: string;          // Control description
+  status: CanonicalStatus;      // "pass" | "fail" | "skip" | "error"
+  severity: CanonicalSeverity;  // "critical" | "high" | "medium" | "low" | "info"
+
+  source: {
+    tool: string;               // Canonical tool name (e.g., "prowler", "inspec")
+    version?: string;
+    rawId: string;              // Original control ID from the tool
+    rawStatus: string;          // Original status string from the tool
+    timestamp: string;          // Assessment date
+  };
+
+  frameworks: Array<{
+    framework: string;          // Framework name (e.g., "SOC2", "NIST-800-53")
+    controlId: string;          // Framework-specific control ID
+    controlName?: string;
+  }>;
+
+  evidence: {
+    type: EvidenceType;         // "scan" | "test" | "config" | "observation" | "attestation" | "document"
+    summary: string;            // Evidence description
+    hash?: string;              // SHA-256 of the evidence summary
+  };
+
+  assurance: {
+    level: number;              // 0-4 assurance level
+    provenance: ProvenanceSource; // "self" | "tool" | "auditor"
+  };
+}
+```
+
+### Evidence Type Mapping
+
+The normalization engine infers evidence type from the source tool and assurance level:
+
+| Source | Evidence Type | Rationale |
+|--------|--------------|-----------|
+| Prowler, SecurityHub | `scan` | Automated config scanning |
+| InSpec, Trivy, GitLab | `scan` | Compliance-as-code / vulnerability scanning |
+| CISO Assistant (L2+) | `attestation` | Assessed with evidence |
+| CISO Assistant (L1) | `scan` | Configured check |
+| SOC 2, ISO 27001 | `attestation` | Auditor report |
+| Pentest | `test` | Penetration testing |
+| Manual / Generic (L0) | `document` | Self-assessed |
+| Generic JSON (L1+) | `config` | Tool-generated |
+
+### CLI Usage
+
+Normalization runs automatically during signing. Use `--score` to expose the normalized data through the scoring pipeline:
+
+```bash
+corsair sign --file prowler-findings.json --score --json
+```
+
+## Score
+
+The scoring engine produces a FICO-style composite score (0-100) with letter grade across 7 weighted dimensions. This is the "credit score for compliance evidence."
+
+### Seven Dimensions
+
+| # | Dimension | Weight | Method | What It Measures |
+|---|-----------|--------|--------|------------------|
+| 1 | **Source Independence** | 0.20 | deterministic | Who produced the evidence? Auditor=100, Tool=80, Self=30 |
+| 2 | **Recency** | 0.15 | deterministic | How fresh is the evidence? 100=today, linear decay to 0 at 365 days |
+| 3 | **Coverage** | 0.15 | deterministic | What percentage of controls have evidence attached? |
+| 4 | **Reproducibility** | 0.15 | deterministic | Can the evidence be reproduced? Scan/test=90, config=70, document=40 |
+| 5 | **Consistency** | 0.10 | deterministic | Do multiple sources agree on the same control? |
+| 6 | **Evidence Quality** | 0.15 | model-assisted | Baseline by evidence type (attestation=90, scan=80, document=40) |
+| 7 | **Completeness** | 0.10 | model-assisted | Percentage of non-skipped controls |
+
+"Model-assisted" dimensions currently use deterministic baselines. When model enhancement activates, it refines scores without replacing the deterministic foundation. 5/7 dimensions are fully deterministic. This is not "AI-powered" -- it is a deterministic scoring engine with optional model enhancement, like FICO.
+
+### Scoring Output
+
+```typescript
+interface EvidenceQualityScore {
+  composite: number;               // 0-100 FICO-style score
+  grade: LetterGrade;              // "A" | "B" | "C" | "D" | "F"
+  dimensions: ScoredDimension[];   // 7-dimension breakdown
+  controlsScored: number;          // Number of controls evaluated
+  scoredAt: string;                // ISO 8601 timestamp
+  engineVersion: string;           // "1.0.0"
+}
+```
+
+Each dimension provides:
+
+```typescript
+interface ScoredDimension {
+  name: string;           // Dimension identifier
+  score: number;          // Raw 0-100 score
+  weight: number;         // 0.0-1.0 weight
+  weighted: number;       // score * weight
+  method: ScoringMethod;  // "deterministic" | "model-assisted"
+  detail: string;         // Human-readable explanation
+}
+```
+
+### Letter Grades
+
+| Grade | Score | Interpretation |
+|-------|-------|----------------|
+| **A** | 90-100 | Strong evidence quality across all dimensions |
+| **B** | 80-89 | Good evidence quality, minor gaps |
+| **C** | 70-79 | Acceptable evidence, notable weaknesses |
+| **D** | 60-69 | Below standard, significant improvement needed |
+| **F** | Below 60 | Poor evidence quality, major gaps |
+
+### Process Provenance Bonus
+
+When in-toto/SLSA process provenance receipts are present (indicating the signing pipeline itself is auditable), the Reproducibility dimension receives a +10 bonus, capped at 100.
+
+### CLI Usage
+
+```bash
+# Sign with evidence quality score
+corsair sign --file evidence.json --score --json
+
+# Score without signing (dry run)
+corsair sign --file evidence.json --score --dry-run --json
+```
+
+## Query
+
+The query engine provides search, filtering, aggregation, and pagination over normalized evidence. Filter chain: `status -> severity -> framework -> provenance -> assurance -> evidenceType -> search`.
+
+### Filter Options
+
+| Filter | Type | Description |
+|--------|------|-------------|
+| `status` | `string or string[]` | Filter by `pass`, `fail`, `skip`, `error` |
+| `severity` | `string or string[]` | Filter by `critical`, `high`, `medium`, `low`, `info` |
+| `framework` | `string or string[]` | Filter by framework (union match) |
+| `provenance` | `string or string[]` | Filter by `self`, `tool`, `auditor` |
+| `minAssurance` | `number` | Minimum assurance level (0-4, inclusive) |
+| `evidenceType` | `string or string[]` | Filter by `scan`, `test`, `config`, `observation`, `attestation`, `document` |
+| `search` | `string` | Case-insensitive text search across controlId, title, description |
+| `sortBy` | `string` | Sort by `controlId`, `severity`, `status`, or `assurance` |
+| `sortDirection` | `string` | `asc` (default) or `desc` |
+| `limit` | `number` | Max results to return |
+| `offset` | `number` | Skip N results |
+
+### Aggregations
+
+Aggregations are computed on the filtered result set (before pagination), not on the full evidence set. This gives accurate distributions for whatever subset you are viewing.
+
+```typescript
+interface QueryAggregations {
+  byStatus: Record<CanonicalStatus, number>;       // { pass: 42, fail: 3, skip: 1, error: 0 }
+  bySeverity: Record<CanonicalSeverity, number>;   // { critical: 1, high: 2, medium: 8, ... }
+  byFramework: Record<string, number>;             // { SOC2: 24, "NIST-800-53": 22 }
+  byProvenance: Record<ProvenanceSource, number>;  // { tool: 40, self: 5, auditor: 1 }
+  byAssurance: Record<string, number>;             // { "0": 5, "1": 41 }
+}
+```
+
+### Convenience Functions
+
+The query engine also exports convenience functions for common patterns:
+
+| Function | What It Does |
+|----------|--------------|
+| `findFailingCritical(controls)` | Find all controls with status=fail AND severity=critical |
+| `findByFramework(controls, "SOC2")` | Find all controls mapped to a given framework |
+| `summarizeByFramework(controls)` | Per-framework summary: total, passed, failed |
+| `findRegressions(current, previous)` | Find controls that regressed (pass to fail) between evidence sets |
+
+## Score Signals
+
+When evidence is scored, the scoring engine can compare against previous scores and emit FLAGSHIP events for significant changes. This completes the Normalize -> Score -> Query -> Signal pipeline.
+
+### Signal Thresholds
+
+| Condition | Signal Emitted |
+|-----------|---------------|
+| Composite score changes by 5+ points | `COLORS_CHANGED` FLAGSHIP event |
+| Letter grade changes (regardless of delta) | `COLORS_CHANGED` FLAGSHIP event |
+| Score change below threshold, no grade change | No signal |
+
+### Configuration
+
+```typescript
+interface ScoreSignalConfig {
+  threshold?: number;              // Min absolute delta to trigger signal (default: 5)
+  signalOnGradeChange?: boolean;   // Always signal on grade change (default: true)
+}
+```
+
+## Quartermaster
+
+The Quartermaster is Corsair's governance review engine. It enhances the scoring engine's output with governance findings and adjusts dimension scores based on finding severity.
+
+### How It Works
+
+1. Run the scoring engine to get a baseline score
+2. Run 6 deterministic governance checks to generate findings
+3. Adjust dimension scores based on finding severity (critical=-10, warning=-5, info=no impact)
+4. Recompute composite score and grade
+5. Return a complete governance report
+
+### Six Governance Checks
+
+| Check | Category | Severity | What It Detects |
+|-------|----------|----------|-----------------|
+| **Evidence Gaps** | evidence_quality | critical | Passing controls with empty or missing evidence |
+| **Severity Mismatch** | methodology | warning | Critical/high controls with only document/attestation evidence |
+| **Framework Coverage** | completeness | info | Controls missing framework references |
+| **Consistency** | consistency | critical | Same control with conflicting statuses across sources |
+| **Boilerplate Detection** | bias | warning | 3+ controls sharing identical evidence summaries |
+| **Recency** | methodology | warning | Evidence older than 180 days |
+
+### Governance Report
+
+```typescript
+interface GovernanceReport {
+  score: EvidenceQualityScore;         // Enhanced score (with finding adjustments)
+  findings: GovernanceFinding[];       // Governance findings
+  model: string;                       // "deterministic" (always, currently)
+  reviewedAt: string;                  // ISO 8601
+  modelEnhanced: boolean;             // false (model enhancement not yet active)
+}
+```
+
+Each finding includes:
+
+```typescript
+interface GovernanceFinding {
+  id: string;                          // Unique finding ID (e.g., "qm-evidence-gap")
+  severity: FindingSeverity;           // "critical" | "warning" | "info"
+  category: FindingCategory;           // "methodology" | "evidence_quality" | "completeness" | "consistency" | "bias"
+  description: string;                 // Human-readable description
+  remediation: string;                 // How to fix it
+  controlIds?: string[];               // Affected controls
+}
+```
+
+### Score Adjustment
+
+Findings map to scoring dimensions and apply penalties:
+
+| Finding Category | Scoring Dimension | Critical Penalty | Warning Penalty |
+|-----------------|-------------------|-----------------|-----------------|
+| methodology | reproducibility | -10 | -5 |
+| evidence_quality | evidenceQuality | -10 | -5 |
+| completeness | completeness | -10 | -5 |
+| consistency | consistency | -10 | -5 |
+| bias | evidenceQuality | -10 | -5 |
+
+Dimension scores floor at 0. The composite score is recomputed after all adjustments.
+
+### Framing
+
+The Quartermaster is not "AI-powered." It is a deterministic governance engine with future model-assisted enhancement. All 6 checks are pure logic. No LLM, no network calls, no external dependencies. Like FICO: it uses models (eventually), but the core is deterministic math.
+
+## How Intelligence Feeds Into Decisions
+
+Layer 2 outputs become inputs to Layer 3 (Decision):
+
+| Layer 2 Output | Layer 3 Consumer | How It Is Used |
+|---------------|------------------|----------------|
+| Evidence quality score | Audit engine | Score is included in audit results |
+| Governance findings | Audit engine | Findings surface as audit findings |
+| Normalized controls | Certification engine | Drift detection compares normalized controls |
+| Score changes | TPRM engine | Composite score feeds vendor risk assessment |
+| Score signals | FLAGSHIP | Grade changes emit real-time compliance events |

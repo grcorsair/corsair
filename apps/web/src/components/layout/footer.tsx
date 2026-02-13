@@ -44,7 +44,7 @@ export function Footer() {
               Sign. Verify. Diff. Log. Signal.
             </p>
             <p className="mt-3 font-pixel text-[7px] tracking-wider text-corsair-text-dim/60">
-              v0.5.1 &middot; Apache-2.0
+              v0.6.0 &middot; Apache-2.0
             </p>
           </div>
 
