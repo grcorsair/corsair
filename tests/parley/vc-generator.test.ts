@@ -307,6 +307,7 @@ describe("VC Generator - JWT-VC Generation", () => {
       controls: [
         { id: "CC6.1", description: "Logical access", status: "effective", evidence: "Tested" },
       ],
+      toolAssuranceLevel: 0,
     };
 
     const jwt = await generateVCJWT(input, keyManager);

@@ -498,7 +498,7 @@ describe("parseJSON — pipeline integration", () => {
     expect(marqueInput.document).toBeDefined();
   });
 
-  test("prowler source should get prowler assurance treatment", () => {
+  test("prowler source should get tool provenance and L1 assurance", () => {
     const prowlerOutput = [
       {
         StatusCode: "PASS",
@@ -511,11 +511,10 @@ describe("parseJSON — pipeline integration", () => {
     ];
 
     const doc = parseJSON(prowlerOutput);
-    const classified = calculateDocumentAssurance(doc.controls, doc.source, doc.metadata);
-    const { provenance } = calculateDocumentRollup(classified, doc.source, doc.metadata);
+    const provenance = deriveProvenance(doc.source, doc.metadata);
 
-    // Prowler = tool provenance, automated-config-check method
     expect(provenance.source).toBe("tool");
+    expect(doc.toolAssuranceLevel).toBe(1); // Prowler = L1
   });
 });
 
@@ -1029,7 +1028,7 @@ describe("parseJSON — GitLab security report auto-detection", () => {
     expect(result.controls[0].severity).toBe("LOW"); // Unknown → LOW
   });
 
-  test("should produce output compatible with assurance calculator", () => {
+  test("should produce output compatible with provenance derivation and mapper", () => {
     const glReport = {
       version: "15.0.7",
       scan: {
@@ -1053,9 +1052,9 @@ describe("parseJSON — GitLab security report auto-detection", () => {
     };
 
     const doc = parseJSON(glReport);
-    const classified = calculateDocumentAssurance(doc.controls, doc.source, doc.metadata);
-    expect(classified).toHaveLength(1);
-    expect(classified[0].assuranceLevel).toBe(0); // Ineffective control = L0
+    const provenance = deriveProvenance(doc.source, doc.metadata);
+    expect(provenance.source).toBe("tool");
+    expect(doc.toolAssuranceLevel).toBe(1); // GitLab = L1
 
     const marqueInput = mapToMarqueInput(doc);
     expect(marqueInput.document).toBeDefined();
@@ -1298,7 +1297,7 @@ describe("parseJSON — CISO Assistant auto-detection", () => {
     expect(result.controls[0].status).toBe("effective");
   });
 
-  test("should produce output compatible with assurance calculator", () => {
+  test("should produce output compatible with provenance derivation", () => {
     const cisoOutput = {
       count: 2,
       next: null,
@@ -1330,13 +1329,11 @@ describe("parseJSON — CISO Assistant auto-detection", () => {
     };
 
     const doc = parseJSON(cisoOutput);
-    const classified = calculateDocumentAssurance(doc.controls, doc.source, doc.metadata);
+    const provenance = deriveProvenance(doc.source, doc.metadata);
 
-    expect(classified).toHaveLength(2);
-    // Effective control with evidence from ciso-assistant (L1 ceiling)
-    expect(classified[0].assuranceLevel).toBeGreaterThanOrEqual(0);
-    // Non-compliant control = L0
-    expect(classified[1].assuranceLevel).toBe(0);
+    expect(provenance.source).toBe("tool");
+    // CISO Assistant with evidences → L2, without → L1
+    expect(doc.toolAssuranceLevel).toBeGreaterThanOrEqual(1);
   });
 
   test("should produce correct provenance for ciso-assistant source", () => {
@@ -1360,11 +1357,10 @@ describe("parseJSON — CISO Assistant auto-detection", () => {
     };
 
     const doc = parseJSON(cisoOutput);
-    const classified = calculateDocumentAssurance(doc.controls, doc.source, doc.metadata);
-    const { provenance, assurance } = calculateDocumentRollup(classified, doc.source, doc.metadata);
+    const provenance = deriveProvenance(doc.source, doc.metadata);
 
     expect(provenance.source).toBe("tool");
-    expect(assurance.method).toBe("automated-config-check");
+    expect(provenance.sourceIdentity).toBe("CISO Assistant");
   });
 
   test("should handle unknown URN framework slug gracefully", () => {

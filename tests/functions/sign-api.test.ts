@@ -2,7 +2,7 @@
  * Sign API Endpoint Tests — TDD
  *
  * Tests for POST /sign endpoint.
- * Covers: all 8 formats, format hint, DID override, enrich, dry-run, error cases.
+ * Covers: all 8 formats, format hint, DID override, dry-run, error cases.
  */
 
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
