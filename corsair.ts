@@ -76,6 +76,7 @@ async function handleSign(): Promise<void> {
   let jsonOutput = false;
   let quiet = false;
   let showVersion = false;
+  let showScore = false;
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -120,6 +121,9 @@ async function handleSign(): Promise<void> {
       case "--version":
         showVersion = true;
         break;
+      case "--score":
+        showScore = true;
+        break;
       case "--help":
       case "-h":
         showHelp = true;
@@ -152,6 +156,7 @@ OPTIONS:
       --expiry-days <N>     CPOE validity in days (default: 90)
       --dry-run             Parse + classify but don't sign. Output would-be subject.
       --json                Output structured JSON (jwt + metadata) to stdout
+      --score               Run 7-dimension evidence quality scoring (FICO score)
   -v, --verbose             Print step-by-step progress to stderr
   -q, --quiet               Suppress all stderr output
       --version             Print version
@@ -244,9 +249,26 @@ EXAMPLES:
       if (!quiet) console.error(`Warning: ${w}`);
     }
 
+    // Run scoring engine if --score was requested
+    let scoreResult: import("./src/scoring/types").EvidenceQualityScore | undefined;
+    if (showScore) {
+      const { normalizeDocument } = await import("./src/normalize/normalize");
+      const { scoreEvidence: runScoring } = await import("./src/scoring/scoring-engine");
+      const normalized = normalizeDocument(result.document);
+      const hasProcessProvenance = (result.document as any).processReceipts?.length > 0;
+      scoreResult = runScoring(normalized.controls, { hasProcessProvenance });
+
+      if (!quiet && !jsonOutput) {
+        const dimSummary = scoreResult.dimensions
+          .map(d => `${d.name}=${d.score}`)
+          .join(", ");
+        console.error(`\n  Evidence Quality: ${scoreResult.composite}/100 (${scoreResult.grade}) -- ${dimSummary}`);
+      }
+    }
+
     // Dry-run output
     if (dryRun) {
-      const dryOutput = {
+      const dryOutput: Record<string, unknown> = {
         dryRun: true,
         detectedFormat: result.detectedFormat,
         summary: result.summary,
@@ -254,13 +276,16 @@ EXAMPLES:
         controlCount: result.document.controls.length,
         warnings: result.warnings,
       };
+      if (scoreResult) {
+        dryOutput.score = scoreResult;
+      }
       console.log(JSON.stringify(dryOutput, null, 2));
       return;
     }
 
     // JSON output mode
     if (jsonOutput) {
-      const structuredOutput = {
+      const structuredOutput: Record<string, unknown> = {
         cpoe: result.jwt,
         marqueId: result.marqueId,
         detectedFormat: result.detectedFormat,
@@ -268,6 +293,9 @@ EXAMPLES:
         provenance: result.provenance,
         warnings: result.warnings,
       };
+      if (scoreResult) {
+        structuredOutput.score = scoreResult;
+      }
       process.stdout.write(JSON.stringify(structuredOutput, null, 2));
       return;
     }

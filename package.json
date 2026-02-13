@@ -41,6 +41,26 @@
   ],
   "author": "GRC Engineer",
   "license": "Apache-2.0",
+  "files": [
+    "corsair.ts",
+    "src",
+    "bin",
+    "examples",
+    "CPOE_SPEC.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "bun": ">= 1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Arudjreis/corsair.git"
+  },
+  "homepage": "https://grcorsair.com",
+  "bugs": {
+    "url": "https://github.com/Arudjreis/corsair/issues"
+  },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.72.1",
     "bun-types": "latest"
