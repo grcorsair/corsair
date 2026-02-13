@@ -210,6 +210,57 @@ export default function MarquePage() {
               </div>
             </div>
           </FadeIn>
+
+          <PixelDivider variant="diamond" className="my-8" />
+
+          <FadeIn>
+            <div>
+              <p className="mb-2 font-pixel text-[7px] tracking-wider text-corsair-gold/60">
+                FIVE PRIMITIVES
+              </p>
+              <h2 className="mb-3 font-display text-xl font-bold text-corsair-text">
+                Verification is one of five primitives
+              </h2>
+              <p className="mb-4 text-sm leading-relaxed text-corsair-text-dim">
+                Corsair gives you five operations for compliance trust — like git
+                for security attestations.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg border border-corsair-border bg-corsair-surface p-3">
+                  <p className="font-mono text-sm font-bold text-corsair-gold">corsair sign</p>
+                  <p className="mt-1 text-xs text-corsair-text-dim">
+                    Sign tool output into a CPOE with Ed25519
+                  </p>
+                </div>
+                <div className="rounded-lg border border-corsair-border bg-corsair-surface p-3">
+                  <p className="font-mono text-sm font-bold text-corsair-turquoise">corsair diff</p>
+                  <p className="mt-1 text-xs text-corsair-text-dim">
+                    Compare two CPOEs — see regressions and improvements
+                  </p>
+                </div>
+                <div className="rounded-lg border border-corsair-border bg-corsair-surface p-3">
+                  <p className="font-mono text-sm font-bold text-corsair-cyan">corsair log</p>
+                  <p className="mt-1 text-xs text-corsair-text-dim">
+                    Browse the SCITT transparency log for any issuer
+                  </p>
+                </div>
+                <div className="rounded-lg border border-corsair-border bg-corsair-surface p-3">
+                  <p className="font-mono text-sm font-bold text-corsair-crimson">corsair signal</p>
+                  <p className="mt-1 text-xs text-corsair-text-dim">
+                    Subscribe to FLAGSHIP real-time compliance change notifications
+                  </p>
+                </div>
+              </div>
+              <p className="mt-4 text-center">
+                <a
+                  href="/protocol"
+                  className="font-mono text-xs text-corsair-gold transition-colors hover:text-corsair-gold/80"
+                >
+                  See how the five primitives map to the protocol stack &rarr;
+                </a>
+              </p>
+            </div>
+          </FadeIn>
         </div>
       </div>
     </main>

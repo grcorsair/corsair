@@ -13,6 +13,7 @@ const commits = [
     controls: { passed: 20, failed: 2, total: 22 },
     provenance: "tool",
     diff: null,
+    signal: null,
   },
   {
     hash: "c4d1b8",
@@ -23,6 +24,7 @@ const commits = [
     controls: { passed: 19, failed: 3, total: 22 },
     provenance: "tool",
     diff: { regressions: 0, improvements: 1, note: "+1 control fixed (CC7.2)" },
+    signal: null,
   },
   {
     hash: "e9f2a1",
@@ -33,6 +35,7 @@ const commits = [
     controls: { passed: 18, failed: 4, total: 22 },
     provenance: "tool",
     diff: { regressions: 1, improvements: 0, note: "CC6.6 regressed (VPC change)" },
+    signal: { type: "FLEET_ALERT", note: "Drift detected — CC6.6 VPC config changed" },
   },
   {
     hash: "b3c7d5",
@@ -43,6 +46,7 @@ const commits = [
     controls: { passed: 15, failed: 5, total: 20 },
     provenance: "self",
     diff: null,
+    signal: null,
   },
 ];
 
@@ -167,6 +171,19 @@ export function ComplianceTimeline() {
                   )}
                   <span className="text-corsair-text-dim">
                     {commit.diff.note}
+                  </span>
+                </div>
+              )}
+
+              {/* FLAGSHIP signal indicator */}
+              {commit.signal && (
+                <div className="mt-2 flex items-center gap-2 rounded border border-corsair-crimson/20 bg-corsair-crimson/5 px-2 py-1 text-xs">
+                  <span className="h-1.5 w-1.5 rounded-full bg-corsair-crimson animate-pulse" />
+                  <span className="font-mono font-bold text-corsair-crimson">
+                    {commit.signal.type}
+                  </span>
+                  <span className="text-corsair-text-dim">
+                    {commit.signal.note}
                   </span>
                 </div>
               )}

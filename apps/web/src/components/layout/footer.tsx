@@ -4,7 +4,6 @@ import { Separator } from "@/components/ui/separator";
 const productLinks = [
   { href: "/vision", label: "Vision" },
   { href: "/anatomy", label: "How It Works" },
-  { href: "/pricing", label: "Pricing" },
   { href: "/docs", label: "Documentation" },
   { href: "/marque", label: "Verify CPOE" },
   { href: "/blog", label: "Blog" },
@@ -40,6 +39,9 @@ export function Footer() {
             </span>
             <p className="mt-2 text-sm leading-relaxed text-corsair-text-dim">
               Open compliance trust exchange protocol. Verify trust. Don&apos;t assume it.
+            </p>
+            <p className="mt-1 font-mono text-[10px] tracking-wider text-corsair-text-dim/40">
+              Sign. Verify. Diff. Log. Signal.
             </p>
             <p className="mt-3 font-pixel text-[7px] tracking-wider text-corsair-text-dim/60">
               v0.5.0 &middot; Apache-2.0

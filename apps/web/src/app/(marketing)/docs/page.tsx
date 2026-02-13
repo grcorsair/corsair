@@ -87,6 +87,30 @@ export default function DocsPage() {
                 </div>
                 <div>
                   <span className="text-corsair-text-dim">
+                    # Diff two CPOEs — see what changed
+                  </span>
+                  <div className="text-corsair-turquoise">
+                    corsair diff old-cpoe.jwt new-cpoe.jwt
+                  </div>
+                </div>
+                <div>
+                  <span className="text-corsair-text-dim">
+                    # Browse the SCITT transparency log
+                  </span>
+                  <div className="text-corsair-cyan">
+                    corsair log --issuer did:web:acme.com
+                  </div>
+                </div>
+                <div>
+                  <span className="text-corsair-text-dim">
+                    # Subscribe to FLAGSHIP real-time compliance signals
+                  </span>
+                  <div className="text-corsair-crimson">
+                    corsair signal --subscribe did:web:acme.com
+                  </div>
+                </div>
+                <div>
+                  <span className="text-corsair-text-dim">
                     # Generate signing keys
                   </span>
                   <div className="text-corsair-cyan">

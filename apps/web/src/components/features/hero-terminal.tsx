@@ -14,6 +14,12 @@ const diffLines = [
   { text: "  - CC6.6  Network segmentation NEW FAILURE", color: "text-corsair-crimson" },
 ];
 
+const logLines = [
+  { text: "  #4  2026-02-13  cpoe-acme-v2.jwt    L1  did:web:grcorsair.com", color: "text-corsair-text" },
+  { text: "  #3  2026-02-09  cpoe-acme-v1.jwt    L1  did:web:grcorsair.com", color: "text-corsair-text-dim" },
+  { text: "  #2  2026-01-15  cpoe-globex.jwt     L2  did:web:grcorsair.com", color: "text-corsair-text-dim" },
+];
+
 const verifyLines = [
   { label: "Signature", value: "Ed25519 valid", color: "text-corsair-green" },
   { label: "Issuer", value: "did:web:grcorsair.com", color: "text-corsair-text" },
@@ -29,7 +35,11 @@ export function HeroTerminal() {
   const diffStagger = 0.15;
   const diffEnd = diffStart + diffLines.length * diffStagger + 0.2;
 
-  const verifyStart = diffEnd + 0.4;
+  const logStart = diffEnd + 0.4;
+  const logStagger = 0.12;
+  const logEnd = logStart + logLines.length * logStagger + 0.2;
+
+  const verifyStart = logEnd + 0.4;
   const verifyStagger = 0.13;
   const verifyEnd = verifyStart + verifyLines.length * verifyStagger + 0.2;
 
@@ -48,7 +58,7 @@ export function HeroTerminal() {
           <div className="h-2.5 w-2.5 rounded-full bg-[#28C840]" />
         </div>
         <span className="ml-2 font-mono text-[11px] text-corsair-text-dim">
-          corsair — sign / diff / verify
+          corsair — sign / diff / log / verify
         </span>
       </div>
 
@@ -111,7 +121,34 @@ export function HeroTerminal() {
 
         <div className="h-4" />
 
-        {/* Step 3: corsair verify */}
+        {/* Step 3: corsair log */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: logStart - 0.2 }}
+        >
+          <span className="text-corsair-gold">$</span>{" "}
+          <span className="text-corsair-text">corsair log</span>{" "}
+          <span className="text-corsair-text-dim">--last 3</span>
+        </motion.div>
+
+        <div className="h-2" />
+
+        {logLines.map((line, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, x: -4 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.2, delay: logStart + i * logStagger }}
+            className={line.color}
+          >
+            {line.text}
+          </motion.div>
+        ))}
+
+        <div className="h-4" />
+
+        {/* Step 4: corsair verify */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

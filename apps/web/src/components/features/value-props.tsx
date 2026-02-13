@@ -12,6 +12,8 @@ import {
   MarqueIcon,
   QuarterIcon,
   RaidIcon,
+  ChartIcon,
+  SpyglassIcon,
 } from "@/components/pixel-art/pixel-icons";
 
 const props = [
@@ -45,6 +47,26 @@ const props = [
     label: "DIFF",
     labelColor: "text-corsair-green",
   },
+  {
+    title: "Log (like git log)",
+    description:
+      "corsair log — every CPOE registered in an append-only SCITT transparency log. Tamper-evident. Merkle-proofed. COSE receipts. Anyone can audit the full history of every attestation ever issued.",
+    accent: "border-t-corsair-turquoise",
+    glowColor: "rgba(127,219,202,0.15)",
+    icon: <ChartIcon size={36} />,
+    label: "LOG",
+    labelColor: "text-corsair-turquoise",
+  },
+  {
+    title: "Signal (like git webhooks)",
+    description:
+      "corsair signal — real-time compliance change notifications via FLAGSHIP. Drift detected, tier changed, credential revoked — subscribers know instantly via SSF/CAEP signed events.",
+    accent: "border-t-corsair-cyan",
+    glowColor: "rgba(0,207,255,0.15)",
+    icon: <SpyglassIcon size={36} />,
+    label: "SIGNAL",
+    labelColor: "text-corsair-cyan",
+  },
 ];
 
 const containerVariants = {
@@ -65,14 +87,14 @@ const itemVariants = {
 export function ValueProps() {
   return (
     <motion.div
-      className="grid gap-6 md:grid-cols-3"
+      className="flex flex-wrap justify-center gap-6"
       variants={containerVariants}
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, margin: "-80px" }}
     >
       {props.map((prop) => (
-        <motion.div key={prop.title} variants={itemVariants}>
+        <motion.div key={prop.title} variants={itemVariants} className="w-full md:w-[calc(33.333%-1rem)]">
           <Card
             className={`pixel-card-hover h-full border-t-2 ${prop.accent} bg-corsair-surface transition-all`}
             style={{ "--glow-color": prop.glowColor } as React.CSSProperties}

@@ -9,6 +9,7 @@ import {
   ChartIcon,
   QuarterIcon,
   MarqueIcon,
+  SpyglassIcon,
 } from "@/components/pixel-art/pixel-icons";
 
 const stages = [
@@ -47,6 +48,13 @@ const stages = [
     color: "text-corsair-green",
     glowColor: "rgba(46,204,113,0.15)",
   },
+  {
+    name: "SIGNAL",
+    description: "Real-time compliance change notifications via FLAGSHIP — drift, tier changes, and revocations via SSF/CAEP",
+    icon: <SpyglassIcon size={40} />,
+    color: "text-corsair-cyan",
+    glowColor: "rgba(0,207,255,0.15)",
+  },
 ];
 
 const containerVariants = {
@@ -69,7 +77,7 @@ const itemVariants = {
 export function PipelineStages() {
   return (
     <motion.div
-      className="grid grid-cols-2 gap-6 sm:grid-cols-5"
+      className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6"
       variants={containerVariants}
       initial="hidden"
       whileInView="visible"

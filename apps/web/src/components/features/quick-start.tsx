@@ -15,11 +15,17 @@ cd corsair && bun install
 # Sign tool output into a CPOE (like git commit)
 prowler scan | bun run corsair.ts sign
 
+# Verify any CPOE (always free, no account needed)
+bun run corsair.ts verify --file cpoe.jwt
+
 # Compare two CPOEs (like git diff)
 bun run corsair.ts diff --current new.jwt --previous old.jwt
 
-# Verify any CPOE (always free, no account needed)
-bun run corsair.ts verify --file cpoe.jwt
+# Query the SCITT transparency log (like git log)
+bun run corsair.ts log --last 10
+
+# Subscribe to real-time compliance signals (like git webhooks)
+bun run corsair.ts signal --subscribe stream-id
 
 # Generate Ed25519 signing keys
 bun run corsair.ts keygen`;

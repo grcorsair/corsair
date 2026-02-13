@@ -79,6 +79,10 @@ export function DisruptionSection() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 text-corsair-green">&#x2713;</span>
+                <code className="text-corsair-cyan">corsair verify</code> — four-step Ed25519 verification, free forever, no account needed
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-corsair-green">&#x2713;</span>
                 <code className="text-corsair-cyan">corsair diff</code> — compare CPOEs over time, detect regressions like git diff detects code changes
               </li>
               <li className="flex items-start gap-2">
@@ -87,7 +91,7 @@ export function DisruptionSection() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 text-corsair-green">&#x2713;</span>
-                <code className="text-corsair-cyan">corsair verify</code> — four-step Ed25519 verification, free forever, no account needed
+                <code className="text-corsair-cyan">corsair signal</code> — real-time compliance change notifications via FLAGSHIP. Drift, tier changes, revocations — subscribers know instantly
               </li>
             </ul>
           </CardContent>

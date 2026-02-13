@@ -69,6 +69,51 @@ export default function ProtocolPage() {
         </FadeIn>
       </section>
 
+      {/* ═══ PRIMITIVES → CRYPTO LAYERS ═══ */}
+      <PixelDivider className="my-4" />
+      <section className="px-6 py-16">
+        <div className="mx-auto max-w-5xl">
+          <FadeIn>
+            <div className="mb-10 text-center">
+              <p className="mb-3 font-pixel text-[8px] tracking-widest text-corsair-gold/60">
+                FIVE PRIMITIVES
+              </p>
+              <h2 className="mb-4 font-display text-3xl font-bold text-corsair-text">
+                What you do &rarr; how we built it
+              </h2>
+              <p className="mx-auto max-w-2xl text-sm text-corsair-text-dim">
+                Corsair exposes five user-facing primitives. Each maps to one or more
+                open cryptographic standards underneath. This page explains every layer.
+              </p>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.1}>
+            <div className="rounded-xl border border-corsair-border bg-[#0A0A0A] p-6">
+              <div className="space-y-3 font-mono text-xs">
+                {[
+                  { primitive: "Sign", crypto: "JWT-VC + Ed25519", color: "text-corsair-gold" },
+                  { primitive: "Verify", crypto: "DID:web resolution + signature check", color: "text-corsair-green" },
+                  { primitive: "Diff", crypto: "Compare two JWT-VC payloads", color: "text-corsair-turquoise" },
+                  { primitive: "Log", crypto: "SCITT transparency log + Merkle proofs", color: "text-corsair-cyan" },
+                  { primitive: "Signal", crypto: "FLAGSHIP / SSF/CAEP event streams", color: "text-corsair-crimson" },
+                ].map((item) => (
+                  <div key={item.primitive} className="flex items-center gap-3">
+                    <span className={`w-16 shrink-0 font-bold ${item.color}`}>
+                      {item.primitive}
+                    </span>
+                    <span className="text-corsair-border">&rarr;</span>
+                    <span className="text-corsair-text">
+                      {item.crypto}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
       {/* ═══ LAYER 1: PROTOCOL COMPOSITION ═══ */}
       <PixelDivider className="my-4" />
       <section className="px-6 py-16">

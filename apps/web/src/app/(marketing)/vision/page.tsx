@@ -138,11 +138,15 @@ export default function VisionPage() {
                 bespoke, and trust-based.
               </p>
               <p className="text-corsair-text">
-                Parley is git for compliance. Sign evidence like a commit. Diff
-                two CPOEs like two commits. Log every attestation in an
-                append-only transparency log. Verify any CPOE with{" "}
-                <span className="text-corsair-gold">standard JWT libraries</span>.
-                No vendor account. No proprietary platform. Four steps.
+                Parley is git for compliance. Five primitives:{" "}
+                <span className="text-corsair-gold">Sign</span> evidence like a commit.{" "}
+                <span className="text-corsair-green">Verify</span> any CPOE with standard JWT libraries.{" "}
+                <span className="text-corsair-turquoise">Diff</span> two CPOEs like two commits.{" "}
+                <span className="text-corsair-cyan">Log</span> every attestation in an
+                append-only SCITT transparency log.{" "}
+                <span className="text-corsair-crimson">Signal</span> compliance changes
+                in real time via FLAGSHIP.
+                No vendor account. No proprietary platform.
               </p>
             </div>
           </FadeIn>
@@ -484,10 +488,11 @@ export default function VisionPage() {
                 By the time agents arrive, the verification network already
                 exists — seeded by tool-generated CPOEs. The same CPOE format
                 that wraps a Prowler scan today wraps Wiz telemetry tomorrow
-                and agent-witnessed control tests next year. Same Ed25519
-                signature. Same DID resolution. Same SCITT log. Same FLAGSHIP
-                signals. Same assurance ladder. The evidence evolves. The proof
-                does not.
+                and agent-witnessed control tests next year. The five primitives
+                carry forward unchanged: Sign with Ed25519, Verify via DID
+                resolution, Diff any two attestations, Log in the SCITT
+                transparency registry, Signal changes through FLAGSHIP
+                SSF/CAEP streams. The evidence evolves. The proof does not.
               </p>
             </div>
           </FadeIn>

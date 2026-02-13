@@ -207,6 +207,111 @@ export default function AnatomyPage() {
         </div>
       </section>
 
+      {/* --- FIVE PRIMITIVES --- */}
+      <PixelDivider variant="diamond" className="my-4" />
+      <section className="px-6 py-16">
+        <div className="mx-auto max-w-4xl">
+          <FadeIn>
+            <div className="mb-10 text-center">
+              <p className="mb-3 font-pixel text-[8px] tracking-widest text-corsair-gold/60">
+                FIVE PRIMITIVES
+              </p>
+              <h2 className="mb-4 font-display text-3xl font-bold text-corsair-text">
+                Once evidence enters Corsair, five primitives take over
+              </h2>
+              <p className="mx-auto max-w-2xl text-corsair-text-dim">
+                Whether evidence flows from LOOKOUT telemetry, SPYGLASS tool scans,
+                or QUARTERMASTER platform results — it passes through the same five
+                operations. Like git for compliance.
+              </p>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.1}>
+            <div className="space-y-3">
+              {[
+                {
+                  name: "Sign",
+                  analogy: "git commit",
+                  desc: "Ed25519 JWT-VC signature turns evidence into a tamper-proof CPOE",
+                  color: "text-corsair-gold",
+                  bgColor: "bg-corsair-gold/10",
+                },
+                {
+                  name: "Verify",
+                  analogy: "checking the padlock",
+                  desc: "DID:web resolution + Ed25519 signature check. Free, no account needed",
+                  color: "text-corsair-green",
+                  bgColor: "bg-corsair-green/10",
+                },
+                {
+                  name: "Diff",
+                  analogy: "git diff",
+                  desc: "Compare two CPOEs to see what changed — regressions, improvements, drift",
+                  color: "text-corsair-turquoise",
+                  bgColor: "bg-corsair-turquoise/10",
+                },
+                {
+                  name: "Log",
+                  analogy: "git log",
+                  desc: "SCITT append-only transparency log with Merkle proofs and COSE receipts",
+                  color: "text-corsair-cyan",
+                  bgColor: "bg-corsair-cyan/10",
+                },
+                {
+                  name: "Signal",
+                  analogy: "git webhooks",
+                  desc: "FLAGSHIP real-time compliance change notifications via SSF/CAEP",
+                  color: "text-corsair-crimson",
+                  bgColor: "bg-corsair-crimson/10",
+                },
+              ].map((primitive) => (
+                <div
+                  key={primitive.name}
+                  className="flex items-start gap-4 rounded-lg border border-corsair-border bg-[#0A0A0A] p-4"
+                >
+                  <span
+                    className={`flex h-8 w-20 shrink-0 items-center justify-center rounded font-mono text-xs font-bold ${primitive.bgColor} ${primitive.color}`}
+                  >
+                    {primitive.name}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm text-corsair-text">
+                      {primitive.desc}
+                    </p>
+                    <p className="mt-1 text-xs text-corsair-text-dim/60">
+                      Like <code className={primitive.color}>{primitive.analogy}</code>
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.2}>
+            <div className="mt-8 rounded-xl border border-corsair-gold/20 bg-[#0A0A0A] p-6">
+              <p className="mb-3 font-pixel text-[8px] tracking-widest text-corsair-gold/60">
+                EVIDENCE TO PROOF FLOW
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-2 font-mono text-xs">
+                <span className="text-corsair-text-dim">Tier 1/2/3 evidence</span>
+                <span className="text-corsair-border">&rarr;</span>
+                <span className="text-corsair-gold">Sign</span>
+                <span className="text-corsair-border">&rarr;</span>
+                <span className="text-corsair-cyan">Log</span>
+                <span className="text-corsair-border">&rarr;</span>
+                <span className="text-corsair-green">Verify</span>
+                <span className="ml-4 text-corsair-border">|</span>
+                <span className="text-corsair-turquoise">Diff</span>
+                <span className="text-corsair-text-dim/40">+</span>
+                <span className="text-corsair-crimson">Signal</span>
+                <span className="text-corsair-text-dim">(continuous)</span>
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
       {/* --- FINAL CTA --- */}
       <PixelDivider variant="diamond" className="my-4" />
       <section className="px-6 py-20">

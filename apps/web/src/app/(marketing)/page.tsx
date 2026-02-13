@@ -21,10 +21,10 @@ export default function Home() {
               THE PIPELINE
             </p>
             <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
-              Sign. Log. Verify. Diff.
+              Sign. Verify. Diff. Log. Signal.
             </h2>
             <p className="mb-12 text-center text-corsair-text-dim">
-              Five stages. From tool output to signed, traceable proof.
+              From tool output to signed, traceable, real-time proof.
             </p>
           </FadeIn>
           <FadeIn delay={0.2}>
@@ -46,7 +46,7 @@ export default function Home() {
               Git for Compliance
             </h2>
             <p className="mb-12 text-center text-corsair-text-dim">
-              Sign. Verify. Diff. The three pillars of the Parley protocol.
+              Five primitives of the Parley protocol.
             </p>
           </FadeIn>
           <ValueProps />
@@ -128,7 +128,7 @@ export default function Home() {
               Quick Start
             </h2>
             <p className="mb-8 text-center text-corsair-text-dim">
-              Sign tool output. Diff over time. Verify any CPOE. No API keys needed.
+              Sign tool output. Verify any CPOE. Diff over time. Log everything. Signal changes. No API keys needed.
             </p>
           </FadeIn>
           <FadeIn delay={0.2}>
