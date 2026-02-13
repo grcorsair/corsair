@@ -1,6 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
+import demoEntries from "../../../../public/demo-scitt-entries.json";
 
 const API_BASE = process.env.CORSAIR_API_URL ?? "https://api.grcorsair.com";
+
+interface DemoEntry {
+  entryId: string;
+  registrationTime: string;
+  treeSize: number;
+  issuer: string;
+  scope: string;
+  provenance: { source: string; sourceIdentity?: string };
+  assuranceLevel?: number;
+  summary?: {
+    controlsTested: number;
+    controlsPassed: number;
+    controlsFailed: number;
+    overallScore: number;
+  };
+}
+
+/**
+ * Apply query params to demo data (client-side filtering).
+ * Mirrors the backend's filtering behavior.
+ */
+function filterDemoEntries(
+  entries: DemoEntry[],
+  params: URLSearchParams,
+): DemoEntry[] {
+  let filtered = [...entries];
+
+  const issuer = params.get("issuer");
+  if (issuer) {
+    filtered = filtered.filter((e) => e.issuer === issuer);
+  }
+
+  const framework = params.get("framework");
+  if (framework) {
+    filtered = filtered.filter((e) =>
+      e.scope.toLowerCase().includes(framework.toLowerCase()),
+    );
+  }
+
+  const provenanceSource = params.get("provenanceSource");
+  if (provenanceSource) {
+    filtered = filtered.filter((e) => e.provenance.source === provenanceSource);
+  }
+
+  const offset = parseInt(params.get("offset") ?? "0", 10) || 0;
+  const limit = parseInt(params.get("limit") ?? "20", 10) || 20;
+
+  return filtered.slice(offset, offset + limit);
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -23,31 +73,26 @@ export async function GET(request: NextRequest) {
   try {
     const res = await fetch(`${API_BASE}/scitt/entries?${params.toString()}`, {
       headers: { Accept: "application/json" },
-      next: { revalidate: 30 }, // Cache for 30 seconds
+      next: { revalidate: 30 },
     });
 
-    if (!res.ok) {
-      // Return empty array when upstream is unavailable (not deployed yet)
-      return NextResponse.json([], {
+    if (res.ok) {
+      const data = await res.json();
+      return NextResponse.json(data, {
         headers: {
           "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
         },
       });
     }
-
-    const data = await res.json();
-
-    return NextResponse.json(data, {
-      headers: {
-        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
-      },
-    });
   } catch {
-    // Return empty array when upstream is unreachable
-    return NextResponse.json([], {
-      headers: {
-        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
-      },
-    });
+    // Backend unavailable — fall through to demo data
   }
+
+  // Fallback: serve demo data (real signed CPOEs from example evidence files)
+  const filtered = filterDemoEntries(demoEntries as DemoEntry[], params);
+  return NextResponse.json(filtered, {
+    headers: {
+      "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+    },
+  });
 }

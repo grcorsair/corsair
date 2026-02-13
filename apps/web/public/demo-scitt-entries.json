@@ -1,0 +1,177 @@
+[
+  {
+    "entryId": "scitt-marque-bc32da55-1bea-4f3f-bc4b-72141863ce1d",
+    "registrationTime": "2026-02-12T17:21:14.180Z",
+    "treeSize": 1,
+    "issuer": "did:web:cloudbank.io",
+    "scope": "AWS Production — Cloud Infrastructure Controls",
+    "provenance": {
+      "source": "tool",
+      "sourceIdentity": "Prowler"
+    },
+    "assuranceLevel": 1,
+    "summary": {
+      "controlsTested": 15,
+      "controlsPassed": 10,
+      "controlsFailed": 5,
+      "overallScore": 67,
+      "severityDistribution": {
+        "HIGH": 8,
+        "MEDIUM": 5,
+        "CRITICAL": 2
+      }
+    }
+  },
+  {
+    "entryId": "scitt-marque-5bbc5251-f468-4c79-9009-56d7cb47892f",
+    "registrationTime": "2026-02-11T17:21:14.183Z",
+    "treeSize": 2,
+    "issuer": "did:web:retailcorp.com",
+    "scope": "PCI DSS — Payment Infrastructure Hardening",
+    "provenance": {
+      "source": "tool",
+      "sourceIdentity": "InSpec"
+    },
+    "assuranceLevel": 1,
+    "summary": {
+      "controlsTested": 10,
+      "controlsPassed": 7,
+      "controlsFailed": 3,
+      "overallScore": 70,
+      "severityDistribution": {
+        "CRITICAL": 2,
+        "MEDIUM": 3,
+        "HIGH": 5
+      }
+    }
+  },
+  {
+    "entryId": "scitt-marque-77c3a653-13ba-423a-a1fe-5d9cd60feb75",
+    "registrationTime": "2026-02-10T17:21:14.185Z",
+    "treeSize": 3,
+    "issuer": "did:web:devshipco.dev",
+    "scope": "Container Security — Production Images",
+    "provenance": {
+      "source": "tool",
+      "sourceIdentity": "Trivy"
+    },
+    "assuranceLevel": 1,
+    "summary": {
+      "controlsTested": 12,
+      "controlsPassed": 3,
+      "controlsFailed": 9,
+      "overallScore": 25,
+      "severityDistribution": {
+        "MEDIUM": 3,
+        "HIGH": 3,
+        "LOW": 4,
+        "CRITICAL": 2
+      }
+    }
+  },
+  {
+    "entryId": "scitt-marque-041d6b2c-942b-4495-8402-8fad7488bafc",
+    "registrationTime": "2026-02-08T17:21:14.186Z",
+    "treeSize": 4,
+    "issuer": "did:web:healthsafe.ai",
+    "scope": "HIPAA — AWS Environment Security Posture",
+    "provenance": {
+      "source": "tool",
+      "sourceIdentity": "AWS SecurityHub"
+    },
+    "assuranceLevel": 1,
+    "summary": {
+      "controlsTested": 12,
+      "controlsPassed": 8,
+      "controlsFailed": 4,
+      "overallScore": 67,
+      "severityDistribution": {
+        "CRITICAL": 3,
+        "HIGH": 5,
+        "MEDIUM": 4
+      }
+    }
+  },
+  {
+    "entryId": "scitt-marque-39b7e3c2-f51f-425c-ad11-244b04153c33",
+    "registrationTime": "2026-02-06T17:21:14.188Z",
+    "treeSize": 5,
+    "issuer": "did:web:govcloud.org",
+    "scope": "ISO 27001 — Information Security Management",
+    "provenance": {
+      "source": "auditor",
+      "sourceIdentity": "Coalfire ISO Audit Team"
+    },
+    "assuranceLevel": 2,
+    "summary": {
+      "controlsTested": 10,
+      "controlsPassed": 6,
+      "controlsFailed": 3,
+      "overallScore": 60
+    }
+  },
+  {
+    "entryId": "scitt-marque-1e0a7598-0183-4c96-a032-c882989a708d",
+    "registrationTime": "2026-02-03T17:21:14.189Z",
+    "treeSize": 6,
+    "issuer": "did:web:fintrust.co",
+    "scope": "SOC 2 Type II — Trust Services Criteria",
+    "provenance": {
+      "source": "auditor",
+      "sourceIdentity": "Deloitte LLP"
+    },
+    "assuranceLevel": 2,
+    "summary": {
+      "controlsTested": 8,
+      "controlsPassed": 5,
+      "controlsFailed": 3,
+      "overallScore": 63
+    }
+  },
+  {
+    "entryId": "scitt-marque-2acd1f0d-60db-419c-819e-f8154de56b70",
+    "registrationTime": "2026-02-01T17:21:14.191Z",
+    "treeSize": 7,
+    "issuer": "did:web:appsec-team.io",
+    "scope": "SAST — Application Code Security Review",
+    "provenance": {
+      "source": "tool",
+      "sourceIdentity": "Semgrep"
+    },
+    "assuranceLevel": 1,
+    "summary": {
+      "controlsTested": 6,
+      "controlsPassed": 0,
+      "controlsFailed": 6,
+      "overallScore": 0,
+      "severityDistribution": {
+        "CRITICAL": 1,
+        "HIGH": 2,
+        "MEDIUM": 2,
+        "LOW": 1
+      }
+    }
+  },
+  {
+    "entryId": "scitt-marque-7baa59d0-948a-4eaa-a621-4055680caea1",
+    "registrationTime": "2026-01-30T17:21:14.193Z",
+    "treeSize": 8,
+    "issuer": "did:web:acme-corp.com",
+    "scope": "Internal Security Assessment — Q1 2026",
+    "provenance": {
+      "source": "self",
+      "sourceIdentity": "Acme Corp Security Team"
+    },
+    "assuranceLevel": 0,
+    "summary": {
+      "controlsTested": 10,
+      "controlsPassed": 7,
+      "controlsFailed": 3,
+      "overallScore": 70,
+      "severityDistribution": {
+        "HIGH": 7,
+        "MEDIUM": 3
+      }
+    }
+  }
+]
