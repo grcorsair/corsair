@@ -259,13 +259,11 @@ did:web:acme.com       →  https://acme.com/.well-known/did.json
 ## Testing
 
 ```bash
-bun test                          # All tests (935 tests, 52 files)
+bun test                          # All tests (772 tests, 39 files)
 
 bun test tests/parley/            # Parley protocol (MARQUE, JWT-VC, DID, SCITT)
 bun test tests/flagship/          # FLAGSHIP (SSF/SET/CAEP)
 bun test tests/ingestion/         # Document ingestion pipeline
-bun test tests/quartermaster/     # Governance review + adversarial evals
-bun test tests/chart/             # Framework mapping
 bun test tests/functions/         # API endpoints (SSF, SCITT, health)
 bun test tests/db/                # Database tests (requires Postgres)
 ```
@@ -295,23 +293,20 @@ bun test tests/db/                # Database tests (requires Postgres)
 <br/>
 
 ```
-corsair.ts                 # CLI entry point (ingest, verify, keygen, help)
+corsair.ts                 # CLI entry point (sign, verify, diff, log, keygen, help)
 
 src/
   types.ts                 # Core type definitions
   evidence.ts              # JSONL evidence engine with SHA-256 hash chain
 
-  ingestion/               # Document ingestion pipeline (8 files)
-    pdf-extractor.ts       #   PDF → text via Claude
-    soc2-parser.ts         #   SOC 2 report parser
+  ingestion/               # Evidence parsing + classification (5 files)
+    json-parser.ts         #   Tool format adapters (Prowler, InSpec, Trivy)
     mapper.ts              #   Parsed data → MarqueGeneratorInput
     assurance-calculator.ts #  L0-L4 per-control classification
-    batch-processor.ts     #   Multi-document batch ingestion
-    cli.ts                 #   CLI handler for ingest subcommand
-    types.ts               #   Ingestion type definitions
+    types.ts               #   IngestedDocument, IngestedControl types
     index.ts               #   Barrel exports
 
-  parley/                  # Parley trust exchange protocol (22 files)
+  parley/                  # Parley trust exchange protocol (21 files)
     vc-generator.ts        #   JWT-VC generation (jose + Ed25519)
     vc-verifier.ts         #   JWT-VC verification
     vc-types.ts            #   W3C Verifiable Credential 2.0 types
@@ -319,7 +314,6 @@ src/
     marque-verifier.ts     #   MARQUE verification (auto-detects format)
     marque-key-manager.ts  #   Ed25519 keypair management + JWK export
     marque-types.ts        #   MARQUE document types
-    marque-oscal-mapper.ts #   MARQUE → OSCAL Assessment Results
     pg-key-manager.ts      #   Postgres-backed key manager (AES-256-GCM)
     did-resolver.ts        #   DID:web resolution and formatting
     scitt-types.ts         #   SCITT transparency log types
@@ -343,31 +337,19 @@ src/
     flagship-client.ts     #   Push/poll delivery (retry, circuit breaker)
     index.ts               #   Barrel exports
 
-  quartermaster/           # Governance verification (5 files)
-    quartermaster-agent.ts #   Deterministic + LLM governance review
-    quartermaster-marque-bridge.ts  # Governance → MARQUE attestation
-    quartermaster-types.ts #   Governance types
-    evals/                 #   Adversarial evaluation harness
+  security/                # Security utilities (1 file)
+    url-validation.ts      #   DID resolver URL safety checks
 
-  chart/                   # Framework mapping (2 files)
-    chart-engine.ts        #   Maps controls to 12+ frameworks via CTID/SCF
-    index.ts               #   Barrel exports
-
-  output/                  # Report generation (3 files)
-    oscal-generator.ts     #   OSCAL Assessment Results JSON
-    oscal-types.ts         #   OSCAL type definitions
-    report-generator.ts    #   HTML + Markdown reports
-
-  data/                    # Framework mapping data (3 files)
-    mapping-loader.ts      #   CTID/SCF loader with singleton cache
-    ctid-mappings.json     #   ATT&CK → NIST 800-53 (6,300+ mappings)
-    scf-crosswalk.json     #   NIST 800-53 → 175+ frameworks
+  middleware/              # HTTP middleware (3 files)
+    auth.ts                #   API key authentication
+    rate-limit.ts          #   Request rate limiting
+    security-headers.ts    #   Security response headers
 
   db/                      # Postgres via Bun.sql (6 files)
     connection.ts          #   Singleton connection pool
     migrate.ts             #   Idempotent SQL migration runner
     index.ts               #   Barrel exports
-    migrations/            #   001–005 SQL migrations
+    migrations/            #   001–007 SQL migrations
 
 bin/
   corsair-verify.ts        # Standalone CPOE verification CLI
@@ -381,6 +363,10 @@ examples/
 
 functions/                 # Railway Functions (HTTP endpoints)
   health.ts                #   GET /health
+  verify.ts                #   POST /verify
+  issue.ts                 #   POST /issue
+  did-json.ts              #   GET /.well-known/did.json
+  jwks-json.ts             #   GET /.well-known/jwks.json
   ssf-configuration.ts     #   GET /.well-known/ssf-configuration
   ssf-stream.ts            #   SSF stream CRUD API
   scitt-register.ts        #   SCITT registration + receipt API
@@ -389,18 +375,13 @@ functions/                 # Railway Functions (HTTP endpoints)
 apps/
   web/                     # grcorsair.com (Next.js 15 + Tailwind 4 + shadcn/ui)
 
-tests/                     # 806 tests across 49 files
+tests/                     # 772 tests across 39 files
   parley/                  #   MARQUE, JWT-VC, DID, SCITT, CBOR, COSE, Merkle
   flagship/                #   SET generation, SSF streams, delivery
-  ingestion/               #   SOC 2 parsing, mapping, batch processing
-  quartermaster/           #   Governance review + adversarial evals
-  chart/                   #   Framework mapping
-  output/                  #   OSCAL + report generation
-  data/                    #   CTID/SCF mapping loader
+  ingestion/               #   Evidence parsing, mapping, classification
   db/                      #   Database connection + migrations
   functions/               #   API endpoint tests
   cli/                     #   CLI integration tests
-  integration/             #   E2E pipeline tests
 ```
 
 </details>

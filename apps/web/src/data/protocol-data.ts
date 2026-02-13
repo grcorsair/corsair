@@ -321,14 +321,14 @@ export const FLAGSHIP_TIMELINE: FlagshipEvent[] = [
     time: "2026-02-09T14:30:00Z",
     pirateName: "PAPERS_CHANGED",
     caepType: "credential-change",
-    description: "CPOE issued — L0 Documented, 82 controls assessed",
+    description: "CPOE issued — provenance: auditor, 82 controls assessed",
     severity: "info",
   },
   {
     time: "2026-02-12T09:15:00Z",
     pirateName: "COLORS_CHANGED",
     caepType: "assurance-level-change",
-    description: "Assurance upgraded L0 → L1 after config evidence submitted",
+    description: "Provenance updated: self → tool after config evidence submitted",
     severity: "info",
   },
   {
@@ -342,7 +342,7 @@ export const FLAGSHIP_TIMELINE: FlagshipEvent[] = [
     time: "2026-03-01T17:10:00Z",
     pirateName: "COLORS_CHANGED",
     caepType: "assurance-level-change",
-    description: "Assurance downgraded L1 → L0 due to compliance drift",
+    description: "Compliance score degraded due to drift — controls now ineffective",
     severity: "critical",
   },
   {
@@ -356,7 +356,7 @@ export const FLAGSHIP_TIMELINE: FlagshipEvent[] = [
     time: "2026-03-02T08:45:00Z",
     pirateName: "COLORS_CHANGED",
     caepType: "assurance-level-change",
-    description: "Assurance restored L0 → L1 after drift resolution",
+    description: "Compliance restored after drift resolution — controls effective",
     severity: "info",
   },
 ];

@@ -21,32 +21,32 @@ const lines: TerminalLine[] = [
     delayMs: 1500,
   },
   {
-    text: "[CLASSIFY]  Assurance levels assigned: L0:1 L1:7 L2:2",
+    text: "[SIGN]      Provenance: tool (Prowler v3.1)",
     className: "text-corsair-cyan",
     delayMs: 2500,
   },
   {
-    text: "[CHART]     Mapping to SOC 2, NIST 800-53, ISO 27001...",
+    text: "[SIGN]      Controls: 10 found, 8 effective, 2 ineffective",
     className: "text-corsair-turquoise",
     delayMs: 3500,
   },
   {
-    text: "[CHART]     28 framework mappings generated",
+    text: "[SIGN]      Scope: AWS Production — Prowler CIS Benchmark",
     className: "text-corsair-turquoise",
     delayMs: 4500,
   },
   {
-    text: "[QUARTER]   Governance review: 91/100 confidence score",
+    text: "[SIGN]      Signing with Ed25519 (did:web:acme.com)...",
     className: "text-corsair-gold",
     delayMs: 5500,
   },
   {
-    text: "[MARQUE]    Signing CPOE with Ed25519 (did:web:acme.com)...",
+    text: "[SIGN]      Registering in SCITT transparency log...",
     className: "text-corsair-green",
     delayMs: 6500,
   },
   {
-    text: "[MARQUE]    \u2713 CPOE issued \u2014 L1 Configured",
+    text: "[SIGN]      \u2713 CPOE signed — provenance: tool (Prowler v3.1)",
     className: "text-corsair-green font-bold",
     delayMs: 7500,
   },

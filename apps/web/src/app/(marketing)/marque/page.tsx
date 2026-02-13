@@ -140,7 +140,7 @@ export default function MarquePage() {
                   </li>
                   <li className="flex gap-3">
                     <span className="text-corsair-gold">4.</span>
-                    Result: signature validity, assurance level, provenance, pass rate. Math replaces trust.
+                    Result: signature validity, provenance, controls summary, pass rate. Math replaces trust.
                   </li>
                 </ol>
               </div>
@@ -190,7 +190,7 @@ export default function MarquePage() {
                 Center can&apos;t verify Drata&apos;s output, and vice versa.
                 CPOE is the universal format. A CPOE replaces trust with
                 verification: the evidence was assessed, the results were
-                recorded at a declared assurance level, and the credential is
+                recorded with provenance metadata, and the credential is
                 cryptographically signed. You don&apos;t have to trust the
                 vendor or the platform. You verify the proof.
               </p>

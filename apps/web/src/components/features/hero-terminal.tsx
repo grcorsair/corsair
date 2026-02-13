@@ -15,9 +15,9 @@ const diffLines = [
 ];
 
 const logLines = [
-  { text: "  #4  2026-02-13  cpoe-acme-v2.jwt    L1  did:web:grcorsair.com", color: "text-corsair-text" },
-  { text: "  #3  2026-02-09  cpoe-acme-v1.jwt    L1  did:web:grcorsair.com", color: "text-corsair-text-dim" },
-  { text: "  #2  2026-01-15  cpoe-globex.jwt     L2  did:web:grcorsair.com", color: "text-corsair-text-dim" },
+  { text: "  #4  2026-02-13  cpoe-acme-v2.jwt    tool   did:web:grcorsair.com", color: "text-corsair-text" },
+  { text: "  #3  2026-02-09  cpoe-acme-v1.jwt    tool   did:web:grcorsair.com", color: "text-corsair-text-dim" },
+  { text: "  #2  2026-01-15  cpoe-globex.jwt     self   did:web:globex.com", color: "text-corsair-text-dim" },
 ];
 
 const verifyLines = [

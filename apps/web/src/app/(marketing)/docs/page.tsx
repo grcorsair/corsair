@@ -7,7 +7,7 @@ import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 export const metadata: Metadata = {
   title: "Documentation",
   description:
-    "Get started with Corsair. Learn about the CPOE lifecycle, Parley protocol, assurance levels, and how to integrate with your GRC workflow.",
+    "Get started with Corsair. Learn about the CPOE lifecycle, Parley protocol, provenance model, and how to integrate with your GRC workflow.",
 };
 
 const sections = [

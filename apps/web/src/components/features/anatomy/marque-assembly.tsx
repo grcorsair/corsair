@@ -18,7 +18,7 @@ const jwtPayloadPreview = `{
     "type": ["VerifiableCredential", "CorsairCPOE"],
     "credentialSubject": {
       "scope": "AWS Infrastructure — Prowler Scan",
-      "assurance": { "declared": 1 },
+      "provenance": { "source": "tool", "sourceIdentity": "Prowler v3.1" },
       "summary": {
         "controlsTested": 10,
         "controlsPassed": 8,
@@ -128,8 +128,8 @@ export function MarqueAssembly() {
               </p>
             </div>
           </div>
-          <Badge className="bg-corsair-gold/20 text-corsair-gold border-transparent font-pixel text-[9px]">
-            L1 — Configured
+          <Badge className="bg-corsair-green/20 text-corsair-green border-transparent font-pixel text-[9px]">
+            tool — Prowler v3.1
           </Badge>
         </div>
 

@@ -50,7 +50,7 @@ export const INTEGRATION_TIERS: IntegrationTier[] = [
     evidenceType: "Raw logs, API calls, config state, event streams",
     provenanceType: "tool (telemetry)",
     cliExample: "corsair sign --format cloudtrail --input trail.json",
-    cliLabel: "Sign CloudTrail evidence as L1 CPOE",
+    cliLabel: "Sign CloudTrail evidence as CPOE",
   },
   {
     tier: 2,
@@ -78,7 +78,7 @@ export const INTEGRATION_TIERS: IntegrationTier[] = [
     title: "Results from GRC Platforms",
     subtitle: "Governed, reviewed, and continuously validated",
     description:
-      "GRC platforms that aggregate evidence, manage control lifecycles, and provide continuous monitoring. Structured compliance data with governance context — the richest evidence source, producing the highest assurance levels.",
+      "GRC platforms that aggregate evidence, manage control lifecycles, and provide continuous monitoring. Structured compliance data with governance context — the richest evidence source.",
     sources: [
       "Vanta",
       "Drata",
@@ -91,7 +91,7 @@ export const INTEGRATION_TIERS: IntegrationTier[] = [
     provenanceType: "tool (platform)",
     cliExample:
       "corsair sign --format ciso-assistant --input controls-export.json",
-    cliLabel: "Sign GRC platform export as L2+ CPOE",
+    cliLabel: "Sign GRC platform export as CPOE",
   },
 ];
 

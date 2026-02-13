@@ -197,8 +197,8 @@ export default function VisionPage() {
               </div>
               <p className="mt-4 text-xs text-corsair-gold">
                 All roads lead to the same CPOE. Same Ed25519 signature. Same
-                verification flow. The evidence source determines the assurance
-                level — not the format.
+                verification flow. The provenance records where evidence came
+                from — not the format.
               </p>
             </div>
           </FadeIn>
@@ -309,7 +309,7 @@ export default function VisionPage() {
                 <span className="text-corsair-gold">
                   assessment result
                 </span>{" "}
-                — controls tested, controls passed, assurance level, issuer
+                — controls tested, controls passed, provenance, issuer
                 identity — in a JWT that anyone can verify.
               </p>
               <p>
@@ -472,9 +472,8 @@ export default function VisionPage() {
                   machine-readable, cryptographically signed proof
                 </span>{" "}
                 that it can verify without human intervention. It needs a CPOE —
-                and the assurance ladder tells it exactly how much to trust that
-                proof, whether the evidence came from a document review or a
-                live agent observation.
+                with provenance metadata showing whether evidence came
+                from a self-assessment, a tool scan, or an auditor review.
               </p>
               <p>
                 This is why the format matters more than the tool. Intelligence

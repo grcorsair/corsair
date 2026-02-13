@@ -22,7 +22,7 @@ import { SignalTimeline } from "@/components/features/protocol/signal-timeline";
 export const metadata: Metadata = {
   title: "The Parley Protocol — Cryptographic Trust Stack",
   description:
-    "Deep dive into the Parley protocol: Ed25519 signing, DID:web identity, 7-dimension assurance model, SCITT transparency logs, and real-time FLAGSHIP signals. Every cryptographic decision explained.",
+    "Deep dive into the Parley protocol: Ed25519 signing, DID:web identity, provenance model, SCITT transparency logs, and real-time FLAGSHIP signals. Every cryptographic decision explained.",
 };
 
 export default function ProtocolPage() {

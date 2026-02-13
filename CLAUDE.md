@@ -8,46 +8,51 @@ Compliance proof infrastructure — cryptographic trust layer for GRC. Parley pr
 - **Test Runner**: `bun test` (NOT jest, vitest, or mocha)
 - **Package Manager**: `bun install` (NOT npm, yarn, or pnpm)
 - **Crypto**: Node.js built-in `crypto` module + `jose` for JWT-VC (Ed25519)
-- **AI SDK**: @anthropic-ai/sdk (SOC 2 ingestion)
+- **AI SDK**: @anthropic-ai/sdk (devDep — optional Quartermaster enrichment)
 - **Database**: Railway Postgres via Bun.sql (zero-dep driver)
 - **Web**: Next.js 15 + Tailwind 4 + shadcn/ui (apps/web/)
 
 ## Commands
 ```bash
 bun install                          # Install dependencies
-bun test                             # Run all tests (806 tests, 49 files)
-bun test tests/parley/               # Parley protocol tests (21 files)
+bun test                             # Run all tests (772 tests, 39 files)
+bun test tests/parley/               # Parley protocol tests (20 files)
 bun test tests/flagship/             # FLAGSHIP SSF/CAEP tests
-bun test tests/ingestion/            # Ingestion pipeline tests
-bun test tests/quartermaster/        # Governance tests
-bun run corsair.ts ingest --file report.pdf --type soc2  # Ingest SOC 2
+bun test tests/ingestion/            # Evidence parsing + classification tests
+bun run corsair.ts sign --file <path>  # Sign evidence as CPOE
 bun run corsair.ts verify cpoe.jwt   # Verify a CPOE
 bun run corsair.ts keygen            # Generate Ed25519 keypair
 ```
 
-## Pipeline (v0.4.0)
+## Pipeline (v0.5.0 — Provenance-first)
 ```
-INGEST → CLASSIFY → CHART → QUARTER → MARQUE (+ SCITT log + FLAGSHIP signals)
+EVIDENCE → SIGN → LOG → VERIFY → DIFF (default, fully deterministic)
+Optional enrichment (--enrich): CLASSIFY + CHART + QUARTER
 ```
 
-## Pirate Naming Convention
+## Five Protocol Primitives
 
-| Stage | Meaning | Code Pattern |
-|---|---|---|
-| INGEST | Document ingestion | `parseSOC2()`, `mapToMarqueInput()` |
-| CLASSIFY | Assurance classification (L0–L4) | `calculateAssuranceLevel()` |
-| CHART | Framework mapping | `ChartEngine`, `chart()` |
-| QUARTER | Governance verification | `QuartermasterAgent` |
-| MARQUE | Signed CPOE (Ed25519 JWT-VC) | `MarqueGenerator`, `MarqueVerifier` |
-| FLAGSHIP | Real-time compliance signals | `SETGenerator`, `SSFStream` |
+| Primitive | CLI Command | What It Does |
+|-----------|-------------|--------------|
+| **SIGN** | `corsair sign` | Parse evidence, record provenance, sign JWT-VC (Ed25519) |
+| **VERIFY** | `corsair verify` | Verify Ed25519 signature via DID:web resolution |
+| **DIFF** | `corsair diff` | Compare two CPOEs, detect compliance regressions |
+| **LOG** | `corsair log` | Query SCITT transparency log |
+| **SIGNAL** | FLAGSHIP | Real-time compliance change notifications (SSF/CAEP) |
 
 ## Architecture Patterns
-- **Ingestion pipeline**: PDF → Claude extraction → IngestedDocument → classify → chart → quarter → JWT-VC CPOE
 - **Protocol**: Parley = JWT-VC (proof) + SCITT (log) + SSF/CAEP (signal) + in-toto/SLSA (provenance)
-- **Assurance levels**: L0=Documented, L1=Configured, L2=Demonstrated, L3=Observed, L4=Attested
-- **Barrel exports**: Each module has `index.ts` re-exporting everything
+- **Provenance model**: Records WHO produced evidence (self/tool/auditor), lets buyers decide sufficiency
+- **Assurance levels** (optional enrichment): L0=Documented, L1=Configured, L2=Demonstrated, L3=Observed, L4=Attested
 - **Type-only imports**: Use `import type { }` to avoid circular dependencies
 - **Bun-native**: Prefer `Bun.env`, `Bun.file()`, `Bun.write()` over Node.js equivalents
+
+## Shelved Modules
+Enrichment modules (quartermaster, chart, data, output) were shelved from the repo in v0.5.0 to keep the codebase focused on protocol primitives. They are fully recoverable via git:
+```bash
+git show v0.5.0-with-enrichment:src/quartermaster/quartermaster-agent.ts  # View any file
+git diff v0.5.0-with-enrichment..HEAD -- src/                              # See what was removed
+```
 
 ## TDD Workflow (MANDATORY)
 1. Write test FIRST in `tests/` mirroring `src/` structure
@@ -62,7 +67,6 @@ INGEST → CLASSIFY → CHART → QUARTER → MARQUE (+ SCITT log + FLAGSHIP sig
 - Imports: `import { describe, test, expect } from "bun:test"`
 - Pattern: `describe("Feature") > test("should X when Y")`
 - Run specific test file first (`bun test tests/path/file.test.ts`), not the full suite
-- 31 Postgres tests fail due to pre-existing tenant_id constraint (005_multi_tenancy.sql)
 
 ## Security Rules
 - Ed25519 for CPOE signing (Node.js crypto + jose for JWT-VC)
@@ -80,7 +84,7 @@ INGEST → CLASSIFY → CHART → QUARTER → MARQUE (+ SCITT log + FLAGSHIP sig
 - When shipping a backend feature, audit all user-facing content (docs + blog) in the same pass
 
 ### Ask First
-- Before adding new dependencies (keep deps minimal — currently only 2)
+- Before adding new dependencies (keep deps minimal — currently only 1 runtime dep: jose)
 - Before modifying Ed25519 signing or hash chain logic
 - Before changing CPOE/Parley type schemas
 
@@ -96,4 +100,4 @@ INGEST → CLASSIFY → CHART → QUARTER → MARQUE (+ SCITT log + FLAGSHIP sig
 - @CONTRIBUTING.md — Contribution rules
 - @SECURITY.md — Vulnerability reporting
 - @CPOE_SPEC.md — CPOE one-page specification
-- @L0-L4_ISSUANCE_SPEC.md — Assurance level specification
+- @L0-L4_ISSUANCE_SPEC.md — Assurance level specification (historical reference)

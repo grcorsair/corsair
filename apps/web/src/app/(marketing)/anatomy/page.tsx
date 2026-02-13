@@ -174,7 +174,7 @@ export default function AnatomyPage() {
               <p className="mx-auto max-w-2xl text-corsair-text-dim">
                 Whether the evidence comes from a CloudTrail log, a Prowler scan,
                 or a Vanta export — the output is a single JWT-VC signed with Ed25519.
-                The evidence source determines the assurance level. The format is universal.
+                The provenance records where the evidence came from. The format is universal.
               </p>
             </div>
           </FadeIn>
