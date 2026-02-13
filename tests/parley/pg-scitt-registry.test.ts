@@ -21,6 +21,7 @@ import type {
 function buildMockJWT(claims: {
   iss: string;
   scope?: string;
+  provenance?: { source: string; sourceIdentity?: string };
   assurance?: { declared: number };
   summary?: { controlsTested: number; controlsPassed: number; controlsFailed: number; overallScore: number };
   frameworks?: Record<string, unknown>;
@@ -38,6 +39,7 @@ function buildMockJWT(claims: {
       credentialSubject: {
         type: "CorsairCPOE",
         scope: claims.scope ?? "Test Scope",
+        ...(claims.provenance ? { provenance: claims.provenance } : {}),
         ...(claims.assurance ? { assurance: claims.assurance } : {}),
         ...(claims.summary ? { summary: claims.summary } : {}),
         ...(claims.frameworks ? { frameworks: claims.frameworks } : {}),
@@ -204,7 +206,7 @@ describe("PgSCITTRegistry.listEntries", () => {
     expect(result).toEqual([]);
   });
 
-  test("returns entries with decoded JWT metadata", async () => {
+  test("returns entries with decoded JWT metadata including provenance", async () => {
     const { db } = createMockDb();
     const signingKey = testSigningKey();
     const registry = new PgSCITTRegistry(db, signingKey);
@@ -212,6 +214,7 @@ describe("PgSCITTRegistry.listEntries", () => {
     const jwt = buildMockJWT({
       iss: "did:web:acme.com",
       scope: "AWS Production",
+      provenance: { source: "tool", sourceIdentity: "Prowler v3.1" },
       assurance: { declared: 1 },
       summary: { controlsTested: 10, controlsPassed: 8, controlsFailed: 2, overallScore: 80 },
     });
@@ -223,6 +226,7 @@ describe("PgSCITTRegistry.listEntries", () => {
     expect(entries[0].entryId).toBeDefined();
     expect(entries[0].issuer).toBe("did:web:acme.com");
     expect(entries[0].scope).toBe("AWS Production");
+    expect(entries[0].provenance).toEqual({ source: "tool", sourceIdentity: "Prowler v3.1" });
     expect(entries[0].assuranceLevel).toBe(1);
     expect(entries[0].summary).toEqual({
       controlsTested: 10,
@@ -312,16 +316,17 @@ describe("PgSCITTRegistry.listEntries", () => {
     expect(entries.length).toBe(20);
   });
 
-  test("handles entries with missing assurance gracefully", async () => {
+  test("handles entries with missing assurance and provenance gracefully", async () => {
     const { db } = createMockDb();
     const signingKey = testSigningKey();
     const registry = new PgSCITTRegistry(db, signingKey);
 
-    // JWT without assurance field
+    // JWT without assurance or provenance fields
     await registry.register(buildMockJWT({ iss: "did:web:minimal.com", scope: "Minimal" }));
 
     const entries = await registry.listEntries();
     expect(entries.length).toBe(1);
+    expect(entries[0].provenance).toEqual({ source: "unknown" });
     expect(entries[0].assuranceLevel).toBeUndefined();
   });
 });
@@ -344,7 +349,7 @@ describe("PgSCITTRegistry.getIssuerProfile", () => {
     expect(profile).toBeNull();
   });
 
-  test("returns profile with correct aggregate data", async () => {
+  test("returns profile with correct aggregate data including provenance", async () => {
     const { db } = createMockDb();
     const signingKey = testSigningKey();
     const registry = new PgSCITTRegistry(db, signingKey);
@@ -352,6 +357,7 @@ describe("PgSCITTRegistry.getIssuerProfile", () => {
     await registry.register(buildMockJWT({
       iss: "did:web:acme.com",
       scope: "SOC 2",
+      provenance: { source: "tool", sourceIdentity: "Prowler v3.1" },
       assurance: { declared: 1 },
       summary: { controlsTested: 10, controlsPassed: 8, controlsFailed: 2, overallScore: 80 },
       frameworks: { "SOC2": { controlsMapped: 10 } },
@@ -360,6 +366,7 @@ describe("PgSCITTRegistry.getIssuerProfile", () => {
     await registry.register(buildMockJWT({
       iss: "did:web:acme.com",
       scope: "NIST",
+      provenance: { source: "auditor", sourceIdentity: "Deloitte LLP" },
       assurance: { declared: 2 },
       summary: { controlsTested: 20, controlsPassed: 18, controlsFailed: 2, overallScore: 90 },
       frameworks: { "NIST-800-53": { controlsMapped: 20 } },
@@ -369,6 +376,7 @@ describe("PgSCITTRegistry.getIssuerProfile", () => {
     await registry.register(buildMockJWT({
       iss: "did:web:other.com",
       scope: "Other",
+      provenance: { source: "self" },
       assurance: { declared: 3 },
       summary: { controlsTested: 5, controlsPassed: 5, controlsFailed: 0, overallScore: 100 },
     }));
@@ -381,8 +389,11 @@ describe("PgSCITTRegistry.getIssuerProfile", () => {
     expect(profile!.frameworks).toContain("SOC2");
     expect(profile!.frameworks).toContain("NIST-800-53");
     expect(profile!.averageScore).toBe(85); // (80 + 90) / 2
+    expect(profile!.provenanceSummary).toEqual({ self: 0, tool: 1, auditor: 1 });
     expect(profile!.currentAssuranceLevel).toBe(2); // max
     expect(profile!.history.length).toBe(2);
+    // History entries include provenance
+    expect(profile!.history[0].provenance.source).toBeDefined();
   });
 
   test("history is limited to 20 entries", async () => {
@@ -433,7 +444,7 @@ describe("PgSCITTRegistry.getIssuerProfile", () => {
     expect(new Date(profile!.lastCPOEDate).getTime()).toBeGreaterThan(0);
   });
 
-  test("handles entries with no assurance or summary", async () => {
+  test("handles entries with no assurance, provenance, or summary", async () => {
     const { db } = createMockDb();
     const signingKey = testSigningKey();
     const registry = new PgSCITTRegistry(db, signingKey);
@@ -447,6 +458,7 @@ describe("PgSCITTRegistry.getIssuerProfile", () => {
     expect(profile).not.toBeNull();
     expect(profile!.totalCPOEs).toBe(1);
     expect(profile!.averageScore).toBe(0);
-    expect(profile!.currentAssuranceLevel).toBe(0);
+    expect(profile!.provenanceSummary).toEqual({ self: 0, tool: 0, auditor: 0 });
+    expect(profile!.currentAssuranceLevel).toBeUndefined();
   });
 });

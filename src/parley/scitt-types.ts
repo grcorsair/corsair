@@ -123,6 +123,14 @@ export interface COSEReceipt {
 // LIST & PROFILE TYPES (for SCITT log browsing)
 // =============================================================================
 
+/** Provenance metadata — who produced the evidence (primary signal) */
+export interface SCITTProvenance {
+  /** Evidence source: self-reported, tool-generated, or auditor-attested */
+  source: "self" | "tool" | "auditor" | "unknown";
+  /** Identity of the source (e.g., "Prowler v3.1", "Deloitte LLP") */
+  sourceIdentity?: string;
+}
+
 /** A single entry in the SCITT transparency log listing */
 export interface SCITTListEntry {
   entryId: string;
@@ -130,6 +138,9 @@ export interface SCITTListEntry {
   treeSize: number;
   issuer: string;
   scope: string;
+  /** Provenance — who produced the evidence (primary signal) */
+  provenance: SCITTProvenance;
+  /** Assurance level — optional enrichment (secondary, only with --enrich) */
   assuranceLevel?: number;
   summary?: {
     controlsTested: number;
@@ -148,19 +159,30 @@ export interface SCITTListOptions {
   framework?: string;
 }
 
+/** Aggregated provenance distribution for an issuer */
+export interface ProvenanceSummary {
+  self: number;
+  tool: number;
+  auditor: number;
+}
+
 /** Aggregated profile for a CPOE issuer */
 export interface IssuerProfile {
   issuerDID: string;
   totalCPOEs: number;
   frameworks: string[];
   averageScore: number;
-  currentAssuranceLevel: number;
+  /** Provenance distribution across all CPOEs (primary signal) */
+  provenanceSummary: ProvenanceSummary;
+  /** Highest assurance level seen (optional, secondary) */
+  currentAssuranceLevel?: number;
   lastCPOEDate: string;
   history: Array<{
     entryId: string;
     registrationTime: string;
     scope: string;
     score: number;
-    assuranceLevel: number;
+    provenance: SCITTProvenance;
+    assuranceLevel?: number;
   }>;
 }

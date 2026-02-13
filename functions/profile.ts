@@ -12,14 +12,28 @@
 // TYPES
 // =============================================================================
 
+export interface SCITTProvenance {
+  source: "self" | "tool" | "auditor" | "unknown";
+  sourceIdentity?: string;
+}
+
+export interface ProvenanceSummary {
+  self: number;
+  tool: number;
+  auditor: number;
+}
+
 export interface IssuerProfile {
   did: string;
   domain: string;
   displayName?: string;
   cpoeCount: number;
+  /** Provenance distribution across all CPOEs (primary signal) */
+  provenanceSummary?: ProvenanceSummary;
   latestCPOE?: {
     marqueId: string;
     scope: string;
+    provenance?: SCITTProvenance;
     assuranceLevel?: number;
     overallScore?: number;
     issuedAt: string;

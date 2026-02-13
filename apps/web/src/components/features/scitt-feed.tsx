@@ -9,7 +9,7 @@ interface SCITTFeedProps {
   className?: string;
 }
 
-type AssuranceFilter = "all" | "0" | "1" | "2" | "3" | "4";
+type ProvenanceFilter = "all" | "self" | "tool" | "auditor";
 
 const REFRESH_INTERVAL = 30_000; // 30 seconds
 
@@ -19,7 +19,7 @@ export function SCITTFeed({ className }: SCITTFeedProps) {
   const [error, setError] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [assuranceFilter, setAssuranceFilter] = useState<AssuranceFilter>("all");
+  const [provenanceFilter, setProvenanceFilter] = useState<ProvenanceFilter>("all");
   const [issuerFilter, setIssuerFilter] = useState("");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
@@ -33,8 +33,8 @@ export function SCITTFeed({ className }: SCITTFeedProps) {
           limit: String(limit),
           offset: String(currentOffset),
         });
-        if (assuranceFilter !== "all") {
-          params.set("assuranceLevel", assuranceFilter);
+        if (provenanceFilter !== "all") {
+          params.set("provenanceSource", provenanceFilter);
         }
         if (issuerFilter.trim()) {
           params.set("issuer", `did:web:${issuerFilter.trim()}`);
@@ -62,13 +62,13 @@ export function SCITTFeed({ className }: SCITTFeedProps) {
         setLoading(false);
       }
     },
-    [offset, assuranceFilter, issuerFilter],
+    [offset, provenanceFilter, issuerFilter],
   );
 
   // Initial load
   useEffect(() => {
     fetchEntries(true);
-  }, [assuranceFilter, issuerFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [provenanceFilter, issuerFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-refresh
   useEffect(() => {
@@ -76,7 +76,7 @@ export function SCITTFeed({ className }: SCITTFeedProps) {
       fetchEntries(true);
     }, REFRESH_INTERVAL);
     return () => clearInterval(interval);
-  }, [assuranceFilter, issuerFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [provenanceFilter, issuerFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className={className}>
@@ -108,16 +108,16 @@ export function SCITTFeed({ className }: SCITTFeedProps) {
 
       {/* Filters */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        {/* Assurance level filter */}
-        {(["all", "0", "1", "2", "3", "4"] as const).map((level) => (
+        {/* Provenance filter (primary signal) */}
+        {(["all", "tool", "auditor", "self"] as const).map((source) => (
           <Button
-            key={level}
-            variant={assuranceFilter === level ? "default" : "outline"}
+            key={source}
+            variant={provenanceFilter === source ? "default" : "outline"}
             size="sm"
             className="h-6 px-2 font-mono text-[10px]"
-            onClick={() => setAssuranceFilter(level)}
+            onClick={() => setProvenanceFilter(source)}
           >
-            {level === "all" ? "All" : `L${level}`}
+            {source === "all" ? "All" : source === "tool" ? "Tool" : source === "auditor" ? "Auditor" : "Self"}
           </Button>
         ))}
 

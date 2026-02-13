@@ -35,22 +35,30 @@ export async function GET() {
       registrationTime: string;
       issuer: string;
       scope: string;
+      provenance?: { source: string; sourceIdentity?: string };
       assuranceLevel?: number;
       summary?: { overallScore: number; controlsTested: number };
     }>;
 
+    const PROVENANCE_DISPLAY: Record<string, string> = {
+      tool: "Tool-Signed",
+      auditor: "Auditor-Attested",
+      self: "Self-Reported",
+    };
+
     const items = entries
       .map((entry) => {
         const domain = entry.issuer.replace("did:web:", "").replace(/%3A/g, ":");
-        const level = entry.assuranceLevel != null ? `L${entry.assuranceLevel}` : "L0";
+        const source = entry.provenance?.source ?? "unknown";
+        const sourceLabel = PROVENANCE_DISPLAY[source] ?? "Unknown";
         const score = entry.summary?.overallScore ?? 0;
 
         return `    <item>
-      <title>${escapeXml(domain)} — ${escapeXml(entry.scope)} (${level}, Score: ${score})</title>
+      <title>${escapeXml(domain)} — ${escapeXml(entry.scope)} (${sourceLabel}, Score: ${score})</title>
       <link>https://grcorsair.com/marque?entryId=${escapeXml(entry.entryId)}</link>
       <guid isPermaLink="false">${escapeXml(entry.entryId)}</guid>
       <pubDate>${new Date(entry.registrationTime).toUTCString()}</pubDate>
-      <description>CPOE registered by ${escapeXml(domain)}. Scope: ${escapeXml(entry.scope)}. Assurance: ${level}. Score: ${score}/100.</description>
+      <description>CPOE registered by ${escapeXml(domain)} via ${sourceLabel.toLowerCase()}. Scope: ${escapeXml(entry.scope)}. Score: ${score}/100.</description>
     </item>`;
       })
       .join("\n");

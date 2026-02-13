@@ -5,11 +5,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
+export interface SCITTProvenance {
+  source: "self" | "tool" | "auditor" | "unknown";
+  sourceIdentity?: string;
+}
+
 export interface SCITTEntry {
   entryId: string;
   registrationTime: string;
   issuer: string;
   scope: string;
+  provenance?: SCITTProvenance;
   assuranceLevel?: number;
   summary?: {
     controlsTested: number;
@@ -23,20 +29,18 @@ interface SCITTEntryCardProps {
   entry: SCITTEntry;
 }
 
-const LEVEL_LABELS: Record<number, string> = {
-  0: "L0 Documented",
-  1: "L1 Configured",
-  2: "L2 Demonstrated",
-  3: "L3 Observed",
-  4: "L4 Attested",
+const PROVENANCE_LABELS: Record<string, string> = {
+  tool: "Tool-Signed",
+  auditor: "Auditor-Attested",
+  self: "Self-Reported",
+  unknown: "Unknown Source",
 };
 
-const LEVEL_COLORS: Record<number, string> = {
-  0: "text-corsair-text-dim border-corsair-border",
-  1: "text-corsair-cyan border-corsair-cyan/40",
-  2: "text-corsair-green border-corsair-green/40",
-  3: "text-corsair-gold border-corsair-gold/40",
-  4: "text-corsair-gold border-corsair-gold/60",
+const PROVENANCE_COLORS: Record<string, string> = {
+  tool: "text-corsair-green border-corsair-green/40",
+  auditor: "text-corsair-gold border-corsair-gold/40",
+  self: "text-corsair-cyan border-corsair-cyan/40",
+  unknown: "text-corsair-text-dim border-corsair-border",
 };
 
 function formatTimeAgo(dateStr: string): string {
@@ -59,7 +63,7 @@ function extractDomain(issuer: string): string {
 export function SCITTEntryCard({ entry }: SCITTEntryCardProps) {
   const [expanded, setExpanded] = useState(false);
   const domain = extractDomain(entry.issuer);
-  const level = entry.assuranceLevel ?? 0;
+  const provenanceSource = entry.provenance?.source ?? "unknown";
 
   return (
     <Card
@@ -85,12 +89,12 @@ export function SCITTEntryCard({ entry }: SCITTEntryCardProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Assurance level */}
+            {/* Provenance (primary signal) */}
             <Badge
               variant="outline"
-              className={`font-mono text-[10px] ${LEVEL_COLORS[level] ?? LEVEL_COLORS[0]}`}
+              className={`font-mono text-[10px] ${PROVENANCE_COLORS[provenanceSource] ?? PROVENANCE_COLORS.unknown}`}
             >
-              {LEVEL_LABELS[level] ?? `L${level}`}
+              {PROVENANCE_LABELS[provenanceSource] ?? "Unknown"}
             </Badge>
 
             {/* Score */}

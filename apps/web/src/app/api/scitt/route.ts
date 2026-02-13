@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
   const framework = searchParams.get("framework");
   if (framework) params.set("framework", framework);
 
-  const assuranceLevel = searchParams.get("assuranceLevel");
-  if (assuranceLevel) params.set("assuranceLevel", assuranceLevel);
+  const provenanceSource = searchParams.get("provenanceSource");
+  if (provenanceSource) params.set("provenanceSource", provenanceSource);
 
   try {
     const res = await fetch(`${API_BASE}/scitt/entries?${params.toString()}`, {

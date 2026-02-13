@@ -4,19 +4,32 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
+export interface SCITTProvenance {
+  source: "self" | "tool" | "auditor" | "unknown";
+  sourceIdentity?: string;
+}
+
+export interface ProvenanceSummary {
+  self: number;
+  tool: number;
+  auditor: number;
+}
+
 export interface VendorProfile {
   issuerDID: string;
   totalCPOEs: number;
   frameworks: string[];
   averageScore: number;
-  currentAssuranceLevel: number;
+  provenanceSummary?: ProvenanceSummary;
+  currentAssuranceLevel?: number;
   lastCPOEDate: string;
   history: Array<{
     entryId: string;
     registrationTime: string;
     scope: string;
     score: number;
-    assuranceLevel: number;
+    provenance?: SCITTProvenance;
+    assuranceLevel?: number;
   }>;
 }
 
@@ -26,24 +39,30 @@ interface VendorProfileCardProps {
   className?: string;
 }
 
-const LEVEL_LABELS: Record<number, string> = {
-  0: "L0 Documented",
-  1: "L1 Configured",
-  2: "L2 Demonstrated",
-  3: "L3 Observed",
-  4: "L4 Attested",
+const PROVENANCE_LABELS: Record<string, string> = {
+  tool: "Tool-Signed",
+  auditor: "Auditor-Attested",
+  self: "Self-Reported",
+  unknown: "Unknown",
 };
 
-const LEVEL_COLORS: Record<number, string> = {
-  0: "text-corsair-text-dim border-corsair-border",
-  1: "text-corsair-cyan border-corsair-cyan/40",
-  2: "text-corsair-green border-corsair-green/40",
-  3: "text-corsair-gold border-corsair-gold/40",
-  4: "text-corsair-gold border-corsair-gold/60",
+const PROVENANCE_COLORS: Record<string, string> = {
+  tool: "text-corsair-green border-corsair-green/40",
+  auditor: "text-corsair-gold border-corsair-gold/40",
+  self: "text-corsair-cyan border-corsair-cyan/40",
+  unknown: "text-corsair-text-dim border-corsair-border",
 };
 
 function extractDomain(did: string): string {
   return did.replace("did:web:", "").replace(/%3A/g, ":").split(":")[0];
+}
+
+function getDominantProvenance(summary?: ProvenanceSummary): string {
+  if (!summary) return "unknown";
+  const entries = Object.entries(summary).filter(([, count]) => count > 0);
+  if (entries.length === 0) return "unknown";
+  entries.sort((a, b) => b[1] - a[1]);
+  return entries[0][0];
 }
 
 export function VendorProfileCard({
@@ -52,7 +71,7 @@ export function VendorProfileCard({
   className,
 }: VendorProfileCardProps) {
   const domain = extractDomain(profile.issuerDID);
-  const level = profile.currentAssuranceLevel;
+  const dominantProvenance = getDominantProvenance(profile.provenanceSummary);
 
   if (compact) {
     return (
@@ -70,9 +89,9 @@ export function VendorProfileCard({
         </div>
         <Badge
           variant="outline"
-          className={`font-mono text-[10px] ${LEVEL_COLORS[level] ?? LEVEL_COLORS[0]}`}
+          className={`font-mono text-[10px] ${PROVENANCE_COLORS[dominantProvenance] ?? PROVENANCE_COLORS.unknown}`}
         >
-          {LEVEL_LABELS[level] ?? `L${level}`}
+          {PROVENANCE_LABELS[dominantProvenance] ?? "Unknown"}
         </Badge>
       </div>
     );
@@ -98,11 +117,29 @@ export function VendorProfileCard({
           </div>
           <Badge
             variant="outline"
-            className={`font-mono text-xs ${LEVEL_COLORS[level] ?? LEVEL_COLORS[0]}`}
+            className={`font-mono text-xs ${PROVENANCE_COLORS[dominantProvenance] ?? PROVENANCE_COLORS.unknown}`}
           >
-            {LEVEL_LABELS[level] ?? `L${level}`}
+            {PROVENANCE_LABELS[dominantProvenance] ?? "Unknown"}
           </Badge>
         </div>
+
+        {/* Provenance distribution */}
+        {profile.provenanceSummary && (
+          <div className="flex gap-2">
+            {Object.entries(profile.provenanceSummary)
+              .filter(([, count]) => count > 0)
+              .map(([source, count]) => (
+                <div key={source} className="flex items-center gap-1 rounded bg-corsair-deep px-2 py-1">
+                  <span className={`font-mono text-[9px] ${PROVENANCE_COLORS[source]?.split(" ")[0] ?? "text-corsair-text-dim"}`}>
+                    {PROVENANCE_LABELS[source] ?? source}
+                  </span>
+                  <span className="font-mono text-[10px] font-bold text-corsair-text">
+                    {count}
+                  </span>
+                </div>
+              ))}
+          </div>
+        )}
 
         {/* Stats grid */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -158,9 +195,9 @@ export function VendorProfileCard({
                   <div className="flex items-center gap-2">
                     <Badge
                       variant="outline"
-                      className={`font-mono text-[9px] ${LEVEL_COLORS[h.assuranceLevel] ?? LEVEL_COLORS[0]}`}
+                      className={`font-mono text-[9px] ${PROVENANCE_COLORS[h.provenance?.source ?? "unknown"] ?? PROVENANCE_COLORS.unknown}`}
                     >
-                      L{h.assuranceLevel}
+                      {PROVENANCE_LABELS[h.provenance?.source ?? "unknown"] ?? "Unknown"}
                     </Badge>
                     <span className="text-xs text-corsair-text-dim">{h.scope}</span>
                   </div>

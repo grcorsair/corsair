@@ -17,6 +17,7 @@
 export interface CPOEMetadata {
   marqueId: string;
   tier: "verified" | "self-signed" | "expired" | "invalid";
+  provenanceSource?: "self" | "tool" | "auditor";
   assuranceLevel?: number;
   controlsTested?: number;
   overallScore?: number;
@@ -31,6 +32,7 @@ export interface BadgeDeps {
 
 export interface BadgeParams {
   tier: string;
+  provenanceSource?: string;
   level?: number;
   controls?: number;
   score?: number;
@@ -93,23 +95,34 @@ export function parseBadgeRoute(
  * Returns a shields.io-style flat badge.
  */
 export function defaultGenerateBadge(params: BadgeParams): string {
-  const { tier, level, score } = params;
+  const { tier, provenanceSource, score } = params;
 
   let label = "CPOE";
   let message: string;
   let color: string;
 
+  // Provenance labels for badge display
+  const PROVENANCE_LABELS: Record<string, string> = {
+    tool: "Tool-Signed",
+    auditor: "Auditor-Attested",
+    self: "Self-Reported",
+  };
+
   switch (tier) {
-    case "verified":
-      message = level !== undefined ? `L${level} Verified` : "Verified";
+    case "verified": {
+      const provenanceLabel = provenanceSource ? PROVENANCE_LABELS[provenanceSource] ?? "Verified" : "Verified";
+      message = provenanceLabel;
       if (score !== undefined) message += ` (${score}%)`;
       color = "#2ECC71";
       break;
-    case "self-signed":
-      message = level !== undefined ? `L${level} Self-Signed` : "Self-Signed";
+    }
+    case "self-signed": {
+      const provenanceLabel = provenanceSource ? PROVENANCE_LABELS[provenanceSource] ?? "Self-Signed" : "Self-Signed";
+      message = provenanceLabel;
       if (score !== undefined) message += ` (${score}%)`;
       color = "#F5C542";
       break;
+    }
     case "expired":
       message = "Expired";
       color = "#E63946";
@@ -202,6 +215,7 @@ export function createBadgeRouter(
 
     const svg = generateBadge({
       tier: cpoe.tier,
+      provenanceSource: cpoe.provenanceSource,
       level: cpoe.assuranceLevel,
       controls: cpoe.controlsTested,
       score: cpoe.overallScore,

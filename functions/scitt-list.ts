@@ -13,11 +13,17 @@
 // TYPES
 // =============================================================================
 
+export interface SCITTProvenance {
+  source: "self" | "tool" | "auditor" | "unknown";
+  sourceIdentity?: string;
+}
+
 export interface SCITTListEntry {
   entryId: string;
   registrationTime: string;
   issuer: string;
   scope: string;
+  provenance: SCITTProvenance;
   assuranceLevel?: number;
   summary?: {
     controlsTested: number;

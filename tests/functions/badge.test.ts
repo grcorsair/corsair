@@ -14,6 +14,7 @@ import {
 const MOCK_CPOE_VERIFIED: CPOEMetadata = {
   marqueId: "marque-abc123",
   tier: "verified",
+  provenanceSource: "tool",
   assuranceLevel: 2,
   controlsTested: 24,
   overallScore: 92,
@@ -23,6 +24,7 @@ const MOCK_CPOE_VERIFIED: CPOEMetadata = {
 const MOCK_CPOE_SELF_SIGNED: CPOEMetadata = {
   marqueId: "marque-def456",
   tier: "self-signed",
+  provenanceSource: "self",
   assuranceLevel: 1,
   controlsTested: 10,
   overallScore: 80,
@@ -67,18 +69,18 @@ describe("parseBadgeRoute", () => {
 // =============================================================================
 
 describe("defaultGenerateBadge", () => {
-  test("generates verified badge SVG", () => {
-    const svg = defaultGenerateBadge({ tier: "verified", level: 2, score: 92 });
+  test("generates verified badge SVG with provenance", () => {
+    const svg = defaultGenerateBadge({ tier: "verified", provenanceSource: "tool", score: 92 });
     expect(svg).toContain("<svg");
     expect(svg).toContain("CPOE");
-    expect(svg).toContain("L2 Verified");
+    expect(svg).toContain("Tool-Signed");
     expect(svg).toContain("92%");
     expect(svg).toContain("#2ECC71"); // green
   });
 
-  test("generates self-signed badge SVG", () => {
-    const svg = defaultGenerateBadge({ tier: "self-signed", level: 1 });
-    expect(svg).toContain("L1 Self-Signed");
+  test("generates self-signed badge SVG with provenance", () => {
+    const svg = defaultGenerateBadge({ tier: "self-signed", provenanceSource: "self" });
+    expect(svg).toContain("Self-Reported");
     expect(svg).toContain("#F5C542"); // gold
   });
 
@@ -100,7 +102,7 @@ describe("defaultGenerateBadge", () => {
 // =============================================================================
 
 describe("GET /badge — Badge SVG", () => {
-  test("badge by marque ID returns SVG", async () => {
+  test("badge by marque ID returns SVG with provenance", async () => {
     const deps = createMockDeps(
       new Map([["marque-abc123", MOCK_CPOE_VERIFIED]]),
     );
@@ -112,10 +114,10 @@ describe("GET /badge — Badge SVG", () => {
 
     const svg = await res.text();
     expect(svg).toContain("<svg");
-    expect(svg).toContain("L2 Verified");
+    expect(svg).toContain("Tool-Signed");
   });
 
-  test("badge by domain returns SVG", async () => {
+  test("badge by domain returns SVG with provenance", async () => {
     const deps = createMockDeps(
       new Map(),
       new Map([["acme.com", MOCK_CPOE_SELF_SIGNED]]),
@@ -128,7 +130,7 @@ describe("GET /badge — Badge SVG", () => {
 
     const svg = await res.text();
     expect(svg).toContain("<svg");
-    expect(svg).toContain("L1 Self-Signed");
+    expect(svg).toContain("Self-Reported");
   });
 
   test("not found returns gray badge (not 404)", async () => {
