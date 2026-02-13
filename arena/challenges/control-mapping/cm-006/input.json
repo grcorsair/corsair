@@ -1,0 +1,160 @@
+{
+  "Findings": [
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:subscription/cis-aws-foundations-benchmark/v/1.4.0/1.5/finding/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "Title": "1.5 Ensure MFA is enabled for the root user account",
+      "Description": "The root user account is the most privileged user in an AWS account. MFA adds an extra layer of protection on top of a username and password. With MFA enabled, when a user signs in to an AWS website, they will be prompted for their username and password as well as for an authentication code from their MFA device.",
+      "Severity": { "Label": "CRITICAL" },
+      "Compliance": { "Status": "PASSED" },
+      "Remediation": {
+        "Recommendation": {
+          "Text": "Enable a hardware MFA device for the root user. Navigate to IAM Dashboard > Security Status > Activate MFA on your root account."
+        }
+      },
+      "Resources": [{ "Type": "AwsAccount", "Id": "AWS::Account:123456789012" }]
+    },
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:subscription/cis-aws-foundations-benchmark/v/1.4.0/2.1/finding/b2c3d4e5-f6a7-8901-bcde-f23456789012",
+      "Title": "2.1 Ensure CloudTrail is enabled in all regions",
+      "Description": "AWS CloudTrail is a web service that records AWS API calls for your account and delivers log files to you. The recorded information includes the identity of the API caller, the time of the API call, the source IP address of the API caller, the request parameters, and the response elements returned by the AWS service.",
+      "Severity": { "Label": "HIGH" },
+      "Compliance": { "Status": "PASSED" },
+      "Remediation": {
+        "Recommendation": {
+          "Text": "Create a multi-region trail with management events enabled. Ensure log file validation and S3 bucket logging are configured."
+        }
+      },
+      "Resources": [{ "Type": "AwsCloudTrailTrail", "Id": "arn:aws:cloudtrail:us-east-1:123456789012:trail/organization-trail" }]
+    },
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:subscription/cis-aws-foundations-benchmark/v/1.4.0/2.6/finding/c3d4e5f6-a7b8-9012-cdef-345678901234",
+      "Title": "2.6 Ensure S3 bucket access logging is enabled on the CloudTrail S3 bucket",
+      "Description": "S3 Bucket Access Logging generates a log that contains access records for each request made to your S3 bucket. An access log record contains details about the request, such as the request type, the resources specified in the request worked, and the time and date the request was processed.",
+      "Severity": { "Label": "MEDIUM" },
+      "Compliance": { "Status": "FAILED" },
+      "Remediation": {
+        "Recommendation": {
+          "Text": "Enable server access logging on the S3 bucket used for CloudTrail log delivery. Configure the target bucket and prefix for access logs."
+        }
+      },
+      "Resources": [{ "Type": "AwsS3Bucket", "Id": "arn:aws:s3:::acme-cloudtrail-logs" }]
+    },
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:subscription/cis-aws-foundations-benchmark/v/1.4.0/4.1/finding/d4e5f6a7-b8c9-0123-defa-456789012345",
+      "Title": "4.1 Ensure no security groups allow ingress from 0.0.0.0/0 to port 22",
+      "Description": "Security groups provide stateful filtering of ingress and egress network traffic to AWS resources. Removing unfettered connectivity to SSH reduces a server's exposure to risk.",
+      "Severity": { "Label": "HIGH" },
+      "Compliance": { "Status": "PASSED" },
+      "Remediation": {
+        "Recommendation": {
+          "Text": "Remove security group rules that allow inbound SSH (port 22) from 0.0.0.0/0 or ::/0. Use bastion hosts or AWS Systems Manager Session Manager instead."
+        }
+      },
+      "Resources": [{ "Type": "AwsEc2SecurityGroup", "Id": "sg-0a1b2c3d4e5f00001" }]
+    },
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:subscription/cis-aws-foundations-benchmark/v/1.4.0/4.2/finding/e5f6a7b8-c9d0-1234-efab-567890123456",
+      "Title": "4.2 Ensure no security groups allow ingress from 0.0.0.0/0 to port 3389",
+      "Description": "Security groups provide stateful filtering of ingress and egress network traffic to AWS resources. Removing unfettered connectivity to remote desktop services reduces a server's exposure to risk.",
+      "Severity": { "Label": "HIGH" },
+      "Compliance": { "Status": "PASSED" },
+      "Remediation": {
+        "Recommendation": {
+          "Text": "Remove security group rules that allow inbound RDP (port 3389) from 0.0.0.0/0. Use VPN or AWS Systems Manager for remote access."
+        }
+      },
+      "Resources": [{ "Type": "AwsEc2SecurityGroup", "Id": "sg-0a1b2c3d4e5f00002" }]
+    },
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:subscription/aws-foundational-security-best-practices/v/1.0.0/RDS.3/finding/f6a7b8c9-d0e1-2345-fabc-678901234567",
+      "Title": "RDS.3 RDS DB instances should have encryption at-rest enabled",
+      "Description": "This control checks whether storage encryption is enabled for your Amazon RDS DB instances. This control is intended for RDS DB instances. However, it can also generate findings for Aurora DB instances.",
+      "Severity": { "Label": "MEDIUM" },
+      "Compliance": { "Status": "PASSED" },
+      "Remediation": {
+        "Recommendation": {
+          "Text": "Enable encryption at rest when creating new RDS instances using AWS managed keys or customer managed KMS keys."
+        }
+      },
+      "Resources": [{ "Type": "AwsRdsDbInstance", "Id": "arn:aws:rds:us-east-1:123456789012:db:acme-production" }]
+    },
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:subscription/aws-foundational-security-best-practices/v/1.0.0/IAM.4/finding/a7b8c9d0-e1f2-3456-abcd-789012345678",
+      "Title": "IAM.4 IAM root user access key should not exist",
+      "Description": "This control checks whether the root user access key is available. The root account is the most privileged user in an AWS account. AWS access keys provide programmatic access to a given account.",
+      "Severity": { "Label": "CRITICAL" },
+      "Compliance": { "Status": "PASSED" },
+      "Remediation": {
+        "Recommendation": {
+          "Text": "Delete all root account access keys. Use IAM users or roles for programmatic access with appropriate permissions."
+        }
+      },
+      "Resources": [{ "Type": "AwsAccount", "Id": "AWS::Account:123456789012" }]
+    },
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:subscription/aws-foundational-security-best-practices/v/1.0.0/S3.1/finding/b8c9d0e1-f2a3-4567-bcde-890123456789",
+      "Title": "S3.1 S3 Block Public Access setting should be enabled at the account level",
+      "Description": "This control checks whether the following Amazon S3 public access block settings are configured at the account level: BlockPublicAcls, IgnorePublicAcls, BlockPublicPolicy, RestrictPublicBuckets.",
+      "Severity": { "Label": "CRITICAL" },
+      "Compliance": { "Status": "FAILED" },
+      "Remediation": {
+        "Recommendation": {
+          "Text": "Enable S3 Block Public Access at the account level. Go to S3 > Block Public Access settings for this account and enable all four settings."
+        }
+      },
+      "Resources": [{ "Type": "AwsS3AccountPublicAccessBlock", "Id": "AWS::Account:123456789012" }]
+    },
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:subscription/aws-foundational-security-best-practices/v/1.0.0/EC2.19/finding/c9d0e1f2-a3b4-5678-cdef-901234567890",
+      "Title": "EC2.19 Security groups should not allow unrestricted access to ports with high risk",
+      "Description": "This control checks whether unrestricted incoming traffic for the security groups is accessible to the specified ports that have the highest risk. This control passes when none of the rules in a security group allow ingress traffic from 0.0.0.0/0 for those ports.",
+      "Severity": { "Label": "HIGH" },
+      "Compliance": { "Status": "FAILED" },
+      "Remediation": {
+        "Recommendation": {
+          "Text": "Review and restrict security group rules that allow unrestricted inbound traffic to high-risk ports (20, 21, 23, 25, 110, 135, 143, 445, 1433, 1434, 3306, 3389, 4333, 5432, 5500, 5601, 8080, 8088, 8888, 9200, 9300)."
+        }
+      },
+      "Resources": [{ "Type": "AwsEc2SecurityGroup", "Id": "sg-0a1b2c3d4e5f00003" }]
+    },
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:subscription/aws-foundational-security-best-practices/v/1.0.0/Lambda.1/finding/d0e1f2a3-b4c5-6789-defa-012345678901",
+      "Title": "Lambda.1 Lambda function policies should prohibit public access",
+      "Description": "This control checks whether the Lambda function resource-based policy prohibits public access outside of your account. The Lambda function should not be publicly accessible, as this may allow unintended access to your function code.",
+      "Severity": { "Label": "HIGH" },
+      "Compliance": { "Status": "PASSED" },
+      "Remediation": {
+        "Recommendation": {
+          "Text": "Review Lambda function resource-based policies and remove statements that grant access to principal '*' without an AWS:SourceArn condition."
+        }
+      },
+      "Resources": [{ "Type": "AwsLambdaFunction", "Id": "arn:aws:lambda:us-east-1:123456789012:function:acme-api-handler" }]
+    },
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:subscription/aws-foundational-security-best-practices/v/1.0.0/Config.1/finding/e1f2a3b4-c5d6-7890-efab-123456789012",
+      "Title": "Config.1 AWS Config should be enabled",
+      "Description": "This control checks whether AWS Config is enabled in the account for the local Region and is recording all resources. The AWS Config service performs configuration management of supported AWS resources in your account.",
+      "Severity": { "Label": "MEDIUM" },
+      "Compliance": { "Status": "PASSED" },
+      "Remediation": {
+        "Recommendation": {
+          "Text": "Enable AWS Config in all regions with recording for all supported resource types. Configure delivery to an S3 bucket with SNS notification."
+        }
+      },
+      "Resources": [{ "Type": "AwsConfigConfigurationRecorder", "Id": "default" }]
+    },
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:subscription/aws-foundational-security-best-practices/v/1.0.0/KMS.4/finding/f2a3b4c5-d6e7-8901-fabc-234567890123",
+      "Title": "KMS.4 AWS KMS key rotation should be enabled",
+      "Description": "This control checks whether key rotation is enabled for each customer managed KMS key. The control does not check KMS keys that have imported key material. You should ensure keys that have imported key material and those not stored in AWS KMS are rotated.",
+      "Severity": { "Label": "MEDIUM" },
+      "Compliance": { "Status": "FAILED" },
+      "Remediation": {
+        "Recommendation": {
+          "Text": "Enable automatic key rotation for all customer-managed symmetric KMS keys. Navigate to KMS > Customer managed keys > Key rotation and enable annual rotation."
+        }
+      },
+      "Resources": [{ "Type": "AwsKmsKey", "Id": "arn:aws:kms:us-east-1:123456789012:key/mrk-1234567890abcdef0" }]
+    }
+  ]
+}

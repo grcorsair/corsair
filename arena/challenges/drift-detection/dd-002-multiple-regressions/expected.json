@@ -1,0 +1,6 @@
+{
+  "regressions": [
+    "IAM-1",
+    "NET-1"
+  ]
+}

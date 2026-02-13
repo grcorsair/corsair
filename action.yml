@@ -28,7 +28,19 @@ inputs:
   expiry-days:
     description: "CPOE validity in days"
     required: false
-    default: "7"
+    default: "90"
+  register-scitt:
+    description: "Register signed CPOE in SCITT transparency log"
+    required: false
+    default: "false"
+  notify:
+    description: "Emit FLAGSHIP PAPERS_CHANGED signal on sign"
+    required: false
+    default: "false"
+  badge:
+    description: "Generate badge URL for the signed CPOE"
+    required: false
+    default: "false"
 
 outputs:
   cpoe:
@@ -52,6 +64,12 @@ outputs:
   format-detected:
     description: "Detected evidence format"
     value: ${{ steps.sign.outputs.format-detected }}
+  scitt-entry-id:
+    description: "SCITT entry ID (when register-scitt is true)"
+    value: ${{ steps.scitt-register.outputs.scitt-entry-id }}
+  badge-url:
+    description: "Badge SVG URL (when badge is true)"
+    value: ${{ steps.badge.outputs.badge-url }}
 
 runs:
   using: "composite"
@@ -105,3 +123,38 @@ runs:
         echo "controls-passed=$(echo "$JSON_OUTPUT" | jq -r '.summary.controlsPassed')" >> $GITHUB_OUTPUT
         echo "controls-failed=$(echo "$JSON_OUTPUT" | jq -r '.summary.controlsFailed')" >> $GITHUB_OUTPUT
         echo "format-detected=$(echo "$JSON_OUTPUT" | jq -r '.detectedFormat')" >> $GITHUB_OUTPUT
+
+    - name: Register in SCITT transparency log
+      if: inputs.register-scitt == 'true'
+      id: scitt-register
+      shell: bash
+      run: |
+        CPOE_FILE="${{ inputs.output || 'cpoe.jwt' }}"
+        SCITT_RESPONSE=$(curl -s -X POST https://api.grcorsair.com/scitt/register \
+          -H "Content-Type: application/json" \
+          -d "{\"statement\": \"$(cat "$CPOE_FILE")\"}")
+        ENTRY_ID=$(echo "$SCITT_RESPONSE" | jq -r '.entryId // empty')
+        if [ -n "$ENTRY_ID" ]; then
+          echo "scitt-entry-id=$ENTRY_ID" >> $GITHUB_OUTPUT
+          echo "SCITT registered: $ENTRY_ID"
+        else
+          echo "Warning: SCITT registration returned no entry ID"
+          echo "Response: $SCITT_RESPONSE"
+        fi
+
+    - name: Emit FLAGSHIP PAPERS_CHANGED signal
+      if: inputs.notify == 'true'
+      shell: bash
+      run: |
+        MARQUE_ID="${{ steps.sign.outputs.marque-id }}"
+        curl -s -X POST https://api.grcorsair.com/flagship/notify \
+          -H "Content-Type: application/json" \
+          -d "{\"event\": \"PAPERS_CHANGED\", \"marqueId\": \"$MARQUE_ID\", \"action\": \"issued\"}" || true
+
+    - name: Generate badge URL
+      if: inputs.badge == 'true'
+      id: badge
+      shell: bash
+      run: |
+        MARQUE_ID="${{ steps.sign.outputs.marque-id }}"
+        echo "badge-url=https://grcorsair.com/badge/${MARQUE_ID}.svg" >> $GITHUB_OUTPUT

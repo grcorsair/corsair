@@ -1,0 +1,16 @@
+{
+  "id": "ep-015",
+  "category": "evidence-parsing",
+  "difficulty": "easy",
+  "description": "Parse a generic evidence file with metadata and 10 controls covering IAM, network, logging, encryption, IR, vulnerability management, and BCP. Extract pass/fail counts and overall score.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "json-field-match",
+    "fields": ["format", "controlCount", "passCount", "failCount", "score"],
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["generic", "multi-framework", "assessment", "basic"],
+  "timeLimitMinutes": 5
+}

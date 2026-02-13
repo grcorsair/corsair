@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "media_version": "1.0",
+    "exported_at": "2026-02-12T14:00:00Z",
+    "exporter": "CISO Assistant v2.4.0",
+    "scope": "ISO 27001:2022 Subset"
+  },
+  "requirement_assessments": [
+    {
+      "id": "ra-edge-001",
+      "requirement": "urn:intuitem:risk:req_node:iso-27001-2022:A.5.1",
+      "result": "compliant",
+      "observation": "Security policies documented and reviewed annually.",
+      "score": 91,
+      "evidences": ["ev-policy-v8"],
+      "applied_controls": ["ac-policy-management"]
+    },
+    {
+      "id": "ra-edge-002",
+      "requirement": "urn:intuitem:risk:req_node:iso-27001-2022:A.8.9",
+      "result": "partially_compliant",
+      "observation": "Configuration management covers 70% of servers. 3 legacy servers manually configured.",
+      "score": 58,
+      "evidences": ["ev-terraform-state"],
+      "applied_controls": ["ac-config-management"]
+    },
+    {
+      "id": "ra-edge-003",
+      "requirement": "urn:intuitem:risk:req_node:iso-27001-2022:A.6.1",
+      "result": "non_compliant",
+      "observation": "Background checks not implemented for offshore contractors.",
+      "score": 45,
+      "evidences": ["ev-background-policy"],
+      "applied_controls": []
+    },
+    {
+      "id": "ra-edge-004",
+      "requirement": "urn:intuitem:risk:req_node:iso-27001-2022:A.8.24",
+      "result": "compliant",
+      "observation": "Encryption at rest and in transit fully implemented.",
+      "score": 96,
+      "evidences": ["ev-encryption-inventory", "ev-tls-scan"],
+      "applied_controls": ["ac-encryption"]
+    }
+  ]
+}

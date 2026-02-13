@@ -1,0 +1,67 @@
+{
+  "count": 5,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": "ca-edge-001",
+      "requirement": "urn:intuitem:risk:req_node:soc2-2017:CC6.1",
+      "compliance_assessment": "ca-soc2-2026-q1",
+      "result": "compliant",
+      "observation": "Access controls implemented via IAM and SSO.",
+      "score": 95,
+      "evidences": ["ev-iam-policies", "ev-sso-config"],
+      "applied_controls": ["ac-access-control"],
+      "folder": "SOC 2 2026 Q1",
+      "status": "done"
+    },
+    {
+      "id": "ca-edge-002",
+      "requirement": "urn:intuitem:risk:req_node:soc2-2017:CC7.2",
+      "compliance_assessment": "ca-soc2-2026-q1",
+      "result": "compliant",
+      "observation": "Security monitoring active.",
+      "score": null,
+      "evidences": ["ev-monitoring-config"],
+      "applied_controls": ["ac-monitoring"],
+      "folder": "SOC 2 2026 Q1",
+      "status": "done"
+    },
+    {
+      "id": "ca-edge-003",
+      "requirement": "urn:intuitem:risk:req_node:soc2-2017:CC8.1",
+      "compliance_assessment": "ca-soc2-2026-q1",
+      "result": "non_compliant",
+      "observation": "Change management not followed consistently.",
+      "score": 41,
+      "evidences": [],
+      "applied_controls": ["ac-change-management"],
+      "folder": "SOC 2 2026 Q1",
+      "status": "done"
+    },
+    {
+      "id": "ca-edge-004",
+      "requirement": "urn:intuitem:risk:req_node:soc2-2017:CC5.2",
+      "compliance_assessment": "ca-soc2-2026-q1",
+      "result": "partially_compliant",
+      "observation": "Risk assessment exists but outdated.",
+      "score": null,
+      "evidences": ["ev-risk-register"],
+      "applied_controls": ["ac-risk-assessment"],
+      "folder": "SOC 2 2026 Q1",
+      "status": "done"
+    },
+    {
+      "id": "ca-edge-005",
+      "requirement": "urn:intuitem:risk:req_node:soc2-2017:CC9.1",
+      "compliance_assessment": "ca-soc2-2026-q1",
+      "result": "compliant",
+      "observation": "Vendor management program in place.",
+      "score": 82,
+      "evidences": ["ev-vendor-assessments"],
+      "applied_controls": ["ac-vendor-management"],
+      "folder": "SOC 2 2026 Q1",
+      "status": "done"
+    }
+  ]
+}

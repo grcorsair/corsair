@@ -1,0 +1,227 @@
+[
+  {
+    "StatusCode": "PASS",
+    "Severity": "HIGH",
+    "FindingInfo": {
+      "Uid": "prowler-aws-iam-root-mfa-enabled",
+      "Title": "Ensure MFA is enabled for the root account"
+    },
+    "Remediation": {
+      "Recommendation": "Enable hardware MFA on the AWS root account. Navigate to IAM > Security credentials > Assign MFA device."
+    },
+    "Resources": [{ "Uid": "arn:aws:iam::root" }],
+    "Compliance": {
+      "Requirements": ["CIS-1.5", "NIST-800-53-IA-2", "SOC2-CC6.1"]
+    }
+  },
+  {
+    "StatusCode": "PASS",
+    "Severity": "HIGH",
+    "FindingInfo": {
+      "Uid": "prowler-aws-iam-no-root-access-keys",
+      "Title": "Ensure no root account access keys exist"
+    },
+    "Remediation": {
+      "Recommendation": "Delete all access keys associated with the root account to prevent programmatic access."
+    },
+    "Resources": [{ "Uid": "arn:aws:iam::root" }],
+    "Compliance": {
+      "Requirements": ["CIS-1.4", "NIST-800-53-AC-6", "SOC2-CC6.1"]
+    }
+  },
+  {
+    "StatusCode": "PASS",
+    "Severity": "MEDIUM",
+    "FindingInfo": {
+      "Uid": "prowler-aws-iam-password-policy-uppercase",
+      "Title": "Ensure IAM password policy requires at least one uppercase letter"
+    },
+    "Remediation": {
+      "Recommendation": "Update the IAM password policy to require uppercase letters via the IAM console or CLI."
+    },
+    "Resources": [{ "Uid": "arn:aws:iam::account-password-policy" }],
+    "Compliance": {
+      "Requirements": ["CIS-1.8", "NIST-800-53-IA-5"]
+    }
+  },
+  {
+    "StatusCode": "FAIL",
+    "Severity": "CRITICAL",
+    "FindingInfo": {
+      "Uid": "prowler-aws-s3-bucket-public-access",
+      "Title": "Ensure S3 buckets do not allow public read access"
+    },
+    "Remediation": {
+      "Recommendation": "Enable S3 Block Public Access at the account level and per-bucket. Review bucket policies for Principal: '*' statements."
+    },
+    "Resources": [{ "Uid": "arn:aws:s3:::acme-customer-uploads" }],
+    "Compliance": {
+      "Requirements": ["CIS-2.1.1", "NIST-800-53-AC-3", "SOC2-CC6.6", "PCI-DSS-1.3.6"]
+    }
+  },
+  {
+    "StatusCode": "PASS",
+    "Severity": "HIGH",
+    "FindingInfo": {
+      "Uid": "prowler-aws-cloudtrail-enabled",
+      "Title": "Ensure CloudTrail is enabled in all regions"
+    },
+    "Remediation": {
+      "Recommendation": "Create a multi-region CloudTrail trail with management events enabled and S3 log delivery verified."
+    },
+    "Resources": [{ "Uid": "arn:aws:cloudtrail:us-east-1:acme-prod-trail" }],
+    "Compliance": {
+      "Requirements": ["CIS-3.1", "NIST-800-53-AU-2", "SOC2-CC7.2"]
+    }
+  },
+  {
+    "StatusCode": "PASS",
+    "Severity": "MEDIUM",
+    "FindingInfo": {
+      "Uid": "prowler-aws-cloudtrail-log-validation",
+      "Title": "Ensure CloudTrail log file validation is enabled"
+    },
+    "Remediation": {
+      "Recommendation": "Enable log file validation on all CloudTrail trails to detect tampering via digest files."
+    },
+    "Resources": [{ "Uid": "arn:aws:cloudtrail:us-east-1:acme-prod-trail" }],
+    "Compliance": {
+      "Requirements": ["CIS-3.2", "NIST-800-53-AU-9"]
+    }
+  },
+  {
+    "StatusCode": "FAIL",
+    "Severity": "HIGH",
+    "FindingInfo": {
+      "Uid": "prowler-aws-ec2-default-sg-restrict",
+      "Title": "Ensure the default security group of every VPC restricts all traffic"
+    },
+    "Remediation": {
+      "Recommendation": "Modify the default security group to remove all inbound and outbound rules. Use custom security groups for workloads."
+    },
+    "Resources": [{ "Uid": "sg-0a1b2c3d4e5f6g7h8" }],
+    "Compliance": {
+      "Requirements": ["CIS-5.4", "NIST-800-53-SC-7", "SOC2-CC6.6"]
+    }
+  },
+  {
+    "StatusCode": "PASS",
+    "Severity": "HIGH",
+    "FindingInfo": {
+      "Uid": "prowler-aws-rds-encryption-at-rest",
+      "Title": "Ensure RDS instances have encryption at rest enabled"
+    },
+    "Remediation": {
+      "Recommendation": "Enable encryption at rest when creating new RDS instances. Existing unencrypted instances require snapshot-restore with encryption enabled."
+    },
+    "Resources": [{ "Uid": "arn:aws:rds:us-east-1:acme-prod-db" }],
+    "Compliance": {
+      "Requirements": ["CIS-2.3.1", "NIST-800-53-SC-28", "SOC2-CC6.7"]
+    }
+  },
+  {
+    "StatusCode": "FAIL",
+    "Severity": "MEDIUM",
+    "FindingInfo": {
+      "Uid": "prowler-aws-iam-unused-credentials-45-days",
+      "Title": "Ensure credentials unused for 45 days or more are disabled"
+    },
+    "Remediation": {
+      "Recommendation": "Generate a credential report and disable or delete IAM user credentials that have not been used in the last 45 days."
+    },
+    "Resources": [{ "Uid": "arn:aws:iam::user/svc-legacy-deploy" }],
+    "Compliance": {
+      "Requirements": ["CIS-1.12", "NIST-800-53-AC-2", "SOC2-CC6.2"]
+    }
+  },
+  {
+    "StatusCode": "PASS",
+    "Severity": "HIGH",
+    "FindingInfo": {
+      "Uid": "prowler-aws-kms-key-rotation",
+      "Title": "Ensure rotation for customer-created symmetric CMKs is enabled"
+    },
+    "Remediation": {
+      "Recommendation": "Enable automatic key rotation for all customer-managed symmetric KMS keys via the KMS console or EnableKeyRotation API."
+    },
+    "Resources": [{ "Uid": "arn:aws:kms:us-east-1:key/acme-data-key" }],
+    "Compliance": {
+      "Requirements": ["CIS-3.8", "NIST-800-53-SC-12", "SOC2-CC6.1"]
+    }
+  },
+  {
+    "StatusCode": "PASS",
+    "Severity": "MEDIUM",
+    "FindingInfo": {
+      "Uid": "prowler-aws-vpc-flow-logs-enabled",
+      "Title": "Ensure VPC flow logging is enabled in all VPCs"
+    },
+    "Remediation": {
+      "Recommendation": "Enable VPC Flow Logs for all VPCs with traffic type ALL. Deliver to CloudWatch Logs or S3 for analysis."
+    },
+    "Resources": [{ "Uid": "vpc-0a1b2c3d4e5f6g7h8" }],
+    "Compliance": {
+      "Requirements": ["CIS-3.9", "NIST-800-53-AU-12", "SOC2-CC7.2"]
+    }
+  },
+  {
+    "StatusCode": "FAIL",
+    "Severity": "HIGH",
+    "FindingInfo": {
+      "Uid": "prowler-aws-guardduty-enabled",
+      "Title": "Ensure GuardDuty is enabled in all regions"
+    },
+    "Remediation": {
+      "Recommendation": "Enable Amazon GuardDuty in all active AWS regions. Configure S3 protection, EKS audit log monitoring, and malware protection."
+    },
+    "Resources": [{ "Uid": "arn:aws:guardduty:eu-west-1" }],
+    "Compliance": {
+      "Requirements": ["NIST-800-53-SI-4", "SOC2-CC7.2"]
+    }
+  },
+  {
+    "StatusCode": "PASS",
+    "Severity": "MEDIUM",
+    "FindingInfo": {
+      "Uid": "prowler-aws-iam-mfa-enabled-console-users",
+      "Title": "Ensure MFA is enabled for all IAM users with console access"
+    },
+    "Remediation": {
+      "Recommendation": "Enforce MFA for all IAM users with console passwords. Use AWS Organizations SCP to deny actions without MFA."
+    },
+    "Resources": [{ "Uid": "arn:aws:iam::user/*" }],
+    "Compliance": {
+      "Requirements": ["CIS-1.10", "NIST-800-53-IA-2", "SOC2-CC6.1"]
+    }
+  },
+  {
+    "StatusCode": "PASS",
+    "Severity": "HIGH",
+    "FindingInfo": {
+      "Uid": "prowler-aws-s3-bucket-versioning",
+      "Title": "Ensure S3 bucket versioning is enabled for data-critical buckets"
+    },
+    "Remediation": {
+      "Recommendation": "Enable versioning on all S3 buckets that store application data or backups. Consider MFA Delete for additional protection."
+    },
+    "Resources": [{ "Uid": "arn:aws:s3:::acme-prod-backups" }],
+    "Compliance": {
+      "Requirements": ["NIST-800-53-CP-9", "SOC2-CC7.4"]
+    }
+  },
+  {
+    "StatusCode": "FAIL",
+    "Severity": "CRITICAL",
+    "FindingInfo": {
+      "Uid": "prowler-aws-ec2-ebs-encryption-default",
+      "Title": "Ensure EBS default encryption is enabled in all regions"
+    },
+    "Remediation": {
+      "Recommendation": "Enable EBS encryption by default in each region via EC2 Settings > EBS encryption. All new EBS volumes will be encrypted automatically."
+    },
+    "Resources": [{ "Uid": "arn:aws:ec2:ap-southeast-1" }],
+    "Compliance": {
+      "Requirements": ["CIS-2.2.1", "NIST-800-53-SC-28", "SOC2-CC6.7"]
+    }
+  }
+]

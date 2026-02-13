@@ -70,7 +70,7 @@ export interface ParleyConfig {
   /** Whether to run Quartermaster evaluation */
   quartermasterEnabled?: boolean;
 
-  /** MARQUE expiry in days (default: 7) */
+  /** MARQUE expiry in days (default: 90) */
   expiryDays?: number;
 
   /** FLAGSHIP (SSF/SET/CAEP) configuration for real-time notifications */

@@ -1,0 +1,15 @@
+{
+  "id": "dd-002",
+  "category": "drift-detection",
+  "difficulty": "easy",
+  "description": "Detect improvements between two generic assessments. Identify controls that went from FAIL to PASS.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "diff-match",
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["generic", "improvement", "basic"],
+  "timeLimitMinutes": 5
+}

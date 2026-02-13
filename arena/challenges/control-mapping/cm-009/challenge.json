@@ -1,0 +1,16 @@
+{
+  "id": "cm-009",
+  "category": "control-mapping",
+  "difficulty": "easy",
+  "description": "Map CISO Assistant API assessment results to SOC 2 trust service criteria. Extract the SOC 2 control IDs from requirement URNs.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "precision-recall",
+    "threshold": 0.8,
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["ciso-assistant", "soc2", "api", "mapping"],
+  "timeLimitMinutes": 5
+}

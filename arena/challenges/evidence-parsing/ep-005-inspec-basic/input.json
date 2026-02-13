@@ -1,0 +1,53 @@
+{
+  "format": "inspec",
+  "data": {
+    "profiles": [
+      {
+        "name": "test-profile",
+        "title": "Test Profile",
+        "controls": [
+          {
+            "id": "ctrl-1",
+            "title": "Check 1",
+            "results": [
+              {
+                "status": "passed",
+                "code_desc": "OK"
+              }
+            ]
+          },
+          {
+            "id": "ctrl-2",
+            "title": "Check 2",
+            "results": [
+              {
+                "status": "passed",
+                "code_desc": "OK"
+              }
+            ]
+          },
+          {
+            "id": "ctrl-3",
+            "title": "Check 3",
+            "results": [
+              {
+                "status": "failed",
+                "code_desc": "FAIL"
+              }
+            ]
+          },
+          {
+            "id": "ctrl-4",
+            "title": "Check 4",
+            "results": [
+              {
+                "status": "passed",
+                "code_desc": "OK"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

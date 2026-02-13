@@ -1,0 +1,24 @@
+{
+  "id": "ep-011",
+  "category": "evidence-parsing",
+  "difficulty": "easy",
+  "description": "Parse generic JSON evidence format with metadata and controls",
+  "input": "arena/challenges/evidence-parsing/ep-011-generic-basic/input.json",
+  "groundTruth": "arena/challenges/evidence-parsing/ep-011-generic-basic/expected.json",
+  "scoring": {
+    "method": "json-field-match",
+    "fields": [
+      "summary.controlsTested",
+      "summary.controlsPassed",
+      "summary.controlsFailed",
+      "summary.overallScore"
+    ],
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "generic",
+    "basic"
+  ],
+  "timeLimitMinutes": 5
+}

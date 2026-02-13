@@ -1,0 +1,20 @@
+{
+  "id": "cm-007",
+  "category": "control-mapping",
+  "difficulty": "hard",
+  "description": "Map generic controls with multi-framework references to all applicable framework IDs",
+  "input": "arena/challenges/control-mapping/cm-007-cross-framework/input.json",
+  "groundTruth": "arena/challenges/control-mapping/cm-007-cross-framework/expected.json",
+  "scoring": {
+    "method": "precision-recall",
+    "threshold": 0.7,
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "multi-framework",
+    "cross-mapping",
+    "complex"
+  ],
+  "timeLimitMinutes": 15
+}

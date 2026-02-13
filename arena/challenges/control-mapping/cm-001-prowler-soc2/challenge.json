@@ -1,0 +1,20 @@
+{
+  "id": "cm-001",
+  "category": "control-mapping",
+  "difficulty": "easy",
+  "description": "Map Prowler findings to SOC 2 control IDs",
+  "input": "arena/challenges/control-mapping/cm-001-prowler-soc2/input.json",
+  "groundTruth": "arena/challenges/control-mapping/cm-001-prowler-soc2/expected.json",
+  "scoring": {
+    "method": "precision-recall",
+    "threshold": 0.8,
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "prowler",
+    "soc2",
+    "mapping"
+  ],
+  "timeLimitMinutes": 10
+}

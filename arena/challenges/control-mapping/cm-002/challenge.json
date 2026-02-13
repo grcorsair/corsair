@@ -1,0 +1,16 @@
+{
+  "id": "cm-002",
+  "category": "control-mapping",
+  "difficulty": "easy",
+  "description": "Map Prowler findings to NIST 800-53 controls. Identify which NIST control families are addressed by each finding.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "precision-recall",
+    "threshold": 0.8,
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["prowler", "nist", "mapping"],
+  "timeLimitMinutes": 5
+}

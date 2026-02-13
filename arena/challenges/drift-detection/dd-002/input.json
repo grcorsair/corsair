@@ -1,0 +1,28 @@
+{
+  "previous": {
+    "type": "CorsairCPOE",
+    "scope": "Acme Corp — Q4 2025 Assessment",
+    "provenance": { "source": "self", "sourceIdentity": "Acme Security Team", "sourceDate": "2025-12-15" },
+    "summary": { "controlsTested": 5, "controlsPassed": 2, "controlsFailed": 3, "overallScore": 40 },
+    "controls": [
+      { "id": "ACME-IAM-001", "status": "pass", "severity": "HIGH" },
+      { "id": "ACME-IAM-003", "status": "fail", "severity": "MEDIUM" },
+      { "id": "ACME-IR-001", "status": "fail", "severity": "MEDIUM" },
+      { "id": "ACME-BCP-001", "status": "fail", "severity": "HIGH" },
+      { "id": "ACME-ENC-001", "status": "pass", "severity": "HIGH" }
+    ]
+  },
+  "current": {
+    "type": "CorsairCPOE",
+    "scope": "Acme Corp — Q1 2026 Assessment",
+    "provenance": { "source": "self", "sourceIdentity": "Acme Security Team", "sourceDate": "2026-02-01" },
+    "summary": { "controlsTested": 5, "controlsPassed": 4, "controlsFailed": 1, "overallScore": 80 },
+    "controls": [
+      { "id": "ACME-IAM-001", "status": "pass", "severity": "HIGH" },
+      { "id": "ACME-IAM-003", "status": "pass", "severity": "MEDIUM" },
+      { "id": "ACME-IR-001", "status": "pass", "severity": "MEDIUM" },
+      { "id": "ACME-BCP-001", "status": "fail", "severity": "HIGH" },
+      { "id": "ACME-ENC-001", "status": "pass", "severity": "HIGH" }
+    ]
+  }
+}

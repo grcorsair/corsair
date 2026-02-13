@@ -1,0 +1,51 @@
+{
+  "Findings": [
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:finding/a1",
+      "Title": "1.5 Ensure MFA is enabled for the root user account",
+      "Description": "Root account MFA check.",
+      "Severity": { "Label": "CRITICAL" },
+      "Compliance": { "Status": "PASSED" },
+      "Resources": [{ "Type": "AwsAccount", "Id": "AWS::Account:123456789012" }]
+    },
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:finding/a2",
+      "Title": "2.1 Ensure CloudTrail is enabled in all regions",
+      "Description": "CloudTrail multi-region check.",
+      "Compliance": { "Status": "PASSED" },
+      "Resources": [{ "Type": "AwsCloudTrailTrail", "Id": "arn:aws:cloudtrail:us-east-1:trail" }]
+    },
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:finding/a3",
+      "Title": "2.6 Ensure S3 bucket access logging on CloudTrail bucket",
+      "Description": "S3 access logging check.",
+      "Severity": { "Label": "MEDIUM" },
+      "Compliance": { "Status": "FAILED" },
+      "Resources": [{ "Type": "AwsS3Bucket", "Id": "arn:aws:s3:::cloudtrail-logs" }]
+    },
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:finding/a4",
+      "Title": "4.1 Ensure no security groups allow ingress from 0.0.0.0/0 to port 22",
+      "Description": "SSH security group check.",
+      "Severity": { "Label": "HIGH" },
+      "Compliance": { "Status": "WARNING" },
+      "Resources": [{ "Type": "AwsEc2SecurityGroup", "Id": "sg-001" }]
+    },
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:finding/a5",
+      "Title": "S3.1 S3 Block Public Access should be enabled",
+      "Description": "S3 block public access check.",
+      "Severity": { "Label": "CRITICAL" },
+      "Compliance": { "Status": "FAILED" },
+      "Resources": [{ "Type": "AwsS3AccountPublicAccessBlock", "Id": "AWS::Account:123456789012" }]
+    },
+    {
+      "Id": "arn:aws:securityhub:us-east-1:123456789012:finding/a6",
+      "Title": "RDS.3 RDS instances should have encryption at rest",
+      "Description": "RDS encryption check.",
+      "Severity": { "Label": "MEDIUM" },
+      "Compliance": { "Status": "PASSED" },
+      "Resources": [{ "Type": "AwsRdsDbInstance", "Id": "arn:aws:rds:us-east-1:db:prod" }]
+    }
+  ]
+}

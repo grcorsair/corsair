@@ -1,0 +1,15 @@
+{
+  "id": "cg-005",
+  "category": "cpoe-generation",
+  "difficulty": "medium",
+  "description": "Generate a valid CPOE from a Trivy scan with mixed vulnerabilities and misconfigurations. Must combine both types into a unified summary.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "cpoe-verify",
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["trivy", "jwt-vc", "mixed-findings"],
+  "timeLimitMinutes": 5
+}

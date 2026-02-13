@@ -43,7 +43,7 @@ export async function generateVCJWT(
   keyManager: MarqueKeyManager,
   options?: { expiryDays?: number },
 ): Promise<string> {
-  const expiryDays = options?.expiryDays ?? 7;
+  const expiryDays = options?.expiryDays ?? 90;
   const now = new Date();
   const expiresAt = new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000);
 

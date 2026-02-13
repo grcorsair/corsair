@@ -1,0 +1,23 @@
+{
+  "schema": {
+    "type": "CorsairCPOE",
+    "requiredFields": ["scope", "provenance", "summary"],
+    "provenance": {
+      "source": "tool",
+      "sourceIdentity": "Trivy",
+      "requiredFields": ["source", "sourceIdentity"]
+    },
+    "summary": {
+      "controlsTested": 12,
+      "controlsPassed": 4,
+      "controlsFailed": 8,
+      "scoreRange": [28, 38]
+    }
+  },
+  "jwtHeaders": {
+    "alg": "EdDSA",
+    "typ": "vc+jwt"
+  },
+  "vcContext": ["https://www.w3.org/ns/credentials/v2"],
+  "vcType": ["VerifiableCredential", "CorsairCPOE"]
+}

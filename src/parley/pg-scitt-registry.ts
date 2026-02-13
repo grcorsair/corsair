@@ -13,7 +13,14 @@
  */
 
 import * as crypto from "crypto";
-import type { SCITTReceipt, SCITTRegistration, SCITTRegistry } from "./scitt-types";
+import type {
+  SCITTReceipt,
+  SCITTRegistration,
+  SCITTRegistry,
+  SCITTListEntry,
+  SCITTListOptions,
+  IssuerProfile,
+} from "./scitt-types";
 import { computeLeafHash, computeRootHash } from "./merkle";
 import { coseSign1, coseVerify1 } from "./cose";
 
@@ -130,5 +137,175 @@ export class PgSCITTRegistry implements SCITTRegistry {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * List SCITT entries with decoded JWT metadata.
+   * Ordered by registration time descending (newest first).
+   */
+  async listEntries(options: SCITTListOptions = {}): Promise<SCITTListEntry[]> {
+    const limit = options.limit ?? 20;
+    const offset = options.offset ?? 0;
+
+    const rows = (await this.db`
+      SELECT entry_id, statement, tree_size, registration_time
+      FROM scitt_entries
+      ORDER BY registration_time DESC
+      LIMIT ${limit + (options.issuer || options.framework ? 100 : 0)}
+      OFFSET ${options.issuer || options.framework ? 0 : offset}
+    `) as Array<{
+      entry_id: string;
+      statement: string;
+      tree_size: number;
+      registration_time: string;
+    }>;
+
+    let entries: SCITTListEntry[] = [];
+
+    for (const row of rows) {
+      const payload = decodeJWTPayload(row.statement);
+      const vc = payload.vc as Record<string, unknown> | undefined;
+      const subject = vc?.credentialSubject as Record<string, unknown> | undefined;
+
+      const issuer = (payload.iss as string) || "unknown";
+      const scope = (subject?.scope as string) || "unknown";
+      const assurance = subject?.assurance as Record<string, unknown> | undefined;
+      const summary = subject?.summary as SCITTListEntry["summary"] | undefined;
+      const frameworks = subject?.frameworks as Record<string, unknown> | undefined;
+
+      // Apply issuer filter
+      if (options.issuer && issuer !== options.issuer) continue;
+
+      // Apply framework filter
+      if (options.framework && frameworks) {
+        if (!Object.keys(frameworks).includes(options.framework)) continue;
+      } else if (options.framework && !frameworks) {
+        continue;
+      }
+
+      const entry: SCITTListEntry = {
+        entryId: row.entry_id,
+        registrationTime: row.registration_time,
+        treeSize: row.tree_size,
+        issuer,
+        scope,
+      };
+
+      if (assurance?.declared !== undefined) {
+        entry.assuranceLevel = assurance.declared as number;
+      }
+
+      if (summary) {
+        entry.summary = summary;
+      }
+
+      entries.push(entry);
+    }
+
+    // Apply offset/limit for filtered queries
+    if (options.issuer || options.framework) {
+      entries = entries.slice(offset, offset + limit);
+    }
+
+    return entries;
+  }
+
+  /**
+   * Get aggregated profile for a CPOE issuer.
+   * Returns null if no entries exist for the given issuer DID.
+   */
+  async getIssuerProfile(issuerDID: string): Promise<IssuerProfile | null> {
+    const rows = (await this.db`
+      SELECT entry_id, statement, registration_time
+      FROM scitt_entries
+    `) as Array<{
+      entry_id: string;
+      statement: string;
+      registration_time: string;
+    }>;
+
+    const issuerEntries: Array<{
+      entryId: string;
+      registrationTime: string;
+      scope: string;
+      score: number;
+      assuranceLevel: number;
+      frameworks: string[];
+    }> = [];
+
+    for (const row of rows) {
+      const payload = decodeJWTPayload(row.statement);
+      const iss = payload.iss as string | undefined;
+      if (iss !== issuerDID) continue;
+
+      const vc = payload.vc as Record<string, unknown> | undefined;
+      const subject = vc?.credentialSubject as Record<string, unknown> | undefined;
+      const assurance = subject?.assurance as Record<string, unknown> | undefined;
+      const summary = subject?.summary as Record<string, unknown> | undefined;
+      const frameworks = subject?.frameworks as Record<string, unknown> | undefined;
+
+      issuerEntries.push({
+        entryId: row.entry_id,
+        registrationTime: row.registration_time,
+        scope: (subject?.scope as string) || "unknown",
+        score: (summary?.overallScore as number) || 0,
+        assuranceLevel: (assurance?.declared as number) || 0,
+        frameworks: frameworks ? Object.keys(frameworks) : [],
+      });
+    }
+
+    if (issuerEntries.length === 0) return null;
+
+    // Sort by registration time descending
+    issuerEntries.sort(
+      (a, b) => new Date(b.registrationTime).getTime() - new Date(a.registrationTime).getTime()
+    );
+
+    // Aggregate
+    const allFrameworks = new Set<string>();
+    let totalScore = 0;
+    let maxAssurance = 0;
+
+    for (const entry of issuerEntries) {
+      totalScore += entry.score;
+      if (entry.assuranceLevel > maxAssurance) maxAssurance = entry.assuranceLevel;
+      for (const fw of entry.frameworks) allFrameworks.add(fw);
+    }
+
+    return {
+      issuerDID,
+      totalCPOEs: issuerEntries.length,
+      frameworks: Array.from(allFrameworks),
+      averageScore: Math.round(totalScore / issuerEntries.length),
+      currentAssuranceLevel: maxAssurance,
+      lastCPOEDate: issuerEntries[0].registrationTime,
+      history: issuerEntries.slice(0, 20).map((e) => ({
+        entryId: e.entryId,
+        registrationTime: e.registrationTime,
+        scope: e.scope,
+        score: e.score,
+        assuranceLevel: e.assuranceLevel,
+      })),
+    };
+  }
+}
+
+// =============================================================================
+// JWT PAYLOAD DECODER (exported for reuse)
+// =============================================================================
+
+/**
+ * Decode a JWT payload without cryptographic verification.
+ * Splits by ".", base64url decodes the middle segment, JSON.parse.
+ * Returns empty object on failure.
+ */
+export function decodeJWTPayload(jwt: string): Record<string, unknown> {
+  try {
+    const parts = jwt.split(".");
+    if (parts.length !== 3) return {};
+    const payload = Buffer.from(parts[1], "base64url").toString();
+    return JSON.parse(payload);
+  } catch {
+    return {};
   }
 }

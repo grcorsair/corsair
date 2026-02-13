@@ -1,0 +1,20 @@
+{
+  "id": "ga-002",
+  "category": "gap-analysis",
+  "difficulty": "medium",
+  "description": "Identify missing NIST 800-53 controls from InSpec scan results",
+  "input": "arena/challenges/gap-analysis/ga-002-nist-gaps/input.json",
+  "groundTruth": "arena/challenges/gap-analysis/ga-002-nist-gaps/expected.json",
+  "scoring": {
+    "method": "precision-recall",
+    "threshold": 0.8,
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "gap-analysis",
+    "nist",
+    "inspec"
+  ],
+  "timeLimitMinutes": 10
+}

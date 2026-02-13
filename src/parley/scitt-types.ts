@@ -118,3 +118,49 @@ export interface COSEReceipt {
   treeSize: number;
   treeHash: string;
 }
+
+// =============================================================================
+// LIST & PROFILE TYPES (for SCITT log browsing)
+// =============================================================================
+
+/** A single entry in the SCITT transparency log listing */
+export interface SCITTListEntry {
+  entryId: string;
+  registrationTime: string;
+  treeSize: number;
+  issuer: string;
+  scope: string;
+  assuranceLevel?: number;
+  summary?: {
+    controlsTested: number;
+    controlsPassed: number;
+    controlsFailed: number;
+    overallScore: number;
+  };
+}
+
+/** Options for listing SCITT entries */
+export interface SCITTListOptions {
+  limit?: number;
+  offset?: number;
+  after?: string;
+  issuer?: string;
+  framework?: string;
+}
+
+/** Aggregated profile for a CPOE issuer */
+export interface IssuerProfile {
+  issuerDID: string;
+  totalCPOEs: number;
+  frameworks: string[];
+  averageScore: number;
+  currentAssuranceLevel: number;
+  lastCPOEDate: string;
+  history: Array<{
+    entryId: string;
+    registrationTime: string;
+    scope: string;
+    score: number;
+    assuranceLevel: number;
+  }>;
+}

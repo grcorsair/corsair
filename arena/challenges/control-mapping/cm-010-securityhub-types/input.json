@@ -1,0 +1,52 @@
+{
+  "Findings": [
+    {
+      "Id": "f-1",
+      "Resources": [
+        {
+          "Type": "AwsAccount"
+        }
+      ]
+    },
+    {
+      "Id": "f-2",
+      "Resources": [
+        {
+          "Type": "AwsCloudTrailTrail"
+        }
+      ]
+    },
+    {
+      "Id": "f-3",
+      "Resources": [
+        {
+          "Type": "AwsS3Bucket"
+        }
+      ]
+    },
+    {
+      "Id": "f-4",
+      "Resources": [
+        {
+          "Type": "AwsEc2SecurityGroup"
+        }
+      ]
+    },
+    {
+      "Id": "f-5",
+      "Resources": [
+        {
+          "Type": "AwsRdsDbInstance"
+        }
+      ]
+    },
+    {
+      "Id": "f-6",
+      "Resources": [
+        {
+          "Type": "AwsEc2SecurityGroup"
+        }
+      ]
+    }
+  ]
+}

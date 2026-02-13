@@ -1,0 +1,19 @@
+{
+  "id": "dd-002",
+  "category": "drift-detection",
+  "difficulty": "medium",
+  "description": "Detect multiple controls that regressed from pass to fail",
+  "input": "arena/challenges/drift-detection/dd-002-multiple-regressions/input.json",
+  "groundTruth": "arena/challenges/drift-detection/dd-002-multiple-regressions/expected.json",
+  "scoring": {
+    "method": "diff-match",
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "drift",
+    "regression",
+    "multiple"
+  ],
+  "timeLimitMinutes": 5
+}

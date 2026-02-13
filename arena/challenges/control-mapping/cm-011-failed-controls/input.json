@@ -1,0 +1,28 @@
+{
+  "findings": [
+    {
+      "uid": "check-1",
+      "status": "PASS"
+    },
+    {
+      "uid": "check-2",
+      "status": "FAIL"
+    },
+    {
+      "uid": "check-3",
+      "status": "PASS"
+    },
+    {
+      "uid": "check-4",
+      "status": "FAIL"
+    },
+    {
+      "uid": "check-5",
+      "status": "FAIL"
+    },
+    {
+      "uid": "check-6",
+      "status": "PASS"
+    }
+  ]
+}

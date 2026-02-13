@@ -1,0 +1,24 @@
+{
+  "id": "ep-016",
+  "category": "evidence-parsing",
+  "difficulty": "hard",
+  "description": "Handle minimal generic input with no controls and extract correct empty summary",
+  "input": "arena/challenges/evidence-parsing/ep-016-generic-minimal/input.json",
+  "groundTruth": "arena/challenges/evidence-parsing/ep-016-generic-minimal/expected.json",
+  "scoring": {
+    "method": "json-field-match",
+    "fields": [
+      "summary.controlsTested",
+      "summary.controlsPassed",
+      "summary.controlsFailed"
+    ],
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "generic",
+    "edge-case",
+    "empty"
+  ],
+  "timeLimitMinutes": 5
+}

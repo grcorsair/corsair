@@ -1,0 +1,183 @@
+{
+  "platform": {
+    "name": "aws",
+    "release": "aws-sdk-v3.723.0"
+  },
+  "profiles": [
+    {
+      "name": "cis-aws-benchmark-level1",
+      "title": "CIS AWS Foundations Benchmark Level 1",
+      "controls": [
+        {
+          "id": "cis-aws-1.5",
+          "title": "Ensure MFA is enabled for the root user account",
+          "desc": "The root user is the most privileged user in an AWS account. Multi-factor authentication (MFA) adds an extra layer of protection. With MFA enabled, when a user signs in, they are prompted for their password and an authentication code from their MFA device.",
+          "impact": 0.9,
+          "tags": {
+            "nist": ["IA-2", "IA-2(1)"],
+            "cis_controls": [{ "id": "6.5" }]
+          },
+          "results": [
+            {
+              "status": "passed",
+              "code_desc": "Root account MFA is enabled. Hardware MFA device detected (arn:aws:iam::mfa/root-account-mfa-device).",
+              "run_time": 0.234
+            }
+          ]
+        },
+        {
+          "id": "cis-aws-1.8",
+          "title": "Ensure IAM password policy requires minimum length of 14 or greater",
+          "desc": "IAM password policies can require passwords to be a minimum length. Setting a password complexity policy increases account resiliency against brute force login attempts.",
+          "impact": 0.5,
+          "tags": {
+            "nist": ["IA-5", "IA-5(1)"]
+          },
+          "results": [
+            {
+              "status": "passed",
+              "code_desc": "IAM password policy minimum length is set to 16 characters.",
+              "run_time": 0.089
+            }
+          ]
+        },
+        {
+          "id": "cis-aws-1.12",
+          "title": "Ensure credentials unused for 45 days or greater are disabled",
+          "desc": "AWS IAM users can access AWS resources using different types of credentials, such as passwords or access keys. It is recommended that all credentials that have been unused in 45 or more days be deactivated or removed.",
+          "impact": 0.5,
+          "tags": {
+            "nist": ["AC-2", "AC-2(3)"]
+          },
+          "results": [
+            {
+              "status": "failed",
+              "code_desc": "IAM user 'svc-legacy-deploy' has access key unused for 78 days. IAM user 'former-contractor' has password unused for 112 days.",
+              "run_time": 1.456,
+              "message": "2 IAM credentials found unused beyond 45-day threshold"
+            }
+          ]
+        },
+        {
+          "id": "cis-aws-2.1.1",
+          "title": "Ensure S3 Bucket Policy is set to deny HTTP requests",
+          "desc": "At the Amazon S3 bucket level, you can configure permissions through a bucket policy making the objects accessible only through HTTPS.",
+          "impact": 0.7,
+          "tags": {
+            "nist": ["SC-8", "SC-8(1)"]
+          },
+          "results": [
+            {
+              "status": "passed",
+              "code_desc": "All 12 S3 buckets have bucket policies that deny non-SSL transport (aws:SecureTransport condition).",
+              "run_time": 2.341
+            }
+          ]
+        },
+        {
+          "id": "cis-aws-3.1",
+          "title": "Ensure CloudTrail is enabled in all regions",
+          "desc": "AWS CloudTrail is a web service that records AWS API calls for your account and delivers log files to you. CloudTrail can be configured to deliver log files from all regions to a single S3 bucket.",
+          "impact": 0.9,
+          "tags": {
+            "nist": ["AU-2", "AU-3", "AU-12"]
+          },
+          "results": [
+            {
+              "status": "passed",
+              "code_desc": "Multi-region CloudTrail trail 'organization-trail' is enabled with management events recording. Log file validation is enabled.",
+              "run_time": 0.567
+            }
+          ]
+        },
+        {
+          "id": "cis-aws-3.4",
+          "title": "Ensure CloudTrail trails are integrated with CloudWatch Logs",
+          "desc": "AWS CloudTrail is a web service that records API calls made in a given account. The recorded information includes the identity of the API caller, the time of the call, and other data. Sending CloudTrail logs to CloudWatch Logs enables real-time and historical activity logging.",
+          "impact": 0.5,
+          "tags": {
+            "nist": ["AU-6", "AU-6(1)", "SI-4"]
+          },
+          "results": [
+            {
+              "status": "failed",
+              "code_desc": "CloudTrail trail 'organization-trail' is not integrated with CloudWatch Logs. LastDeliveryTime is null.",
+              "run_time": 0.234,
+              "message": "CloudWatch Logs integration not configured for trail"
+            }
+          ]
+        },
+        {
+          "id": "cis-aws-4.1",
+          "title": "Ensure no security groups allow ingress from 0.0.0.0/0 to port 22",
+          "desc": "Security groups provide stateful filtering of ingress/egress network traffic to AWS resources. It is recommended that no security group allows unrestricted ingress access to port 22.",
+          "impact": 0.7,
+          "tags": {
+            "nist": ["AC-4", "SC-7", "SC-7(5)"],
+            "cis_controls": [{ "id": "12.2" }]
+          },
+          "results": [
+            {
+              "status": "passed",
+              "code_desc": "No security groups allow unrestricted SSH (port 22) access from 0.0.0.0/0 or ::/0. 47 security groups evaluated.",
+              "run_time": 3.892
+            }
+          ]
+        },
+        {
+          "id": "cis-aws-5.1",
+          "title": "Ensure no Network ACLs allow ingress from 0.0.0.0/0 to remote server administration ports",
+          "desc": "The Network Access Control List (NACL) function provides stateless filtering of ingress and egress network traffic to AWS resources. NACLs should not allow unrestricted ingress access to remote server administration ports.",
+          "impact": 0.7,
+          "tags": {
+            "nist": ["AC-4", "SC-7"]
+          },
+          "results": [
+            {
+              "status": "passed",
+              "code_desc": "No NACLs allow unrestricted access to ports 22 (SSH) or 3389 (RDP) from 0.0.0.0/0. 8 NACLs evaluated across 3 VPCs.",
+              "run_time": 1.123
+            }
+          ]
+        },
+        {
+          "id": "cis-aws-2.3.1",
+          "title": "Ensure that encryption is enabled for EFS file systems",
+          "desc": "EFS data should be encrypted at rest using AWS KMS (Key Management Service). Encryption at rest provides an additional layer of defense and protects data from unauthorized access to the underlying storage.",
+          "impact": 0.7,
+          "tags": {
+            "nist": ["SC-28", "SC-28(1)"]
+          },
+          "results": [
+            {
+              "status": "failed",
+              "code_desc": "EFS file system 'fs-0a1b2c3d4e5f6789a' does not have encryption at rest enabled. Region: us-east-1.",
+              "run_time": 0.456,
+              "message": "1 of 3 EFS file systems is not encrypted at rest"
+            }
+          ]
+        },
+        {
+          "id": "cis-aws-2.2.1",
+          "title": "Ensure EBS volume encryption is enabled by default in all regions",
+          "desc": "Elastic Compute Cloud (EC2) supports encryption at rest when using the Elastic Block Store (EBS) service. While disabled by default, forcing encryption at the EBS level is available.",
+          "impact": 0.7,
+          "tags": {
+            "nist": ["SC-28"]
+          },
+          "results": [
+            {
+              "status": "passed",
+              "code_desc": "EBS encryption by default is enabled in all 4 active regions (us-east-1, us-west-2, eu-west-1, ap-southeast-1).",
+              "run_time": 1.890
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "statistics": {
+    "duration": 12.282
+  },
+  "version": "5.22.36"
+}

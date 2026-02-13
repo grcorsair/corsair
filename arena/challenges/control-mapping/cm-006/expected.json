@@ -1,0 +1,15 @@
+{
+  "mappings": [
+    { "findingTitle": "1.5 Ensure MFA is enabled for the root user account", "framework": "SOC2", "controlId": "CC6.1", "status": "PASSED" },
+    { "findingTitle": "2.1 Ensure CloudTrail is enabled in all regions", "framework": "SOC2", "controlId": "CC7.2", "status": "PASSED" },
+    { "findingTitle": "2.6 Ensure S3 bucket access logging on CloudTrail bucket", "framework": "SOC2", "controlId": "CC7.2", "status": "FAILED" },
+    { "findingTitle": "4.1 Ensure no security groups allow ingress to port 22", "framework": "SOC2", "controlId": "CC6.6", "status": "PASSED" },
+    { "findingTitle": "4.2 Ensure no security groups allow ingress to port 3389", "framework": "SOC2", "controlId": "CC6.6", "status": "PASSED" },
+    { "findingTitle": "RDS.3 RDS instances should have encryption at rest", "framework": "SOC2", "controlId": "CC6.7", "status": "PASSED" },
+    { "findingTitle": "IAM.4 IAM root user access key should not exist", "framework": "SOC2", "controlId": "CC6.1", "status": "PASSED" },
+    { "findingTitle": "S3.1 S3 Block Public Access should be enabled", "framework": "SOC2", "controlId": "CC6.6", "status": "FAILED" },
+    { "findingTitle": "Lambda.1 Lambda function policies should prohibit public access", "framework": "SOC2", "controlId": "CC6.6", "status": "PASSED" }
+  ],
+  "coveredControls": ["CC6.1", "CC6.6", "CC6.7", "CC7.2"],
+  "totalMappings": 9
+}

@@ -1,0 +1,23 @@
+{
+  "schema": {
+    "type": "CorsairCPOE",
+    "requiredFields": ["scope", "provenance", "summary"],
+    "provenance": {
+      "source": "tool",
+      "sourceIdentity": "GitLab SAST",
+      "requiredFields": ["source", "sourceIdentity"]
+    },
+    "summary": {
+      "controlsTested": 6,
+      "controlsPassed": 0,
+      "controlsFailed": 6,
+      "scoreRange": [0, 0]
+    }
+  },
+  "jwtHeaders": {
+    "alg": "EdDSA",
+    "typ": "vc+jwt"
+  },
+  "vcContext": ["https://www.w3.org/ns/credentials/v2"],
+  "vcType": ["VerifiableCredential", "CorsairCPOE"]
+}

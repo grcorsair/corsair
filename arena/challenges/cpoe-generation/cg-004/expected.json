@@ -1,0 +1,23 @@
+{
+  "schema": {
+    "type": "CorsairCPOE",
+    "requiredFields": ["scope", "provenance", "summary"],
+    "provenance": {
+      "source": "tool",
+      "sourceIdentity": "InSpec",
+      "requiredFields": ["source", "sourceIdentity"]
+    },
+    "summary": {
+      "controlsTested": 10,
+      "controlsPassed": 7,
+      "controlsFailed": 3,
+      "scoreRange": [65, 75]
+    }
+  },
+  "jwtHeaders": {
+    "alg": "EdDSA",
+    "typ": "vc+jwt"
+  },
+  "vcContext": ["https://www.w3.org/ns/credentials/v2"],
+  "vcType": ["VerifiableCredential", "CorsairCPOE"]
+}

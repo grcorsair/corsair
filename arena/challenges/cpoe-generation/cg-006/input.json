@@ -1,0 +1,126 @@
+{
+  "version": "15.0.7",
+  "scan": {
+    "analyzer": {
+      "id": "semgrep",
+      "name": "Semgrep",
+      "version": "1.56.0",
+      "vendor": { "name": "GitLab" }
+    },
+    "scanner": {
+      "id": "semgrep",
+      "name": "Semgrep",
+      "version": "1.56.0",
+      "vendor": { "name": "GitLab" }
+    },
+    "type": "sast",
+    "start_time": "2026-02-12T08:00:00Z",
+    "end_time": "2026-02-12T08:01:23Z",
+    "status": "success"
+  },
+  "vulnerabilities": [
+    {
+      "id": "gl-sast-001",
+      "category": "sast",
+      "name": "SQL Injection in user query",
+      "message": "Possible SQL injection via string concatenation",
+      "description": "User input is concatenated directly into SQL query string without parameterization. An attacker could manipulate the query to access or modify unauthorized data.",
+      "severity": "Critical",
+      "scanner": { "id": "semgrep", "name": "Semgrep" },
+      "location": {
+        "file": "src/api/users.ts",
+        "start_line": 42,
+        "end_line": 42
+      },
+      "identifiers": [
+        { "type": "cwe", "name": "CWE-89", "value": "89", "url": "https://cwe.mitre.org/data/definitions/89.html" },
+        { "type": "owasp", "name": "A03:2021 - Injection", "value": "A03:2021" }
+      ],
+      "solution": "Use parameterized queries or prepared statements instead of string concatenation."
+    },
+    {
+      "id": "gl-sast-002",
+      "category": "sast",
+      "name": "Cross-Site Scripting (XSS) in template",
+      "message": "Unescaped user input rendered in HTML template",
+      "description": "User-controlled input is inserted into HTML output without proper escaping, allowing an attacker to inject malicious scripts.",
+      "severity": "High",
+      "scanner": { "id": "semgrep", "name": "Semgrep" },
+      "location": {
+        "file": "src/views/profile.html",
+        "start_line": 87
+      },
+      "identifiers": [
+        { "type": "cwe", "name": "CWE-79", "value": "79", "url": "https://cwe.mitre.org/data/definitions/79.html" }
+      ],
+      "solution": "Escape all user input before rendering in HTML context."
+    },
+    {
+      "id": "gl-sast-003",
+      "category": "sast",
+      "name": "Hardcoded API key in source code",
+      "message": "API key found hardcoded in configuration file",
+      "description": "An API key is embedded directly in the source code. If the repository is public or the code is leaked, the key could be used by unauthorized parties.",
+      "severity": "High",
+      "scanner": { "id": "semgrep", "name": "Semgrep" },
+      "location": {
+        "file": "src/config/stripe.ts",
+        "start_line": 8
+      },
+      "identifiers": [
+        { "type": "cwe", "name": "CWE-798", "value": "798" }
+      ],
+      "solution": "Use environment variables or a secrets manager to store API keys."
+    },
+    {
+      "id": "gl-sast-004",
+      "category": "sast",
+      "name": "Insecure random number generator",
+      "message": "Math.random() used for security-sensitive operation",
+      "description": "Math.random() is not cryptographically secure and should not be used for generating tokens, session IDs, or other security-sensitive values.",
+      "severity": "Medium",
+      "scanner": { "id": "semgrep", "name": "Semgrep" },
+      "location": {
+        "file": "src/auth/token.ts",
+        "start_line": 22
+      },
+      "identifiers": [
+        { "type": "cwe", "name": "CWE-330", "value": "330" }
+      ],
+      "solution": "Use crypto.randomBytes() or crypto.getRandomValues() for security-sensitive random values."
+    },
+    {
+      "id": "gl-sast-005",
+      "category": "sast",
+      "name": "Missing CSRF protection on form",
+      "message": "POST form handler does not validate CSRF token",
+      "description": "The form submission endpoint does not check for a CSRF token, making it vulnerable to cross-site request forgery attacks.",
+      "severity": "Medium",
+      "scanner": { "id": "semgrep", "name": "Semgrep" },
+      "location": {
+        "file": "src/api/settings.ts",
+        "start_line": 55
+      },
+      "identifiers": [
+        { "type": "cwe", "name": "CWE-352", "value": "352" }
+      ]
+    },
+    {
+      "id": "gl-sast-006",
+      "category": "sast",
+      "name": "Unvalidated redirect URL",
+      "message": "Redirect destination not validated against allowlist",
+      "description": "The application redirects users to a URL provided in a query parameter without validating it against an allowlist of trusted domains.",
+      "severity": "Low",
+      "scanner": { "id": "semgrep", "name": "Semgrep" },
+      "location": {
+        "file": "src/auth/callback.ts",
+        "start_line": 30
+      },
+      "identifiers": [
+        { "type": "cwe", "name": "CWE-601", "value": "601" }
+      ],
+      "solution": "Validate redirect URLs against a domain allowlist."
+    }
+  ]
+}

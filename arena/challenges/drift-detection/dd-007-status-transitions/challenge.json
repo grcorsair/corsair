@@ -1,0 +1,19 @@
+{
+  "id": "dd-007",
+  "category": "drift-detection",
+  "difficulty": "hard",
+  "description": "Detect regressions with not-tested to fail, pass to not-tested transitions",
+  "input": "arena/challenges/drift-detection/dd-007-status-transitions/input.json",
+  "groundTruth": "arena/challenges/drift-detection/dd-007-status-transitions/expected.json",
+  "scoring": {
+    "method": "diff-match",
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "drift",
+    "status-transitions",
+    "edge-case"
+  ],
+  "timeLimitMinutes": 10
+}

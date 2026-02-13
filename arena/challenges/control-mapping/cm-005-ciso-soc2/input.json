@@ -1,0 +1,22 @@
+{
+  "assessments": [
+    {
+      "requirement": "urn:intuitem:risk:req_node:soc2-2017:CC1.1"
+    },
+    {
+      "requirement": "urn:intuitem:risk:req_node:soc2-2017:CC5.2"
+    },
+    {
+      "requirement": "urn:intuitem:risk:req_node:soc2-2017:CC6.1"
+    },
+    {
+      "requirement": "urn:intuitem:risk:req_node:soc2-2017:CC7.2"
+    },
+    {
+      "requirement": "urn:intuitem:risk:req_node:soc2-2017:CC8.1"
+    },
+    {
+      "requirement": "urn:intuitem:risk:req_node:soc2-2017:CC9.1"
+    }
+  ]
+}

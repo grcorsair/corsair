@@ -98,7 +98,7 @@ export class MarqueGenerator {
 
   constructor(keyManager: MarqueKeyManager, options?: { expiryDays?: number; format?: "v1" | "vc" }) {
     this.keyManager = keyManager;
-    this.expiryDays = options?.expiryDays ?? 7;
+    this.expiryDays = options?.expiryDays ?? 90;
     this.format = options?.format ?? "v1";
   }
 

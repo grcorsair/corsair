@@ -1,0 +1,15 @@
+{
+  "id": "dd-005",
+  "category": "drift-detection",
+  "difficulty": "easy",
+  "description": "Detect regressions between two Trivy container scans. New vulnerabilities indicate regression.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "diff-match",
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["trivy", "vulnerabilities", "new-findings"],
+  "timeLimitMinutes": 5
+}

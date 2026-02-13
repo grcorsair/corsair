@@ -1,0 +1,39 @@
+{
+  "format": "ciso-assistant-api",
+  "data": {
+    "count": 5,
+    "next": null,
+    "previous": null,
+    "results": [
+      {
+        "id": "a-1",
+        "requirement": "urn:intuitem:risk:req_node:soc2-2017:CC1.1",
+        "result": "compliant",
+        "score": 92
+      },
+      {
+        "id": "a-2",
+        "requirement": "urn:intuitem:risk:req_node:soc2-2017:CC5.2",
+        "result": "non_compliant",
+        "score": 34
+      },
+      {
+        "id": "a-3",
+        "requirement": "urn:intuitem:risk:req_node:soc2-2017:CC6.1",
+        "result": "compliant",
+        "score": 95
+      },
+      {
+        "id": "a-4",
+        "requirement": "urn:intuitem:risk:req_node:soc2-2017:CC8.1",
+        "result": "non_compliant",
+        "score": 41
+      },
+      {
+        "id": "a-5",
+        "requirement": "urn:intuitem:risk:req_node:soc2-2017:CC3.1",
+        "result": "not_assessed"
+      }
+    ]
+  }
+}

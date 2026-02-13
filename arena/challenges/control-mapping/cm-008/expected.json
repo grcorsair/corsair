@@ -1,0 +1,17 @@
+{
+  "mappings": [
+    { "vulnId": "gl-sast-001", "cwe": "CWE-89", "owaspCategory": "A03:2021", "owaspName": "Injection", "severity": "Critical" },
+    { "vulnId": "gl-sast-002", "cwe": "CWE-79", "owaspCategory": "A03:2021", "owaspName": "Injection", "severity": "High" },
+    { "vulnId": "gl-sast-003", "cwe": "CWE-798", "owaspCategory": "A07:2021", "owaspName": "Identification and Authentication Failures", "severity": "High" },
+    { "vulnId": "gl-sast-004", "cwe": "CWE-330", "owaspCategory": "A02:2021", "owaspName": "Cryptographic Failures", "severity": "Medium" },
+    { "vulnId": "gl-sast-005", "cwe": "CWE-352", "owaspCategory": "A01:2021", "owaspName": "Broken Access Control", "severity": "Medium" },
+    { "vulnId": "gl-sast-006", "cwe": "CWE-601", "owaspCategory": "A01:2021", "owaspName": "Broken Access Control", "severity": "Low" }
+  ],
+  "owaspCoverage": {
+    "A01:2021": 2,
+    "A02:2021": 1,
+    "A03:2021": 2,
+    "A07:2021": 1
+  },
+  "totalMappings": 6
+}

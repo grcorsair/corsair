@@ -1,0 +1,32 @@
+{
+  "previous": {
+    "type": "CorsairCPOE",
+    "scope": "AWS SecurityHub — January 2026",
+    "provenance": { "source": "tool", "sourceIdentity": "SecurityHub", "sourceDate": "2026-01-15" },
+    "summary": { "controlsTested": 6, "controlsPassed": 4, "controlsFailed": 2, "overallScore": 67 },
+    "controls": [
+      { "id": "CIS-1.5", "title": "Root MFA", "status": "PASSED", "severity": "CRITICAL" },
+      { "id": "CIS-2.1", "title": "CloudTrail enabled", "status": "PASSED", "severity": "HIGH" },
+      { "id": "CIS-2.6", "title": "S3 access logging on CT bucket", "status": "FAILED", "severity": "MEDIUM" },
+      { "id": "CIS-4.1", "title": "No SSH from 0.0.0.0/0", "status": "PASSED", "severity": "HIGH" },
+      { "id": "S3.1", "title": "S3 Block Public Access", "status": "FAILED", "severity": "CRITICAL" },
+      { "id": "RDS.3", "title": "RDS encryption at rest", "status": "PASSED", "severity": "MEDIUM" }
+    ]
+  },
+  "current": {
+    "type": "CorsairCPOE",
+    "scope": "AWS SecurityHub — February 2026",
+    "provenance": { "source": "tool", "sourceIdentity": "SecurityHub", "sourceDate": "2026-02-12" },
+    "summary": { "controlsTested": 8, "controlsPassed": 6, "controlsFailed": 2, "overallScore": 75 },
+    "controls": [
+      { "id": "CIS-1.5", "title": "Root MFA", "status": "PASSED", "severity": "CRITICAL" },
+      { "id": "CIS-2.1", "title": "CloudTrail enabled", "status": "PASSED", "severity": "HIGH" },
+      { "id": "CIS-2.6", "title": "S3 access logging on CT bucket", "status": "PASSED", "severity": "MEDIUM" },
+      { "id": "CIS-4.1", "title": "No SSH from 0.0.0.0/0", "status": "FAILED", "severity": "HIGH" },
+      { "id": "S3.1", "title": "S3 Block Public Access", "status": "PASSED", "severity": "CRITICAL" },
+      { "id": "RDS.3", "title": "RDS encryption at rest", "status": "PASSED", "severity": "MEDIUM" },
+      { "id": "KMS.4", "title": "KMS key rotation", "status": "FAILED", "severity": "MEDIUM" },
+      { "id": "Config.1", "title": "AWS Config enabled", "status": "PASSED", "severity": "MEDIUM" }
+    ]
+  }
+}

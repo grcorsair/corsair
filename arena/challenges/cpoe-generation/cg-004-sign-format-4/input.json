@@ -1,0 +1,57 @@
+{
+  "evidence": {
+    "controls": [
+      {
+        "id": "ctrl-1",
+        "status": "pass",
+        "description": "Control 1"
+      },
+      {
+        "id": "ctrl-2",
+        "status": "pass",
+        "description": "Control 2"
+      },
+      {
+        "id": "ctrl-3",
+        "status": "pass",
+        "description": "Control 3"
+      },
+      {
+        "id": "ctrl-4",
+        "status": "pass",
+        "description": "Control 4"
+      },
+      {
+        "id": "ctrl-5",
+        "status": "pass",
+        "description": "Control 5"
+      },
+      {
+        "id": "ctrl-6",
+        "status": "pass",
+        "description": "Control 6"
+      },
+      {
+        "id": "ctrl-7",
+        "status": "fail",
+        "description": "Control 7"
+      },
+      {
+        "id": "ctrl-8",
+        "status": "fail",
+        "description": "Control 8"
+      },
+      {
+        "id": "ctrl-9",
+        "status": "fail",
+        "description": "Control 9"
+      },
+      {
+        "id": "ctrl-10",
+        "status": "fail",
+        "description": "Control 10"
+      }
+    ]
+  },
+  "format": "generic"
+}

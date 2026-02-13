@@ -40,7 +40,7 @@ export interface SignInput {
   /** Override scope string */
   scope?: string;
 
-  /** CPOE validity in days (default: 7) */
+  /** CPOE validity in days (default: 90) */
   expiryDays?: number;
 
   /** Parse + classify but don't sign. Returns would-be credentialSubject */
@@ -201,7 +201,7 @@ export async function signEvidence(
   // 5. Generate JWT-VC
   const { generateVCJWT } = await import("../parley/vc-generator");
   const jwt = await generateVCJWT(marqueInput, keyManager as any, {
-    expiryDays: input.expiryDays ?? 7,
+    expiryDays: input.expiryDays ?? 90,
   });
 
   // Decode the JWT to extract credentialSubject

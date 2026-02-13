@@ -1,0 +1,15 @@
+{
+  "id": "dd-007",
+  "category": "drift-detection",
+  "difficulty": "hard",
+  "description": "Detect severity escalation between two GitLab SAST scans. Same vulnerability present in both but severity upgraded from Medium to Critical.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "diff-match",
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["gitlab", "severity-change", "sast", "advanced"],
+  "timeLimitMinutes": 5
+}

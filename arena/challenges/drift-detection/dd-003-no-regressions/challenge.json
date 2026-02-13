@@ -1,0 +1,19 @@
+{
+  "id": "dd-003",
+  "category": "drift-detection",
+  "difficulty": "easy",
+  "description": "Correctly identify zero regressions when controls only improved",
+  "input": "arena/challenges/drift-detection/dd-003-no-regressions/input.json",
+  "groundTruth": "arena/challenges/drift-detection/dd-003-no-regressions/expected.json",
+  "scoring": {
+    "method": "diff-match",
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "drift",
+    "no-regression",
+    "improvement"
+  ],
+  "timeLimitMinutes": 5
+}

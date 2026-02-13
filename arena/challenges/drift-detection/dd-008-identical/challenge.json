@@ -1,0 +1,19 @@
+{
+  "id": "dd-008",
+  "category": "drift-detection",
+  "difficulty": "easy",
+  "description": "Correctly identify zero regressions when scans are identical",
+  "input": "arena/challenges/drift-detection/dd-008-identical/input.json",
+  "groundTruth": "arena/challenges/drift-detection/dd-008-identical/expected.json",
+  "scoring": {
+    "method": "diff-match",
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "drift",
+    "identical",
+    "no-change"
+  ],
+  "timeLimitMinutes": 5
+}

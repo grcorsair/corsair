@@ -1,0 +1,51 @@
+{
+  "controls": [
+    {
+      "id": "NET-1",
+      "frameworks": [
+        {
+          "framework": "NIST-800-53",
+          "controlId": "SC-7"
+        },
+        {
+          "framework": "SOC2",
+          "controlId": "CC6.6"
+        },
+        {
+          "framework": "CIS",
+          "controlId": "12.2"
+        }
+      ]
+    },
+    {
+      "id": "ENC-1",
+      "frameworks": [
+        {
+          "framework": "NIST-800-53",
+          "controlId": "SC-28"
+        },
+        {
+          "framework": "SOC2",
+          "controlId": "CC6.7"
+        },
+        {
+          "framework": "ISO27001",
+          "controlId": "A.8.24"
+        }
+      ]
+    },
+    {
+      "id": "LOG-1",
+      "frameworks": [
+        {
+          "framework": "NIST-800-53",
+          "controlId": "AU-2"
+        },
+        {
+          "framework": "SOC2",
+          "controlId": "CC7.2"
+        }
+      ]
+    }
+  ]
+}

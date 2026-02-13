@@ -1,0 +1,16 @@
+{
+  "id": "cm-006",
+  "category": "control-mapping",
+  "difficulty": "easy",
+  "description": "Map SecurityHub findings to SOC 2 trust service criteria. Determine SOC 2 coverage from ASFF compliance findings.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "precision-recall",
+    "threshold": 0.8,
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["securityhub", "soc2", "asff", "mapping"],
+  "timeLimitMinutes": 5
+}

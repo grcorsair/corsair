@@ -1,0 +1,21 @@
+{
+  "id": "cm-012",
+  "category": "control-mapping",
+  "difficulty": "hard",
+  "description": "Identify CRITICAL and HIGH severity finding IDs from mixed Trivy output",
+  "input": "arena/challenges/control-mapping/cm-012-critical-findings/input.json",
+  "groundTruth": "arena/challenges/control-mapping/cm-012-critical-findings/expected.json",
+  "scoring": {
+    "method": "precision-recall",
+    "threshold": 0.8,
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "trivy",
+    "severity",
+    "filtering",
+    "critical"
+  ],
+  "timeLimitMinutes": 10
+}

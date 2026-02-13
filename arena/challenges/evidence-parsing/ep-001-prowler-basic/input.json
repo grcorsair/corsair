@@ -1,0 +1,70 @@
+{
+  "format": "prowler",
+  "data": [
+    {
+      "StatusCode": "PASS",
+      "Severity": "HIGH",
+      "FindingInfo": {
+        "Uid": "check-1",
+        "Title": "MFA enabled for root"
+      },
+      "Compliance": {
+        "Requirements": [
+          "CIS-1.5"
+        ]
+      }
+    },
+    {
+      "StatusCode": "PASS",
+      "Severity": "HIGH",
+      "FindingInfo": {
+        "Uid": "check-2",
+        "Title": "No root access keys"
+      },
+      "Compliance": {
+        "Requirements": [
+          "CIS-1.4"
+        ]
+      }
+    },
+    {
+      "StatusCode": "FAIL",
+      "Severity": "CRITICAL",
+      "FindingInfo": {
+        "Uid": "check-3",
+        "Title": "S3 public access"
+      },
+      "Compliance": {
+        "Requirements": [
+          "CIS-2.1.1"
+        ]
+      }
+    },
+    {
+      "StatusCode": "PASS",
+      "Severity": "MEDIUM",
+      "FindingInfo": {
+        "Uid": "check-4",
+        "Title": "CloudTrail enabled"
+      },
+      "Compliance": {
+        "Requirements": [
+          "CIS-3.1"
+        ]
+      }
+    },
+    {
+      "StatusCode": "FAIL",
+      "Severity": "HIGH",
+      "FindingInfo": {
+        "Uid": "check-5",
+        "Title": "Default SG restricts traffic"
+      },
+      "Compliance": {
+        "Requirements": [
+          "CIS-5.4"
+        ]
+      }
+    }
+  ]
+}

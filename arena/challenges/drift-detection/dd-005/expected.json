@@ -1,0 +1,11 @@
+{
+  "regressions": [],
+  "improvements": [],
+  "newFindings": [
+    { "controlId": "CVE-2025-29927", "status": "FAIL", "severity": "HIGH", "package": "next@14.2.15" },
+    { "controlId": "CVE-2024-55565", "status": "FAIL", "severity": "LOW", "package": "nanoid@3.3.7" }
+  ],
+  "scoreChange": -17,
+  "totalRegressions": 0,
+  "totalNewFindings": 2
+}

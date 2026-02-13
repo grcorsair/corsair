@@ -1,0 +1,15 @@
+{
+  "id": "cg-010",
+  "category": "cpoe-generation",
+  "difficulty": "hard",
+  "description": "Generate a CPOE with optional enrichment (assurance levels). Must include assurance.declared, assurance.breakdown, and framework mappings from a generic evidence file.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "cpoe-verify",
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["generic", "jwt-vc", "enrichment", "assurance-levels"],
+  "timeLimitMinutes": 5
+}

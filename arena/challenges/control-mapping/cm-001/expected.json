@@ -1,0 +1,19 @@
+{
+  "mappings": [
+    { "findingId": "prowler-aws-iam-root-mfa-enabled", "framework": "SOC2", "controlId": "CC6.1", "status": "PASS" },
+    { "findingId": "prowler-aws-iam-no-root-access-keys", "framework": "SOC2", "controlId": "CC6.1", "status": "PASS" },
+    { "findingId": "prowler-aws-s3-bucket-public-access", "framework": "SOC2", "controlId": "CC6.6", "status": "FAIL" },
+    { "findingId": "prowler-aws-cloudtrail-enabled", "framework": "SOC2", "controlId": "CC7.2", "status": "PASS" },
+    { "findingId": "prowler-aws-ec2-default-sg-restrict", "framework": "SOC2", "controlId": "CC6.6", "status": "FAIL" },
+    { "findingId": "prowler-aws-rds-encryption-at-rest", "framework": "SOC2", "controlId": "CC6.7", "status": "PASS" },
+    { "findingId": "prowler-aws-iam-unused-credentials-45-days", "framework": "SOC2", "controlId": "CC6.2", "status": "FAIL" },
+    { "findingId": "prowler-aws-kms-key-rotation", "framework": "SOC2", "controlId": "CC6.1", "status": "PASS" },
+    { "findingId": "prowler-aws-vpc-flow-logs-enabled", "framework": "SOC2", "controlId": "CC7.2", "status": "PASS" },
+    { "findingId": "prowler-aws-guardduty-enabled", "framework": "SOC2", "controlId": "CC7.2", "status": "FAIL" },
+    { "findingId": "prowler-aws-iam-mfa-enabled-console-users", "framework": "SOC2", "controlId": "CC6.1", "status": "PASS" },
+    { "findingId": "prowler-aws-s3-bucket-versioning", "framework": "SOC2", "controlId": "CC7.4", "status": "PASS" },
+    { "findingId": "prowler-aws-ec2-ebs-encryption-default", "framework": "SOC2", "controlId": "CC6.7", "status": "FAIL" }
+  ],
+  "coveredControls": ["CC6.1", "CC6.2", "CC6.6", "CC6.7", "CC7.2", "CC7.4"],
+  "totalMappings": 13
+}

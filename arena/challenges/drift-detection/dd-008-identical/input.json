@@ -1,0 +1,34 @@
+{
+  "previous": {
+    "controls": [
+      {
+        "id": "C-1",
+        "status": "pass"
+      },
+      {
+        "id": "C-2",
+        "status": "fail"
+      },
+      {
+        "id": "C-3",
+        "status": "pass"
+      }
+    ]
+  },
+  "current": {
+    "controls": [
+      {
+        "id": "C-1",
+        "status": "pass"
+      },
+      {
+        "id": "C-2",
+        "status": "fail"
+      },
+      {
+        "id": "C-3",
+        "status": "pass"
+      }
+    ]
+  }
+}

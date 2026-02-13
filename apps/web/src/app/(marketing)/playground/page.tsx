@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PlaygroundEditor } from "@/components/features/playground-editor";
+import { PlaygroundRecording } from "@/components/features/playground-recording";
 import { FadeIn } from "@/components/motion/fade-in";
 import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 export const metadata: Metadata = {
   title: "Playground",
   description:
-    "Try Corsair SIGN with real evidence formats. Paste or select from 8 supported formats, preview the CPOE, and get the CLI command to sign for real.",
+    "Try Corsair SIGN with real evidence formats. Watch the demo, paste or select from 8 supported formats, preview the CPOE, and sign for real.",
 };
 
 export default function PlaygroundPage() {
@@ -24,10 +25,9 @@ export default function PlaygroundPage() {
               try it
             </h1>
             <p className="mx-auto max-w-xl text-corsair-text-dim">
-              Explore all{" "}
+              Watch <code className="text-corsair-cyan">corsair sign</code> in action, then try it
+              yourself. Explore all{" "}
               <span className="font-semibold text-corsair-gold">8 supported evidence formats</span>.
-              Select an example, see how Corsair parses it into a CPOE, and get the CLI
-              command to sign for real.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               {["Generic", "Prowler", "SecurityHub", "InSpec", "Trivy", "GitLab", "CISO Assistant"].map((fmt) => (
@@ -39,11 +39,44 @@ export default function PlaygroundPage() {
           </div>
         </FadeIn>
 
+        {/* Recording + Editor toggle */}
+        <FadeIn delay={0.1}>
+          <PlaygroundRecording castFile="/recordings/sign.cast" className="mb-8" />
+        </FadeIn>
+
         <FadeIn delay={0.2}>
           <PlaygroundEditor />
         </FadeIn>
 
         <PixelDivider variant="swords" className="my-16" />
+
+        {/* Next steps */}
+        <FadeIn>
+          <div className="mb-8 grid gap-4 sm:grid-cols-2">
+            <a
+              href="/marque"
+              className="group rounded-xl border border-corsair-border bg-corsair-surface p-4 transition-colors hover:border-corsair-gold/40"
+            >
+              <p className="font-mono text-sm font-bold text-corsair-gold group-hover:text-corsair-gold">
+                Verify your CPOE &rarr;
+              </p>
+              <p className="mt-1 text-xs text-corsair-text-dim">
+                Paste a signed JWT-VC to verify its Ed25519 signature
+              </p>
+            </a>
+            <a
+              href="/log"
+              className="group rounded-xl border border-corsair-border bg-corsair-surface p-4 transition-colors hover:border-corsair-cyan/40"
+            >
+              <p className="font-mono text-sm font-bold text-corsair-cyan group-hover:text-corsair-cyan">
+                Browse the log &rarr;
+              </p>
+              <p className="mt-1 text-xs text-corsair-text-dim">
+                See every CPOE registered in the SCITT transparency log
+              </p>
+            </a>
+          </div>
+        </FadeIn>
 
         {/* How it works */}
         <FadeIn>

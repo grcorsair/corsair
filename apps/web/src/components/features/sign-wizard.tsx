@@ -74,7 +74,7 @@ export function SignWizard() {
   const [format, setFormat] = useState("");
   const [scope, setScope] = useState("");
   const [did, setDid] = useState("");
-  const [expiryDays, setExpiryDays] = useState("7");
+  const [expiryDays, setExpiryDays] = useState("90");
   const [apiKey, setApiKey] = useState(() => getStoredApiKey());
 
   // Step 3: Result

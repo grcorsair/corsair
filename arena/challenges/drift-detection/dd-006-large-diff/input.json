@@ -1,0 +1,170 @@
+{
+  "previous": {
+    "controls": [
+      {
+        "id": "C-1",
+        "status": "pass"
+      },
+      {
+        "id": "C-2",
+        "status": "pass"
+      },
+      {
+        "id": "C-3",
+        "status": "pass"
+      },
+      {
+        "id": "C-4",
+        "status": "pass"
+      },
+      {
+        "id": "C-5",
+        "status": "pass"
+      },
+      {
+        "id": "C-6",
+        "status": "pass"
+      },
+      {
+        "id": "C-7",
+        "status": "pass"
+      },
+      {
+        "id": "C-8",
+        "status": "pass"
+      },
+      {
+        "id": "C-9",
+        "status": "pass"
+      },
+      {
+        "id": "C-10",
+        "status": "pass"
+      },
+      {
+        "id": "C-11",
+        "status": "pass"
+      },
+      {
+        "id": "C-12",
+        "status": "pass"
+      },
+      {
+        "id": "C-13",
+        "status": "pass"
+      },
+      {
+        "id": "C-14",
+        "status": "pass"
+      },
+      {
+        "id": "C-15",
+        "status": "pass"
+      },
+      {
+        "id": "C-16",
+        "status": "pass"
+      },
+      {
+        "id": "C-17",
+        "status": "pass"
+      },
+      {
+        "id": "C-18",
+        "status": "pass"
+      },
+      {
+        "id": "C-19",
+        "status": "pass"
+      },
+      {
+        "id": "C-20",
+        "status": "pass"
+      }
+    ]
+  },
+  "current": {
+    "controls": [
+      {
+        "id": "C-1",
+        "status": "pass"
+      },
+      {
+        "id": "C-2",
+        "status": "pass"
+      },
+      {
+        "id": "C-3",
+        "status": "fail"
+      },
+      {
+        "id": "C-4",
+        "status": "pass"
+      },
+      {
+        "id": "C-5",
+        "status": "pass"
+      },
+      {
+        "id": "C-6",
+        "status": "pass"
+      },
+      {
+        "id": "C-7",
+        "status": "pass"
+      },
+      {
+        "id": "C-8",
+        "status": "fail"
+      },
+      {
+        "id": "C-9",
+        "status": "pass"
+      },
+      {
+        "id": "C-10",
+        "status": "pass"
+      },
+      {
+        "id": "C-11",
+        "status": "pass"
+      },
+      {
+        "id": "C-12",
+        "status": "fail"
+      },
+      {
+        "id": "C-13",
+        "status": "pass"
+      },
+      {
+        "id": "C-14",
+        "status": "pass"
+      },
+      {
+        "id": "C-15",
+        "status": "pass"
+      },
+      {
+        "id": "C-16",
+        "status": "fail"
+      },
+      {
+        "id": "C-17",
+        "status": "pass"
+      },
+      {
+        "id": "C-18",
+        "status": "pass"
+      },
+      {
+        "id": "C-19",
+        "status": "pass"
+      },
+      {
+        "id": "C-20",
+        "status": "pass"
+      }
+    ]
+  }
+}

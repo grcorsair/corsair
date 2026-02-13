@@ -1,0 +1,26 @@
+{
+  "id": "ep-015",
+  "category": "evidence-parsing",
+  "difficulty": "hard",
+  "description": "Parse large Prowler scan with 15 findings across multiple severity levels",
+  "input": "arena/challenges/evidence-parsing/ep-015-prowler-large/input.json",
+  "groundTruth": "arena/challenges/evidence-parsing/ep-015-prowler-large/expected.json",
+  "scoring": {
+    "method": "json-field-match",
+    "fields": [
+      "summary.controlsTested",
+      "summary.controlsPassed",
+      "summary.controlsFailed",
+      "summary.overallScore"
+    ],
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "prowler",
+    "aws",
+    "large",
+    "15-findings"
+  ],
+  "timeLimitMinutes": 10
+}

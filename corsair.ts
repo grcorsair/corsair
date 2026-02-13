@@ -39,6 +39,9 @@ switch (subcommand) {
   case "verify":
     await handleVerify();
     break;
+  case "renew":
+    await handleRenew();
+    break;
   case "keygen":
     await handleKeygen();
     break;
@@ -65,7 +68,7 @@ async function handleSign(): Promise<void> {
   let keyDir = "./keys";
   let did: string | undefined;
   let scope: string | undefined;
-  let expiryDays = 7;
+  let expiryDays = 90;
   let showHelp = false;
   let format: string | undefined;
   let verbose = false;
@@ -94,7 +97,7 @@ async function handleSign(): Promise<void> {
         scope = args[++i];
         break;
       case "--expiry-days":
-        expiryDays = parseInt(args[++i], 10) || 7;
+        expiryDays = parseInt(args[++i], 10) || 90;
         break;
       case "--format":
       case "-F":
@@ -146,7 +149,7 @@ OPTIONS:
       --key-dir <DIR>       Ed25519 key directory (default: ./keys)
       --did <DID>           Issuer DID (default: derived from key)
       --scope <TEXT>        Override scope string
-      --expiry-days <N>     CPOE validity in days (default: 7)
+      --expiry-days <N>     CPOE validity in days (default: 90)
       --dry-run             Parse + classify but don't sign. Output would-be subject.
       --json                Output structured JSON (jwt + metadata) to stdout
   -v, --verbose             Print step-by-step progress to stderr
@@ -857,6 +860,194 @@ OPTIONS:
 }
 
 // =============================================================================
+// RENEW
+// =============================================================================
+
+async function handleRenew(): Promise<void> {
+  const args = process.argv.slice(3);
+  let filePath: string | undefined;
+  let evidencePath: string | undefined;
+  let outputPath: string | undefined;
+  let keyDir = "./keys";
+  let jsonOutput = false;
+  let showHelp = false;
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "--file":
+      case "-f":
+        filePath = args[++i];
+        break;
+      case "--evidence":
+      case "-e":
+        evidencePath = args[++i];
+        break;
+      case "--output":
+      case "-o":
+        outputPath = args[++i];
+        break;
+      case "--key-dir":
+        keyDir = args[++i];
+        break;
+      case "--json":
+        jsonOutput = true;
+        break;
+      case "--help":
+      case "-h":
+        showHelp = true;
+        break;
+    }
+  }
+
+  if (showHelp) {
+    console.log(`
+CORSAIR RENEW — Re-sign a CPOE with fresh dates
+
+USAGE:
+  corsair renew --file <cpoe.jwt> [options]
+
+OPTIONS:
+  -f, --file <PATH>         Path to existing CPOE JWT file (required)
+  -e, --evidence <PATH>     Path to new evidence JSON (re-signs with new evidence)
+  -o, --output <PATH>       Write renewed JWT-VC to file (default: stdout)
+      --key-dir <DIR>       Ed25519 key directory (default: ./keys)
+      --json                Output structured JSON to stdout
+  -h, --help                Show this help
+
+BEHAVIOR:
+  Without --evidence: Re-signs existing CPOE payload with fresh iat/exp dates.
+  With --evidence:    Signs new evidence, preserving the original scope and DID.
+
+EXAMPLES:
+  corsair renew --file cpoe.jwt --output renewed.jwt
+  corsair renew --file cpoe.jwt --evidence new-findings.json --output renewed.jwt
+  corsair renew --file cpoe.jwt --json | jq .cpoe
+`);
+    return;
+  }
+
+  if (!filePath) {
+    console.error("Error: --file is required");
+    console.error('Run "corsair renew --help" for usage');
+    process.exit(2);
+  }
+
+  if (!existsSync(filePath)) {
+    console.error(`Error: File not found: ${filePath}`);
+    process.exit(2);
+  }
+
+  // Read and decode existing CPOE
+  const existingJwt = readFileSync(filePath, "utf-8").trim();
+  const existingPayload = decodeJwtPayload(existingJwt);
+  if (!existingPayload || !existingPayload.vc) {
+    console.error("Error: Invalid CPOE file — cannot decode JWT payload");
+    process.exit(2);
+  }
+
+  const existingVc = existingPayload.vc as Record<string, unknown>;
+  const existingSubject = existingVc.credentialSubject as Record<string, unknown> | undefined;
+  const existingIss = existingPayload.iss as string;
+  const existingScope = (existingSubject?.scope as string) || undefined;
+
+  // Load key manager
+  const { MarqueKeyManager } = await import("./src/parley/marque-key-manager");
+  const keyManager = new MarqueKeyManager(keyDir);
+  const keypair = await keyManager.loadKeypair();
+  if (!keypair) {
+    console.error(`Error: No keypair found in ${keyDir}`);
+    console.error('Generate keys with: corsair keygen --output ' + keyDir);
+    process.exit(2);
+  }
+
+  let renewedJwt: string;
+
+  if (evidencePath) {
+    // Renewal with new evidence — re-sign with signEvidence, preserving DID + scope
+    if (!existsSync(evidencePath)) {
+      console.error(`Error: Evidence file not found: ${evidencePath}`);
+      process.exit(2);
+    }
+
+    const rawJson = readFileSync(evidencePath, "utf-8");
+    const { signEvidence } = await import("./src/sign/sign-core");
+
+    const result = await signEvidence({
+      evidence: rawJson,
+      did: existingIss,
+      scope: existingScope,
+    }, keyManager);
+
+    renewedJwt = result.jwt;
+  } else {
+    // Renewal without new evidence — re-sign existing payload with fresh dates
+    const { generateVCJWT } = await import("./src/parley/vc-generator");
+    const { mapToMarqueInput } = await import("./src/ingestion/mapper");
+
+    // Reconstruct a minimal MarqueGeneratorInput from the existing CPOE
+    const marqueInput = {
+      document: undefined,
+      chartResults: [] as import("./src/types").ChartResult[],
+      issuer: { id: existingIss, did: existingIss, name: (existingVc.issuer as Record<string, unknown>)?.name as string || "Unknown" },
+      providers: [],
+    };
+
+    // We need to re-create the JWT-VC manually to preserve the existing credentialSubject
+    const { SignJWT, importPKCS8 } = await import("jose");
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const crypto = await import("crypto");
+    const marqueId = `marque-${crypto.randomUUID()}`;
+
+    const vc = {
+      ...existingVc,
+      validFrom: now.toISOString(),
+      validUntil: expiresAt.toISOString(),
+    };
+
+    const privateKey = await importPKCS8(keypair.privateKey.toString(), "EdDSA");
+
+    renewedJwt = await new SignJWT({
+      vc,
+      parley: existingPayload.parley || "2.1",
+    })
+      .setProtectedHeader({
+        alg: "EdDSA",
+        typ: "vc+jwt",
+        kid: `${existingIss}#key-1`,
+      })
+      .setIssuedAt()
+      .setIssuer(existingIss)
+      .setSubject(marqueId)
+      .setJti(marqueId)
+      .setExpirationTime(expiresAt)
+      .sign(privateKey);
+  }
+
+  // Output
+  if (jsonOutput) {
+    const structuredOutput = {
+      cpoe: renewedJwt,
+      renewedFrom: filePath,
+      issuer: existingIss,
+      scope: existingScope,
+    };
+    process.stdout.write(JSON.stringify(structuredOutput, null, 2));
+    return;
+  }
+
+  if (outputPath) {
+    const { writeFileSync } = await import("fs");
+    writeFileSync(outputPath, renewedJwt);
+    console.error("CPOE renewed successfully.");
+    console.error(`  Output: ${outputPath}`);
+    console.error(`  Verify: corsair verify --file ${outputPath}`);
+  } else {
+    process.stdout.write(renewedJwt);
+  }
+}
+
+// =============================================================================
 // HELP
 // =============================================================================
 
@@ -877,6 +1068,7 @@ COMMANDS:
   verify    Verify a CPOE signature and integrity
   diff      Detect compliance regressions            like git diff
   log       List signed CPOEs (SCITT log)            like git log
+  renew     Re-sign a CPOE with fresh dates          like git commit --amend
   signal    FLAGSHIP real-time notifications         like git webhooks
   keygen    Generate Ed25519 signing keypair
   help      Show this help message

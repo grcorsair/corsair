@@ -1,0 +1,13 @@
+{
+  "regressions": [
+    { "controlId": "prowler-aws-ec2-default-sg-restrict", "previousStatus": "PASS", "currentStatus": "FAIL", "severity": "HIGH" }
+  ],
+  "improvements": [],
+  "unchanged": {
+    "passing": 6,
+    "failing": 2
+  },
+  "scoreChange": -10,
+  "totalRegressions": 1,
+  "totalImprovements": 0
+}

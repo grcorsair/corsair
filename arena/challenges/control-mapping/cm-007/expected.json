@@ -1,0 +1,12 @@
+{
+  "familyCoverage": {
+    "AC": { "findings": 3, "passed": 2, "failed": 1 },
+    "AU": { "findings": 2, "passed": 1, "failed": 1 },
+    "IA": { "findings": 2, "passed": 2, "failed": 0 },
+    "SC": { "findings": 3, "passed": 2, "failed": 1 },
+    "CM": { "findings": 1, "passed": 1, "failed": 0 },
+    "SI": { "findings": 1, "passed": 1, "failed": 0 }
+  },
+  "coveredFamilies": ["AC", "AU", "CM", "IA", "SC", "SI"],
+  "uncoveredCriticalFamilies": ["CP", "IR", "PE", "RA"]
+}

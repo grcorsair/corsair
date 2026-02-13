@@ -1,0 +1,24 @@
+{
+  "id": "ep-005",
+  "category": "evidence-parsing",
+  "difficulty": "easy",
+  "description": "Parse InSpec report and extract control pass/fail counts",
+  "input": "arena/challenges/evidence-parsing/ep-005-inspec-basic/input.json",
+  "groundTruth": "arena/challenges/evidence-parsing/ep-005-inspec-basic/expected.json",
+  "scoring": {
+    "method": "json-field-match",
+    "fields": [
+      "summary.controlsTested",
+      "summary.controlsPassed",
+      "summary.controlsFailed"
+    ],
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "inspec",
+    "cis",
+    "compliance-as-code"
+  ],
+  "timeLimitMinutes": 5
+}

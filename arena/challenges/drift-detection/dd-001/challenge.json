@@ -1,0 +1,15 @@
+{
+  "id": "dd-001",
+  "category": "drift-detection",
+  "difficulty": "easy",
+  "description": "Detect regressions between two Prowler scans. Identify controls that went from PASS to FAIL.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "diff-match",
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["prowler", "regression", "basic"],
+  "timeLimitMinutes": 5
+}

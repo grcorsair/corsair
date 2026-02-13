@@ -1,0 +1,8 @@
+{
+  "format": "inspec",
+  "controlCount": 6,
+  "passCount": 3,
+  "failCount": 1,
+  "score": 50,
+  "skippedCount": 2
+}

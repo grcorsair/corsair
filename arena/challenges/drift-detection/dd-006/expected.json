@@ -1,0 +1,14 @@
+{
+  "regressions": [
+    { "controlId": "CC5.2", "previousResult": "partially_compliant", "currentResult": "non_compliant", "scoreDelta": -21 },
+    { "controlId": "CC6.6", "previousResult": "compliant", "currentResult": "partially_compliant", "scoreDelta": -16 }
+  ],
+  "improvements": [],
+  "unchanged": {
+    "compliant": 3,
+    "nonCompliant": 1
+  },
+  "scoreChange": -17,
+  "totalRegressions": 2,
+  "totalImprovements": 0
+}

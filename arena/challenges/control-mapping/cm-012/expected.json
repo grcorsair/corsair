@@ -1,0 +1,25 @@
+{
+  "mappings": [
+    { "controlId": "ACME-IAM-001", "framework": "NIST-800-53", "nistControl": "IA-2", "status": "pass" },
+    { "controlId": "ACME-IAM-002", "framework": "NIST-800-53", "nistControl": "AC-6", "status": "pass" },
+    { "controlId": "ACME-IAM-003", "framework": "NIST-800-53", "nistControl": "AC-2", "status": "fail" },
+    { "controlId": "ACME-NET-001", "framework": "NIST-800-53", "nistControl": "SC-7", "status": "pass" },
+    { "controlId": "ACME-NET-002", "framework": "NIST-800-53", "nistControl": "SC-7(5)", "status": "pass" },
+    { "controlId": "ACME-LOG-001", "framework": "NIST-800-53", "nistControl": "AU-2", "status": "pass" },
+    { "controlId": "ACME-ENC-001", "framework": "NIST-800-53", "nistControl": "SC-28", "status": "pass" },
+    { "controlId": "ACME-IR-001", "framework": "NIST-800-53", "nistControl": "IR-1", "status": "fail" },
+    { "controlId": "ACME-VULN-001", "framework": "NIST-800-53", "nistControl": "RA-5", "status": "pass" },
+    { "controlId": "ACME-BCP-001", "framework": "NIST-800-53", "nistControl": "CP-9", "status": "fail" }
+  ],
+  "familyCoverage": {
+    "AC": { "controls": 2, "passed": 1, "failed": 1 },
+    "AU": { "controls": 1, "passed": 1, "failed": 0 },
+    "CP": { "controls": 1, "passed": 0, "failed": 1 },
+    "IA": { "controls": 1, "passed": 1, "failed": 0 },
+    "IR": { "controls": 1, "passed": 0, "failed": 1 },
+    "RA": { "controls": 1, "passed": 1, "failed": 0 },
+    "SC": { "controls": 3, "passed": 3, "failed": 0 }
+  },
+  "coveredFamilies": ["AC", "AU", "CP", "IA", "IR", "RA", "SC"],
+  "totalMappings": 10
+}

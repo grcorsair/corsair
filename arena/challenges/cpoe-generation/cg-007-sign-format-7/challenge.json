@@ -1,0 +1,20 @@
+{
+  "id": "cg-007",
+  "category": "cpoe-generation",
+  "difficulty": "medium",
+  "description": "Generate a valid CPOE JWT-VC for evidence with 3 passed / 7 failed controls",
+  "input": "arena/challenges/cpoe-generation/cg-007-sign-format-7/input.json",
+  "groundTruth": "arena/challenges/cpoe-generation/cg-007-sign-format-7/expected.json",
+  "scoring": {
+    "method": "cpoe-verify",
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "cpoe",
+    "jwt-vc",
+    "signing",
+    "medium"
+  ],
+  "timeLimitMinutes": 10
+}

@@ -1,0 +1,32 @@
+{
+  "findings": [
+    {
+      "id": "CVE-2024-001",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "CVE-2024-002",
+      "severity": "HIGH"
+    },
+    {
+      "id": "CVE-2024-003",
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "CVE-2024-004",
+      "severity": "LOW"
+    },
+    {
+      "id": "CVE-2024-005",
+      "severity": "HIGH"
+    },
+    {
+      "id": "CVE-2024-006",
+      "severity": "CRITICAL"
+    },
+    {
+      "id": "CVE-2024-007",
+      "severity": "MEDIUM"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "ep-003",
+  "category": "evidence-parsing",
+  "difficulty": "easy",
+  "description": "Parse an AWS SecurityHub ASFF report with 12 findings. Extract compliance statuses, severity distribution, and overall pass rate.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "json-field-match",
+    "fields": ["format", "controlCount", "passCount", "failCount", "score"],
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["securityhub", "aws", "asff", "basic"],
+  "timeLimitMinutes": 5
+}

@@ -1,0 +1,17 @@
+{
+  "coveredFamilies": ["AC", "AU", "IA", "SC", "SI"],
+  "missingFamilies": [
+    "AT", "CA", "CM", "CP", "IR", "MA", "MP", "PE", "PL", "PM", "PS", "RA", "SA", "SR"
+  ],
+  "familyCoveragePercentage": 26,
+  "totalRequired": 19,
+  "totalCovered": 5,
+  "totalMissing": 14,
+  "partialFamilies": {
+    "AC": { "covered": ["AC-2", "AC-4"], "status": "partial" },
+    "AU": { "covered": ["AU-2", "AU-3", "AU-6", "AU-12"], "status": "partial" },
+    "IA": { "covered": ["IA-2", "IA-5"], "status": "partial" },
+    "SC": { "covered": ["SC-7", "SC-8", "SC-28"], "status": "partial" },
+    "SI": { "covered": ["SI-4"], "status": "partial" }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "cm-011",
+  "category": "control-mapping",
+  "difficulty": "medium",
+  "description": "Identify only the FAILED control IDs from a mixed Prowler scan",
+  "input": "arena/challenges/control-mapping/cm-011-failed-controls/input.json",
+  "groundTruth": "arena/challenges/control-mapping/cm-011-failed-controls/expected.json",
+  "scoring": {
+    "method": "precision-recall",
+    "threshold": 0.8,
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "prowler",
+    "failed-only",
+    "filtering"
+  ],
+  "timeLimitMinutes": 10
+}

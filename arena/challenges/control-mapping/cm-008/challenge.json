@@ -1,0 +1,16 @@
+{
+  "id": "cm-008",
+  "category": "control-mapping",
+  "difficulty": "medium",
+  "description": "Map GitLab SAST vulnerabilities to OWASP Top 10 2021 categories. Use CWE identifiers to determine OWASP mappings.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "precision-recall",
+    "threshold": 0.8,
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["gitlab", "owasp", "cwe", "mapping"],
+  "timeLimitMinutes": 5
+}

@@ -1,0 +1,16 @@
+{
+  "id": "ep-011",
+  "category": "evidence-parsing",
+  "difficulty": "easy",
+  "description": "Parse a CISO Assistant API response with 10 compliance assessment results. Extract compliance statuses, scores, and pass/fail rates.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "json-field-match",
+    "fields": ["format", "controlCount", "passCount", "failCount", "score"],
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["ciso-assistant", "api", "soc2", "basic"],
+  "timeLimitMinutes": 5
+}

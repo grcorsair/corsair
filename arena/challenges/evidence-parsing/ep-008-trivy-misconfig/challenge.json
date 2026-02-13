@@ -1,0 +1,25 @@
+{
+  "id": "ep-008",
+  "category": "evidence-parsing",
+  "difficulty": "medium",
+  "description": "Parse Trivy Terraform misconfigurations with mixed PASS/FAIL statuses",
+  "input": "arena/challenges/evidence-parsing/ep-008-trivy-misconfig/input.json",
+  "groundTruth": "arena/challenges/evidence-parsing/ep-008-trivy-misconfig/expected.json",
+  "scoring": {
+    "method": "json-field-match",
+    "fields": [
+      "summary.controlsTested",
+      "summary.controlsPassed",
+      "summary.controlsFailed",
+      "summary.overallScore"
+    ],
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "trivy",
+    "terraform",
+    "misconfiguration"
+  ],
+  "timeLimitMinutes": 5
+}

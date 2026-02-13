@@ -1,0 +1,15 @@
+{
+  "id": "cg-004",
+  "category": "cpoe-generation",
+  "difficulty": "easy",
+  "description": "Generate a valid CPOE from an InSpec report. Must auto-detect the inspec format and set tool provenance.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "cpoe-verify",
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["inspec", "jwt-vc", "cis-benchmark"],
+  "timeLimitMinutes": 5
+}

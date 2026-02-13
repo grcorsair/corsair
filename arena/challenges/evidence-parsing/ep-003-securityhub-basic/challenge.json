@@ -1,0 +1,25 @@
+{
+  "id": "ep-003",
+  "category": "evidence-parsing",
+  "difficulty": "easy",
+  "description": "Parse AWS SecurityHub ASFF output and extract finding counts",
+  "input": "arena/challenges/evidence-parsing/ep-003-securityhub-basic/input.json",
+  "groundTruth": "arena/challenges/evidence-parsing/ep-003-securityhub-basic/expected.json",
+  "scoring": {
+    "method": "json-field-match",
+    "fields": [
+      "summary.controlsTested",
+      "summary.controlsPassed",
+      "summary.controlsFailed",
+      "summary.overallScore"
+    ],
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "securityhub",
+    "aws",
+    "asff"
+  ],
+  "timeLimitMinutes": 5
+}

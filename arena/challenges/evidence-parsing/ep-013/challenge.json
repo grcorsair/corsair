@@ -1,0 +1,16 @@
+{
+  "id": "ep-013",
+  "category": "evidence-parsing",
+  "difficulty": "easy",
+  "description": "Parse a CISO Assistant export file with 8 ISO 27001 requirement assessments. Extract compliance results, scores, and overall assessment status.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "json-field-match",
+    "fields": ["format", "controlCount", "passCount", "failCount", "score"],
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["ciso-assistant", "export", "iso27001", "basic"],
+  "timeLimitMinutes": 5
+}

@@ -1,0 +1,25 @@
+{
+  "previous": {
+    "type": "CorsairCPOE",
+    "scope": "SAST Scan — Sprint 14",
+    "provenance": { "source": "tool", "sourceIdentity": "GitLab SAST", "sourceDate": "2026-01-28" },
+    "summary": { "controlsTested": 4, "controlsPassed": 0, "controlsFailed": 4, "overallScore": 0 },
+    "controls": [
+      { "id": "gl-sast-001", "name": "SQL Injection", "severity": "High", "cwe": "CWE-89", "file": "src/api/users.ts" },
+      { "id": "gl-sast-002", "name": "XSS in template", "severity": "Medium", "cwe": "CWE-79", "file": "src/views/profile.html" },
+      { "id": "gl-sast-004", "name": "Insecure random", "severity": "Medium", "cwe": "CWE-330", "file": "src/auth/token.ts" },
+      { "id": "gl-sast-006", "name": "Unvalidated redirect", "severity": "Low", "cwe": "CWE-601", "file": "src/auth/callback.ts" }
+    ]
+  },
+  "current": {
+    "type": "CorsairCPOE",
+    "scope": "SAST Scan — Sprint 16",
+    "provenance": { "source": "tool", "sourceIdentity": "GitLab SAST", "sourceDate": "2026-02-11" },
+    "summary": { "controlsTested": 3, "controlsPassed": 0, "controlsFailed": 3, "overallScore": 0 },
+    "controls": [
+      { "id": "gl-sast-001", "name": "SQL Injection", "severity": "Critical", "cwe": "CWE-89", "file": "src/api/users.ts" },
+      { "id": "gl-sast-002", "name": "XSS in template", "severity": "High", "cwe": "CWE-79", "file": "src/views/profile.html" },
+      { "id": "gl-sast-004", "name": "Insecure random", "severity": "Medium", "cwe": "CWE-330", "file": "src/auth/token.ts" }
+    ]
+  }
+}

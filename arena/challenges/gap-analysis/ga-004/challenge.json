@@ -1,0 +1,16 @@
+{
+  "id": "ga-004",
+  "category": "gap-analysis",
+  "difficulty": "hard",
+  "description": "Perform a cross-framework gap analysis from a generic evidence file. Map controls to SOC 2, NIST 800-53, and ISO 27001 simultaneously and identify gaps in each framework.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "precision-recall",
+    "threshold": 0.8,
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["generic", "multi-framework", "cross-mapping", "advanced"],
+  "timeLimitMinutes": 5
+}

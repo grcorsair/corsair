@@ -324,7 +324,7 @@ describe("MARQUE Generator - Document Generation", () => {
     expect(doc.marque.threatModel!.riskDistribution).toBeDefined();
   });
 
-  test("generated MARQUE expiresAt is 7 days after generatedAt (default)", async () => {
+  test("generated MARQUE expiresAt is 90 days after generatedAt (default)", async () => {
     const { generator, keyDir } = await setupGenerator();
     const input = await buildInput(keyDir);
 
@@ -332,10 +332,10 @@ describe("MARQUE Generator - Document Generation", () => {
 
     const generatedAt = new Date(doc.marque.generatedAt).getTime();
     const expiresAt = new Date(doc.marque.expiresAt).getTime();
-    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
 
     // Allow 1 second tolerance for test execution time
-    expect(Math.abs(expiresAt - generatedAt - sevenDaysMs)).toBeLessThan(1000);
+    expect(Math.abs(expiresAt - generatedAt - ninetyDaysMs)).toBeLessThan(1000);
   });
 
   test("custom expiry duration is respected", async () => {

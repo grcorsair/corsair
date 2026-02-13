@@ -1,0 +1,16 @@
+{
+  "id": "ep-007",
+  "category": "evidence-parsing",
+  "difficulty": "easy",
+  "description": "Parse a Trivy container image scan with vulnerabilities and misconfigurations across 3 targets. Extract total findings, severity distribution, and pass/fail counts.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "json-field-match",
+    "fields": ["format", "controlCount", "passCount", "failCount", "score"],
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["trivy", "container", "vulnerabilities", "basic"],
+  "timeLimitMinutes": 5
+}

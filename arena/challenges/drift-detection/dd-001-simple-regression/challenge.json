@@ -1,0 +1,19 @@
+{
+  "id": "dd-001",
+  "category": "drift-detection",
+  "difficulty": "easy",
+  "description": "Detect a single control that regressed from pass to fail",
+  "input": "arena/challenges/drift-detection/dd-001-simple-regression/input.json",
+  "groundTruth": "arena/challenges/drift-detection/dd-001-simple-regression/expected.json",
+  "scoring": {
+    "method": "diff-match",
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "drift",
+    "regression",
+    "simple"
+  ],
+  "timeLimitMinutes": 5
+}

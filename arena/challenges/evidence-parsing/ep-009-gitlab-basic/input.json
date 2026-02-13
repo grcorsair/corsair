@@ -1,0 +1,35 @@
+{
+  "format": "gitlab",
+  "data": {
+    "version": "15.0.7",
+    "scan": {
+      "type": "sast",
+      "scanner": {
+        "id": "semgrep",
+        "name": "Semgrep"
+      }
+    },
+    "vulnerabilities": [
+      {
+        "id": "v-1",
+        "name": "SQL Injection",
+        "severity": "Critical"
+      },
+      {
+        "id": "v-2",
+        "name": "XSS",
+        "severity": "High"
+      },
+      {
+        "id": "v-3",
+        "name": "Hardcoded secret",
+        "severity": "High"
+      },
+      {
+        "id": "v-4",
+        "name": "Insecure random",
+        "severity": "Medium"
+      }
+    ]
+  }
+}

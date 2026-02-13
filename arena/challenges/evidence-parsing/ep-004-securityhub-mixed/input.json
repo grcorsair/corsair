@@ -1,0 +1,35 @@
+{
+  "format": "securityhub",
+  "data": {
+    "Findings": [
+      {
+        "Id": "f-1",
+        "Title": "Check 1",
+        "Compliance": {
+          "Status": "PASSED"
+        }
+      },
+      {
+        "Id": "f-2",
+        "Title": "Check 2",
+        "Compliance": {
+          "Status": "FAILED"
+        }
+      },
+      {
+        "Id": "f-3",
+        "Title": "Check 3",
+        "Compliance": {
+          "Status": "NOT_AVAILABLE"
+        }
+      },
+      {
+        "Id": "f-4",
+        "Title": "Check 4",
+        "Compliance": {
+          "Status": "PASSED"
+        }
+      }
+    ]
+  }
+}

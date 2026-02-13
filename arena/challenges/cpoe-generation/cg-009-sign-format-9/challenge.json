@@ -1,0 +1,20 @@
+{
+  "id": "cg-009",
+  "category": "cpoe-generation",
+  "difficulty": "hard",
+  "description": "Generate a valid CPOE JWT-VC for evidence with 1 passed / 9 failed controls",
+  "input": "arena/challenges/cpoe-generation/cg-009-sign-format-9/input.json",
+  "groundTruth": "arena/challenges/cpoe-generation/cg-009-sign-format-9/expected.json",
+  "scoring": {
+    "method": "cpoe-verify",
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "cpoe",
+    "jwt-vc",
+    "signing",
+    "hard"
+  ],
+  "timeLimitMinutes": 10
+}

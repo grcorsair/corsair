@@ -1,0 +1,16 @@
+{
+  "id": "ep-008",
+  "category": "evidence-parsing",
+  "difficulty": "medium",
+  "description": "Parse a Trivy report with an empty Vulnerabilities array in one target and a target with only PASS misconfigurations. Handle zero-finding targets correctly.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "json-field-match",
+    "fields": ["format", "controlCount", "passCount", "failCount", "score", "targetCount"],
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["trivy", "container", "edge-case", "empty-results"],
+  "timeLimitMinutes": 5
+}

@@ -1,0 +1,55 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": "acme-worker:v1.0.0",
+  "ArtifactType": "container_image",
+  "Metadata": {
+    "OS": { "Family": "alpine", "Name": "3.19" },
+    "ImageConfig": { "architecture": "amd64", "created": "2026-02-10T10:00:00Z" }
+  },
+  "Results": [
+    {
+      "Target": "Dockerfile",
+      "Class": "config",
+      "Type": "dockerfile",
+      "Misconfigurations": [
+        {
+          "Type": "Dockerfile Security Check",
+          "ID": "DS002",
+          "AVDID": "AVD-DS-0002",
+          "Title": "Image user should not be root",
+          "Severity": "HIGH",
+          "Status": "PASS"
+        },
+        {
+          "Type": "Dockerfile Security Check",
+          "ID": "DS026",
+          "AVDID": "AVD-DS-0026",
+          "Title": "No HEALTHCHECK defined",
+          "Severity": "LOW",
+          "Status": "PASS"
+        }
+      ]
+    },
+    {
+      "Target": "apps/worker/package-lock.json",
+      "Class": "lang-pkgs",
+      "Type": "npm",
+      "Vulnerabilities": []
+    },
+    {
+      "Target": "infrastructure/main.tf",
+      "Class": "config",
+      "Type": "terraform",
+      "Misconfigurations": [
+        {
+          "Type": "Terraform Security Check",
+          "ID": "AVD-AWS-0132",
+          "AVDID": "AVD-AWS-0132",
+          "Title": "RDS instance has public access enabled",
+          "Severity": "CRITICAL",
+          "Status": "FAIL"
+        }
+      ]
+    }
+  ]
+}

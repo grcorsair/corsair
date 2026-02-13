@@ -1,0 +1,16 @@
+{
+  "credentialSubject": {
+    "type": "CorsairCPOE",
+    "scope": "Test Scope 3",
+    "summary": {
+      "controlsTested": 10,
+      "controlsPassed": 7,
+      "controlsFailed": 3,
+      "overallScore": 70
+    },
+    "provenance": {
+      "source": "tool",
+      "sourceIdentity": "Tool 3"
+    }
+  }
+}

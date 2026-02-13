@@ -1,0 +1,31 @@
+{
+  "schema": {
+    "type": "CorsairCPOE",
+    "requiredFields": ["scope", "provenance", "summary", "assurance", "frameworks"],
+    "provenance": {
+      "source": "self",
+      "requiredFields": ["source", "sourceIdentity"]
+    },
+    "assurance": {
+      "requiredFields": ["declared", "verified", "method", "breakdown"],
+      "declaredRange": [0, 1],
+      "method": "self-assessed"
+    },
+    "frameworks": {
+      "requiredFrameworks": ["NIST-800-53"],
+      "optionalFrameworks": ["SOC2", "ISO27001", "CIS"]
+    },
+    "summary": {
+      "controlsTested": 10,
+      "controlsPassed": 7,
+      "controlsFailed": 3,
+      "scoreRange": [65, 75]
+    }
+  },
+  "jwtHeaders": {
+    "alg": "EdDSA",
+    "typ": "vc+jwt"
+  },
+  "vcContext": ["https://www.w3.org/ns/credentials/v2"],
+  "vcType": ["VerifiableCredential", "CorsairCPOE"]
+}

@@ -1,0 +1,62 @@
+{
+  "format": "inspec",
+  "data": {
+    "profiles": [
+      {
+        "name": "iam-profile",
+        "controls": [
+          {
+            "id": "iam-1",
+            "title": "MFA",
+            "results": [
+              {
+                "status": "passed"
+              }
+            ]
+          },
+          {
+            "id": "iam-2",
+            "title": "Passwords",
+            "results": [
+              {
+                "status": "passed"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "network-profile",
+        "controls": [
+          {
+            "id": "net-1",
+            "title": "Firewall",
+            "results": [
+              {
+                "status": "failed"
+              }
+            ]
+          },
+          {
+            "id": "net-2",
+            "title": "VPN",
+            "results": [
+              {
+                "status": "passed"
+              }
+            ]
+          },
+          {
+            "id": "net-3",
+            "title": "Segmentation",
+            "results": [
+              {
+                "status": "failed"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

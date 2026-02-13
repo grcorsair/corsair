@@ -1,0 +1,14 @@
+{
+  "mappings": [
+    { "findingId": "DS001", "framework": "CIS", "controlArea": "Container Security", "description": "Base image pinning", "status": "FAIL" },
+    { "findingId": "DS002", "framework": "CIS", "controlArea": "Container Security", "description": "Non-root container user", "status": "PASS" },
+    { "findingId": "DS005", "framework": "CIS", "controlArea": "Container Security", "description": "COPY over ADD", "status": "FAIL" },
+    { "findingId": "DS026", "framework": "CIS", "controlArea": "Container Security", "description": "Health check definition", "status": "FAIL" },
+    { "findingId": "AVD-AWS-0086", "framework": "CIS", "controlArea": "Data Protection", "description": "S3 encryption", "status": "PASS" },
+    { "findingId": "AVD-AWS-0089", "framework": "CIS", "controlArea": "Data Protection", "description": "S3 versioning", "status": "FAIL" },
+    { "findingId": "AVD-AWS-0132", "framework": "CIS", "controlArea": "Network Security", "description": "RDS public access", "status": "FAIL" },
+    { "findingId": "AVD-AWS-0104", "framework": "CIS", "controlArea": "Logging", "description": "Log retention", "status": "PASS" }
+  ],
+  "totalMisconfigurations": 8,
+  "totalVulnerabilities": 4
+}

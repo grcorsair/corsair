@@ -1,0 +1,16 @@
+{
+  "id": "cm-005",
+  "category": "control-mapping",
+  "difficulty": "easy",
+  "description": "Map Trivy misconfigurations and vulnerabilities to CIS benchmarks. Identify which CIS controls are relevant to each finding.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "precision-recall",
+    "threshold": 0.8,
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["trivy", "cis", "container", "mapping"],
+  "timeLimitMinutes": 5
+}

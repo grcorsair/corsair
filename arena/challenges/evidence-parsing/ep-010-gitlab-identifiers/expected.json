@@ -1,0 +1,10 @@
+{
+  "summary": {
+    "controlsTested": 2,
+    "controlsFailed": 2
+  },
+  "frameworksFound": [
+    "CWE",
+    "OWASP"
+  ]
+}

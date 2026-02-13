@@ -1,0 +1,43 @@
+{
+  "format": "trivy",
+  "data": {
+    "SchemaVersion": 2,
+    "ArtifactName": "app:latest",
+    "Results": [
+      {
+        "Target": "Dockerfile",
+        "Misconfigurations": [
+          {
+            "ID": "DS001",
+            "Title": "Latest tag",
+            "Severity": "MEDIUM",
+            "Status": "FAIL"
+          },
+          {
+            "ID": "DS002",
+            "Title": "Root user",
+            "Severity": "HIGH",
+            "Status": "PASS"
+          }
+        ]
+      },
+      {
+        "Target": "package.json",
+        "Vulnerabilities": [
+          {
+            "VulnerabilityID": "CVE-2024-001",
+            "PkgName": "lodash",
+            "Severity": "HIGH",
+            "Title": "Prototype pollution"
+          },
+          {
+            "VulnerabilityID": "CVE-2024-002",
+            "PkgName": "express",
+            "Severity": "CRITICAL",
+            "Title": "RCE"
+          }
+        ]
+      }
+    ]
+  }
+}

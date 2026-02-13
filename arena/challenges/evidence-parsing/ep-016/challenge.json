@@ -1,0 +1,16 @@
+{
+  "id": "ep-016",
+  "category": "evidence-parsing",
+  "difficulty": "medium",
+  "description": "Parse a generic evidence file where one control has both a single framework string and a frameworks array, and another control has an empty evidence field. Handle schema inconsistencies.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "json-field-match",
+    "fields": ["format", "controlCount", "passCount", "failCount", "score", "noEvidenceCount"],
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["generic", "edge-case", "schema-inconsistency"],
+  "timeLimitMinutes": 5
+}

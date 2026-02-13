@@ -1,0 +1,22 @@
+{
+  "targetFramework": "NIST-800-53",
+  "requiredControls": [
+    "AC-2",
+    "AC-6",
+    "AU-2",
+    "AU-12",
+    "IA-2",
+    "IA-5",
+    "SC-7",
+    "SC-8",
+    "SC-28",
+    "SI-4"
+  ],
+  "assessedControls": [
+    "IA-2",
+    "IA-5",
+    "AU-2",
+    "SC-7",
+    "SC-28"
+  ]
+}

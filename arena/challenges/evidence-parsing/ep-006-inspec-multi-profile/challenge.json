@@ -1,0 +1,25 @@
+{
+  "id": "ep-006",
+  "category": "evidence-parsing",
+  "difficulty": "medium",
+  "description": "Parse InSpec report with multiple profiles and aggregate results",
+  "input": "arena/challenges/evidence-parsing/ep-006-inspec-multi-profile/input.json",
+  "groundTruth": "arena/challenges/evidence-parsing/ep-006-inspec-multi-profile/expected.json",
+  "scoring": {
+    "method": "json-field-match",
+    "fields": [
+      "summary.controlsTested",
+      "summary.controlsPassed",
+      "summary.controlsFailed",
+      "summary.overallScore"
+    ],
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "inspec",
+    "multi-profile",
+    "aggregation"
+  ],
+  "timeLimitMinutes": 5
+}

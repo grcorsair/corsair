@@ -1,0 +1,16 @@
+{
+  "id": "ep-009",
+  "category": "evidence-parsing",
+  "difficulty": "easy",
+  "description": "Parse a GitLab SAST report from Semgrep with 6 vulnerabilities. Extract vulnerability count, severity distribution, and unique CWE identifiers.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "json-field-match",
+    "fields": ["format", "controlCount", "passCount", "failCount", "score"],
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["gitlab", "sast", "semgrep", "basic"],
+  "timeLimitMinutes": 5
+}

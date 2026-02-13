@@ -1,0 +1,15 @@
+{
+  "id": "cg-007",
+  "category": "cpoe-generation",
+  "difficulty": "easy",
+  "description": "Generate a valid CPOE from CISO Assistant API data. Must handle partially_compliant and not_assessed results correctly.",
+  "input": "input.json",
+  "groundTruth": "expected.json",
+  "scoring": {
+    "method": "cpoe-verify",
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": ["ciso-assistant", "jwt-vc", "api", "mixed-results"],
+  "timeLimitMinutes": 5
+}

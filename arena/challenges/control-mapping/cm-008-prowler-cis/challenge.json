@@ -1,0 +1,20 @@
+{
+  "id": "cm-008",
+  "category": "control-mapping",
+  "difficulty": "easy",
+  "description": "Map Prowler compliance requirements to CIS benchmark control IDs",
+  "input": "arena/challenges/control-mapping/cm-008-prowler-cis/input.json",
+  "groundTruth": "arena/challenges/control-mapping/cm-008-prowler-cis/expected.json",
+  "scoring": {
+    "method": "precision-recall",
+    "threshold": 0.8,
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "prowler",
+    "cis",
+    "benchmark"
+  ],
+  "timeLimitMinutes": 5
+}

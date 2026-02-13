@@ -1,0 +1,9 @@
+{
+  "controlIds": [
+    "AwsAccount",
+    "AwsCloudTrailTrail",
+    "AwsS3Bucket",
+    "AwsEc2SecurityGroup",
+    "AwsRdsDbInstance"
+  ]
+}

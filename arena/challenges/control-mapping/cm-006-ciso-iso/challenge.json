@@ -1,0 +1,20 @@
+{
+  "id": "cm-006",
+  "category": "control-mapping",
+  "difficulty": "medium",
+  "description": "Extract ISO 27001 control IDs from CISO Assistant export URNs",
+  "input": "arena/challenges/control-mapping/cm-006-ciso-iso/input.json",
+  "groundTruth": "arena/challenges/control-mapping/cm-006-ciso-iso/expected.json",
+  "scoring": {
+    "method": "precision-recall",
+    "threshold": 0.8,
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "ciso-assistant",
+    "iso27001",
+    "urn-parsing"
+  ],
+  "timeLimitMinutes": 10
+}

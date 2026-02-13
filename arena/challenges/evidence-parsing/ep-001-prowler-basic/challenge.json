@@ -1,0 +1,26 @@
+{
+  "id": "ep-001",
+  "category": "evidence-parsing",
+  "difficulty": "easy",
+  "description": "Parse Prowler OCSF output and extract control summary counts",
+  "input": "arena/challenges/evidence-parsing/ep-001-prowler-basic/input.json",
+  "groundTruth": "arena/challenges/evidence-parsing/ep-001-prowler-basic/expected.json",
+  "scoring": {
+    "method": "json-field-match",
+    "fields": [
+      "summary.controlsTested",
+      "summary.controlsPassed",
+      "summary.controlsFailed",
+      "summary.overallScore"
+    ],
+    "partialCredit": true,
+    "maxScore": 100
+  },
+  "tags": [
+    "prowler",
+    "aws",
+    "ocsf",
+    "basic"
+  ],
+  "timeLimitMinutes": 5
+}

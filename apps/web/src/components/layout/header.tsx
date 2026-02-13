@@ -21,6 +21,7 @@ const navLinks = [
   { href: "/playground", label: "Playground" },
   { href: "/sign", label: "Sign" },
   { href: "/marque", label: "Verify" },
+  { href: "/log", label: "Log" },
   { href: "/blog", label: "Blog" },
 ];
 
