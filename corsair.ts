@@ -45,6 +45,9 @@ switch (subcommand) {
   case "keygen":
     await handleKeygen();
     break;
+  case "audit":
+    await handleAudit();
+    break;
   case "help":
   case "--help":
   case "-h":
@@ -1076,6 +1079,144 @@ EXAMPLES:
 }
 
 // =============================================================================
+// AUDIT
+// =============================================================================
+
+async function handleAudit(): Promise<void> {
+  const args = process.argv.slice(3);
+  const files: string[] = [];
+  let scope: string | undefined;
+  let frameworks: string[] = [];
+  let format: string | undefined;
+  let includeScore = true;
+  let includeGovernance = false;
+  let jsonOutput = false;
+  let excludeControls: string[] = [];
+  let signResult = false;
+  let showHelp = false;
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "--files":
+        // Consume all subsequent args that don't start with "--" as file paths
+        i++;
+        while (i < args.length && !args[i].startsWith("--")) {
+          files.push(args[i]);
+          i++;
+        }
+        i--; // Back up one since the for loop will increment
+        break;
+      case "--scope":
+        scope = args[++i];
+        break;
+      case "--frameworks":
+        frameworks = (args[++i] || "").split(",").filter(Boolean);
+        break;
+      case "--format":
+      case "-F":
+        format = args[++i];
+        break;
+      case "--score":
+        includeScore = true;
+        break;
+      case "--no-score":
+        includeScore = false;
+        break;
+      case "--governance":
+        includeGovernance = true;
+        break;
+      case "--json":
+        jsonOutput = true;
+        break;
+      case "--exclude":
+        excludeControls = (args[++i] || "").split(",").filter(Boolean);
+        break;
+      case "--sign":
+        signResult = true;
+        break;
+      case "--help":
+      case "-h":
+        showHelp = true;
+        break;
+    }
+  }
+
+  if (showHelp) {
+    console.log(`
+CORSAIR AUDIT — Run a full compliance audit
+
+USAGE:
+  corsair audit --files <paths...> --scope <name> [options]
+
+OPTIONS:
+  --files <PATHS...>       Evidence file paths (required, supports multiple)
+  --scope <NAME>           Audit scope name (required)
+  --frameworks <LIST>      Comma-separated framework names (e.g., SOC2,NIST-800-53)
+  -F, --format <NAME>      Force evidence format (bypass auto-detection)
+  --score                  Include scoring (default: true)
+  --no-score               Disable scoring
+  --governance             Include quartermaster governance checks (default: false)
+  --json                   Output full AuditResult as JSON
+  --exclude <IDS>          Comma-separated control IDs to exclude
+  --sign                   Sign the audit result as a CPOE (default: false)
+  -h, --help               Show this help
+
+EXAMPLES:
+  corsair audit --files prowler.json inspec.json --scope "AWS Production"
+  corsair audit --files evidence/*.json --scope "SOC 2" --frameworks SOC2,NIST-800-53
+  corsair audit --files report.json --scope "Cloud" --score --governance
+  corsair audit --files report.json --scope "Cloud" --json
+  corsair audit --files report.json --scope "Cloud" --exclude CC7.3,CC7.4
+`);
+    return;
+  }
+
+  if (files.length === 0) {
+    console.error("Error: --files is required");
+    console.error('Run "corsair audit --help" for usage');
+    process.exit(2);
+  }
+
+  if (!scope) {
+    console.error("Error: --scope is required");
+    console.error('Run "corsair audit --help" for usage');
+    process.exit(2);
+  }
+
+  // Validate that all files exist
+  for (const file of files) {
+    if (!existsSync(file)) {
+      console.error(`Error: File not found: ${file}`);
+      process.exit(2);
+    }
+  }
+
+  // Build audit scope
+  const { runAudit, formatAuditSummary } = await import("./src/audit/audit-engine");
+  type AuditScope = import("./src/audit/types").AuditScope;
+
+  const auditScope: AuditScope = {
+    name: scope,
+    frameworks,
+    evidencePaths: files,
+    formats: format ? files.map(() => format!) : undefined,
+    excludeControls: excludeControls.length > 0 ? excludeControls : undefined,
+  };
+
+  const result = await runAudit(auditScope, {
+    includeScore,
+    includeGovernance,
+    signResult,
+  });
+
+  if (jsonOutput) {
+    process.stdout.write(JSON.stringify(result, null, 2));
+  } else {
+    console.log(formatAuditSummary(result));
+  }
+}
+
+// =============================================================================
 // HELP
 // =============================================================================
 
@@ -1096,6 +1237,7 @@ COMMANDS:
   verify    Verify a CPOE signature and integrity
   diff      Detect compliance regressions            like git diff
   log       List signed CPOEs (SCITT log)            like git log
+  audit     Run a full compliance audit              like git bisect
   renew     Re-sign a CPOE with fresh dates          like git commit --amend
   signal    FLAGSHIP real-time notifications         like git webhooks
   keygen    Generate Ed25519 signing keypair
