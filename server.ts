@@ -32,6 +32,9 @@ import { createHealthHandler } from "./functions/health";
 import { createSSFConfigHandler } from "./functions/ssf-configuration";
 import { createSSFStreamRouter } from "./functions/ssf-stream";
 import { createSCITTRouter } from "./functions/scitt-register";
+import { createSCITTListRouter } from "./functions/scitt-list";
+import { createBadgeRouter, defaultGenerateBadge } from "./functions/badge";
+import { createProfileRouter } from "./functions/profile";
 import { createVerifyRouter } from "./functions/verify";
 import { createDIDJsonHandler } from "./functions/did-json";
 import { createJWKSJsonHandler } from "./functions/jwks-json";
@@ -148,6 +151,31 @@ const healthHandler = createHealthHandler({ db });
 const didJsonHandler = createDIDJsonHandler({ keyManager, domain: DOMAIN });
 const jwksJsonHandler = createJWKSJsonHandler({ keyManager, domain: DOMAIN });
 const ssfConfigHandler = createSSFConfigHandler(DOMAIN);
+const scittListRouter = rateLimit(30)(createSCITTListRouter({
+  listEntries: (options) => registry.listEntries(options),
+}));
+const badgeRouter = rateLimit(60)(createBadgeRouter({
+  getCPOEById: async (_marqueId) => {
+    // TODO: Implement CPOE lookup by marqueId from SCITT entries
+    return null;
+  },
+  getLatestByDomain: async (domain) => {
+    const profile = await registry.getIssuerProfile(`did:web:${domain}`);
+    if (!profile || !profile.latestCPOE) return null;
+    return {
+      marqueId: profile.latestCPOE.marqueId,
+      tier: "self-signed" as const,
+      assuranceLevel: profile.latestCPOE.assuranceLevel,
+      controlsTested: undefined,
+      overallScore: profile.latestCPOE.overallScore,
+      jwt: "",
+    };
+  },
+  generateBadge: defaultGenerateBadge,
+}));
+const profileRouter = rateLimit(30)(createProfileRouter({
+  getIssuerProfile: (issuerDID) => registry.getIssuerProfile(issuerDID),
+}));
 
 // Protected routers (require API key + rate-limited)
 const signRouter = requireAuth(rateLimit(10)(createSignRouter({ keyManager, domain: DOMAIN })));
@@ -171,7 +199,9 @@ const server = Bun.serve({
     if (req.method === "OPTIONS") {
       // Determine if the path is public or protected for CORS
       const isPublic = path === "/verify" || path === "/v1/verify" ||
-        path.startsWith("/.well-known/") || path === "/health";
+        path.startsWith("/.well-known/") || path === "/health" ||
+        path.startsWith("/badge/") || path.startsWith("/profile/") ||
+        ((path === "/scitt/entries" || path === "/v1/scitt/entries") && req.method === "GET");
       const corsOrigin = getCorsOrigin(req, isPublic);
       const headers: Record<string, string> = {
         "access-control-allow-methods": "GET, POST, PATCH, DELETE, OPTIONS",
@@ -229,9 +259,25 @@ const server = Bun.serve({
       return ssfRouter(req);
     }
 
-    // SCITT
-    if (path.startsWith("/scitt/entries") || path.startsWith("/v1/scitt/entries")) {
+    // SCITT — GET list is public, POST/individual are protected
+    if (path === "/scitt/entries" || path === "/v1/scitt/entries") {
+      if (req.method === "GET") {
+        return scittListRouter(req);
+      }
       return scittRouter(req);
+    }
+    if (path.startsWith("/scitt/entries/") || path.startsWith("/v1/scitt/entries/")) {
+      return scittRouter(req);
+    }
+
+    // Badge (public)
+    if (path.startsWith("/badge/")) {
+      return badgeRouter(req);
+    }
+
+    // Profile (public)
+    if (path.startsWith("/profile/")) {
+      return profileRouter(req);
     }
 
     // =========================================================================
@@ -254,7 +300,8 @@ const server = Bun.serve({
         endpoints: {
           product: ["POST /verify", "POST /sign", "POST /issue"],
           trust: ["GET /.well-known/did.json", "GET /.well-known/jwks.json"],
-          infrastructure: ["POST /scitt/entries", "POST /ssf/streams"],
+          infrastructure: ["GET /scitt/entries", "POST /scitt/entries", "POST /ssf/streams"],
+          public: ["GET /badge/<id>.svg", "GET /badge/did/<domain>.svg", "GET /profile/<domain>"],
           ops: ["GET /health"],
         },
       },
@@ -346,6 +393,9 @@ console.log(`  Sign:    POST http://localhost:${PORT}/sign`);
 console.log(`  Issue:   POST http://localhost:${PORT}/issue`);
 console.log(`  DID:     GET  http://localhost:${PORT}/.well-known/did.json`);
 console.log(`  JWKS:    GET  http://localhost:${PORT}/.well-known/jwks.json`);
+console.log(`  SCITT:   GET  http://localhost:${PORT}/scitt/entries`);
 console.log(`  SCITT:   POST http://localhost:${PORT}/scitt/entries`);
+console.log(`  Badge:   GET  http://localhost:${PORT}/badge/<id>.svg`);
+console.log(`  Profile: GET  http://localhost:${PORT}/profile/<domain>`);
 console.log(`  SSF:     POST http://localhost:${PORT}/ssf/streams`);
 console.log(`  Health:  GET  http://localhost:${PORT}/health`);
