@@ -121,6 +121,42 @@ const contributions = [
     labelColor: "text-corsair-green",
     glowColor: "rgba(46,204,113,0.12)",
   },
+  {
+    title: "Scoring Dimensions",
+    description:
+      "Extend the Quartermaster's 7-dimension evidence quality assessment. Build new scoring dimensions, calibrate weights, and validate deterministic scoring rules against real-world evidence sets.",
+    icon: <QuarterIcon size={28} />,
+    label: "INTELLIGENCE",
+    labelColor: "text-corsair-turquoise",
+    glowColor: "rgba(127,219,202,0.12)",
+  },
+  {
+    title: "Audit Adapters & Multi-Agent Orchestration",
+    description:
+      "Build specialized audit agents for domain-specific evidence review — network, identity, data protection, cloud infrastructure. Each agent signs findings as a CPOE for a verifiable audit trail.",
+    icon: <RaidIcon size={28} />,
+    label: "AUDIT",
+    labelColor: "text-corsair-crimson",
+    glowColor: "rgba(192,57,43,0.12)",
+  },
+  {
+    title: "Certification Policies",
+    description:
+      "Define continuous certification policies — re-validation schedules, drift thresholds, automatic downgrade rules, and FLAGSHIP-triggered remediation workflows.",
+    icon: <MarqueIcon size={28} />,
+    label: "CERTIFY",
+    labelColor: "text-corsair-gold",
+    glowColor: "rgba(212,168,83,0.12)",
+  },
+  {
+    title: "TPRM Integrations",
+    description:
+      "Build automated third-party risk management integrations. Connect CPOE scores to procurement workflows, vendor portals, and risk dashboards to replace questionnaire-based assessments.",
+    icon: <ChartIcon size={28} />,
+    label: "TPRM",
+    labelColor: "text-corsair-cyan",
+    glowColor: "rgba(0,207,255,0.12)",
+  },
 ];
 
 export default function CommunityPage() {
@@ -138,9 +174,10 @@ export default function CommunityPage() {
             </h1>
             <p className="mx-auto max-w-xl text-corsair-text-dim">
               Corsair is open source (Apache 2.0). The CPOE specification is openly
-              licensed (CC BY 4.0). Contribute tool adapters, framework
-              mappings, protocol extensions, and help build the future of
-              compliance proof infrastructure.
+              licensed (CC BY 4.0). Contribute across all three layers — tool adapters
+              and protocol extensions (infrastructure), scoring dimensions and
+              evidence normalization (intelligence), audit agents and TPRM integrations
+              (decision). Help build the compliance trust stack.
             </p>
           </div>
         </FadeIn>

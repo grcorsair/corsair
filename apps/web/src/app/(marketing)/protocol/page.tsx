@@ -41,8 +41,8 @@ export default function ProtocolPage() {
             protocol
           </h1>
           <p className="mx-auto max-w-2xl text-center text-lg text-corsair-text-dim sm:text-xl">
-            Five open standards. Zero vendor lock-in.
-            Every decision traceable, every proof verifiable.
+            Three layers. Five open standards. Zero vendor lock-in.
+            Infrastructure, intelligence, and automated decisions — every layer traceable, every proof verifiable.
           </p>
         </FadeIn>
 
@@ -64,7 +64,7 @@ export default function ProtocolPage() {
         <FadeIn delay={0.5}>
           <p className="mt-6 max-w-lg text-center text-xs text-corsair-text-dim">
             Parley composes open standards so any JWT library can verify a CPOE.
-            This page explains every layer — from key generation to real-time signals.
+            This page explains every layer — from infrastructure primitives to intelligence scoring to automated decisions.
           </p>
         </FadeIn>
       </section>
@@ -76,38 +76,92 @@ export default function ProtocolPage() {
           <FadeIn>
             <div className="mb-10 text-center">
               <p className="mb-3 font-pixel text-[8px] tracking-widest text-corsair-gold/60">
-                FIVE PRIMITIVES
+                THREE LAYERS
               </p>
               <h2 className="mb-4 font-display text-3xl font-bold text-corsair-text">
-                What you do &rarr; how we built it
+                Infrastructure &rarr; Intelligence &rarr; Decision
               </h2>
               <p className="mx-auto max-w-2xl text-sm text-corsair-text-dim">
-                Corsair exposes five user-facing primitives. Each maps to one or more
-                open cryptographic standards underneath. This page explains every layer.
+                Layer 1 handles cryptographic infrastructure — five primitives, each backed by open standards.
+                Layer 2 adds intelligence — evidence normalization, quality scoring, and the Quartermaster.
+                Layer 3 automates decisions — continuous certification, TPRM, and multi-agent audit.
               </p>
             </div>
           </FadeIn>
 
           <FadeIn delay={0.1}>
-            <div className="rounded-xl border border-corsair-border bg-[#0A0A0A] p-6">
-              <div className="space-y-3 font-mono text-xs">
-                {[
-                  { primitive: "Sign", crypto: "JWT-VC + Ed25519", color: "text-corsair-gold" },
-                  { primitive: "Verify", crypto: "DID:web resolution + signature check", color: "text-corsair-green" },
-                  { primitive: "Diff", crypto: "Compare two JWT-VC payloads", color: "text-corsair-turquoise" },
-                  { primitive: "Log", crypto: "SCITT transparency log + Merkle proofs", color: "text-corsair-cyan" },
-                  { primitive: "Signal", crypto: "FLAGSHIP / SSF/CAEP event streams", color: "text-corsair-crimson" },
-                ].map((item) => (
-                  <div key={item.primitive} className="flex items-center gap-3">
-                    <span className={`w-16 shrink-0 font-bold ${item.color}`}>
-                      {item.primitive}
-                    </span>
-                    <span className="text-corsair-border">&rarr;</span>
-                    <span className="text-corsair-text">
-                      {item.crypto}
-                    </span>
-                  </div>
-                ))}
+            <div className="space-y-4">
+              <div className="rounded-xl border border-corsair-gold/20 bg-[#0A0A0A] p-6">
+                <p className="mb-3 font-pixel text-[7px] tracking-widest text-corsair-gold/60">
+                  LAYER 1 — INFRASTRUCTURE
+                </p>
+                <div className="space-y-3 font-mono text-xs">
+                  {[
+                    { primitive: "Sign", crypto: "JWT-VC + Ed25519", color: "text-corsair-gold" },
+                    { primitive: "Verify", crypto: "DID:web resolution + signature check", color: "text-corsair-green" },
+                    { primitive: "Diff", crypto: "Compare two JWT-VC payloads", color: "text-corsair-turquoise" },
+                    { primitive: "Log", crypto: "SCITT transparency log + Merkle proofs", color: "text-corsair-cyan" },
+                    { primitive: "Signal", crypto: "FLAGSHIP / SSF/CAEP event streams", color: "text-corsair-crimson" },
+                  ].map((item) => (
+                    <div key={item.primitive} className="flex items-center gap-3">
+                      <span className={`w-16 shrink-0 font-bold ${item.color}`}>
+                        {item.primitive}
+                      </span>
+                      <span className="text-corsair-border">&rarr;</span>
+                      <span className="text-corsair-text">
+                        {item.crypto}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-corsair-turquoise/20 bg-[#0A0A0A] p-6">
+                <p className="mb-3 font-pixel text-[7px] tracking-widest text-corsair-turquoise/60">
+                  LAYER 2 — INTELLIGENCE
+                </p>
+                <div className="space-y-3 font-mono text-xs">
+                  {[
+                    { primitive: "Normalize", crypto: "Multi-format evidence normalization (8+ tool formats)", color: "text-corsair-turquoise" },
+                    { primitive: "Score", crypto: "Evidence quality scoring — FICO for compliance", color: "text-corsair-turquoise" },
+                    { primitive: "Query", crypto: "Structured compliance queries across SCITT log", color: "text-corsair-turquoise" },
+                    { primitive: "Quarter", crypto: "Quartermaster 7-dimension evidence assessment", color: "text-corsair-turquoise" },
+                  ].map((item) => (
+                    <div key={item.primitive} className="flex items-center gap-3">
+                      <span className={`w-16 shrink-0 font-bold ${item.color}`}>
+                        {item.primitive}
+                      </span>
+                      <span className="text-corsair-border">&rarr;</span>
+                      <span className="text-corsair-text">
+                        {item.crypto}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-corsair-green/20 bg-[#0A0A0A] p-6">
+                <p className="mb-3 font-pixel text-[7px] tracking-widest text-corsair-green/60">
+                  LAYER 3 — DECISION
+                </p>
+                <div className="space-y-3 font-mono text-xs">
+                  {[
+                    { primitive: "Audit", crypto: "Multi-agent audit orchestration across evidence sets", color: "text-corsair-green" },
+                    { primitive: "Certify", crypto: "Continuous certification with automated re-validation", color: "text-corsair-green" },
+                    { primitive: "TPRM", crypto: "Automated third-party risk decisions from CPOE scores", color: "text-corsair-green" },
+                    { primitive: "Automate", crypto: "Policy-driven compliance workflows and responses", color: "text-corsair-green" },
+                  ].map((item) => (
+                    <div key={item.primitive} className="flex items-center gap-3">
+                      <span className={`w-16 shrink-0 font-bold ${item.color}`}>
+                        {item.primitive}
+                      </span>
+                      <span className="text-corsair-border">&rarr;</span>
+                      <span className="text-corsair-text">
+                        {item.crypto}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </FadeIn>
@@ -121,7 +175,7 @@ export default function ProtocolPage() {
           <StageHeader
             number={1}
             name="COMPOSITION"
-            subtitle="Five standards, one protocol"
+            subtitle="Layer 1 — Five standards, one protocol"
             color="text-corsair-gold"
             icon={<ChartIcon size={32} />}
           />
@@ -337,6 +391,98 @@ export default function ProtocolPage() {
                   <span className="text-corsair-gold">Merkle root of all receipt hashes → embedded in CPOE</span>
                 </div>
               </div>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ═══ LAYER 2: INTELLIGENCE ═══ */}
+      <PixelDivider variant="diamond" className="my-4" />
+      <section className="px-6 py-16">
+        <div className="mx-auto max-w-5xl">
+          <StageHeader
+            number={8}
+            name="INTELLIGENCE"
+            subtitle="Layer 2 — Evidence quality scoring and normalization"
+            color="text-corsair-turquoise"
+            icon={<QuarterIcon size={32} />}
+          />
+
+          <FadeIn delay={0.1}>
+            <p className="mb-2 max-w-2xl text-sm text-corsair-text-dim">
+              Layer 1 handles the plumbing — signing, logging, verification. Layer 2 makes
+              that data useful. Evidence from 8+ tool formats is normalized into a common
+              structure, scored for quality across 7 dimensions, and made queryable. This
+              is the FICO layer — standardized evidence quality scores that any platform
+              can consume, regardless of which tool produced the evidence.
+            </p>
+            <p className="mb-6 max-w-2xl text-xs text-corsair-text-dim/60 italic">
+              Five of the seven Quartermaster dimensions are fully deterministic. Two use
+              model-assisted analysis. Like FICO — uses models, is not called AI.
+            </p>
+          </FadeIn>
+
+          <FadeIn delay={0.2}>
+            <div className="space-y-3">
+              {[
+                { op: "Normalize", desc: "Multi-format evidence normalization. Prowler OCSF, InSpec, Trivy, SecurityHub, CISO Assistant, GitLab SAST — all become the same internal structure.", color: "text-corsair-turquoise", bgColor: "bg-corsair-turquoise/10" },
+                { op: "Score", desc: "7-dimension evidence quality assessment. Methodology, evidence integrity, completeness, bias, temporal freshness, source authority, and cross-reference density.", color: "text-corsair-turquoise", bgColor: "bg-corsair-turquoise/10" },
+                { op: "Query", desc: "Structured queries across the SCITT log. Filter by framework, provenance source, score threshold, time range, or issuer identity.", color: "text-corsair-turquoise", bgColor: "bg-corsair-turquoise/10" },
+                { op: "Quartermaster", desc: "The governance review engine. Deterministic scoring with optional model-assisted dimensions. Produces a confidence score (0-100) and trust tier classification.", color: "text-corsair-turquoise", bgColor: "bg-corsair-turquoise/10" },
+              ].map((item) => (
+                <div key={item.op} className="flex items-start gap-4 rounded-lg border border-corsair-border bg-[#0A0A0A] p-4">
+                  <span className={`flex h-8 w-20 shrink-0 items-center justify-center rounded font-mono text-xs font-bold ${item.bgColor} ${item.color}`}>
+                    {item.op}
+                  </span>
+                  <p className="text-xs text-corsair-text-dim">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ═══ LAYER 3: DECISION ═══ */}
+      <PixelDivider className="my-4" />
+      <section className="px-6 py-16">
+        <div className="mx-auto max-w-5xl">
+          <StageHeader
+            number={9}
+            name="DECISION"
+            subtitle="Layer 3 — Automated audit, certification, and TPRM"
+            color="text-corsair-green"
+            icon={<MarkIcon size={32} />}
+          />
+
+          <FadeIn delay={0.1}>
+            <p className="mb-2 max-w-2xl text-sm text-corsair-text-dim">
+              Layer 3 turns scored evidence into automated decisions. Continuous
+              certification replaces point-in-time audits. TPRM automation replaces
+              security questionnaires. Multi-agent audit orchestration coordinates
+              specialized agents across evidence sets — each agent signs its findings
+              as a CPOE, creating a verifiable audit trail with no human bottleneck.
+            </p>
+            <p className="mb-6 max-w-2xl text-xs text-corsair-text-dim/60 italic">
+              Layer 3 consumes Layer 2 scores and Layer 1 proofs. Each layer is independently
+              useful. Together they replace the annual audit cycle.
+            </p>
+          </FadeIn>
+
+          <FadeIn delay={0.2}>
+            <div className="space-y-3">
+              {[
+                { op: "Audit", desc: "Multi-agent audit orchestration. Specialized agents review evidence across domains — network, identity, data protection — and each agent signs its assessment as a CPOE.", color: "text-corsair-green", bgColor: "bg-corsair-green/10" },
+                { op: "Certify", desc: "Continuous certification with automated re-validation. FLAGSHIP monitors for drift, Quartermaster re-scores on schedule, CPOEs auto-renew or downgrade based on evidence freshness.", color: "text-corsair-green", bgColor: "bg-corsair-green/10" },
+                { op: "TPRM", desc: "Automated third-party risk management. Vendor CPOEs are scored, compared against policy thresholds, and approved or flagged — no questionnaire, no email, no spreadsheet.", color: "text-corsair-green", bgColor: "bg-corsair-green/10" },
+                { op: "Automate", desc: "Policy-driven compliance workflows. When a FLAGSHIP signal detects drift, automated responses trigger — re-scan, re-score, notify, or revoke — based on configurable policies.", color: "text-corsair-green", bgColor: "bg-corsair-green/10" },
+              ].map((item) => (
+                <div key={item.op} className="flex items-start gap-4 rounded-lg border border-corsair-border bg-[#0A0A0A] p-4">
+                  <span className={`flex h-8 w-20 shrink-0 items-center justify-center rounded font-mono text-xs font-bold ${item.bgColor} ${item.color}`}>
+                    {item.op}
+                  </span>
+                  <p className="text-xs text-corsair-text-dim">{item.desc}</p>
+                </div>
+              ))}
             </div>
           </FadeIn>
         </div>

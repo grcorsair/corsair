@@ -381,7 +381,7 @@ export default function VisionPage() {
           <StageHeader
             number={5}
             name="THE MODEL"
-            subtitle="Provenance, not judgment — record where evidence came from"
+            subtitle="Three layers — infrastructure, intelligence, decision"
             color="text-corsair-green"
             icon={<QuarterIcon size={32} />}
           />
@@ -391,24 +391,30 @@ export default function VisionPage() {
               <p>
                 Not all compliance evidence is equal. A policy PDF is not the
                 same as a Prowler scan. A self-assessment is not the same as a
-                third-party audit. But judging that quality is the buyer&apos;s
-                job — not the protocol&apos;s. Corsair records{" "}
-                <span className="text-corsair-green">provenance</span>: who
-                produced the evidence, what tool generated it, and when.
+                third-party audit. Corsair addresses this with three layers, not
+                one. <span className="text-corsair-gold">Layer 1</span>{" "}
+                (Infrastructure) records provenance: who produced the evidence,
+                what tool generated it, and when. <span className="text-corsair-turquoise">Layer 2</span>{" "}
+                (Intelligence) normalizes evidence from 8+ tool formats, scores
+                quality across 7 dimensions, and produces a standardized
+                confidence score — like FICO for compliance. <span className="text-corsair-green">Layer 3</span>{" "}
+                (Decision) automates what humans used to do: continuous
+                certification, TPRM approvals, and multi-agent audit
+                orchestration.
               </p>
               <p>
                 Three provenance types — self, tool, auditor — give buyers the
                 information they need to set their own thresholds. An enterprise
                 might require tool-generated evidence for all vendors. A startup
                 might accept self-assessed for low-risk suppliers. The CPOE
-                carries the facts. The buyer makes the decision.
+                carries the facts. The Quartermaster scores them. The buyer — or
+                their agent — makes the decision.
               </p>
               <p>
-                Assurance scoring (L0-L4) is available as{" "}
-                <span className="text-corsair-green">optional enrichment</span>{" "}
-                via the <code>--enrich</code> flag for organizations that want
-                graduated levels. But the default path is provenance-first:
-                record, sign, and let the market decide.
+                Each layer is independently useful. Layer 1 alone gives you signed,
+                verifiable compliance proofs. Add Layer 2 and every CPOE carries a
+                quality score. Add Layer 3 and the entire audit-to-certification
+                cycle runs on protocol, not spreadsheets.
               </p>
             </div>
           </FadeIn>
@@ -449,8 +455,8 @@ export default function VisionPage() {
         <div className="mx-auto max-w-5xl">
           <StageHeader
             number={6}
-            name="THE FUTURE"
-            subtitle="Agents need proofs, not judgment"
+            name="THE PRESENT AND BEYOND"
+            subtitle="Scoring and certification are shipped. Agent-native trust is next."
             color="text-corsair-turquoise"
             icon={<MarkIcon size={32} />}
           />
@@ -458,40 +464,44 @@ export default function VisionPage() {
           <FadeIn delay={0.1}>
             <div className="max-w-2xl space-y-4 text-sm text-corsair-text-dim">
               <p>
-                The evidence sources are expanding, not shrinking. Today:
-                Prowler scans, InSpec profiles, and Trivy reports. Tomorrow:
-                real-time telemetry from Wiz, CrowdStrike, and Datadog. Next:
-                agentic tool-call traces from AI systems operating
-                autonomously. Each new source is higher-fidelity evidence — and
-                all of it needs a proof format.
+                The three-layer architecture is not a roadmap — it is{" "}
+                <span className="text-corsair-turquoise">shipped</span>.
+                Layer 1 signs and verifies compliance evidence with Ed25519.
+                Layer 2 normalizes evidence from 8+ tool formats, scores quality
+                across 7 dimensions via the Quartermaster, and produces
+                standardized confidence scores. Layer 3 orchestrates multi-agent
+                audits, automates TPRM decisions from CPOE scores, and runs
+                continuous certification with automated re-validation. Every
+                layer is live, tested, and in production.
               </p>
               <p>
-                A procurement agent cannot read a PDF. It cannot evaluate trust
-                on a phone call. It needs a{" "}
+                What comes next is agent-native trust exchange. A procurement
+                agent cannot read a PDF. It cannot evaluate trust on a phone
+                call. It needs a{" "}
                 <span className="text-corsair-turquoise">
                   machine-readable, cryptographically signed proof
                 </span>{" "}
                 that it can verify without human intervention. It needs a CPOE —
-                with provenance metadata showing whether evidence came
-                from a self-assessment, a tool scan, or an auditor review.
+                with a quality score and provenance metadata that its policy
+                engine can evaluate automatically.
               </p>
               <p>
                 This is why the format matters more than the tool. Intelligence
                 commoditizes — anyone with an LLM can analyze a compliance
                 report. Infrastructure compounds — signing keys, transparency
-                logs, verification networks, signal history. The protocol that
-                carries compliance trust between organizations and between
-                agents is the layer that endures.
+                logs, verification networks, quality scores, signal history. The
+                protocol that carries compliance trust between organizations and
+                between agents is the layer that endures.
               </p>
               <p>
-                By the time agents arrive, the verification network already
-                exists — seeded by tool-generated CPOEs. The same CPOE format
-                that wraps a Prowler scan today wraps Wiz telemetry tomorrow
-                and agent-witnessed control tests next year. The five primitives
-                carry forward unchanged: Sign with Ed25519, Verify via DID
-                resolution, Diff any two attestations, Log in the SCITT
-                transparency registry, Signal changes through FLAGSHIP
-                SSF/CAEP streams. The evidence evolves. The proof does not.
+                The verification network is already being seeded by
+                tool-generated CPOEs. The same CPOE format that wraps a Prowler
+                scan today wraps Wiz telemetry tomorrow and agent-witnessed
+                control tests next year. All three layers carry forward
+                unchanged: infrastructure primitives sign and verify, the
+                intelligence layer scores and normalizes, the decision layer
+                automates audits and certifications. The evidence evolves. The
+                protocol does not.
               </p>
             </div>
           </FadeIn>

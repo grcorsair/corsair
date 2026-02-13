@@ -91,6 +91,18 @@ export function DisruptionSection() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 text-corsair-green">&#x2713;</span>
+                <code className="text-corsair-cyan">corsair audit</code> — run a full compliance audit across multiple evidence files with scoring, framework targeting, and governance checks
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-corsair-green">&#x2713;</span>
+                <code className="text-corsair-cyan">corsair cert</code> — manage continuous compliance certifications with lifecycle tracking, renewal, suspension, and revocation
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-corsair-green">&#x2713;</span>
+                <code className="text-corsair-cyan">corsair tprm</code> — automate third-party risk management: register vendors, assess CPOEs, and view risk dashboards
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-corsair-green">&#x2713;</span>
                 <code className="text-corsair-cyan">corsair signal</code> — real-time compliance change notifications via FLAGSHIP. Drift, tier changes, revocations — subscribers know instantly
               </li>
             </ul>

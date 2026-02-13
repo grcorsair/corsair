@@ -75,6 +75,19 @@ A Marque is signed with Ed25519 (elliptic curve digital signature):
 
 No server, no account, no data sharing required for verification.
 
+## Higher-Level Workflows
+
+Built on the core pipeline, Corsair provides end-to-end workflows for compliance operations:
+
+| Command | Purpose | What It Does |
+|---------|---------|--------------|
+| `corsair audit` | Full compliance audit | Combines multiple evidence files into a scored audit result with framework targeting and governance checks |
+| `corsair cert` | Continuous certifications | Manages certification lifecycle: create, check, renew, suspend, revoke. Tracks status and detects drift |
+| `corsair tprm` | Vendor risk management | Registers vendors, assesses CPOEs, produces approve/conditional/deny decisions with composite scoring |
+| `corsair renew` | CPOE renewal | Re-signs existing CPOEs with fresh dates, optionally with new evidence |
+
+The `--score` flag on `corsair sign` runs a 7-dimension evidence quality assessment, producing a FICO-style composite score (0-100) with letter grade.
+
 ## Parley Protocol
 
 Parley is the trust exchange protocol that composes three open standards:

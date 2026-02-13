@@ -91,6 +91,63 @@ corsair diff --current cpoe-v2.jwt --previous cpoe-v1.jwt
 
 Shows control-level additions, removals, status changes, and score deltas.
 
+## Higher-Level Workflows
+
+Built on top of the core primitives, these commands compose the pipeline stages into end-to-end workflows:
+
+### AUDIT — Full Compliance Audit
+
+Run a complete audit across multiple evidence files with scoring, framework targeting, and optional governance checks:
+
+```bash
+corsair audit --files prowler.json inspec.json --scope "AWS Production" --frameworks SOC2,NIST-800-53
+```
+
+Audit combines EVIDENCE + SIGN + scoring into a single operation, producing a comprehensive audit result with findings, score breakdowns, and optional governance review.
+
+### CERT — Continuous Certifications
+
+Manage ongoing compliance certifications with lifecycle tracking:
+
+```bash
+corsair cert create --scope "AWS Production" --frameworks SOC2 --files evidence/*.json
+corsair cert check <cert-id>
+corsair cert renew <cert-id> --files new-evidence/*.json
+```
+
+Certifications track status (active, warning, degraded, suspended, expired, revoked), detect drift on renewal, and enforce minimum score thresholds.
+
+### TPRM — Third-Party Risk Management
+
+Automate vendor risk assessment using CPOEs as the evidence layer:
+
+```bash
+corsair tprm register --name "Acme Cloud" --domain acme.com --risk-tier high
+corsair tprm assess --vendor <id> --frameworks SOC2 --cpoes vendor-cpoe.jwt
+corsair tprm dashboard
+```
+
+TPRM replaces questionnaire-based vendor assessment with cryptographically verifiable CPOE-based evaluation, producing approve/conditional/deny decisions with composite scoring.
+
+### RENEW — Re-sign CPOEs
+
+Re-sign an existing CPOE with fresh dates, or with new evidence while preserving scope and DID:
+
+```bash
+corsair renew --file cpoe.jwt --output renewed.jwt
+corsair renew --file cpoe.jwt --evidence new-findings.json --output renewed.jwt
+```
+
+## Evidence Quality Scoring
+
+The `--score` flag on `corsair sign` runs a 7-dimension evidence quality assessment (FICO-style composite score):
+
+```bash
+corsair sign --file evidence.json --score --json
+```
+
+Dimensions include evidence integrity, completeness, methodology, freshness, provenance strength, control coverage, and consistency. The composite score (0-100) with letter grade provides a standardized quality metric for CPOE consumers.
+
 ## Optional Enrichment (--enrich)
 
 These layers are available via the `--enrich` flag but are not part of the default signing path:
