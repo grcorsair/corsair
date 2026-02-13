@@ -1,0 +1,17 @@
+#!/usr/bin/env bun
+/**
+ * CORSAIR — npm global binary entry point
+ *
+ * This file is the entry point for `npm install -g corsair` / `bun add -g corsair`.
+ * It imports and runs the main CLI from corsair.ts.
+ *
+ * Usage after global install:
+ *   corsair sign --file evidence.json
+ *   corsair verify --file cpoe.jwt
+ *   corsair diff --current new.jwt --previous old.jwt
+ *   corsair log
+ *   corsair keygen
+ *   corsair help
+ */
+
+import "../corsair.ts";
