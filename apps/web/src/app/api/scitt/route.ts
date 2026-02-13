@@ -80,11 +80,14 @@ export async function GET(request: NextRequest) {
       const data = await res.json();
       // Backend may return { entries: [...], pagination: {...} } or a flat array
       const entries = Array.isArray(data) ? data : (data.entries ?? []);
-      return NextResponse.json(entries, {
-        headers: {
-          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
-        },
-      });
+      // If backend has real data, serve it; otherwise fall through to demo data
+      if (entries.length > 0) {
+        return NextResponse.json(entries, {
+          headers: {
+            "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+          },
+        });
+      }
     }
   } catch {
     // Backend unavailable — fall through to demo data

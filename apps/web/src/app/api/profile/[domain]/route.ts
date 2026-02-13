@@ -83,11 +83,14 @@ export async function GET(
 
     if (res.ok) {
       const data = await res.json();
-      return NextResponse.json(data, {
-        headers: {
-          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
-        },
-      });
+      // Only use backend if it has real data (not empty/error)
+      if (data && data.did) {
+        return NextResponse.json(data, {
+          headers: {
+            "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
+          },
+        });
+      }
     }
   } catch {
     // Backend unavailable — fall through to demo data
