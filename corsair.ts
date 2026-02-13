@@ -3,7 +3,9 @@
  * CORSAIR CLI — Git for Compliance
  *
  * Usage:
- *   corsair sign --file <evidence.json> [--output <cpoe.jwt>] [--did <did>] [--enrich]
+ *   corsair sign --file <evidence.json> [--output <cpoe.jwt>] [--did <did>]
+ *   corsair sign --file - < evidence.json          (stdin)
+ *   cat evidence.json | corsair sign               (pipe)
  *   corsair diff --current <new.jwt> --previous <old.jwt>
  *   corsair log [--help]
  *   corsair verify --file <cpoe.jwt> [--pubkey <path>]
@@ -60,8 +62,13 @@ async function handleSign(): Promise<void> {
   let did: string | undefined;
   let scope: string | undefined;
   let expiryDays = 7;
-  let enrich = false;
   let showHelp = false;
+  let format: string | undefined;
+  let verbose = false;
+  let dryRun = false;
+  let jsonOutput = false;
+  let quiet = false;
+  let showVersion = false;
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -85,8 +92,26 @@ async function handleSign(): Promise<void> {
       case "--expiry-days":
         expiryDays = parseInt(args[++i], 10) || 7;
         break;
-      case "--enrich":
-        enrich = true;
+      case "--format":
+      case "-F":
+        format = args[++i];
+        break;
+      case "--verbose":
+      case "-v":
+        verbose = true;
+        break;
+      case "--dry-run":
+        dryRun = true;
+        break;
+      case "--json":
+        jsonOutput = true;
+        break;
+      case "--quiet":
+      case "-q":
+        quiet = true;
+        break;
+      case "--version":
+        showVersion = true;
         break;
       case "--help":
       case "-h":
@@ -95,126 +120,174 @@ async function handleSign(): Promise<void> {
     }
   }
 
+  if (showVersion) {
+    const pkg = JSON.parse(readFileSync("package.json", "utf-8"));
+    console.log(`corsair ${pkg.version}`);
+    return;
+  }
+
   if (showHelp) {
     console.log(`
 CORSAIR SIGN — Sign evidence as a CPOE (JWT-VC)
 
 USAGE:
   corsair sign --file <path> [options]
+  corsair sign --file - [options]           Read from stdin
+  cat evidence.json | corsair sign          Pipe from stdin
 
 OPTIONS:
-  -f, --file <PATH>         Path to evidence JSON file (required)
+  -f, --file <PATH>         Path to evidence JSON file (or "-" for stdin)
   -o, --output <PATH>       Write JWT-VC to file (default: stdout)
+  -F, --format <NAME>       Force evidence format (bypass auto-detection)
       --key-dir <DIR>       Ed25519 key directory (default: ./keys)
       --did <DID>           Issuer DID (default: derived from key)
       --scope <TEXT>        Override scope string
       --expiry-days <N>     CPOE validity in days (default: 7)
-      --enrich              Add assurance scoring, dimensions, and enrichment layers
+      --dry-run             Parse + classify but don't sign. Output would-be subject.
+      --json                Output structured JSON (jwt + metadata) to stdout
+  -v, --verbose             Print step-by-step progress to stderr
+  -q, --quiet               Suppress all stderr output
+      --version             Print version
   -h, --help                Show this help
 
-SUPPORTED FORMATS (auto-detected):
-  Generic JSON      { metadata, controls[] }
-  Prowler OCSF      Array of findings with StatusCode + FindingInfo
-  SecurityHub ASFF  { Findings[] }
-  InSpec            { profiles[].controls[] }
-  Trivy             { SchemaVersion, Results[] }
+FORMATS (auto-detected or forced with --format):
+  generic               { metadata, controls[] }
+  prowler               Array of findings with StatusCode + FindingInfo
+  securityhub           { Findings[] } (AWS SecurityHub ASFF)
+  inspec                { profiles[].controls[] } (Chef InSpec)
+  trivy                 { SchemaVersion, Results[] } (Aqua Trivy)
+  gitlab                { version, scan, vulnerabilities[] }
+  ciso-assistant-api    { count, results[] } (CISO Assistant API)
+  ciso-assistant-export { meta, requirement_assessments[] }
 
 EXAMPLES:
   corsair sign --file prowler-findings.json
   corsair sign --file inspec-report.json --output cpoe.jwt
   corsair sign --file evidence.json --did did:web:acme.com --scope "AWS Production"
+  corsair sign --file evidence.json --dry-run
+  corsair sign --file evidence.json --json | jq .summary
+  cat trivy-report.json | corsair sign --format trivy --output cpoe.jwt
 `);
     return;
   }
 
-  if (!filePath) {
+  // Determine input source: file, stdin flag, or piped stdin
+  // Only read stdin when explicitly requested with "--file -"
+  let rawJson: string;
+  const isStdinExplicit = filePath === "-";
+
+  if (isStdinExplicit) {
+    if (verbose && !quiet) console.error("Reading evidence from stdin...");
+    rawJson = await new Response(Bun.stdin.stream()).text();
+    if (!rawJson.trim()) {
+      console.error("Error: Empty input from stdin");
+      process.exit(2);
+    }
+  } else if (filePath) {
+    if (!existsSync(filePath)) {
+      console.error(`Error: File not found: ${filePath}`);
+      process.exit(2);
+    }
+    rawJson = readFileSync(filePath, "utf-8");
+  } else {
     console.error("Error: --file is required");
     console.error('Run "corsair sign --help" for usage');
     process.exit(2);
   }
 
-  if (!existsSync(filePath)) {
-    console.error(`Error: File not found: ${filePath}`);
-    process.exit(2);
-  }
-
-  // Load keypair
+  // Load key manager
   const { MarqueKeyManager } = await import("./src/parley/marque-key-manager");
   const keyManager = new MarqueKeyManager(keyDir);
   const keypair = await keyManager.loadKeypair();
-  if (!keypair) {
+  if (!keypair && !dryRun) {
     console.error(`Error: No keypair found in ${keyDir}`);
     console.error('Generate keys with: corsair keygen --output ' + keyDir);
     process.exit(2);
   }
 
-  // Read and parse evidence JSON
-  const rawJson = readFileSync(filePath, "utf-8");
-  const { parseJSON } = await import("./src/ingestion/json-parser");
-  const doc = parseJSON(rawJson);
-
-  // Apply scope override if provided
-  if (scope) {
-    doc.metadata.scope = scope;
+  // For dry-run without keys, generate temporary in-memory keys
+  if (!keypair && dryRun) {
+    await keyManager.generateKeypair();
   }
 
-  // Map to MarqueGeneratorInput
-  const { mapToMarqueInput } = await import("./src/ingestion/mapper");
-  const marqueInput = mapToMarqueInput(doc, { did });
+  if (verbose && !quiet) console.error("Parsing evidence...");
 
-  // Build process receipt chain
-  const { ReceiptChain } = await import("./src/parley/receipt-chain");
-  const { hashData } = await import("./src/parley/process-receipt");
-  const chain = new ReceiptChain(keypair.privateKey.toString());
+  // Call the shared sign engine
+  const { signEvidence, SignError } = await import("./src/sign/sign-core");
+  type EvidenceFormat = import("./src/sign/sign-core").EvidenceFormat;
 
-  // Receipt 0: EVIDENCE (captures tool/platform provenance)
-  await chain.captureStep({
-    step: "evidence",
-    inputData: { source: doc.source, fileHash: doc.metadata.rawTextHash },
-    outputData: { controlCount: doc.controls.length },
-    reproducible: doc.source !== "manual",
-    codeVersion: `corsair-sign@2026-02-12`,
-    toolAttestation: {
-      toolName: doc.source,
-      toolVersion: "unknown",
-      scanTimestamp: doc.metadata.date,
-      scanTarget: doc.metadata.scope,
-      outputFormat: doc.source,
-    },
-  });
+  try {
+    const result = await signEvidence({
+      evidence: rawJson,
+      format: format as EvidenceFormat | undefined,
+      did,
+      scope,
+      expiryDays,
+      dryRun,
+    }, keyManager);
 
-  // Receipt 1: CLASSIFY (deterministic)
-  await chain.captureStep({
-    step: "classify",
-    inputData: { controlCount: doc.controls.length, source: doc.source },
-    outputData: { assurance: "calculated" },
-    reproducible: true,
-    codeVersion: "assurance-calculator@2026-02-09",
-  });
+    if (verbose && !quiet) {
+      console.error(`Format:     ${result.detectedFormat} (${format ? "forced" : "auto-detected"})`);
+      console.error(`Controls:   ${result.summary.controlsTested} tested, ${result.summary.controlsPassed} passed, ${result.summary.controlsFailed} failed (${result.summary.overallScore}%)`);
+      console.error(`Provenance: ${result.provenance.source} (${result.provenance.sourceIdentity || "unknown"})`);
+    }
 
-  // Receipt 2: CHART (deterministic)
-  await chain.captureStep({
-    step: "chart",
-    inputData: doc.controls.map((c: { frameworkRefs?: unknown }) => c.frameworkRefs),
-    outputData: marqueInput.chartResults,
-    reproducible: true,
-    codeVersion: "chart-engine@1.0",
-  });
+    // Show warnings
+    for (const w of result.warnings) {
+      if (!quiet) console.error(`Warning: ${w}`);
+    }
 
-  marqueInput.processReceipts = chain.getReceipts();
+    // Dry-run output
+    if (dryRun) {
+      const dryOutput = {
+        dryRun: true,
+        detectedFormat: result.detectedFormat,
+        summary: result.summary,
+        provenance: result.provenance,
+        controlCount: result.document.controls.length,
+        warnings: result.warnings,
+      };
+      console.log(JSON.stringify(dryOutput, null, 2));
+      return;
+    }
 
-  // Generate JWT-VC
-  const { generateVCJWT } = await import("./src/parley/vc-generator");
-  const jwt = await generateVCJWT(marqueInput, keyManager, { expiryDays, enrich });
+    // JSON output mode
+    if (jsonOutput) {
+      const structuredOutput = {
+        cpoe: result.jwt,
+        marqueId: result.marqueId,
+        detectedFormat: result.detectedFormat,
+        summary: result.summary,
+        provenance: result.provenance,
+        warnings: result.warnings,
+      };
+      process.stdout.write(JSON.stringify(structuredOutput, null, 2));
+      return;
+    }
 
-  // Output
-  if (outputPath) {
-    const { writeFileSync } = await import("fs");
-    writeFileSync(outputPath, jwt);
-    console.error(`CPOE signed: ${outputPath}`);
-  } else {
-    // Write JWT to stdout (for piping), info to stderr
-    process.stdout.write(jwt);
+    // Standard output
+    if (outputPath) {
+      const { writeFileSync } = await import("fs");
+      writeFileSync(outputPath, result.jwt);
+      if (!quiet) {
+        const size = Buffer.byteLength(result.jwt);
+        console.error(`\nCPOE signed successfully.`);
+        console.error(`  Format:     ${result.detectedFormat} (${format ? "forced" : "auto-detected"})`);
+        console.error(`  Controls:   ${result.summary.controlsTested} tested, ${result.summary.controlsPassed} passed, ${result.summary.controlsFailed} failed (${result.summary.overallScore}%)`);
+        console.error(`  Provenance: ${result.provenance.source} (${result.provenance.sourceIdentity || "unknown"})`);
+        console.error(`  Output:     ${outputPath} (${size.toLocaleString()} bytes)`);
+        console.error(`  Verify:     corsair verify --file ${outputPath}`);
+      }
+    } else {
+      // Write JWT to stdout (for piping), info to stderr
+      process.stdout.write(result.jwt);
+    }
+  } catch (err) {
+    if (err instanceof SignError) {
+      console.error(`Error: ${err.message}`);
+      process.exit(2);
+    }
+    throw err;
   }
 }
 
@@ -660,6 +733,11 @@ OPTIONS:
 // =============================================================================
 
 function printHelp(): void {
+  let version = "0.5.0";
+  try {
+    const pkg = JSON.parse(readFileSync("package.json", "utf-8"));
+    version = pkg.version || version;
+  } catch {}
   console.log(`
 CORSAIR — Git for Compliance
 
@@ -680,10 +758,13 @@ ALIASES:
 EXAMPLES:
   corsair sign --file evidence.json --output cpoe.jwt
   corsair sign --file gl-sast-report.json --did did:web:acme.com
+  corsair sign --file - < prowler-findings.json
+  cat trivy-report.json | corsair sign --format trivy
+  corsair sign --file evidence.json --dry-run
   corsair diff --current cpoe-new.jwt --previous cpoe-old.jwt
   corsair verify --file cpoe.jwt --pubkey keys/corsair-signing.pub
   corsair keygen --output ./my-keys
 
-VERSION: 0.5.0
+VERSION: ${version}
 `);
 }

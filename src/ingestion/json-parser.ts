@@ -32,6 +32,17 @@ import type { Severity } from "../types";
 export interface ParseJSONOptions {
   /** Override the detected source type */
   source?: DocumentSource;
+
+  /** Force a specific parser format (bypasses auto-detection) */
+  format?:
+    | "generic"
+    | "prowler"
+    | "securityhub"
+    | "inspec"
+    | "trivy"
+    | "gitlab"
+    | "ciso-assistant-api"
+    | "ciso-assistant-export";
 }
 
 /**
@@ -52,6 +63,11 @@ export function parseJSON(
 ): IngestedDocument {
   const parsed = resolveInput(input);
   const rawHash = computeHash(parsed);
+
+  // Format override — bypass auto-detection when explicitly set
+  if (options?.format) {
+    return parseByFormat(parsed, rawHash, options.format, options.source);
+  }
 
   // Auto-detect format (order matters — most specific first)
   if (isCISOAssistantAPI(parsed)) {
@@ -92,6 +108,49 @@ export function parseJSON(
 
   // Generic format: { metadata?, controls[], assessmentContext? }
   return parseGeneric(parsed as GenericInput, rawHash, options?.source);
+}
+
+// =============================================================================
+// FORMAT OVERRIDE
+// =============================================================================
+
+function parseByFormat(
+  parsed: unknown,
+  rawHash: string,
+  format: NonNullable<ParseJSONOptions["format"]>,
+  sourceOverride?: DocumentSource,
+): IngestedDocument {
+  switch (format) {
+    case "prowler":
+      // Prowler expects an array of findings
+      if (!Array.isArray(parsed)) {
+        throw new Error(`Format "prowler" expects an array of findings, got ${typeof parsed}`);
+      }
+      return parseProwler(parsed as ProwlerFinding[], rawHash, sourceOverride);
+    case "securityhub":
+      return parseSecurityHub(parsed as SecurityHubOutput, rawHash, sourceOverride);
+    case "inspec":
+      return parseInSpec(parsed as InSpecReport, rawHash, sourceOverride);
+    case "trivy":
+      return parseTrivy(parsed as TrivyReport, rawHash, sourceOverride);
+    case "gitlab":
+      return parseGitLab(parsed as GitLabSecurityReport, rawHash, sourceOverride);
+    case "ciso-assistant-api":
+      return parseCISOAssistant(
+        (parsed as CISOAssistantAPIResponse).results,
+        rawHash,
+        sourceOverride,
+      );
+    case "ciso-assistant-export":
+      return parseCISOAssistant(
+        (parsed as CISOAssistantDomainExport).requirement_assessments,
+        rawHash,
+        sourceOverride,
+      );
+    case "generic":
+    default:
+      return parseGeneric(parsed as GenericInput, rawHash, sourceOverride);
+  }
 }
 
 // =============================================================================
@@ -406,6 +465,7 @@ function parseProwler(
       rawTextHash: rawHash,
     },
     controls,
+    toolAssuranceLevel: 1, // L1: config scanner — machine-observed state
   };
 }
 
@@ -481,6 +541,7 @@ function parseGitLab(
       rawTextHash: rawHash,
     },
     controls,
+    toolAssuranceLevel: 1, // L1: automated scanner — machine-observed state
   };
 }
 
@@ -563,6 +624,7 @@ function parseSecurityHub(
       rawTextHash: rawHash,
     },
     controls,
+    toolAssuranceLevel: 1, // L1: config scanner — machine-observed state
   };
 }
 
@@ -609,6 +671,7 @@ function parseInSpec(
       rawTextHash: rawHash,
     },
     controls,
+    toolAssuranceLevel: 1, // L1: compliance-as-code — machine-observed state
   };
 }
 
@@ -717,6 +780,7 @@ function parseTrivy(
       rawTextHash: rawHash,
     },
     controls,
+    toolAssuranceLevel: 1, // L1: vulnerability scanner — machine-observed state
   };
 }
 
@@ -755,6 +819,11 @@ function parseCISOAssistant(
     };
   });
 
+  // L2 if any assessment has linked evidence artifacts or applied controls (structural check)
+  const hasLinkedEvidence = assessments.some(
+    (a) => (a.evidences && a.evidences.length > 0) || (a.applied_controls && a.applied_controls.length > 0),
+  );
+
   return {
     source: sourceOverride || "ciso-assistant",
     metadata: {
@@ -766,6 +835,7 @@ function parseCISOAssistant(
       rawTextHash: rawHash,
     },
     controls,
+    toolAssuranceLevel: hasLinkedEvidence ? 2 : 1, // L2: assessed with evidence artifacts, L1: configured
   };
 }
 
@@ -880,6 +950,7 @@ function parseGeneric(
     source: sourceOverride || "json",
     metadata,
     controls,
+    toolAssuranceLevel: 0, // L0: generic/unknown source — self-assessed
     assessmentContext: input.assessmentContext,
   };
 }

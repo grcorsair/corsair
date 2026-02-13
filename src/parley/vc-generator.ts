@@ -6,7 +6,10 @@
  *
  * The generated JWT contains:
  *   Header: { alg: "EdDSA", typ: "vc+jwt", kid: "did:web:domain#key-1" }
- *   Payload: { iss, sub, exp, iat, jti, vc: {...}, parley: "2.0" }
+ *   Payload: { iss, sub, exp, iat, jti, vc: {...}, parley: "2.1" }
+ *
+ * Pipeline: parse → provenance → tool-level assurance → sign.
+ * No content-based classification. The tool adapter declares the assurance level.
  */
 
 import * as crypto from "crypto";
@@ -19,22 +22,8 @@ import type { MarqueGeneratorInput } from "./marque-generator";
 import type { CPOECredentialSubject, CPOEAssurance, CPOEProvenance } from "./vc-types";
 import { VC_CONTEXT, CORSAIR_CONTEXT, CPOE_TYPE } from "./vc-types";
 import {
-  calculateDocumentAssurance,
-  calculateDocumentRollup,
   deriveProvenance,
-  calculateAssuranceDimensions,
-  deriveEvidenceTypes,
-  deriveObservationPeriod,
-  generateRuleTrace,
-  applyAntiGamingSafeguards,
   deriveEvidenceTypeDistribution,
-  classifyEvidenceContent,
-  extractSampleSize,
-  detectBoilerplate,
-  classifyAssessmentDepth,
-  computeProvenanceQuality,
-  runBinaryChecks,
-  computeDoraMetrics,
 } from "../ingestion/assurance-calculator";
 import { EvidenceEngine } from "../evidence";
 import { hashReceipt } from "./process-receipt";
@@ -52,7 +41,7 @@ const PRIVATE_KEY_FILENAME = "corsair-signing.key";
 export async function generateVCJWT(
   input: MarqueGeneratorInput,
   keyManager: MarqueKeyManager,
-  options?: { expiryDays?: number; enrich?: boolean },
+  options?: { expiryDays?: number },
 ): Promise<string> {
   const expiryDays = options?.expiryDays ?? 7;
   const now = new Date();
@@ -62,8 +51,7 @@ export async function generateVCJWT(
   const issuerDid = input.issuer.did || input.issuer.id;
 
   // Build CPOE credential subject
-  const enrich = options?.enrich ?? false;
-  const rawSubject = buildCredentialSubject(input, enrich);
+  const rawSubject = buildCredentialSubject(input);
   const sanitizedSubject = sanitize(rawSubject) as CPOECredentialSubject;
 
   // Build VC payload (without proof — proof is the JWT itself)
@@ -109,12 +97,15 @@ export async function generateVCJWT(
 /**
  * Build CPOE credential subject from assessment input.
  *
- * Default (enrich=false): provenance-first — scope, provenance, summary only.
- * Enriched (enrich=true): adds assurance, dimensions, evidenceTypes,
- * observationPeriod, controlClassifications, assessmentDepth, provenanceQuality, doraMetrics.
+ * Provenance-first with tool-level assurance:
+ *   - scope, provenance, summary (always)
+ *   - assurance from tool-declared level (always)
+ *   - frameworks passthrough from tool output (when present)
+ *   - processProvenance from receipt chain (when present)
+ *   - evidenceChain from JSONL files (when present)
  */
-function buildCredentialSubject(input: MarqueGeneratorInput, enrich: boolean = false): CPOECredentialSubject {
-  // Build frameworks
+function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubject {
+  // Build frameworks (passthrough from tool output)
   const frameworks: CPOECredentialSubject["frameworks"] = {};
   for (const chart of input.chartResults) {
     if (!chart.frameworks) continue;
@@ -148,9 +139,13 @@ function buildCredentialSubject(input: MarqueGeneratorInput, enrich: boolean = f
   // Build scope (now a string)
   const scope = buildScope(input);
 
+  // Build tool-level assurance (always — declared by tool class, not content analysis)
+  const assurance = buildToolAssurance(input);
+
   const subject: CPOECredentialSubject = {
     type: "CorsairCPOE",
     scope,
+    assurance,
     provenance,
     summary: {
       controlsTested: totalTested,
@@ -159,11 +154,6 @@ function buildCredentialSubject(input: MarqueGeneratorInput, enrich: boolean = f
       overallScore,
     },
   };
-
-  // Build assurance only when enrichment is requested
-  if (enrich) {
-    subject.assurance = buildAssurance(input);
-  }
 
   // Evidence chain — only include if there are evidence paths with data
   const evidencePaths = input.evidencePaths || [];
@@ -187,7 +177,7 @@ function buildCredentialSubject(input: MarqueGeneratorInput, enrich: boolean = f
     }
   }
 
-  // Frameworks — only include if non-empty
+  // Frameworks — only include if non-empty (passthrough from tool output)
   if (Object.keys(frameworks).length > 0) {
     subject.frameworks = frameworks;
   }
@@ -210,106 +200,6 @@ function buildCredentialSubject(input: MarqueGeneratorInput, enrich: boolean = f
         score: d.score,
       })),
     };
-  }
-
-  // Wire in framework-grounded assurance dimensions (only when enrichment is requested)
-  if (enrich && input.document) {
-    const doc = input.document;
-
-    // Extract QM scores for dimension calculation if available
-    const qmScores = input.quartermasterAttestation
-      ? {
-          methodology: input.quartermasterAttestation.dimensions.find(d => d.dimension === "methodology")?.score ?? undefined,
-          bias: input.quartermasterAttestation.dimensions.find(d => d.dimension === "bias_detection" || d.dimension === "bias")?.score ?? undefined,
-        }
-      : undefined;
-
-    // Only include if QM scores are valid (both defined) or neither
-    const cleanQmScores = qmScores && (qmScores.methodology !== undefined || qmScores.bias !== undefined)
-      ? qmScores as { methodology: number; bias: number }
-      : undefined;
-
-    subject.dimensions = calculateAssuranceDimensions(
-      doc.controls,
-      doc.source,
-      doc.metadata,
-      cleanQmScores,
-      doc.assessmentContext,
-    );
-
-    const evidenceTypes = deriveEvidenceTypes(doc.controls, doc.source);
-    if (evidenceTypes.length > 0) {
-      subject.evidenceTypes = evidenceTypes;
-    }
-
-    const observationPeriod = deriveObservationPeriod(doc.metadata);
-    if (observationPeriod) {
-      subject.observationPeriod = observationPeriod;
-    }
-
-    // Phase 1: Per-control evidence classification with sample adequacy + boilerplate detection
-    const boilerplateResults = detectBoilerplate(doc.controls);
-    const boilerplateMap = new Map(boilerplateResults.map(b => [b.controlId, b]));
-
-    const classifications: CPOECredentialSubject["controlClassifications"] = doc.controls.map(ctrl => {
-      const classification = classifyEvidenceContent(ctrl, doc.source);
-      const bp = boilerplateMap.get(ctrl.id);
-      const sampleResult = ctrl.evidence ? extractSampleSize(ctrl.evidence) : null;
-
-      const entry: NonNullable<CPOECredentialSubject["controlClassifications"]>[number] = {
-        controlId: ctrl.id,
-        level: classification.maxLevel,
-        methodology: classification.methodology,
-        trace: classification.trace,
-      };
-
-      if (sampleResult && sampleResult.sample !== null) {
-        entry.sampleAdequacy = {
-          sample: sampleResult.sample,
-          population: sampleResult.population ?? undefined,
-          frequency: sampleResult.frequency ?? undefined,
-          adequate: sampleResult.adequate ?? false,
-        };
-      }
-
-      if (bp && bp.flags.length > 0) {
-        entry.boilerplateFlags = bp.flags;
-      }
-
-      return entry;
-    });
-
-    if (classifications.length > 0) {
-      subject.controlClassifications = classifications;
-    }
-
-    // Phase 6A: NIST 800-53A assessment depth (aggregate across controls)
-    const depths = doc.controls.map(ctrl => classifyAssessmentDepth(ctrl));
-    const allMethods = new Set<"examine" | "interview" | "test">();
-    let maxRigor = 0;
-    let maxDepth: "basic" | "focused" | "comprehensive" = "basic";
-    for (const d of depths) {
-      for (const m of d.methods) allMethods.add(m);
-      if (d.rigorScore > maxRigor) {
-        maxRigor = d.rigorScore;
-        maxDepth = d.depth;
-      }
-    }
-    if (allMethods.size > 0) {
-      subject.assessmentDepth = {
-        methods: [...allMethods],
-        depth: maxDepth,
-        rigorScore: maxRigor,
-      };
-    }
-
-    // Phase 6B: SLSA-inspired provenance quality
-    subject.provenanceQuality = computeProvenanceQuality(doc.controls, doc.source, doc.metadata);
-
-    // Phase 6D: DORA paired metrics (needs dimensions)
-    if (subject.dimensions) {
-      subject.doraMetrics = computeDoraMetrics(doc.controls, doc.source, doc.metadata, subject.dimensions);
-    }
   }
 
   // Process provenance (in-toto/SLSA — from pipeline receipt chain)
@@ -339,55 +229,34 @@ function buildCredentialSubject(input: MarqueGeneratorInput, enrich: boolean = f
 }
 
 // =============================================================================
-// INTERNAL: ASSURANCE (delegates to assurance-calculator)
+// INTERNAL: TOOL-LEVEL ASSURANCE
 // =============================================================================
 
-/** Build CPOEAssurance from input */
-function buildAssurance(input: MarqueGeneratorInput): CPOEAssurance {
-  if (input.document) {
-    const doc = input.document;
-    const controlsWithAssurance = calculateDocumentAssurance(
-      doc.controls,
-      doc.source,
-      doc.metadata,
-    );
-    const { assurance } = calculateDocumentRollup(controlsWithAssurance, doc.source, doc.metadata);
+/** Build CPOEAssurance from tool-declared level (no content analysis) */
+function buildToolAssurance(input: MarqueGeneratorInput): CPOEAssurance {
+  const level = input.document?.toolAssuranceLevel ?? 0;
 
-    // Deterministic calculation metadata (Task #12)
-    assurance.calculationVersion = "l0-l4@2026-02-09";
-    assurance.ruleTrace = generateRuleTrace(controlsWithAssurance, doc.source, doc.metadata);
+  // Method derives from tool class
+  const methodMap: Record<number, CPOEAssurance["method"]> = {
+    0: "self-assessed",
+    1: "automated-config-check",
+    2: "automated-config-check",
+    3: "continuous-observation",
+    4: "third-party-attested",
+  };
 
-    // Anti-gaming safeguards (Phase 3) — ENFORCED: cap declared level when triggered
-    const safeguardResult = applyAntiGamingSafeguards(
-      assurance.declared,
-      doc.controls,
-      doc.source,
-      doc.metadata,
-    );
-    if (safeguardResult.appliedSafeguards.length > 0) {
-      assurance.ruleTrace.push(
-        ...safeguardResult.explanations.map(e => `SAFEGUARD: ${e}`),
-      );
-
-      // Phase 3: Enforce safeguards — cap declared level when effective level is lower
-      if (safeguardResult.effectiveLevel < assurance.declared) {
-        assurance.ruleTrace.push(
-          `ENFORCED: declared L${assurance.declared} → L${safeguardResult.effectiveLevel} (safeguard cap)`
-        );
-        assurance.declared = safeguardResult.effectiveLevel;
-        assurance.verified = false;
-      }
-    }
-
-    return assurance;
+  // Count all controls at the tool-declared level
+  const controlCount = input.document?.controls.length ?? 0;
+  const breakdown: Record<string, number> = {};
+  if (controlCount > 0) {
+    breakdown[String(level)] = controlCount;
   }
 
-  // Legacy path — no document, minimal assurance
   return {
-    declared: 0,
-    verified: false,
-    method: "self-assessed",
-    breakdown: {},
+    declared: level,
+    verified: true,
+    method: methodMap[level] ?? "self-assessed",
+    breakdown,
   };
 }
 
@@ -401,7 +270,7 @@ function buildProvenance(input: MarqueGeneratorInput): CPOEProvenance {
     const doc = input.document;
     const provenance = deriveProvenance(doc.source, doc.metadata);
 
-    // Evidence type distribution (Task #14)
+    // Evidence type distribution
     const distribution = deriveEvidenceTypeDistribution(doc.controls, doc.source);
     if (Object.keys(distribution).length > 0) {
       provenance.evidenceTypeDistribution = distribution;

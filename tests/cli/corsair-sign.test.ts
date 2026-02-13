@@ -162,10 +162,10 @@ describe("corsair sign — help", () => {
     expect(output).toContain("--file");
     expect(output).toContain("--did");
     expect(output).toContain("--output");
-    expect(output).toContain("SUPPORTED FORMATS");
-    expect(output).toContain("InSpec");
-    expect(output).toContain("Trivy");
-    expect(output).toContain("Prowler");
+    expect(output).toContain("FORMATS");
+    expect(output).toContain("inspec");
+    expect(output).toContain("trivy");
+    expect(output).toContain("prowler");
   });
 
   test("main help includes sign command", async () => {
@@ -329,6 +329,148 @@ describe("corsair sign — generic JSON e2e", () => {
     const parts = stdout.trim().split(".");
     const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
     expect(payload.vc.credentialSubject.scope).toBe("Custom Scope Override");
+  });
+});
+
+// =============================================================================
+// NEW CLI FLAGS
+// =============================================================================
+
+describe("corsair sign — new flags", () => {
+  test("--version prints version", async () => {
+    const proc = Bun.spawn(["bun", "run", "corsair.ts", "sign", "--version"], { cwd, stdout: "pipe" });
+    const output = await new Response(proc.stdout).text();
+    const code = await proc.exited;
+    expect(code).toBe(0);
+    expect(output.trim()).toMatch(/^corsair \d+\.\d+\.\d+$/);
+  });
+
+  test("--dry-run outputs JSON without signing", async () => {
+    const proc = Bun.spawn(
+      [
+        "bun", "run", "corsair.ts", "sign",
+        "--file", join(tmpDir, "evidence.json"),
+        "--key-dir", join(tmpDir, "keys"),
+        "--dry-run",
+      ],
+      { cwd, stdout: "pipe" },
+    );
+    const stdout = await new Response(proc.stdout).text();
+    const code = await proc.exited;
+    expect(code).toBe(0);
+
+    const parsed = JSON.parse(stdout);
+    expect(parsed.dryRun).toBe(true);
+    expect(parsed.detectedFormat).toBe("generic");
+    expect(parsed.summary.controlsTested).toBe(3);
+    expect(parsed.controlCount).toBe(3);
+  });
+
+  test("--json outputs structured JSON with jwt + metadata", async () => {
+    const proc = Bun.spawn(
+      [
+        "bun", "run", "corsair.ts", "sign",
+        "--file", join(tmpDir, "evidence.json"),
+        "--key-dir", join(tmpDir, "keys"),
+        "--json",
+      ],
+      { cwd, stdout: "pipe" },
+    );
+    const stdout = await new Response(proc.stdout).text();
+    const code = await proc.exited;
+    expect(code).toBe(0);
+
+    const parsed = JSON.parse(stdout);
+    expect(parsed.cpoe).toMatch(/^eyJ/);
+    expect(parsed.marqueId).toMatch(/^marque-/);
+    expect(parsed.detectedFormat).toBe("generic");
+    expect(parsed.summary).toBeDefined();
+    expect(parsed.provenance).toBeDefined();
+  });
+
+  test("--format forces parser format", async () => {
+    // Write a prowler-style file
+    const prowlerData = [
+      {
+        StatusCode: "PASS",
+        Severity: "HIGH",
+        FindingInfo: { Uid: "test-001", Title: "Test finding" },
+      },
+    ];
+    writeFileSync(join(tmpDir, "prowler-test.json"), JSON.stringify(prowlerData));
+
+    const proc = Bun.spawn(
+      [
+        "bun", "run", "corsair.ts", "sign",
+        "--file", join(tmpDir, "prowler-test.json"),
+        "--key-dir", join(tmpDir, "keys"),
+        "--format", "prowler",
+        "--json",
+      ],
+      { cwd, stdout: "pipe" },
+    );
+    const stdout = await new Response(proc.stdout).text();
+    const code = await proc.exited;
+    expect(code).toBe(0);
+
+    const parsed = JSON.parse(stdout);
+    expect(parsed.detectedFormat).toBe("prowler");
+  });
+
+  test("--verbose prints progress to stderr", async () => {
+    const proc = Bun.spawn(
+      [
+        "bun", "run", "corsair.ts", "sign",
+        "--file", join(tmpDir, "evidence.json"),
+        "--key-dir", join(tmpDir, "keys"),
+        "--verbose",
+      ],
+      { cwd, stdout: "pipe", stderr: "pipe" },
+    );
+    const stderr = await new Response(proc.stderr).text();
+    const code = await proc.exited;
+    expect(code).toBe(0);
+    expect(stderr).toContain("Parsing evidence...");
+    expect(stderr).toContain("Format:");
+    expect(stderr).toContain("Controls:");
+  });
+
+  test("--quiet suppresses stderr output", async () => {
+    const outputPath = join(tmpDir, "quiet-output.jwt");
+    const proc = Bun.spawn(
+      [
+        "bun", "run", "corsair.ts", "sign",
+        "--file", join(tmpDir, "evidence.json"),
+        "--key-dir", join(tmpDir, "keys"),
+        "--output", outputPath,
+        "--quiet",
+      ],
+      { cwd, stderr: "pipe" },
+    );
+    const stderr = await new Response(proc.stderr).text();
+    const code = await proc.exited;
+    expect(code).toBe(0);
+    expect(stderr.trim()).toBe("");
+  });
+
+  test("--file - reads from stdin", async () => {
+    const evidence = readFileSync(join(tmpDir, "evidence.json"), "utf-8");
+    const proc = Bun.spawn(
+      [
+        "bun", "run", "corsair.ts", "sign",
+        "--file", "-",
+        "--key-dir", join(tmpDir, "keys"),
+      ],
+      {
+        cwd,
+        stdout: "pipe",
+        stdin: new Blob([evidence]),
+      },
+    );
+    const stdout = await new Response(proc.stdout).text();
+    const code = await proc.exited;
+    expect(code).toBe(0);
+    expect(stdout.trim()).toMatch(/^eyJ/);
   });
 });
 

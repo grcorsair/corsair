@@ -1,0 +1,62 @@
+# Example: Trivy scan + Corsair sign + PR comment
+#
+# This workflow scans a container image with Trivy, signs the findings
+# as a CPOE with Corsair, and comments the compliance summary on PRs.
+
+name: Compliance Sign
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  scan-and-sign:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          format: json
+          output: trivy-report.json
+
+      - name: Sign with Corsair
+        id: corsair
+        uses: arudjreis/corsair@main
+        with:
+          file: trivy-report.json
+          format: trivy
+          did: "did:web:${{ github.repository_owner }}.github.io"
+          scope: "${{ github.repository }} — PR #${{ github.event.pull_request.number }}"
+
+      - name: Comment on PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            ## Corsair Compliance Report
+
+            | Metric | Value |
+            |--------|-------|
+            | Format | `${{ steps.corsair.outputs.format-detected }}` |
+            | Score | **${{ steps.corsair.outputs.score }}%** |
+            | Controls Tested | ${{ steps.corsair.outputs.controls-tested }} |
+            | Controls Passed | ${{ steps.corsair.outputs.controls-passed }} |
+            | Controls Failed | ${{ steps.corsair.outputs.controls-failed }} |
+            | CPOE ID | `${{ steps.corsair.outputs.marque-id }}` |
+
+            <details>
+            <summary>Verify this CPOE</summary>
+
+            ```bash
+            corsair verify --file cpoe.jwt
+            ```
+            </details>
+
+            ---
+            Signed with [Corsair](https://grcorsair.com) — Git for Compliance

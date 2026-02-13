@@ -36,6 +36,7 @@ import { createVerifyRouter } from "./functions/verify";
 import { createDIDJsonHandler } from "./functions/did-json";
 import { createJWKSJsonHandler } from "./functions/jwks-json";
 import { createIssueRouter } from "./functions/issue";
+import { createSignRouter } from "./functions/sign";
 import { requireAuth } from "./src/middleware/auth";
 import { rateLimit } from "./src/middleware/rate-limit";
 import { withSecurityHeaders } from "./src/middleware/security-headers";
@@ -149,6 +150,7 @@ const jwksJsonHandler = createJWKSJsonHandler({ keyManager, domain: DOMAIN });
 const ssfConfigHandler = createSSFConfigHandler(DOMAIN);
 
 // Protected routers (require API key + rate-limited)
+const signRouter = requireAuth(rateLimit(10)(createSignRouter({ keyManager, domain: DOMAIN })));
 const issueRouter = requireAuth(rateLimit(10)(createIssueRouter({ keyManager, domain: DOMAIN })));
 const ssfRouter = requireAuth(rateLimit(30)(createSSFStreamRouter({ streamManager })));
 const scittRouter = requireAuth(rateLimit(30)(createSCITTRouter({ registry })));
@@ -187,6 +189,11 @@ const server = Bun.serve({
     // POST /verify — Free CPOE verification
     if (path === "/verify" || path === "/v1/verify") {
       return verifyRouter(req);
+    }
+
+    // POST /sign — CPOE signing
+    if (path === "/sign" || path === "/v1/sign") {
+      return signRouter(req);
     }
 
     // POST /issue — CPOE issuance
@@ -245,7 +252,7 @@ const server = Bun.serve({
       {
         error: "Not found",
         endpoints: {
-          product: ["POST /verify", "POST /issue"],
+          product: ["POST /verify", "POST /sign", "POST /issue"],
           trust: ["GET /.well-known/did.json", "GET /.well-known/jwks.json"],
           infrastructure: ["POST /scitt/entries", "POST /ssf/streams"],
           ops: ["GET /health"],
@@ -335,6 +342,7 @@ if (Bun.env.ENABLE_DELIVERY_WORKER === "true") {
 
 console.log(`\nCorsair API running on :${PORT}`);
 console.log(`  Verify:  POST http://localhost:${PORT}/verify`);
+console.log(`  Sign:    POST http://localhost:${PORT}/sign`);
 console.log(`  Issue:   POST http://localhost:${PORT}/issue`);
 console.log(`  DID:     GET  http://localhost:${PORT}/.well-known/did.json`);
 console.log(`  JWKS:    GET  http://localhost:${PORT}/.well-known/jwks.json`);

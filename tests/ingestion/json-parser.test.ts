@@ -8,10 +8,7 @@
 
 import { describe, test, expect } from "bun:test";
 import { parseJSON } from "../../src/ingestion/json-parser";
-import {
-  calculateDocumentAssurance,
-  calculateDocumentRollup,
-} from "../../src/ingestion/assurance-calculator";
+import { deriveProvenance } from "../../src/ingestion/assurance-calculator";
 import { mapToMarqueInput } from "../../src/ingestion/mapper";
 
 // =============================================================================
@@ -428,7 +425,7 @@ describe("parseJSON — error handling", () => {
 // =============================================================================
 
 describe("parseJSON — pipeline integration", () => {
-  test("should produce output compatible with assurance calculator", () => {
+  test("should produce output compatible with provenance derivation", () => {
     const input = {
       metadata: {
         title: "Security Scan",
@@ -444,17 +441,14 @@ describe("parseJSON — pipeline integration", () => {
     };
 
     const doc = parseJSON(input);
-    const classified = calculateDocumentAssurance(doc.controls, doc.source, doc.metadata);
+    const provenance = deriveProvenance(doc.source, doc.metadata);
 
-    expect(classified).toHaveLength(3);
-    // Effective controls with evidence should get L1+ (json source ceiling is L1)
-    expect(classified[0].assuranceLevel).toBeGreaterThanOrEqual(0);
-    expect(classified[1].assuranceLevel).toBeGreaterThanOrEqual(0);
-    // Failed control should be L0
-    expect(classified[2].assuranceLevel).toBe(0);
+    expect(provenance.source).toBe("tool"); // json source = tool provenance
+    expect(provenance.sourceIdentity).toBe("Acme");
+    expect(doc.toolAssuranceLevel).toBe(0); // generic JSON = L0
   });
 
-  test("should produce output compatible with document rollup", () => {
+  test("should produce output with tool-level assurance and provenance", () => {
     const input = {
       metadata: {
         title: "Scan",
@@ -469,13 +463,11 @@ describe("parseJSON — pipeline integration", () => {
     };
 
     const doc = parseJSON(input);
-    const classified = calculateDocumentAssurance(doc.controls, doc.source, doc.metadata);
-    const { assurance, provenance } = calculateDocumentRollup(classified, doc.source, doc.metadata);
+    const provenance = deriveProvenance(doc.source, doc.metadata);
 
-    expect(assurance.declared).toBeGreaterThanOrEqual(0);
-    expect(assurance.verified).toBeDefined();
-    expect(assurance.method).toBe("automated-config-check");
+    expect(doc.toolAssuranceLevel).toBe(0); // generic = L0
     expect(provenance.source).toBe("tool");
+    expect(provenance.sourceIdentity).toBe("Tool");
   });
 
   test("should produce output compatible with mapper", () => {

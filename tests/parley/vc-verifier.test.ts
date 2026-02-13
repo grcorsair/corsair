@@ -193,15 +193,17 @@ describe("VC Verifier - JWT-VC Verification", () => {
     expect(result.signedBy).toBeDefined();
   });
 
-  test("verifyVCJWT returns enriched result with provenance (assurance optional)", async () => {
+  test("verifyVCJWT returns result with provenance and tool-level assurance", async () => {
     const { keyManager, input, publicKey } = await setup();
     const jwt = await generateVCJWT(input, keyManager);
 
     const result = await verifyVCJWT(jwt, [publicKey]);
 
     expect(result.valid).toBe(true);
-    // Provenance-first model: assurance is optional (not included by default)
-    expect(result.assuranceLevel).toBeUndefined();
+    // Tool-level assurance is always present
+    expect(result.assuranceLevel).toBeDefined();
+    expect(typeof result.assuranceLevel).toBe("number");
+    expect(result.assuranceName).toBeDefined();
     // Provenance is always populated
     expect(result.provenance).toBeDefined();
     expect(result.provenance!.source).toBeDefined();
@@ -213,18 +215,6 @@ describe("VC Verifier - JWT-VC Verification", () => {
     expect(result.summary!.controlsTested).toBeDefined();
     // Issuer tier
     expect(result.issuerTier).toBe("corsair-verified");
-  });
-
-  test("verifyVCJWT returns assurance when enrich=true was used for signing", async () => {
-    const { keyManager, input, publicKey } = await setup();
-    const jwt = await generateVCJWT(input, keyManager, { enrich: true });
-
-    const result = await verifyVCJWT(jwt, [publicKey]);
-
-    expect(result.valid).toBe(true);
-    expect(result.assuranceLevel).toBeDefined();
-    expect(typeof result.assuranceLevel).toBe("number");
-    expect(result.assuranceName).toBeDefined();
   });
 });
 

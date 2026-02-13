@@ -199,7 +199,7 @@ describe("VC Generator - JWT-VC Generation", () => {
     expect(["2.0", "2.1"]).toContain(payload.parley);
   });
 
-  test("JWT vc.credentialSubject contains provenance-first CPOE data (no assurance by default)", async () => {
+  test("JWT vc.credentialSubject contains CPOE data with tool-level assurance", async () => {
     const { keyManager, input } = await setup();
     const jwt = await generateVCJWT(input, keyManager);
 
@@ -211,26 +211,12 @@ describe("VC Generator - JWT-VC Generation", () => {
     expect(subject.scope).toBeDefined();
     expect(subject.summary).toBeDefined();
     expect(subject.provenance).toBeDefined();
-    // Provenance-first model: assurance NOT included by default
-    expect(subject.assurance).toBeUndefined();
+    // Tool-level assurance is always present
+    expect(subject.assurance).toBeDefined();
     // frameworks and evidenceChain are optional in CPOECredentialSubject
     // but should be present when chartResults and evidencePaths are provided
     expect(subject.frameworks).toBeDefined();
     expect(subject.evidenceChain).toBeDefined();
-  });
-
-  test("JWT vc.credentialSubject includes assurance when enrich=true", async () => {
-    const { keyManager, input } = await setup();
-    const jwt = await generateVCJWT(input, keyManager, { enrich: true });
-
-    const payload = jose.decodeJwt(jwt);
-    const vc = payload.vc as Record<string, unknown>;
-    const subject = vc.credentialSubject as Record<string, unknown>;
-
-    expect(subject.type).toBe("CorsairCPOE");
-    expect(subject.assurance).toBeDefined();
-    expect(subject.provenance).toBeDefined();
-    expect(subject.summary).toBeDefined();
   });
 
   test("JWT signature verifies with public key via jose", async () => {
@@ -283,97 +269,7 @@ describe("VC Generator - JWT-VC Generation", () => {
     expect(payload.iss).toBe("corsair-fallback");
   });
 
-  // ===========================================================================
-  // Phase 1D: Framework-grounded fields wiring
-  // ===========================================================================
-
-  test("JWT includes dimensions when enrich=true and document input is provided", async () => {
-    const { keyManager, input } = await setup();
-    input.document = {
-      source: "soc2",
-      metadata: {
-        title: "SOC 2 Type II",
-        issuer: "Acme",
-        date: new Date().toISOString().split("T")[0],
-        scope: "All production systems",
-        auditor: "Deloitte LLP",
-        reportType: "SOC 2 Type II",
-      },
-      controls: [
-        { id: "CC6.1", description: "Logical access", status: "effective", evidence: "MFA verified" },
-        { id: "CC6.2", description: "Auth controls", status: "effective", evidence: "Config checked" },
-      ],
-    };
-
-    const jwt = await generateVCJWT(input, keyManager, { enrich: true });
-    const payload = jose.decodeJwt(jwt);
-    const vc = payload.vc as Record<string, unknown>;
-    const subject = vc.credentialSubject as Record<string, unknown>;
-
-    expect(subject.dimensions).toBeDefined();
-    const dims = subject.dimensions as Record<string, number>;
-    expect(typeof dims.capability).toBe("number");
-    expect(typeof dims.coverage).toBe("number");
-    expect(typeof dims.reliability).toBe("number");
-    expect(typeof dims.methodology).toBe("number");
-    expect(typeof dims.freshness).toBe("number");
-    expect(typeof dims.independence).toBe("number");
-    expect(typeof dims.consistency).toBe("number");
-  });
-
-  test("JWT includes evidenceTypes when enrich=true and document input is provided", async () => {
-    const { keyManager, input } = await setup();
-    input.document = {
-      source: "prowler",
-      metadata: {
-        title: "Prowler Scan",
-        issuer: "Automated",
-        date: new Date().toISOString().split("T")[0],
-        scope: "AWS",
-      },
-      controls: [
-        { id: "check-mfa", description: "MFA check", status: "effective", evidence: "PASS" },
-      ],
-    };
-
-    const jwt = await generateVCJWT(input, keyManager, { enrich: true });
-    const payload = jose.decodeJwt(jwt);
-    const vc = payload.vc as Record<string, unknown>;
-    const subject = vc.credentialSubject as Record<string, unknown>;
-
-    expect(subject.evidenceTypes).toBeDefined();
-    const types = subject.evidenceTypes as string[];
-    expect(types).toContain("automated-observation");
-  });
-
-  test("JWT includes observationPeriod when enrich=true for SOC 2 Type II", async () => {
-    const { keyManager, input } = await setup();
-    input.document = {
-      source: "soc2",
-      metadata: {
-        title: "SOC 2 Type II",
-        issuer: "Acme",
-        date: "2026-01-15",
-        scope: "All",
-        reportType: "SOC 2 Type II",
-      },
-      controls: [
-        { id: "CC6.1", description: "Logical access", status: "effective", evidence: "Tested" },
-      ],
-    };
-
-    const jwt = await generateVCJWT(input, keyManager, { enrich: true });
-    const payload = jose.decodeJwt(jwt);
-    const vc = payload.vc as Record<string, unknown>;
-    const subject = vc.credentialSubject as Record<string, unknown>;
-
-    expect(subject.observationPeriod).toBeDefined();
-    const period = subject.observationPeriod as Record<string, unknown>;
-    expect(period.cosoClassification).toBe("operating");
-    expect(period.soc2Equivalent).toBe("Type II (6mo)");
-  });
-
-  test("JWT omits enrichment fields by default (provenance-first)", async () => {
+  test("JWT omits shelved enrichment fields (dimensions, evidenceTypes, observationPeriod)", async () => {
     const { keyManager, input } = await setup();
 
     const jwt = await generateVCJWT(input, keyManager);
@@ -381,8 +277,9 @@ describe("VC Generator - JWT-VC Generation", () => {
     const vc = payload.vc as Record<string, unknown>;
     const subject = vc.credentialSubject as Record<string, unknown>;
 
-    // Provenance-first: no enrichment fields by default
-    expect(subject.assurance).toBeUndefined();
+    // Tool-level assurance is always present
+    expect(subject.assurance).toBeDefined();
+    // Shelved enrichment fields should not be present
     expect(subject.dimensions).toBeUndefined();
     expect(subject.evidenceTypes).toBeUndefined();
     expect(subject.observationPeriod).toBeUndefined();
@@ -390,65 +287,6 @@ describe("VC Generator - JWT-VC Generation", () => {
     // Provenance is always present
     expect(subject.provenance).toBeDefined();
     expect(subject.summary).toBeDefined();
-  });
-
-  // ===========================================================================
-  // Task #12: Deterministic calculation + ruleTrace
-  // ===========================================================================
-
-  test("JWT assurance includes ruleTrace when enrich=true", async () => {
-    const { keyManager, input } = await setup();
-    input.document = {
-      source: "soc2",
-      metadata: {
-        title: "SOC 2 Type II",
-        issuer: "Acme",
-        date: new Date().toISOString().split("T")[0],
-        scope: "All production systems",
-        auditor: "Deloitte LLP",
-        reportType: "SOC 2 Type II",
-      },
-      controls: [
-        { id: "CC6.1", description: "Logical access", status: "effective", evidence: "MFA verified" },
-      ],
-    };
-
-    const jwt = await generateVCJWT(input, keyManager, { enrich: true });
-    const payload = jose.decodeJwt(jwt);
-    const vc = payload.vc as Record<string, unknown>;
-    const subject = vc.credentialSubject as Record<string, unknown>;
-    const assurance = subject.assurance as Record<string, unknown>;
-
-    expect(assurance.ruleTrace).toBeDefined();
-    expect(Array.isArray(assurance.ruleTrace)).toBe(true);
-    expect((assurance.ruleTrace as string[]).length).toBeGreaterThan(0);
-  });
-
-  test("JWT assurance includes calculationVersion when enrich=true", async () => {
-    const { keyManager, input } = await setup();
-    input.document = {
-      source: "soc2",
-      metadata: {
-        title: "SOC 2 Type II",
-        issuer: "Acme",
-        date: new Date().toISOString().split("T")[0],
-        scope: "All",
-        reportType: "SOC 2 Type II",
-      },
-      controls: [
-        { id: "CC6.1", description: "Logical access", status: "effective", evidence: "Tested" },
-      ],
-    };
-
-    const jwt = await generateVCJWT(input, keyManager, { enrich: true });
-    const payload = jose.decodeJwt(jwt);
-    const vc = payload.vc as Record<string, unknown>;
-    const subject = vc.credentialSubject as Record<string, unknown>;
-    const assurance = subject.assurance as Record<string, unknown>;
-
-    expect(assurance.calculationVersion).toBeDefined();
-    expect(typeof assurance.calculationVersion).toBe("string");
-    expect((assurance.calculationVersion as string)).toContain("l0-l4@");
   });
 
   // ===========================================================================

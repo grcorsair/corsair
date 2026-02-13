@@ -57,6 +57,15 @@ export interface IngestedDocument {
   controls: IngestedControl[];
 
   /**
+   * Tool-declared assurance level.
+   * Set by the parser based on tool class — NOT content analysis.
+   *   L0 = human statement (manual, generic)
+   *   L1 = machine-observed state (Prowler, SecurityHub, InSpec, Trivy, GitLab)
+   *   L2 = assessed/tested result (CISO Assistant with linked evidence)
+   */
+  toolAssuranceLevel: AssuranceLevel;
+
+  /**
    * Layer 2: Structured Assessment Context (optional).
    * Captures the subjective decisions that make GRC harder than TLS:
    * tech stack, compensating controls, scope gaps, assessor reasoning.
@@ -179,52 +188,6 @@ export interface TechStackEntry {
 
   /** What this component covers (e.g., "All employees via SSO") */
   scope: string;
-}
-
-// =============================================================================
-// EVIDENCE CLASSIFICATION (Phase 1 — Scaffolded Intelligence)
-// =============================================================================
-
-/** Methodology tier detected from evidence content */
-export type MethodologyTier =
-  | "reperformance"  // Highest: auditor re-executed procedure
-  | "caat"           // CAAT/automated testing
-  | "inspection"     // Configuration inspection
-  | "observation"    // Process observation/walkthrough
-  | "inquiry"        // Interview/inquiry only
-  | "unknown"        // Non-empty evidence, no methodology keywords
-  | "none";          // Empty evidence
-
-/** Result of classifying evidence content */
-export interface EvidenceClassification {
-  /** Detected methodology tier */
-  methodology: MethodologyTier;
-  /** Maximum assurance level this evidence can support (capped by source ceiling) */
-  maxLevel: AssuranceLevel;
-  /** Human-readable trace explaining the classification */
-  trace: string;
-}
-
-/** Sample size adequacy result */
-export interface SampleSizeResult {
-  /** Extracted sample size (null if not found) */
-  sample: number | null;
-  /** Extracted population size (null if not found) */
-  population: number | null;
-  /** Detected control frequency */
-  frequency: string | null;
-  /** Whether the sample is adequate for the frequency (null if sample not found) */
-  adequate: boolean | null;
-}
-
-/** Per-control boilerplate detection result */
-export interface BoilerplateResult {
-  /** Control ID */
-  controlId: string;
-  /** Flags detected */
-  flags: Array<"template" | "shallow" | "circular-ref" | "generic-boilerplate">;
-  /** Specificity score (0-100) */
-  specificity: number;
 }
 
 /** A compensating control accepted in lieu of the primary control */

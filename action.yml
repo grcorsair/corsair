@@ -1,0 +1,107 @@
+name: "Corsair Sign"
+description: "Sign compliance evidence as a CPOE (JWT-VC) using Corsair"
+branding:
+  icon: "shield"
+  color: "yellow"
+
+inputs:
+  file:
+    description: "Path to evidence JSON file"
+    required: true
+  format:
+    description: "Force evidence format (bypasses auto-detection)"
+    required: false
+  key-dir:
+    description: "Ed25519 key directory (default: ./keys)"
+    required: false
+    default: "./keys"
+  did:
+    description: "Issuer DID (e.g., did:web:acme.com)"
+    required: false
+  scope:
+    description: "Override scope string"
+    required: false
+  output:
+    description: "Output file path for signed CPOE (default: cpoe.jwt)"
+    required: false
+    default: "cpoe.jwt"
+  expiry-days:
+    description: "CPOE validity in days"
+    required: false
+    default: "7"
+
+outputs:
+  cpoe:
+    description: "Signed CPOE (JWT-VC string)"
+    value: ${{ steps.sign.outputs.cpoe }}
+  marque-id:
+    description: "CPOE identifier (marque-UUID)"
+    value: ${{ steps.sign.outputs.marque-id }}
+  score:
+    description: "Overall compliance score (0-100)"
+    value: ${{ steps.sign.outputs.score }}
+  controls-tested:
+    description: "Number of controls tested"
+    value: ${{ steps.sign.outputs.controls-tested }}
+  controls-passed:
+    description: "Number of controls passed"
+    value: ${{ steps.sign.outputs.controls-passed }}
+  controls-failed:
+    description: "Number of controls failed"
+    value: ${{ steps.sign.outputs.controls-failed }}
+  format-detected:
+    description: "Detected evidence format"
+    value: ${{ steps.sign.outputs.format-detected }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+
+    - name: Install Corsair
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}
+        bun install --frozen-lockfile
+
+    - name: Generate keys if missing
+      shell: bash
+      run: |
+        if [ ! -f "${{ inputs.key-dir }}/corsair-signing.key" ]; then
+          cd ${{ github.action_path }}
+          bun run corsair.ts keygen --output "${{ inputs.key-dir }}"
+        fi
+
+    - name: Sign evidence
+      id: sign
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}
+
+        ARGS="--file ${{ inputs.file }} --key-dir ${{ inputs.key-dir }} --output ${{ inputs.output }} --json --expiry-days ${{ inputs.expiry-days }}"
+
+        if [ -n "${{ inputs.format }}" ]; then
+          ARGS="$ARGS --format ${{ inputs.format }}"
+        fi
+
+        if [ -n "${{ inputs.did }}" ]; then
+          ARGS="$ARGS --did ${{ inputs.did }}"
+        fi
+
+        if [ -n "${{ inputs.scope }}" ]; then
+          ARGS="$ARGS --scope \"${{ inputs.scope }}\""
+        fi
+
+        JSON_OUTPUT=$(bun run corsair.ts sign $ARGS 2>/dev/null)
+
+        # Parse JSON output for GitHub Action outputs
+        echo "cpoe=$(echo "$JSON_OUTPUT" | jq -r '.cpoe')" >> $GITHUB_OUTPUT
+        echo "marque-id=$(echo "$JSON_OUTPUT" | jq -r '.marqueId')" >> $GITHUB_OUTPUT
+        echo "score=$(echo "$JSON_OUTPUT" | jq -r '.summary.overallScore')" >> $GITHUB_OUTPUT
+        echo "controls-tested=$(echo "$JSON_OUTPUT" | jq -r '.summary.controlsTested')" >> $GITHUB_OUTPUT
+        echo "controls-passed=$(echo "$JSON_OUTPUT" | jq -r '.summary.controlsPassed')" >> $GITHUB_OUTPUT
+        echo "controls-failed=$(echo "$JSON_OUTPUT" | jq -r '.summary.controlsFailed')" >> $GITHUB_OUTPUT
+        echo "format-detected=$(echo "$JSON_OUTPUT" | jq -r '.detectedFormat')" >> $GITHUB_OUTPUT

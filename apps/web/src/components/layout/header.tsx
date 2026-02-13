@@ -18,7 +18,9 @@ const navLinks = [
   { href: "/anatomy", label: "How It Works" },
   { href: "/protocol", label: "Protocol" },
   { href: "/docs", label: "Docs" },
-  { href: "/marque", label: "Verify CPOE" },
+  { href: "/playground", label: "Playground" },
+  { href: "/sign", label: "Sign" },
+  { href: "/marque", label: "Verify" },
   { href: "/blog", label: "Blog" },
 ];
 

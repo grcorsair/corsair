@@ -1,5 +1,5 @@
 /**
- * Corsair API Client — Browser-to-API calls for CPOE verification.
+ * Corsair API Client — Browser-to-API calls for CPOE operations.
  * Direct fetch to api.grcorsair.com (CORS: *). No proxy needed.
  */
 
@@ -66,6 +66,86 @@ export async function verifyViaAPI(cpoe: string): Promise<APIVerifyResult> {
     return {
       ok: false,
       error: { type: "network", message: "Could not reach verification API" },
+    };
+  }
+}
+
+// =============================================================================
+// SIGN API
+// =============================================================================
+
+export interface APISignRequest {
+  evidence: unknown;
+  format?: string;
+  did?: string;
+  scope?: string;
+  expiryDays?: number;
+  enrich?: boolean;
+  dryRun?: boolean;
+}
+
+export interface APISignResponse {
+  cpoe: string;
+  marqueId: string;
+  detectedFormat: string;
+  summary: {
+    controlsTested: number;
+    controlsPassed: number;
+    controlsFailed: number;
+    overallScore: number;
+  };
+  provenance: {
+    source: string;
+    sourceIdentity?: string;
+    sourceDate?: string;
+  };
+  warnings: string[];
+  expiresAt?: string;
+}
+
+export type APISignResult =
+  | { ok: true; data: APISignResponse }
+  | { ok: false; error: { type: "network" | "timeout" | "server"; message: string } };
+
+/**
+ * Sign evidence via the Corsair API.
+ * POST /sign with evidence + options. 15s timeout. Never throws.
+ */
+export async function signViaAPI(request: APISignRequest, apiKey?: string): Promise<APISignResult> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+
+    const res = await fetch(`${API_BASE}/sign`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(request),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      return {
+        ok: false,
+        error: { type: "server", message: body.error || `HTTP ${res.status}` },
+      };
+    }
+
+    const data: APISignResponse = await res.json();
+    return { ok: true, data };
+  } catch (err) {
+    clearTimeout(timeout);
+    if (err instanceof DOMException && err.name === "AbortError") {
+      return { ok: false, error: { type: "timeout", message: "Signing timed out (15s)" } };
+    }
+    return {
+      ok: false,
+      error: { type: "network", message: "Could not reach signing API" },
     };
   }
 }

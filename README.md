@@ -75,12 +75,73 @@ bun run corsair.ts keygen --output ./keys
 
 | Command | Description | Analogy |
 |:--------|:------------|:--------|
-| `corsair sign --file <path> [--did <did>] [--enrich]` | Sign evidence as a CPOE (JWT-VC) | `git commit` |
+| `corsair sign --file <path> [--format <fmt>] [--did <did>] [--enrich]` | Sign evidence as a CPOE (JWT-VC) | `git commit` |
+| `corsair sign --file - < data.json` | Sign from stdin | |
+| `corsair sign --file <path> --dry-run` | Preview CPOE without signing | |
+| `corsair sign --file <path> --json` | Output structured JSON (jwt + metadata) | |
 | `corsair diff --current <new.jwt> --previous <old.jwt>` | Detect compliance regressions | `git diff` |
 | `corsair log [--help]` | Query SCITT transparency log | `git log` |
 | `corsair verify --file <cpoe.jwt> [--pubkey <path>]` | Verify a CPOE signature and display results | |
 | `corsair keygen [--output <dir>]` | Generate Ed25519 signing keypair | |
 | `corsair help` | Show available commands | |
+
+### Supported Formats
+
+Corsair auto-detects evidence format from JSON structure. Override with `--format <name>`.
+
+| Format | Tool | Detection |
+|:-------|:-----|:----------|
+| `generic` | Any JSON with `{ metadata, controls[] }` | Default fallback |
+| `prowler` | AWS Prowler OCSF | Array with `StatusCode` + `FindingInfo` |
+| `securityhub` | AWS SecurityHub ASFF | `{ Findings[] }` |
+| `inspec` | Chef InSpec | `{ profiles[].controls[] }` |
+| `trivy` | Aqua Trivy | `{ Results[].Vulnerabilities[] }` |
+| `gitlab` | GitLab SAST | `{ vulnerabilities[] }` |
+| `ciso-assistant-api` | CISO Assistant (API) | `{ results[] }` with compliance fields |
+| `ciso-assistant-export` | CISO Assistant (Export) | `{ requirement_assessments[] }` |
+
+### MCP Server
+
+Corsair ships an MCP server for integration with Claude Code and other MCP clients.
+
+```bash
+# Start MCP server (stdio)
+bun run bin/corsair-mcp.ts
+```
+
+Tools: `corsair_sign`, `corsair_verify`, `corsair_diff`, `corsair_formats`
+
+Configure in `mcp.json` or `claude_desktop_config.json`:
+```json
+{ "corsair": { "command": "bun", "args": ["run", "bin/corsair-mcp.ts"], "env": { "CORSAIR_KEY_DIR": "./keys" } } }
+```
+
+### API
+
+```bash
+# Sign evidence via API (requires auth)
+curl -X POST https://api.grcorsair.com/sign \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"evidence": {...}, "format": "prowler"}'
+
+# Verify a CPOE via API (no auth required)
+curl -X POST https://api.grcorsair.com/verify \
+  -H "Content-Type: application/json" \
+  -d '{"cpoe": "eyJ..."}'
+```
+
+### GitHub Action
+
+```yaml
+- uses: Arudjreis/corsair@main
+  with:
+    file: trivy-results.json
+    format: trivy
+  id: sign
+
+- run: echo "Score: ${{ steps.sign.outputs.score }}"
+```
 
 ---
 
@@ -259,12 +320,15 @@ did:web:acme.com       →  https://acme.com/.well-known/did.json
 ## Testing
 
 ```bash
-bun test                          # All tests (772 tests, 39 files)
+bun test                          # All tests (841 tests, 43 files)
 
 bun test tests/parley/            # Parley protocol (MARQUE, JWT-VC, DID, SCITT)
 bun test tests/flagship/          # FLAGSHIP (SSF/SET/CAEP)
 bun test tests/ingestion/         # Document ingestion pipeline
-bun test tests/functions/         # API endpoints (SSF, SCITT, health)
+bun test tests/sign/              # Sign engine + batch signing
+bun test tests/mcp/               # MCP server tool handlers
+bun test tests/functions/         # API endpoints (SSF, SCITT, health, sign, verify)
+bun test tests/cli/               # CLI integration tests
 bun test tests/db/                # Database tests (requires Postgres)
 ```
 
@@ -298,6 +362,11 @@ corsair.ts                 # CLI entry point (sign, verify, diff, log, keygen, h
 src/
   types.ts                 # Core type definitions
   evidence.ts              # JSONL evidence engine with SHA-256 hash chain
+
+  sign/                    # Shared sign engine (3 files)
+    sign-core.ts           #   signEvidence() — one engine, five surfaces
+    batch-sign.ts          #   Batch directory signing
+    index.ts               #   Barrel exports
 
   ingestion/               # Evidence parsing + classification (5 files)
     json-parser.ts         #   Tool format adapters (Prowler, InSpec, Trivy)
@@ -351,18 +420,28 @@ src/
     index.ts               #   Barrel exports
     migrations/            #   001–007 SQL migrations
 
+  mcp/                     # MCP server (1 file)
+    corsair-mcp-server.ts  #   Tool handlers (sign, verify, diff, formats)
+
 bin/
   corsair-verify.ts        # Standalone CPOE verification CLI
   corsair-did-generate.ts  # DID document generation
+  corsair-mcp.ts           # MCP stdio server entry point
   generate-first-cpoe.ts   # Example CPOE generator
 
-examples/
-  example-cpoe.jwt         # Sample signed CPOE
-  example-cpoe-decoded.json # Decoded CPOE payload
-  did.json                 # Example DID document
+examples/                  # Evidence format examples (8 files)
+  generic-evidence.json    #   Generic format
+  prowler-findings.json    #   Prowler OCSF
+  securityhub-findings.json #  SecurityHub ASFF
+  inspec-report.json       #   InSpec
+  trivy-report.json        #   Trivy
+  ciso-assistant-api.json  #   CISO Assistant (API)
+  ciso-assistant-export.json # CISO Assistant (Export)
+  gl-sast-report.json      #   GitLab SAST
 
 functions/                 # Railway Functions (HTTP endpoints)
   health.ts                #   GET /health
+  sign.ts                  #   POST /sign (auth + rate-limited)
   verify.ts                #   POST /verify
   issue.ts                 #   POST /issue
   did-json.ts              #   GET /.well-known/did.json
@@ -372,16 +451,22 @@ functions/                 # Railway Functions (HTTP endpoints)
   scitt-register.ts        #   SCITT registration + receipt API
   ssf-delivery-worker.ts   #   Event delivery worker with retry
 
+mcp.json                   # MCP client configuration
+action.yml                 # GitHub Action for CI/CD integration
+
 apps/
   web/                     # grcorsair.com (Next.js 15 + Tailwind 4 + shadcn/ui)
 
-tests/                     # 772 tests across 39 files
+tests/                     # 841 tests across 43 files
   parley/                  #   MARQUE, JWT-VC, DID, SCITT, CBOR, COSE, Merkle
   flagship/                #   SET generation, SSF streams, delivery
   ingestion/               #   Evidence parsing, mapping, classification
+  sign/                    #   Sign engine + batch signing
+  mcp/                     #   MCP server tool handlers
   db/                      #   Database connection + migrations
-  functions/               #   API endpoint tests
+  functions/               #   API endpoint tests (sign, verify, health)
   cli/                     #   CLI integration tests
+  middleware/              #   Auth, rate-limit, security headers
 ```
 
 </details>

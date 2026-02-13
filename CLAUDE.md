@@ -15,13 +15,19 @@ Compliance proof infrastructure — cryptographic trust layer for GRC. Parley pr
 ## Commands
 ```bash
 bun install                          # Install dependencies
-bun test                             # Run all tests (772 tests, 39 files)
+bun test                             # Run all tests (841 tests, 43 files)
 bun test tests/parley/               # Parley protocol tests (20 files)
 bun test tests/flagship/             # FLAGSHIP SSF/CAEP tests
 bun test tests/ingestion/            # Evidence parsing + classification tests
+bun test tests/sign/                 # Sign engine + batch tests
+bun test tests/mcp/                  # MCP server tests
 bun run corsair.ts sign --file <path>  # Sign evidence as CPOE
+bun run corsair.ts sign --file - < data.json  # Sign from stdin
+bun run corsair.ts sign --file <path> --format prowler --json  # Force format, JSON output
+bun run corsair.ts sign --file <path> --dry-run  # Preview without signing
 bun run corsair.ts verify cpoe.jwt   # Verify a CPOE
 bun run corsair.ts keygen            # Generate Ed25519 keypair
+bun run bin/corsair-mcp.ts           # Start MCP server (stdio)
 ```
 
 ## Pipeline (v0.5.0 — Provenance-first)
