@@ -203,6 +203,9 @@ export interface CPOECredentialSubject extends CredentialSubject {
     dimensions: Array<{ dimension: string; score: number }>;
   };
 
+  /** OCSP-style freshness staple — signed JWT proving compliance state is current */
+  freshness?: string;
+
   /** Process provenance chain (in-toto/SLSA format) */
   processProvenance?: {
     /** Merkle root of all process receipt hashes */
