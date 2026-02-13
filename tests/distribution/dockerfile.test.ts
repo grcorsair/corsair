@@ -3,10 +3,10 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 
 const ROOT = join(import.meta.dir, "..", "..");
-const DOCKERFILE_PATH = join(ROOT, "Dockerfile");
+const DOCKERFILE_PATH = join(ROOT, "docker", "Dockerfile");
 
-describe("Root Dockerfile", () => {
-  test("Dockerfile exists at project root", () => {
+describe("CLI Dockerfile", () => {
+  test("Dockerfile exists at docker/Dockerfile", () => {
     expect(existsSync(DOCKERFILE_PATH)).toBe(true);
   });
 

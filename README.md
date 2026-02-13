@@ -75,10 +75,11 @@ bun run corsair.ts keygen --output ./keys
 
 | Command | Description | Analogy |
 |:--------|:------------|:--------|
-| `corsair sign --file <path> [--format <fmt>] [--did <did>] [--enrich]` | Sign evidence as a CPOE (JWT-VC) | `git commit` |
+| `corsair sign --file <path> [--format <fmt>] [--did <did>] [--enrich] [--score]` | Sign evidence as a CPOE (JWT-VC) | `git commit` |
 | `corsair sign --file - < data.json` | Sign from stdin | |
 | `corsair sign --file <path> --dry-run` | Preview CPOE without signing | |
 | `corsair sign --file <path> --json` | Output structured JSON (jwt + metadata) | |
+| `corsair sign --file <path> --score` | Include 7-dimension evidence quality score | |
 | `corsair diff --current <new.jwt> --previous <old.jwt>` | Detect compliance regressions | `git diff` |
 | `corsair log [--help]` | Query SCITT transparency log | `git log` |
 | `corsair verify --file <cpoe.jwt> [--pubkey <path>]` | Verify a CPOE signature and display results | |
@@ -320,13 +321,16 @@ did:web:acme.com       →  https://acme.com/.well-known/did.json
 ## Testing
 
 ```bash
-bun test                          # All tests (841 tests, 43 files)
+bun test                          # All tests (1057 tests, 54 files)
 
-bun test tests/parley/            # Parley protocol (MARQUE, JWT-VC, DID, SCITT)
+bun test tests/parley/            # Parley protocol (MARQUE, JWT-VC, DID, SCITT, cert chain, CAA)
 bun test tests/flagship/          # FLAGSHIP (SSF/SET/CAEP)
 bun test tests/ingestion/         # Document ingestion pipeline
 bun test tests/sign/              # Sign engine + batch signing
 bun test tests/mcp/               # MCP server tool handlers
+bun test tests/normalize/         # Evidence normalization engine
+bun test tests/scoring/           # Evidence quality scoring engine
+bun test tests/api/               # Versioned API endpoint tests
 bun test tests/functions/         # API endpoints (SSF, SCITT, health, sign, verify)
 bun test tests/cli/               # CLI integration tests
 bun test tests/db/                # Database tests (requires Postgres)
@@ -375,7 +379,7 @@ src/
     types.ts               #   IngestedDocument, IngestedControl types
     index.ts               #   Barrel exports
 
-  parley/                  # Parley trust exchange protocol (21 files)
+  parley/                  # Parley trust exchange protocol (23 files)
     vc-generator.ts        #   JWT-VC generation (jose + Ed25519)
     vc-verifier.ts         #   JWT-VC verification
     vc-types.ts            #   W3C Verifiable Credential 2.0 types
@@ -385,6 +389,8 @@ src/
     marque-types.ts        #   MARQUE document types
     pg-key-manager.ts      #   Postgres-backed key manager (AES-256-GCM)
     did-resolver.ts        #   DID:web resolution and formatting
+    key-attestation.ts     #   Certificate chain of trust (root → org → CPOE)
+    caa-did.ts             #   CAA-in-DID scope constraints per signing key
     scitt-types.ts         #   SCITT transparency log types
     scitt-registry.ts      #   In-memory SCITT registry
     pg-scitt-registry.ts   #   Postgres-backed SCITT registry
@@ -419,6 +425,21 @@ src/
     migrate.ts             #   Idempotent SQL migration runner
     index.ts               #   Barrel exports
     migrations/            #   001–007 SQL migrations
+
+  normalize/               # Evidence normalization engine (3 files)
+    normalize.ts           #   8-format → CanonicalControlEvidence
+    types.ts               #   Canonical types (CanonicalControlEvidence, NormalizedEvidence)
+    index.ts               #   Barrel exports
+
+  scoring/                 # 7-dimension evidence quality engine (3 files)
+    scoring-engine.ts      #   scoreEvidence() — FICO-like composite score
+    types.ts               #   EvidenceQualityScore, dimension types
+    index.ts               #   Barrel exports
+
+  api/                     # Versioned API router (3 files)
+    router.ts              #   /v1/health, /v1/sign, /v1/verify routing
+    types.ts               #   APIEnvelope<T>, request/response types
+    index.ts               #   Barrel exports
 
   mcp/                     # MCP server (1 file)
     corsair-mcp-server.ts  #   Tool handlers (sign, verify, diff, formats)
@@ -457,16 +478,20 @@ action.yml                 # GitHub Action for CI/CD integration
 apps/
   web/                     # grcorsair.com (Next.js 15 + Tailwind 4 + shadcn/ui)
 
-tests/                     # 841 tests across 43 files
-  parley/                  #   MARQUE, JWT-VC, DID, SCITT, CBOR, COSE, Merkle
+tests/                     # 1057 tests across 54 files
+  parley/                  #   MARQUE, JWT-VC, DID, SCITT, CBOR, COSE, Merkle, cert chain, CAA
   flagship/                #   SET generation, SSF streams, delivery
   ingestion/               #   Evidence parsing, mapping, classification
   sign/                    #   Sign engine + batch signing
+  normalize/               #   Evidence normalization engine
+  scoring/                 #   7-dimension evidence quality scoring
+  api/                     #   Versioned API endpoint tests
   mcp/                     #   MCP server tool handlers
   db/                      #   Database connection + migrations
   functions/               #   API endpoint tests (sign, verify, health)
   cli/                     #   CLI integration tests
   middleware/              #   Auth, rate-limit, security headers
+  distribution/            #   Dockerfile, package.json, install script validation
 ```
 
 </details>

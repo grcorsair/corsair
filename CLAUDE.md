@@ -15,16 +15,20 @@ Compliance proof infrastructure — cryptographic trust layer for GRC. Parley pr
 ## Commands
 ```bash
 bun install                          # Install dependencies
-bun test                             # Run all tests (841 tests, 43 files)
-bun test tests/parley/               # Parley protocol tests (20 files)
+bun test                             # Run all tests (1057 tests, 54 files)
+bun test tests/parley/               # Parley protocol tests (cert chain, CAA, SCITT, etc.)
 bun test tests/flagship/             # FLAGSHIP SSF/CAEP tests
 bun test tests/ingestion/            # Evidence parsing + classification tests
 bun test tests/sign/                 # Sign engine + batch tests
 bun test tests/mcp/                  # MCP server tests
+bun test tests/normalize/            # Evidence normalization engine
+bun test tests/scoring/              # 7-dimension evidence quality scoring
+bun test tests/api/                  # Versioned /v1/ API endpoint tests
 bun run corsair.ts sign --file <path>  # Sign evidence as CPOE
 bun run corsair.ts sign --file - < data.json  # Sign from stdin
 bun run corsair.ts sign --file <path> --format prowler --json  # Force format, JSON output
 bun run corsair.ts sign --file <path> --dry-run  # Preview without signing
+bun run corsair.ts sign --file <path> --score    # Include 7-dimension evidence quality score
 bun run corsair.ts verify cpoe.jwt   # Verify a CPOE
 bun run corsair.ts keygen            # Generate Ed25519 keypair
 bun run bin/corsair-mcp.ts           # Start MCP server (stdio)
@@ -48,7 +52,13 @@ Optional enrichment (--enrich): CLASSIFY + CHART + QUARTER
 
 ## Architecture Patterns
 - **Protocol**: Parley = JWT-VC (proof) + SCITT (log) + SSF/CAEP (signal) + in-toto/SLSA (provenance)
+- **Three layers**: L1=Infrastructure (sign/verify/diff/log), L2=Intelligence (normalize/score), L3=Decision (agentic audit)
 - **Provenance model**: Records WHO produced evidence (self/tool/auditor), lets buyers decide sufficiency
+- **Evidence quality**: 7-dimension scoring engine (5 deterministic, 2 model-assisted) via `--score`
+- **Certificate chain**: Root key → org key attestation → CPOE signing (src/parley/key-attestation.ts)
+- **CAA-in-DID**: Scope constraints per signing key in DID documents (src/parley/caa-did.ts)
+- **Normalization**: 8 parser formats → CanonicalControlEvidence canonical type (src/normalize/)
+- **API platform**: Versioned /v1/ routes with APIEnvelope<T> responses (src/api/)
 - **Assurance levels** (optional enrichment): L0=Documented, L1=Configured, L2=Demonstrated, L3=Observed, L4=Attested
 - **Type-only imports**: Use `import type { }` to avoid circular dependencies
 - **Bun-native**: Prefer `Bun.env`, `Bun.file()`, `Bun.write()` over Node.js equivalents
