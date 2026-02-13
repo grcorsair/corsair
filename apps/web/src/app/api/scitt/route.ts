@@ -78,7 +78,9 @@ export async function GET(request: NextRequest) {
 
     if (res.ok) {
       const data = await res.json();
-      return NextResponse.json(data, {
+      // Backend may return { entries: [...], pagination: {...} } or a flat array
+      const entries = Array.isArray(data) ? data : (data.entries ?? []);
+      return NextResponse.json(entries, {
         headers: {
           "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
         },

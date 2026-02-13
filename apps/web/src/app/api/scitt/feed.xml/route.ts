@@ -64,7 +64,9 @@ export async function GET() {
     });
 
     if (res.ok) {
-      const entries = (await res.json()) as FeedEntry[];
+      const data = await res.json();
+      // Backend may return { entries: [...] } or a flat array
+      const entries = (Array.isArray(data) ? data : (data.entries ?? [])) as FeedEntry[];
       return new NextResponse(buildRss(entries), { headers: RSS_HEADERS });
     }
   } catch {
