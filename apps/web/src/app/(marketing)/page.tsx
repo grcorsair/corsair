@@ -1,6 +1,6 @@
 import { HeroSection } from "@/components/features/hero-section";
 import { PipelineStages } from "@/components/features/pipeline-stages";
-import { ValueProps } from "@/components/features/value-props";
+import { PrimitivesInAction } from "@/components/features/primitives-in-action";
 import { FrameworkGrid } from "@/components/features/framework-grid";
 import { QuickStart } from "@/components/features/quick-start";
 import { DisruptionSection } from "@/components/features/disruption-section";
@@ -35,21 +35,23 @@ export default function Home() {
 
       <PixelDivider variant="swords" className="mx-auto max-w-5xl px-6" />
 
-      {/* Value Props */}
+      {/* Primitives in Action */}
       <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
             <p className="mb-3 text-center font-pixel text-[7px] tracking-wider text-corsair-cyan/60">
-              WHY CORSAIR
+              PRIMITIVES IN ACTION
             </p>
             <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
-              Git for Compliance
+              See What Each Primitive Does
             </h2>
-            <p className="mb-12 text-center text-corsair-text-dim">
-              Five primitives of the Parley protocol.
+            <p className="mb-8 text-center text-corsair-text-dim">
+              Five operations. Each one is boring. Each one is invisible. Together they&apos;re the compliance infrastructure layer that doesn&apos;t exist today.
             </p>
           </FadeIn>
-          <ValueProps />
+          <FadeIn delay={0.2}>
+            <PrimitivesInAction />
+          </FadeIn>
         </div>
       </section>
 
