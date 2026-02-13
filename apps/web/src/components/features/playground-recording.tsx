@@ -1,8 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { AscinemaDemo } from "./asciinema-demo";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
+
+const AscinemaDemo = dynamic(
+  () =>
+    import("@/components/features/asciinema-demo").then(
+      (mod) => mod.AscinemaDemo
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-[300px] items-center justify-center bg-[#080c18]">
+        <span className="font-pixel text-[7px] tracking-wider text-corsair-text-dim animate-pulse">
+          LOADING RECORDING...
+        </span>
+      </div>
+    ),
+  }
+);
 
 interface PlaygroundRecordingProps {
   castFile?: string;
