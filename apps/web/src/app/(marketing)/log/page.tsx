@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RssIcon } from "lucide-react";
 import { SCITTFeed } from "@/components/features/scitt-feed";
 import { FadeIn } from "@/components/motion/fade-in";
 import { PixelDivider } from "@/components/pixel-art/pixel-divider";
@@ -7,6 +8,11 @@ export const metadata: Metadata = {
   title: "Transparency Log",
   description:
     "Public, real-time feed of CPOEs registered in the SCITT transparency log. Browse, filter, and verify compliance attestations.",
+  alternates: {
+    types: {
+      "application/rss+xml": "/api/scitt/feed.xml",
+    },
+  },
 };
 
 export default function LogPage() {
@@ -30,6 +36,15 @@ export default function LogPage() {
             <p className="mx-auto mt-2 max-w-md text-xs text-corsair-text-dim/60">
               Like Certificate Transparency for TLS, but for compliance attestations.
             </p>
+            <a
+              href="/api/scitt/feed.xml"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-md border border-corsair-border px-3 py-1.5 text-xs text-corsair-text-dim transition-colors hover:border-corsair-gold/40 hover:text-corsair-gold"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <RssIcon className="h-3.5 w-3.5" />
+              RSS Feed
+            </a>
           </div>
         </FadeIn>
 
