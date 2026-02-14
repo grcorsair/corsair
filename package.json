@@ -56,11 +56,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Arudjreis/corsair.git"
+    "url": "https://github.com/grcorsair/corsair.git"
   },
   "homepage": "https://grcorsair.com",
   "bugs": {
-    "url": "https://github.com/Arudjreis/corsair/issues"
+    "url": "https://github.com/grcorsair/corsair/issues"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.72.1",
