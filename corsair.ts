@@ -60,6 +60,9 @@ switch (subcommand) {
   case "tprm":
     await handleTprm();
     break;
+  case "init":
+    await handleInit();
+    break;
   case "help":
   case "--help":
   case "-h":
@@ -68,7 +71,8 @@ switch (subcommand) {
     break;
   default:
     console.error(`Unknown command: ${subcommand}`);
-    console.error('Run "corsair help" for usage information');
+    console.error("  Available: init, sign, verify, diff, log, keygen, audit, cert, tprm, help");
+    console.error('  Run "corsair help" for details');
     process.exit(1);
 }
 
@@ -159,11 +163,11 @@ CORSAIR SIGN — Sign evidence as a CPOE (JWT-VC)
 USAGE:
   corsair sign --file <path> [options]
   corsair sign --file - [options]           Read from stdin
-  cat evidence.json | corsair sign          Pipe from stdin
+  cat evidence.json | corsair sign          Pipe from stdin (auto-detect)
 
 OPTIONS:
   -f, --file <PATH>         Path to evidence JSON file (or "-" for stdin)
-  -o, --output <PATH>       Write JWT-VC to file (default: stdout)
+  -o, --output <PATH>       Write JWT-VC to file (default: <input>.cpoe.jwt)
   -F, --format <NAME>       Force evidence format (bypass auto-detection)
       --key-dir <DIR>       Ed25519 key directory (default: ./keys)
       --did <DID>           Issuer DID (default: derived from key)
@@ -198,46 +202,63 @@ EXAMPLES:
     return;
   }
 
-  // Determine input source: file, stdin flag, or piped stdin
-  // Only read stdin when explicitly requested with "--file -"
+  // Determine input source: file, stdin flag, or piped stdin (auto-detect)
   let rawJson: string;
   const isStdinExplicit = filePath === "-";
+  const isStdinPiped = !process.stdin.isTTY && !filePath;
 
-  if (isStdinExplicit) {
+  if (isStdinExplicit || isStdinPiped) {
     if (verbose && !quiet) console.error("Reading evidence from stdin...");
     rawJson = await new Response(Bun.stdin.stream()).text();
     if (!rawJson.trim()) {
-      console.error("Error: Empty input from stdin");
+      if (isStdinExplicit) {
+        console.error("Error: Empty input from stdin.");
+        console.error("  Pipe evidence JSON: cat evidence.json | corsair sign --file -");
+      } else {
+        // Auto-detected stdin was empty — treat as "no input provided"
+        console.error("Error: No evidence provided.");
+        console.error("  Sign a file:  corsair sign --file evidence.json");
+        console.error("  Pipe stdin:   cat evidence.json | corsair sign");
+        console.error('  See options:  corsair sign --help');
+      }
       process.exit(2);
     }
   } else if (filePath) {
     if (!existsSync(filePath)) {
       console.error(`Error: File not found: ${filePath}`);
+      console.error(`  Check the path and try again: corsair sign --file <path>`);
       process.exit(2);
     }
     rawJson = readFileSync(filePath, "utf-8");
   } else {
-    console.error("Error: --file is required");
-    console.error('Run "corsair sign --help" for usage');
+    console.error("Error: No evidence provided.");
+    console.error("  Sign a file:  corsair sign --file evidence.json");
+    console.error("  Pipe stdin:   cat evidence.json | corsair sign");
+    console.error('  See options:  corsair sign --help');
     process.exit(2);
   }
 
-  // Load key manager
+  // Load key manager — auto-generate keys on first use
   const { MarqueKeyManager } = await import("./src/parley/marque-key-manager");
   const keyManager = new MarqueKeyManager(keyDir);
-  const keypair = await keyManager.loadKeypair();
-  if (!keypair && !dryRun) {
-    console.error(`Error: No keypair found in ${keyDir}`);
-    console.error('Generate keys with: corsair keygen --output ' + keyDir);
-    process.exit(2);
-  }
-
-  // For dry-run without keys, generate temporary in-memory keys
-  if (!keypair && dryRun) {
+  let keypair = await keyManager.loadKeypair();
+  if (!keypair) {
+    if (!quiet) console.error("No signing keys found. Generating Ed25519 keypair...");
     await keyManager.generateKeypair();
+    keypair = await keyManager.loadKeypair();
+    if (!quiet) {
+      console.error(`  Private key: ${keyDir}/corsair-signing.key`);
+      console.error(`  Public key:  ${keyDir}/corsair-signing.pub`);
+    }
   }
 
-  if (verbose && !quiet) console.error("Parsing evidence...");
+  // Show progress indicator for large files
+  const rawSize = Buffer.byteLength(rawJson);
+  if (!quiet && !jsonOutput && rawSize > 1_000_000) {
+    console.error(`Processing ${(rawSize / 1_000_000).toFixed(1)}MB of evidence...`);
+  } else if (verbose && !quiet) {
+    console.error("Parsing evidence...");
+  }
 
   // Call the shared sign engine
   const { signEvidence, SignError } = await import("./src/sign/sign-core");
@@ -253,10 +274,11 @@ EXAMPLES:
       dryRun,
     }, keyManager);
 
-    if (verbose && !quiet) {
-      console.error(`Format:     ${result.detectedFormat} (${format ? "forced" : "auto-detected"})`);
-      console.error(`Controls:   ${result.summary.controlsTested} tested, ${result.summary.controlsPassed} passed, ${result.summary.controlsFailed} failed (${result.summary.overallScore}%)`);
-      console.error(`Provenance: ${result.provenance.source} (${result.provenance.sourceIdentity || "unknown"})`);
+    // Always show compact summary (not just with --verbose)
+    if (!quiet && !jsonOutput) {
+      console.error(`  Format:     ${result.detectedFormat} (${format ? "forced" : "auto-detected"})`);
+      console.error(`  Controls:   ${result.summary.controlsTested} tested, ${result.summary.controlsPassed} passed, ${result.summary.controlsFailed} failed (${result.summary.overallScore}%)`);
+      console.error(`  Provenance: ${result.provenance.source} (${result.provenance.sourceIdentity || "unknown"})`);
     }
 
     // Show warnings
@@ -315,26 +337,67 @@ EXAMPLES:
       return;
     }
 
+    // Determine output path: explicit --output, auto-derive from input, or stdout
+    const isTTY = process.stdout.isTTY;
+    const effectiveOutputPath = outputPath
+      ?? (filePath && filePath !== "-" && isTTY
+        ? filePath.replace(/\.json$/i, "") + ".cpoe.jwt"
+        : undefined);
+
+    // Check if a previous CPOE exists at the output path (for auto-diff)
+    let previousJwt: string | undefined;
+    if (effectiveOutputPath && existsSync(effectiveOutputPath)) {
+      try {
+        previousJwt = readFileSync(effectiveOutputPath, "utf-8").trim();
+        if (!previousJwt.startsWith("eyJ")) previousJwt = undefined;
+      } catch { previousJwt = undefined; }
+    }
+
     // Standard output
-    if (outputPath) {
+    if (effectiveOutputPath) {
       const { writeFileSync } = await import("fs");
-      writeFileSync(outputPath, result.jwt);
+      writeFileSync(effectiveOutputPath, result.jwt);
       if (!quiet) {
         const size = Buffer.byteLength(result.jwt);
         console.error(`\nCPOE signed successfully.`);
-        console.error(`  Format:     ${result.detectedFormat} (${format ? "forced" : "auto-detected"})`);
-        console.error(`  Controls:   ${result.summary.controlsTested} tested, ${result.summary.controlsPassed} passed, ${result.summary.controlsFailed} failed (${result.summary.overallScore}%)`);
-        console.error(`  Provenance: ${result.provenance.source} (${result.provenance.sourceIdentity || "unknown"})`);
-        console.error(`  Output:     ${outputPath} (${size.toLocaleString()} bytes)`);
-        console.error(`  Verify:     corsair verify --file ${outputPath}`);
+        console.error(`  Output:     ${effectiveOutputPath} (${size.toLocaleString()} bytes)`);
+        console.error(`  Verify:     corsair verify --file ${effectiveOutputPath}`);
+
+        // Auto-diff: if a previous CPOE existed, show quick regression summary
+        if (previousJwt) {
+          try {
+            const prevPayload = decodeJwtPayload(previousJwt);
+            const newPayload = decodeJwtPayload(result.jwt);
+            const prevScore = (prevPayload?.vc as any)?.credentialSubject?.summary?.overallScore;
+            const newScore = (newPayload?.vc as any)?.credentialSubject?.summary?.overallScore;
+            if (typeof prevScore === "number" && typeof newScore === "number") {
+              const delta = newScore - prevScore;
+              const arrow = delta > 0 ? "\u2191" : delta < 0 ? "\u2193" : "\u2192";
+              console.error(`  Diff:       ${prevScore}% ${arrow} ${newScore}% (${delta > 0 ? "+" : ""}${delta}pp vs previous)`);
+            }
+          } catch { /* non-critical */ }
+        }
       }
     } else {
       // Write JWT to stdout (for piping), info to stderr
       process.stdout.write(result.jwt);
+      if (!quiet && isTTY) {
+        console.error(`\n  Verify: corsair verify --file <saved.jwt>`);
+      }
     }
   } catch (err) {
     if (err instanceof SignError) {
       console.error(`Error: ${err.message}`);
+      // Provide actionable guidance based on common errors
+      if (err.message.includes("No controls found") || err.message.includes("empty")) {
+        console.error("  Check that your evidence file matches a supported format.");
+        console.error("  Supported: generic, prowler, securityhub, inspec, trivy, gitlab, ciso-assistant");
+        console.error("  Force format: corsair sign --file <path> --format <name>");
+      } else if (err.message.includes("keypair") || err.message.includes("key")) {
+        console.error("  Generate keys: corsair keygen");
+      } else if (err.message.includes("parse") || err.message.includes("JSON")) {
+        console.error("  Ensure the file is valid JSON: cat <file> | jq .");
+      }
       process.exit(2);
     }
     throw err;
@@ -2281,6 +2344,106 @@ async function handleTprmDashboard(args: string[]): Promise<void> {
 // HELP
 // =============================================================================
 
+// =============================================================================
+// INIT
+// =============================================================================
+
+async function handleInit(): Promise<void> {
+  const args = process.argv.slice(3);
+  let keyDir = "./keys";
+  let showHelp = false;
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "--key-dir":
+        keyDir = args[++i];
+        break;
+      case "--help":
+      case "-h":
+        showHelp = true;
+        break;
+    }
+  }
+
+  if (showHelp) {
+    console.log(`
+CORSAIR INIT — Set up Corsair in the current directory
+
+USAGE:
+  corsair init [--key-dir <dir>]
+
+OPTIONS:
+  --key-dir <DIR>    Key directory (default: ./keys)
+  -h, --help         Show this help
+
+This command:
+  1. Generates an Ed25519 signing keypair (if none exists)
+  2. Creates an example evidence file (if none exists)
+  3. Shows you how to sign your first CPOE
+`);
+    return;
+  }
+
+  console.log("Initializing Corsair...\n");
+
+  // 1. Generate keys
+  const { MarqueKeyManager } = await import("./src/parley/marque-key-manager");
+  const keyManager = new MarqueKeyManager(keyDir);
+  const existing = await keyManager.loadKeypair();
+  if (existing) {
+    console.log(`  Keys:     ${keyDir}/ (already exists)`);
+  } else {
+    await keyManager.generateKeypair();
+    console.log(`  Keys:     ${keyDir}/corsair-signing.key (generated)`);
+    console.log(`            ${keyDir}/corsair-signing.pub`);
+  }
+
+  // 2. Create example evidence file
+  const examplePath = "example-evidence.json";
+  if (!existsSync(examplePath)) {
+    const { writeFileSync } = await import("fs");
+    const example = {
+      metadata: {
+        title: "Example Security Assessment",
+        issuer: "Your Organization",
+        date: new Date().toISOString().split("T")[0],
+        scope: "Production Environment",
+      },
+      controls: [
+        {
+          id: "MFA-001",
+          description: "Multi-factor authentication enabled",
+          status: "pass",
+          evidence: "MFA enforced for all user groups",
+          framework: "NIST-800-53",
+          controlId: "IA-2",
+        },
+        {
+          id: "ENC-001",
+          description: "Data at rest encrypted",
+          status: "pass",
+          evidence: "AES-256 encryption verified",
+        },
+      ],
+    };
+    writeFileSync(examplePath, JSON.stringify(example, null, 2));
+    console.log(`  Example:  ${examplePath} (created)`);
+  } else {
+    console.log(`  Example:  ${examplePath} (already exists)`);
+  }
+
+  // 3. Next steps
+  console.log(`
+Ready! Try signing your first CPOE:
+
+  corsair sign --file ${examplePath}
+
+Or sign your own evidence:
+
+  corsair sign --file <your-evidence.json>
+`);
+}
+
 function printHelp(): void {
   let version = "0.6.0";
   try {
@@ -2294,6 +2457,7 @@ USAGE:
   corsair <command> [options]
 
 COMMANDS:
+  init      Set up Corsair (keys + example)          like git init
   sign      Sign evidence as a CPOE (JWT-VC)        like git commit
   verify    Verify a CPOE signature and integrity
   diff      Detect compliance regressions            like git diff

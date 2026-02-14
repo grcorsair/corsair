@@ -185,11 +185,12 @@ describe("corsair sign — error handling", () => {
     const proc = Bun.spawn(["bun", "run", "corsair.ts", "sign"], {
       cwd,
       stderr: "pipe",
+      stdin: "ignore",
     });
     const stderr = await new Response(proc.stderr).text();
     const code = await proc.exited;
     expect(code).toBe(2);
-    expect(stderr).toContain("--file is required");
+    expect(stderr).toContain("No evidence provided");
   });
 
   test("sign with nonexistent file shows error", async () => {
@@ -203,17 +204,23 @@ describe("corsair sign — error handling", () => {
     expect(stderr).toContain("not found");
   });
 
-  test("sign without keypair shows keygen guidance", async () => {
-    const noKeyDir = join(tmpDir, "no-keys");
+  test("sign without keypair auto-generates keys", async () => {
+    const noKeyDir = join(tmpDir, "auto-keys");
     mkdirSync(noKeyDir, { recursive: true });
     const proc = Bun.spawn(
       ["bun", "run", "corsair.ts", "sign", "--file", join(tmpDir, "evidence.json"), "--key-dir", noKeyDir],
-      { cwd, stderr: "pipe" },
+      { cwd, stdout: "pipe", stderr: "pipe" },
     );
+    const stdout = await new Response(proc.stdout).text();
     const stderr = await new Response(proc.stderr).text();
     const code = await proc.exited;
-    expect(code).toBe(2);
-    expect(stderr).toContain("keygen");
+    expect(code).toBe(0);
+    expect(stderr).toContain("Generating Ed25519 keypair");
+    // Should produce a valid JWT
+    expect(stdout.trim()).toMatch(/^eyJ/);
+    // Keys should now exist on disk
+    expect(existsSync(join(noKeyDir, "corsair-signing.key"))).toBe(true);
+    expect(existsSync(join(noKeyDir, "corsair-signing.pub"))).toBe(true);
   });
 });
 
@@ -471,6 +478,58 @@ describe("corsair sign — new flags", () => {
     const code = await proc.exited;
     expect(code).toBe(0);
     expect(stdout.trim()).toMatch(/^eyJ/);
+  });
+});
+
+// =============================================================================
+// INVISIBLE UX — NEW BEHAVIORS
+// =============================================================================
+
+describe("corsair sign — invisible UX", () => {
+  test("always shows compact summary to stderr (without --verbose)", async () => {
+    const proc = Bun.spawn(
+      [
+        "bun", "run", "corsair.ts", "sign",
+        "--file", join(tmpDir, "evidence.json"),
+        "--key-dir", join(tmpDir, "keys"),
+      ],
+      { cwd, stdout: "pipe", stderr: "pipe" },
+    );
+    const stderr = await new Response(proc.stderr).text();
+    const code = await proc.exited;
+    expect(code).toBe(0);
+    expect(stderr).toContain("Format:");
+    expect(stderr).toContain("Controls:");
+    expect(stderr).toContain("Provenance:");
+  });
+
+  test("shows actionable error for nonexistent file", async () => {
+    const proc = Bun.spawn(
+      ["bun", "run", "corsair.ts", "sign", "--file", "/tmp/nope.json"],
+      { cwd, stderr: "pipe" },
+    );
+    const stderr = await new Response(proc.stderr).text();
+    const code = await proc.exited;
+    expect(code).toBe(2);
+    expect(stderr).toContain("not found");
+    expect(stderr).toContain("corsair sign --file");
+  });
+
+  test("corsair init creates keys and example file", async () => {
+    const initDir = join(tmpDir, "init-test");
+    mkdirSync(initDir, { recursive: true });
+
+    const proc = Bun.spawn(
+      ["bun", "run", "corsair.ts", "init", "--key-dir", join(initDir, "keys")],
+      { cwd: initDir, stdout: "pipe" },
+    );
+    const stdout = await new Response(proc.stdout).text();
+    const code = await proc.exited;
+    expect(code).toBe(0);
+    expect(stdout).toContain("Initializing Corsair");
+    expect(stdout).toContain("generated");
+    expect(existsSync(join(initDir, "keys", "corsair-signing.key"))).toBe(true);
+    expect(existsSync(join(initDir, "keys", "corsair-signing.pub"))).toBe(true);
   });
 });
 

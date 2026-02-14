@@ -4,7 +4,7 @@
 
 <br/>
 
-**Open protocol for machine-readable, cryptographically verifiable compliance attestations.**
+**Your security tools already know if your controls work. Nobody can verify that. Until now.**
 
 <br/>
 
@@ -30,8 +30,6 @@
 
 <br/>
 
-> *Vanta is Salesforce (manages compliance within orgs). Corsair is SMTP (moves trust between orgs).*
-
 ---
 
 ## The Problem
@@ -40,55 +38,61 @@ Compliance trust today is exchanged via PDF. SOC 2 reports, pentest results, ISO
 
 ## The Solution
 
-**CORSAIR** replaces this with the **CPOE** (Certificate of Proof of Operational Effectiveness) — a [W3C Verifiable Credential](https://www.w3.org/TR/vc-data-model-2.0/) signed with Ed25519.
+**CORSAIR** signs tool output as a **CPOE** (Certificate of Proof of Operational Effectiveness) — a [W3C Verifiable Credential](https://www.w3.org/TR/vc-data-model-2.0/) with an Ed25519 signature. Prowler says PASS, Corsair signs "Prowler said PASS." The tool's finding, signed, verifiable.
 
 A CPOE is:
 - **Machine-readable** — structured JSON, not a PDF
 - **Cryptographically verifiable** — Ed25519 signature, anyone can check
 - **Provenance-tracked** — records who produced the evidence, not just what it says
 
-Think of it like **git for compliance**. Sign evidence (`corsair sign`), diff changes (`corsair diff`), query history (`corsair log`), verify proof (`corsair verify`). Anyone can verify a CPOE. Free to check. No account required.
-
-The protocol composing this is called **Parley**: [JWT-VC](https://www.w3.org/TR/vc-data-model-2.0/) for the attestation, [SCITT](https://datatracker.ietf.org/wg/scitt/about/) for the transparency log, and [SSF/CAEP](https://openid.net/specs/openid-sharedsignals-framework-1_0.html) for real-time compliance signals.
+Anyone can verify a CPOE. Free to check. No account required. Four steps with any JWT library.
 
 ---
 
 ## Quick Start
 
 ```bash
-# Clone and install
-git clone https://github.com/Arudjreis/corsair.git
-cd corsair
-bun install
+# Install
+git clone https://github.com/Arudjreis/corsair.git && cd corsair && bun install
 
-# Verify an existing CPOE (always free)
-bun run bin/corsair-verify.ts examples/example-cpoe.jwt
-
-# Sign tool output as a CPOE
-bun run corsair.ts sign --file prowler-findings.json --output cpoe.jwt
-
-# Generate Ed25519 signing keys
+# Generate signing keys
 bun run corsair.ts keygen --output ./keys
+
+# Sign your Prowler scan as a CPOE
+bun run corsair.ts sign --file prowler-findings.json
+
+# Verify any CPOE (always free)
+bun run corsair.ts verify --file cpoe.jwt
 ```
 
-### CLI Reference
+---
 
-| Command | Description | Analogy |
-|:--------|:------------|:--------|
-| `corsair sign --file <path> [--format <fmt>] [--did <did>] [--enrich] [--score]` | Sign evidence as a CPOE (JWT-VC) | `git commit` |
-| `corsair sign --file - < data.json` | Sign from stdin | |
-| `corsair sign --file <path> --dry-run` | Preview CPOE without signing | |
-| `corsair sign --file <path> --json` | Output structured JSON (jwt + metadata) | |
-| `corsair sign --file <path> --score` | Include 7-dimension evidence quality score | |
-| `corsair diff --current <new.jwt> --previous <old.jwt>` | Detect compliance regressions | `git diff` |
-| `corsair log [--help]` | Query SCITT transparency log | `git log` |
-| `corsair verify --file <cpoe.jwt> [--pubkey <path>]` | Verify a CPOE signature and display results | |
-| `corsair audit --files <paths> --scope <name> [--frameworks] [--score] [--governance] [--json]` | Run compliance audit | `git bisect` |
-| `corsair cert create\|check\|list\|renew\|suspend\|revoke\|history\|expiring` | Manage certifications | |
-| `corsair keygen [--output <dir>]` | Generate Ed25519 signing keypair | |
-| `corsair help` | Show available commands | |
+## Five Primitives
 
-### Supported Formats
+Corsair does five things. Like git.
+
+| Primitive | Command | What It Does | Analogy |
+|:----------|:--------|:-------------|:--------|
+| **SIGN** | `corsair sign --file <path>` | Parse tool output, record provenance, sign JWT-VC | `git commit` |
+| **VERIFY** | `corsair verify --file <cpoe.jwt>` | Verify Ed25519 signature via DID:web | `git verify-commit` |
+| **DIFF** | `corsair diff --current <new> --previous <old>` | Compare two CPOEs, detect regressions | `git diff` |
+| **LOG** | `corsair log` | Query SCITT transparency log | `git log` |
+| **KEYGEN** | `corsair keygen --output <dir>` | Generate Ed25519 signing keypair | `ssh-keygen` |
+
+### Sign Options
+
+```bash
+corsair sign --file evidence.json              # Auto-detect format, sign
+corsair sign --file evidence.json --format prowler  # Force format
+corsair sign --file evidence.json --json       # Structured JSON output
+corsair sign --file evidence.json --dry-run    # Preview without signing
+corsair sign --file evidence.json --score      # Include evidence quality score
+corsair sign --file - < data.json              # Sign from stdin
+```
+
+---
+
+## Supported Formats
 
 Corsair auto-detects evidence format from JSON structure. Override with `--format <name>`.
 
@@ -103,49 +107,6 @@ Corsair auto-detects evidence format from JSON structure. Override with `--forma
 | `ciso-assistant-api` | CISO Assistant (API) | `{ results[] }` with compliance fields |
 | `ciso-assistant-export` | CISO Assistant (Export) | `{ requirement_assessments[] }` |
 
-### MCP Server
-
-Corsair ships an MCP server for integration with Claude Code and other MCP clients.
-
-```bash
-# Start MCP server (stdio)
-bun run bin/corsair-mcp.ts
-```
-
-Tools: `corsair_sign`, `corsair_verify`, `corsair_diff`, `corsair_formats`
-
-Configure in `mcp.json` or `claude_desktop_config.json`:
-```json
-{ "corsair": { "command": "bun", "args": ["run", "bin/corsair-mcp.ts"], "env": { "CORSAIR_KEY_DIR": "./keys" } } }
-```
-
-### API
-
-```bash
-# Sign evidence via API (requires auth)
-curl -X POST https://api.grcorsair.com/sign \
-  -H "Authorization: Bearer $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"evidence": {...}, "format": "prowler"}'
-
-# Verify a CPOE via API (no auth required)
-curl -X POST https://api.grcorsair.com/verify \
-  -H "Content-Type: application/json" \
-  -d '{"cpoe": "eyJ..."}'
-```
-
-### GitHub Action
-
-```yaml
-- uses: Arudjreis/corsair@main
-  with:
-    file: trivy-results.json
-    format: trivy
-  id: sign
-
-- run: echo "Score: ${{ steps.sign.outputs.score }}"
-```
-
 ---
 
 ## CPOE Format
@@ -154,29 +115,23 @@ A CPOE is a JWT with three base64url-encoded segments: `header.payload.signature
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ HEADER   { "alg": "EdDSA", "typ": "vc+jwt", "kid": "did:web:grcorsair.com#key-1" }  │
+│ HEADER   { "alg": "EdDSA", "typ": "vc+jwt", "kid": "did:web:..." }      │
 ├──────────────────────────────────────────────────────────────────┤
-│ PAYLOAD  { "iss": "did:web:grcorsair.com", "vc": { ... CPOE ... }, "parley": "2.0" } │
+│ PAYLOAD  { "iss": "did:web:...", "vc": { ... CPOE ... }, "parley": "2.0" }│
 ├──────────────────────────────────────────────────────────────────┤
-│ SIGNATURE  Ed25519                                                                    │
+│ SIGNATURE  Ed25519                                                        │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-The credential subject contains the minimum viable attestation:
+The credential subject records **provenance and summary** — who produced the evidence, what they found:
 
 ```json
 {
   "type": "CorsairCPOE",
   "scope": "SOC 2 Type II — Acme Cloud Platform",
-  "assurance": {
-    "declared": 1,
-    "verified": true,
-    "method": "corsair-attested",
-    "breakdown": { "0": 2, "1": 22 }
-  },
   "provenance": {
-    "source": "auditor",
-    "sourceIdentity": "Example Audit Firm LLP",
+    "source": "tool",
+    "sourceIdentity": "Prowler v3.1",
     "sourceDate": "2026-01-15"
   },
   "summary": {
@@ -193,29 +148,27 @@ The credential subject contains the minimum viable attestation:
     "chainDigest": "a7f3e2...",
     "receiptCount": 4,
     "chainVerified": true,
-    "format": "in-toto/v1+cose-sign1",
-    "reproducibleSteps": 3,
-    "attestedSteps": 1
+    "format": "in-toto/v1+cose-sign1"
   }
 }
 ```
 
-### Verification Flow
+### Verification
 
 ```
-1. Decode    ─── Parse JWT header + payload (base64url, no crypto yet)
-2. Resolve   ─── Fetch issuer's DID document via HTTPS  (did:web → /.well-known/did.json)
+1. Decode    ─── Parse JWT header + payload (base64url)
+2. Resolve   ─── Fetch issuer's DID document via HTTPS
 3. Extract   ─── Find the public key matching header.kid
-4. Verify    ─── Check Ed25519 signature over the JWT payload
+4. Verify    ─── Check Ed25519 signature
 ```
 
-Anyone can do this. No Corsair account needed. Four steps with any JWT library.
+Anyone can do this. No Corsair account needed.
 
 ---
 
 ## Provenance Model
 
-Corsair uses a **provenance-first** model. Instead of judging evidence quality, it records where evidence came from and lets buyers decide what's sufficient.
+Corsair records **where evidence came from** and lets buyers decide what's sufficient.
 
 | Provenance | Source | Example |
 |:-----------|:-------|:--------|
@@ -223,118 +176,51 @@ Corsair uses a **provenance-first** model. Instead of judging evidence quality, 
 | **Tool** | Automated scanning tools | Prowler, InSpec, Trivy, SecurityHub |
 | **Auditor** | Independent third party | SOC 2 auditor, ISO 27001 certification body |
 
-### Assurance Levels (Optional Enrichment)
-
-When `--enrich` is passed, Corsair also classifies evidence at L0-L4 assurance levels. This is optional — the default signing path records provenance without judgment.
-
-| | Level | Name | Evidence Required |
-|:---:|:---:|:-----|:------------------|
-| ◇ | **L0** | Documented | Policy docs only |
-| ◈ | **L1** | Configured | Config exports, tool scans |
-| ◆ | **L2** | Demonstrated | Test results, pentest findings |
-| ◆ | **L3** | Observed | Continuous monitoring |
-| ★ | **L4** | Attested | Independent third-party verification |
+The CPOE is a signed fact: "Prowler said PASS on Jan 15." Not an opinion. Not a score. A verifiable record of what a tool found.
 
 ---
 
 ## Architecture
 
 ```
-                    ┌─────────────────────┐
-                    │  Tool / Platform     │   Prowler, InSpec, Trivy,
-                    │  Evidence Output     │   SecurityHub, CISO Assistant
-                    └──────────┬──────────┘
-                               │
-                    ┌──────────▼──────────┐
-              01    │       SIGN           │   Parse → Provenance → Sign JWT-VC
-                    └──────────┬──────────┘
-                               │
-                    ┌──────────▼──────────┐
-              02    │        LOG           │   Register in SCITT transparency log
-                    └──────────┬──────────┘
-                               │
-                    ┌──────────▼──────────┐
-              03    │      VERIFY          │   Anyone verifies (free, no account)
-                    └──────────┬──────────┘
-                               │
-                    ┌──────────▼──────────┐
-              04    │       DIFF           │   Compare CPOEs, detect regressions
-                    └──────────┘
-
-           ┌──────────────────────────────────────┐
-           │  Optional enrichment (--enrich):      │
-           │  CLASSIFY → CHART → QUARTER           │
-           │  Adds L0-L4 assurance scoring,        │
-           │  framework mapping, governance review  │
-           └──────────────────────────────────────┘
+          ┌─────────────────────┐
+          │  Tool / Platform     │   Prowler, InSpec, Trivy,
+          │  Evidence Output     │   SecurityHub, CISO Assistant
+          └──────────┬──────────┘
+                     │
+          ┌──────────▼──────────┐
+    01    │       SIGN           │   Parse → Provenance → Sign JWT-VC (Ed25519)
+          └──────────┬──────────┘
+                     │
+          ┌──────────▼──────────┐
+    02    │        LOG           │   Register in SCITT transparency log
+          └──────────┬──────────┘
+                     │
+          ┌──────────▼──────────┐
+    03    │      VERIFY          │   Anyone verifies (free, no account)
+          └──────────┬──────────┘
+                     │
+          ┌──────────▼──────────┐
+    04    │       DIFF           │   Compare CPOEs, detect regressions
+          └──────────┘
 ```
 
-| Stage | CLI Command | What It Does |
-|:------|:------------|:-------------|
-| Sign evidence | `corsair sign` | Parse tool output, record provenance, sign as JWT-VC (Ed25519) |
-| Transparency log | `corsair log` | Register CPOEs in SCITT append-only log |
-| Verify proof | `corsair verify` | Verify Ed25519 signature via DID:web resolution |
-| Detect regressions | `corsair diff` | Compare two CPOEs, detect new failures |
-
-### Layer 2: Intelligence (optional `--enrich` / `--score`)
-
-```
-                    ┌─────────────────────┐
-                    │     NORMALIZE        │   Tool output → Canonical form
-                    └──────────┬──────────┘
-                               │
-                    ┌──────────▼──────────┐
-                    │       SCORE          │   7-dimension evidence quality (FICO)
-                    └──────────┬──────────┘
-                               │
-                    ┌──────────▼──────────┐
-                    │       QUERY          │   Search, filter, aggregate evidence
-                    └──────────┬──────────┘
-                               │
-                    ┌──────────▼──────────┐
-                    │   QUARTERMASTER      │   Governance checks + scoring
-                    └─────────────────────┘
-```
-
-| Stage | What It Does |
-|:------|:-------------|
-| Normalize | 8 tool formats → CanonicalControlEvidence canonical type |
-| Score | 7-dimension evidence quality assessment (5 deterministic, 2 model-assisted) |
-| Query | Search, filter, and aggregate across normalized evidence |
-| Quartermaster | Governance review with deterministic + LLM evidence quality checks |
-
-### Optional Enrichment (via `--enrich`)
-
-| Stage | Pirate Name | What It Does |
-|:------|:------------|:-------------|
-| Assurance classification | **CLASSIFY** | Assigns L0-L4 assurance level per control based on evidence type |
-| Framework mapping | **CHART** | Maps controls to 13+ compliance frameworks via CTID/SCF |
-| Governance review | **QUARTER** | Deterministic + LLM evidence quality review (7 dimensions) |
-| Real-time signals | **FLAGSHIP** | SSF/CAEP notifications for compliance state changes |
+That's it. Tool output goes in, signed proof comes out.
 
 ---
 
 ## Parley Protocol
 
-Parley composes open standards so any JWT library can verify a CPOE. Zero vendor lock-in.
+The protocol composing Corsair is called **Parley**. It composes open standards so any JWT library can verify a CPOE. Zero vendor lock-in.
 
 | Standard | Role | Implementation |
 |:---------|:-----|:---------------|
 | [**JWT-VC**](https://www.w3.org/TR/vc-data-model-2.0/) | Attestation envelope | CPOE as W3C Verifiable Credential, Ed25519-signed |
 | [**DID:web**](https://w3c-ccg.github.io/did-method-web/) | Issuer identity | DNS-based decentralized identifiers |
-| [**SCITT**](https://datatracker.ietf.org/wg/scitt/about/) | Transparency log | Postgres-backed registry with COSE receipts + Merkle proofs |
-| [**SSF/CAEP**](https://openid.net/specs/openid-sharedsignals-framework-1_0.html) | Real-time notifications | FLAGSHIP signals compliance changes via signed SETs |
+| [**SCITT**](https://datatracker.ietf.org/wg/scitt/about/) | Transparency log | Append-only registry with COSE receipts + Merkle proofs |
+| [**SSF/CAEP**](https://openid.net/specs/openid-sharedsignals-framework-1_0.html) | Real-time signals | Compliance change notifications via signed SETs |
 | **Ed25519** | Signatures | Curve25519 — fast, compact, no weak keys |
 | [**in-toto/SLSA**](https://in-toto.io/) | Process provenance | COSE-signed pipeline receipts with Merkle root chain |
-
-### FLAGSHIP Events
-
-| Event | CAEP Type | Trigger |
-|:------|:----------|:--------|
-| `COLORS_CHANGED` | `assurance-level-change` | Trust tier changed |
-| `FLEET_ALERT` | `compliance-change` | Drift detected |
-| `PAPERS_CHANGED` | `credential-change` | CPOE issued, renewed, or revoked |
-| `MARQUE_REVOKED` | `session-revoked` | Emergency revocation |
 
 ### DID Identity
 
@@ -345,52 +231,142 @@ did:web:grcorsair.com  →  https://grcorsair.com/.well-known/did.json
 did:web:acme.com       →  https://acme.com/.well-known/did.json
 ```
 
+### FLAGSHIP Events
+
+Real-time compliance signals via OpenID SSF/CAEP:
+
+| Event | CAEP Type | Trigger |
+|:------|:----------|:--------|
+| `COLORS_CHANGED` | `assurance-level-change` | Trust tier changed |
+| `FLEET_ALERT` | `compliance-change` | Drift detected |
+| `PAPERS_CHANGED` | `credential-change` | CPOE issued, renewed, or revoked |
+| `MARQUE_REVOKED` | `session-revoked` | Emergency revocation |
+
+---
+
+## Integrations
+
+### MCP Server
+
+```bash
+bun run bin/corsair-mcp.ts
+```
+
+Tools: `corsair_sign`, `corsair_verify`, `corsair_diff`, `corsair_formats`
+
+```json
+{ "corsair": { "command": "bun", "args": ["run", "bin/corsair-mcp.ts"], "env": { "CORSAIR_KEY_DIR": "./keys" } } }
+```
+
+### GitHub Action
+
+```yaml
+- uses: Arudjreis/corsair@main
+  with:
+    file: trivy-results.json
+    format: trivy
+  id: sign
+```
+
+### API
+
+```bash
+# Sign (requires auth)
+curl -X POST https://api.grcorsair.com/sign \
+  -H "Authorization: Bearer $API_KEY" \
+  -d '{"evidence": {...}, "format": "prowler"}'
+
+# Verify (no auth required)
+curl -X POST https://api.grcorsair.com/verify \
+  -d '{"cpoe": "eyJ..."}'
+```
+
+### SDK
+
+```bash
+bun add @corsair/sdk
+```
+
 ---
 
 ## Testing
 
 ```bash
-bun test                          # All tests (1820 tests, 73 files)
-
-bun test tests/parley/            # Parley protocol (MARQUE, JWT-VC, DID, SCITT, cert chain, CAA)
-bun test tests/flagship/          # FLAGSHIP (SSF/SET/CAEP)
-bun test tests/ingestion/         # Document ingestion pipeline
-bun test tests/sign/              # Sign engine + batch signing
-bun test tests/mcp/               # MCP server tool handlers
-bun test tests/normalize/         # Evidence normalization engine
-bun test tests/scoring/           # Evidence quality scoring engine
-bun test tests/audit/             # Audit engine + orchestrator
-bun test tests/benchmark/         # Scoring benchmark corpus
-bun test tests/billing/           # Billing + subscriptions
-bun test tests/certification/     # Continuous certification
-bun test tests/tprm/              # Third-party risk management
-bun test tests/webhooks/          # Webhook delivery
-bun test tests/api/               # Versioned API endpoint tests
-bun test tests/functions/         # API endpoints (SSF, SCITT, health, sign, verify)
-bun test tests/cli/               # CLI integration tests
-bun test tests/db/                # Database tests (requires Postgres)
-bun test tests/distribution/      # Dockerfile, npm, wrappers
+bun test   # 1920 tests, 76 files — all passing
 ```
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|:------|:-----------|
-| Runtime | [Bun](https://bun.sh/) — TypeScript runs directly, no build step |
-| Language | TypeScript (strict mode, ESM) |
-| Crypto | Ed25519 via Node.js `crypto` + [jose](https://github.com/panva/jose) for JWT-VC |
-| AI | [@anthropic-ai/sdk](https://github.com/anthropics/anthropic-sdk-typescript) — Claude for PDF extraction + governance |
-| Database | Postgres via [Bun.sql](https://bun.sh/docs/api/sql) — zero-dependency driver |
+| Component | Technology |
+|:----------|:-----------|
+| Runtime | [Bun](https://bun.sh/) — TypeScript, no build step |
+| Crypto | Ed25519 via Node.js `crypto` + [jose](https://github.com/panva/jose) |
+| Database | Postgres via [Bun.sql](https://bun.sh/docs/api/sql) — zero-dep driver |
 | Web | [Next.js 15](https://nextjs.org/) + Tailwind 4 + shadcn/ui |
-| Hosting | [Railway](https://railway.app/) (Postgres + Functions + Web) |
-| SDK | [@corsair/sdk](packages/sdk/) — TypeScript client for sign/verify/score/query |
-| Standards | W3C VC 2.0, IETF SCITT, OpenID SSF/CAEP, NIST OSCAL |
+| Standards | W3C VC 2.0, IETF SCITT, OpenID SSF/CAEP |
 
-> **Dependencies**: Only 1 runtime dep — `jose` (JWT/JWK). Everything else is hand-rolled. `@anthropic-ai/sdk` is a dev dependency for optional Quartermaster AI enrichment.
+> **Dependencies**: 1 runtime dep — `jose` (JWT/JWK). Everything else is hand-rolled.
 
 ---
+
+<details>
+<summary><strong>Advanced Features</strong></summary>
+
+<br/>
+
+### Evidence Quality Score (`--score`)
+
+Add `--score` to any sign command to get a 7-dimension evidence quality assessment:
+
+```bash
+corsair sign --file prowler-findings.json --score
+# Evidence Quality: 82/100 (B)
+# Dimensions: source=90 recency=95 coverage=80 reproducibility=85 consistency=70 quality=80 completeness=75
+```
+
+### Compliance Audit
+
+Multi-file audit with optional scoring and governance checks:
+
+```bash
+corsair audit --files evidence/*.json --scope "SOC 2 Type II" --score --governance --json
+```
+
+### Continuous Certification
+
+Policy-based continuous compliance monitoring:
+
+```bash
+corsair cert create --scope "Production" --policy policy.json
+corsair cert check --id cert-abc123
+corsair cert list
+```
+
+### Third-Party Risk Management
+
+Automated vendor assessment from CPOEs:
+
+```bash
+corsair tprm register --name "Acme Corp" --tier critical
+corsair tprm assess --vendor vendor-123 --cpoes cpoe1.jwt cpoe2.jwt
+corsair tprm dashboard
+```
+
+### Assurance Levels (Optional Enrichment)
+
+When `--enrich` is passed, Corsair classifies evidence at L0-L4 assurance levels:
+
+| Level | Name | Evidence Required |
+|:---:|:-----|:------------------|
+| **L0** | Documented | Policy docs only |
+| **L1** | Configured | Config exports, tool scans |
+| **L2** | Demonstrated | Test results, pentest findings |
+| **L3** | Observed | Continuous monitoring |
+| **L4** | Attested | Independent third-party verification |
+
+</details>
 
 <details>
 <summary><strong>Project Structure</strong></summary>
@@ -398,197 +374,38 @@ bun test tests/distribution/      # Dockerfile, npm, wrappers
 <br/>
 
 ```
-corsair.ts                 # CLI entry point (sign, verify, diff, log, keygen, help)
+corsair.ts                 # CLI entry point
 
 src/
   types.ts                 # Core type definitions
   evidence.ts              # JSONL evidence engine with SHA-256 hash chain
 
-  sign/                    # Shared sign engine (3 files)
-    sign-core.ts           #   signEvidence() — one engine, five surfaces
-    batch-sign.ts          #   Batch directory signing
-    index.ts               #   Barrel exports
+  sign/                    # Sign engine
+  ingestion/               # Evidence parsing (8 formats)
+  parley/                  # Parley protocol (JWT-VC, SCITT, DID, COSE, CBOR, Merkle)
+  flagship/                # FLAGSHIP real-time signals (SSF/CAEP)
+  security/                # URL validation for DID resolver
+  middleware/              # HTTP auth, rate-limit, security headers
+  db/                      # Postgres via Bun.sql + migrations
 
-  ingestion/               # Evidence parsing + classification (5 files)
-    json-parser.ts         #   Tool format adapters (Prowler, InSpec, Trivy)
-    mapper.ts              #   Parsed data → MarqueGeneratorInput
-    assurance-calculator.ts #  L0-L4 per-control classification
-    types.ts               #   IngestedDocument, IngestedControl types
-    index.ts               #   Barrel exports
+  normalize/               # Evidence normalization engine
+  scoring/                 # 7-dimension evidence quality scoring
+  query/                   # Evidence query engine
+  quartermaster/           # Governance checks
+  audit/                   # Audit engine + orchestrator
+  certification/           # Continuous certification
+  tprm/                    # Third-party risk management
+  billing/                 # Subscription management
+  webhooks/                # Webhook delivery
+  api/                     # Versioned API router
+  mcp/                     # MCP server
 
-  parley/                  # Parley trust exchange protocol (23 files)
-    vc-generator.ts        #   JWT-VC generation (jose + Ed25519)
-    vc-verifier.ts         #   JWT-VC verification
-    vc-types.ts            #   W3C Verifiable Credential 2.0 types
-    marque-generator.ts    #   MARQUE generation (JWT-VC + JSON)
-    marque-verifier.ts     #   MARQUE verification (auto-detects format)
-    marque-key-manager.ts  #   Ed25519 keypair management + JWK export
-    marque-types.ts        #   MARQUE document types
-    pg-key-manager.ts      #   Postgres-backed key manager (AES-256-GCM)
-    did-resolver.ts        #   DID:web resolution and formatting
-    key-attestation.ts     #   Certificate chain of trust (root → org → CPOE)
-    caa-did.ts             #   CAA-in-DID scope constraints per signing key
-    scitt-types.ts         #   SCITT transparency log types
-    scitt-registry.ts      #   In-memory SCITT registry
-    pg-scitt-registry.ts   #   Postgres-backed SCITT registry
-    cbor.ts                #   Minimal CBOR encoder/decoder (zero deps)
-    cose.ts                #   COSE_Sign1 sign/verify (Ed25519, zero deps)
-    merkle.ts              #   SHA-256 Merkle tree + inclusion proofs
-    auto-bundler.ts        #   Multi-provider MARQUE pipeline
-    parley-client.ts       #   HTTP client + SSF streams
-    parley-types.ts        #   Protocol types + config
-    process-receipt.ts     #   Process receipt types + COSE signing
-    receipt-chain.ts       #   Pipeline step receipt accumulator
-    receipt-verifier.ts    #   Process chain integrity verification
-
-  flagship/                # Real-time compliance signals (6 files)
-    flagship-types.ts      #   CAEP event types with pirate aliases
-    set-generator.ts       #   Security Event Token generation (Ed25519 JWT)
-    ssf-stream.ts          #   SSF stream lifecycle (in-memory)
-    pg-ssf-stream.ts       #   Postgres-backed SSF stream manager
-    flagship-client.ts     #   Push/poll delivery (retry, circuit breaker)
-    index.ts               #   Barrel exports
-
-  security/                # Security utilities (1 file)
-    url-validation.ts      #   DID resolver URL safety checks
-
-  middleware/              # HTTP middleware (3 files)
-    auth.ts                #   API key authentication
-    rate-limit.ts          #   Request rate limiting
-    security-headers.ts    #   Security response headers
-
-  db/                      # Postgres via Bun.sql (6 files)
-    connection.ts          #   Singleton connection pool
-    migrate.ts             #   Idempotent SQL migration runner
-    index.ts               #   Barrel exports
-    migrations/            #   001–007 SQL migrations
-
-  normalize/               # Evidence normalization engine (3 files)
-    normalize.ts           #   8-format → CanonicalControlEvidence
-    types.ts               #   Canonical types (CanonicalControlEvidence, NormalizedEvidence)
-    index.ts               #   Barrel exports
-
-  scoring/                 # 7-dimension evidence quality engine (4 files)
-    scoring-engine.ts      #   scoreEvidence() — FICO-like composite score
-    scoring-signals.ts     #   Signal extraction from evidence
-    types.ts               #   EvidenceQualityScore, dimension types
-    index.ts               #   Barrel exports
-
-  query/                   # Evidence query engine (3 files)
-    query-engine.ts        #   Search, filter, aggregate normalized evidence
-    types.ts               #   QueryFilter, QueryResult types
-    index.ts               #   Barrel exports
-
-  audit/                   # Audit engine + orchestrator (5 files)
-    audit-engine.ts        #   Multi-file compliance audit runner
-    audit-orchestrator.ts  #   Pipeline coordination (normalize → score → govern)
-    audit-types.ts         #   AuditResult, AuditConfig types
-    audit-report.ts        #   Human-readable audit report generation
-    index.ts               #   Barrel exports
-
-  quartermaster/           # Governance checks (4 files)
-    quartermaster.ts       #   7-dimension governance review engine
-    quartermaster-types.ts #   GovernanceResult, dimension types
-    quartermaster-rules.ts #   Deterministic rule evaluation
-    index.ts               #   Barrel exports
-
-  benchmark/               # Scoring calibration corpus (3 files)
-    benchmark-runner.ts    #   Run scoring against known-good corpus
-    corpus.ts              #   Reference evidence samples + expected scores
-    index.ts               #   Barrel exports
-
-  billing/                 # Subscription management (4 files)
-    billing-engine.ts      #   Free/Pro/Platform tier logic
-    billing-types.ts       #   Plan, Subscription, Usage types
-    billing-limits.ts      #   Rate limits and quotas per tier
-    index.ts               #   Barrel exports
-
-  certification/           # Continuous certification (3 files)
-    certification-engine.ts #  Policy-based continuous compliance monitoring
-    certification-types.ts #   CertPolicy, CertStatus types
-    index.ts               #   Barrel exports
-
-  tprm/                    # Third-party risk management (3 files)
-    tprm-engine.ts         #   Automated vendor assessment from CPOEs
-    tprm-types.ts          #   VendorRisk, TPRMResult types
-    index.ts               #   Barrel exports
-
-  webhooks/                # Webhook delivery (3 files)
-    webhook-engine.ts      #   HMAC-SHA256 signed event delivery
-    webhook-types.ts       #   WebhookConfig, WebhookEvent types
-    index.ts               #   Barrel exports
-
-  api/                     # Versioned API router (3 files)
-    router.ts              #   /v1/health, /v1/sign, /v1/verify routing
-    types.ts               #   APIEnvelope<T>, request/response types
-    index.ts               #   Barrel exports
-
-  mcp/                     # MCP server (1 file)
-    corsair-mcp-server.ts  #   Tool handlers (sign, verify, diff, formats)
-
-bin/
-  corsair-verify.ts        # Standalone CPOE verification CLI
-  corsair-did-generate.ts  # DID document generation
-  corsair-mcp.ts           # MCP stdio server entry point
-  generate-first-cpoe.ts   # Example CPOE generator
-
+bin/                       # Standalone CLIs (verify, DID, MCP)
+functions/                 # Railway API endpoints
 examples/                  # Evidence format examples (8 files)
-  generic-evidence.json    #   Generic format
-  prowler-findings.json    #   Prowler OCSF
-  securityhub-findings.json #  SecurityHub ASFF
-  inspec-report.json       #   InSpec
-  trivy-report.json        #   Trivy
-  ciso-assistant-api.json  #   CISO Assistant (API)
-  ciso-assistant-export.json # CISO Assistant (Export)
-  gl-sast-report.json      #   GitLab SAST
-
-functions/                 # Railway Functions (HTTP endpoints)
-  health.ts                #   GET /health
-  sign.ts                  #   POST /sign (auth + rate-limited)
-  verify.ts                #   POST /verify
-  issue.ts                 #   POST /issue
-  did-json.ts              #   GET /.well-known/did.json
-  jwks-json.ts             #   GET /.well-known/jwks.json
-  ssf-configuration.ts     #   GET /.well-known/ssf-configuration
-  ssf-stream.ts            #   SSF stream CRUD API
-  scitt-register.ts        #   SCITT registration + receipt API
-  ssf-delivery-worker.ts   #   Event delivery worker with retry
-
-mcp.json                   # MCP client configuration
-action.yml                 # GitHub Action for CI/CD integration
-
-apps/
-  web/                     # grcorsair.com (Next.js 15 + Tailwind 4 + shadcn/ui)
-
-packages/
-  sdk/                     # @corsair/sdk — TypeScript client for sign/verify/score/query
-
-scripts/
-  wrappers/                # Tool wrapper scripts (prowler, inspec, trivy)
-
-docker/
-  Dockerfile               # CLI container image
-
-tests/                     # 1820 tests across 73 files
-  parley/                  #   MARQUE, JWT-VC, DID, SCITT, CBOR, COSE, Merkle, cert chain, CAA
-  flagship/                #   SET generation, SSF streams, delivery
-  ingestion/               #   Evidence parsing, mapping, classification
-  sign/                    #   Sign engine + batch signing
-  normalize/               #   Evidence normalization engine
-  scoring/                 #   7-dimension evidence quality scoring
-  audit/                   #   Audit engine + orchestrator
-  benchmark/               #   Scoring benchmark corpus
-  billing/                 #   Billing + subscriptions
-  certification/           #   Continuous certification
-  tprm/                    #   Third-party risk management
-  webhooks/                #   Webhook delivery
-  api/                     #   Versioned API endpoint tests
-  mcp/                     #   MCP server tool handlers
-  db/                      #   Database connection + migrations
-  functions/               #   API endpoint tests (sign, verify, health)
-  cli/                     #   CLI integration tests
-  middleware/              #   Auth, rate-limit, security headers
-  distribution/            #   Dockerfile, npm, wrappers
+apps/web/                  # grcorsair.com (Next.js 15)
+packages/sdk/              # @corsair/sdk
+tests/                     # 1920 tests across 76 files
 ```
 
 </details>
@@ -597,10 +414,8 @@ tests/                     # 1820 tests across 73 files
 
 ## Data Retention
 
-- **SCITT entries** are append-only by design (enforced by database constraints). Entries cannot be deleted or modified after registration.
-- **SSF streams** can be soft-deleted via the API but remain in the database for audit purposes.
-- **Signing keys** are encrypted at rest (AES-256-GCM) and retired keys are preserved for historical CPOE verification.
-- Storage monitoring is recommended via your hosting provider's dashboard. Time-based partitioning will be implemented at >100K SCITT entries.
+- **SCITT entries** are append-only by design. Entries cannot be deleted or modified after registration.
+- **Signing keys** are encrypted at rest (AES-256-GCM). Retired keys are preserved for historical CPOE verification.
 
 ## Security
 
@@ -612,7 +427,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the Pirate's Code.
 
 ## License
 
-Code is licensed under [Apache 2.0](LICENSE). Specifications ([CPOE_SPEC.md](CPOE_SPEC.md), [L0-L4_ISSUANCE_SPEC.md](L0-L4_ISSUANCE_SPEC.md)) are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). See [NOTICE](NOTICE) for the full licensing architecture.
+Code is licensed under [Apache 2.0](LICENSE). Specifications ([CPOE_SPEC.md](CPOE_SPEC.md)) are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). See [NOTICE](NOTICE) for the full licensing architecture.
 
 ---
 
