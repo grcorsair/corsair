@@ -161,6 +161,7 @@ export default function MarquePage() {
                   { name: "DID:web", desc: "Decentralized identity for issuer key discovery" },
                   { name: "OpenID SSF / CAEP", desc: "Real-time compliance change notifications via FLAGSHIP" },
                   { name: "IETF SCITT", desc: "Transparency log for CPOE registration and auditable history" },
+                  { name: "IETF SD-JWT", desc: "Selective disclosure — prove claims without revealing the full CPOE" },
                 ].map((std) => (
                   <div
                     key={std.name}

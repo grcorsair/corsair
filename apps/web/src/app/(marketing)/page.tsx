@@ -112,6 +112,53 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Privacy by Design */}
+      <section className="px-6 py-20">
+        <div className="mx-auto max-w-5xl">
+          <FadeIn>
+            <p className="mb-3 text-center font-pixel text-[7px] tracking-wider text-corsair-cyan/60">
+              PRIVACY BY DESIGN
+            </p>
+            <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
+              Share Proof, Not Secrets
+            </h2>
+            <p className="mb-12 text-center text-corsair-text-dim">
+              Companies fear publishing detailed control data. Corsair solves this with three privacy layers — so you can prove compliance without exposing raw evidence.
+            </p>
+          </FadeIn>
+          <FadeIn delay={0.2}>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[
+                {
+                  title: "Summary-Only CPOEs",
+                  desc: "Aggregate pass/fail counts and provenance metadata. No raw evidence, no control details, no sensitive configuration data.",
+                },
+                {
+                  title: "Evidence Sanitization",
+                  desc: "ARNs, IP addresses, file paths, account IDs, and API keys are stripped recursively before signing. Defense in depth.",
+                },
+                {
+                  title: "SD-JWT Selective Disclosure",
+                  desc: "Holders choose which claims to reveal per verifier. Prove you passed SOC 2 without showing which controls were tested.",
+                },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="rounded-xl border border-corsair-border bg-corsair-surface p-5"
+                >
+                  <p className="mb-2 font-display text-sm font-semibold text-corsair-text">
+                    {item.title}
+                  </p>
+                  <p className="text-xs leading-relaxed text-corsair-text-dim">
+                    {item.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
       <PixelDivider variant="diamond" className="mx-auto max-w-5xl px-6" />
 
       {/* Framework Grid */}

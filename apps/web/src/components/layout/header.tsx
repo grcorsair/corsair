@@ -24,6 +24,7 @@ const navLinks = [
   { href: "/marque", label: "Verify" },
   { href: "/log", label: "Log" },
   { href: "/blog", label: "Blog" },
+  { href: "/faq", label: "FAQ" },
 ];
 
 export function Header() {

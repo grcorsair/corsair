@@ -89,7 +89,7 @@ export interface SCITTConfig {
  */
 export interface SCITTRegistry {
   /** Register a signed statement (JWT-VC) with the transparency log */
-  register(statement: string): Promise<SCITTRegistration>;
+  register(statement: string, options?: { proofOnly?: boolean }): Promise<SCITTRegistration>;
 
   /** Retrieve a receipt for a previously registered entry */
   getReceipt(entryId: string): Promise<SCITTReceipt | null>;
@@ -148,6 +148,8 @@ export interface SCITTListEntry {
     controlsFailed: number;
     overallScore: number;
   };
+  /** True when entry was registered in proof-only mode (no statement stored) */
+  proofOnly?: boolean;
 }
 
 /** Options for listing SCITT entries */

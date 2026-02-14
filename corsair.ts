@@ -96,6 +96,8 @@ async function handleSign(): Promise<void> {
   let quiet = false;
   let showVersion = false;
   let showScore = false;
+  let sdJwt = false;
+  let sdFields: string[] | undefined;
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -143,6 +145,12 @@ async function handleSign(): Promise<void> {
       case "--score":
         showScore = true;
         break;
+      case "--sd-jwt":
+        sdJwt = true;
+        break;
+      case "--sd-fields":
+        sdFields = (args[++i] || "").split(",").filter(Boolean);
+        break;
       case "--help":
       case "-h":
         showHelp = true;
@@ -176,6 +184,8 @@ OPTIONS:
       --dry-run             Parse + classify but don't sign. Output would-be subject.
       --json                Output structured JSON (jwt + metadata) to stdout
       --score               Run 7-dimension evidence quality scoring (FICO score)
+      --sd-jwt              Enable SD-JWT selective disclosure
+      --sd-fields <FIELDS>  Comma-separated fields to make disclosable (default: summary,frameworks)
   -v, --verbose             Print step-by-step progress to stderr
   -q, --quiet               Suppress all stderr output
       --version             Print version
@@ -197,6 +207,8 @@ EXAMPLES:
   corsair sign --file evidence.json --did did:web:acme.com --scope "AWS Production"
   corsair sign --file evidence.json --dry-run
   corsair sign --file evidence.json --json | jq .summary
+  corsair sign --file evidence.json --sd-jwt
+  corsair sign --file evidence.json --sd-jwt --sd-fields summary,provenance
   cat trivy-report.json | corsair sign --format trivy --output cpoe.jwt
 `);
     return;
@@ -272,6 +284,8 @@ EXAMPLES:
       scope,
       expiryDays,
       dryRun,
+      sdJwt,
+      sdFields,
     }, keyManager);
 
     // Always show compact summary (not just with --verbose)
@@ -316,6 +330,10 @@ EXAMPLES:
       if (scoreResult) {
         dryOutput.score = scoreResult;
       }
+      if (sdJwt) {
+        dryOutput.sdJwt = true;
+        dryOutput.sdFields = sdFields ?? ["summary", "frameworks"];
+      }
       console.log(JSON.stringify(dryOutput, null, 2));
       return;
     }
@@ -332,6 +350,9 @@ EXAMPLES:
       };
       if (scoreResult) {
         structuredOutput.score = scoreResult;
+      }
+      if (result.disclosures) {
+        structuredOutput.disclosures = result.disclosures;
       }
       process.stdout.write(JSON.stringify(structuredOutput, null, 2));
       return;

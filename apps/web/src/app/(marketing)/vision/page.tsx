@@ -451,12 +451,94 @@ export default function VisionPage() {
         </div>
       </section>
 
-      {/* ═══ 06: THE FUTURE ═══ */}
+      {/* ═══ 06: TRUST CENTRES CAN'T SOLVE THIS ═══ */}
       <PixelDivider variant="diamond" className="my-4" />
       <section className="px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <StageHeader
             number={6}
+            name="TRUST CENTRES CAN&rsquo;T SOLVE THIS"
+            subtitle="Companies fear publishing detailed control data. Corsair solves that."
+            color="text-corsair-cyan"
+            icon={<SpyglassIcon size={32} />}
+          />
+
+          <FadeIn delay={0.1}>
+            <div className="max-w-2xl space-y-4 text-sm text-corsair-text-dim">
+              <p>
+                Trust centers (SafeBase, Whistic, Conveyor) only show high-level
+                information — &ldquo;We have SOC 2&rdquo; — because{" "}
+                <span className="text-corsair-cyan">
+                  companies fear publishing detailed control data publicly
+                </span>
+                . Legal liability, competitive exposure, and security risk make
+                full transparency a non-starter. This is the core adoption
+                blocker for compliance transparency.
+              </p>
+              <p>
+                Corsair solves this with three privacy layers that let you prove
+                compliance{" "}
+                <span className="text-corsair-cyan">
+                  without exposing raw evidence
+                </span>
+                :
+              </p>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.2}>
+            <div className="mt-8 space-y-3">
+              {[
+                {
+                  title: "Summary-Only CPOEs",
+                  desc: "Aggregate pass/fail counts and provenance metadata. No raw evidence, no control details, no sensitive configuration data. Buyers see proof of assessment — not the assessment itself.",
+                  color: "text-corsair-cyan",
+                },
+                {
+                  title: "Evidence Sanitization",
+                  desc: "ARNs, IP addresses, file paths, account IDs, and API keys are stripped recursively before signing. Defense in depth — even if someone decodes the JWT, sensitive identifiers are gone.",
+                  color: "text-corsair-green",
+                },
+                {
+                  title: "SD-JWT Selective Disclosure",
+                  desc: "Holders choose which claims to reveal per verifier. Prove you passed SOC 2 without showing which controls were tested. IETF standard — not a proprietary privacy layer.",
+                  color: "text-corsair-gold",
+                },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="rounded-xl border border-corsair-border bg-[#0A0A0A] p-5"
+                >
+                  <p className={`mb-2 font-display text-sm font-semibold ${item.color}`}>
+                    {item.title}
+                  </p>
+                  <p className="text-xs leading-relaxed text-corsair-text-dim">
+                    {item.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.3}>
+            <p className="mt-6 max-w-2xl text-sm text-corsair-text-dim">
+              Trust centers move old documents. Corsair creates a new format
+              where{" "}
+              <span className="text-corsair-cyan">
+                privacy is built into the proof
+              </span>
+              , not bolted on after. Share proof, not secrets.
+            </p>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ═══ 07: THE FUTURE ═══ */}
+      <PixelDivider variant="diamond" className="my-4" />
+      <section className="px-6 py-16">
+        <div className="mx-auto max-w-5xl">
+          <StageHeader
+            number={7}
             name="THE PRESENT AND BEYOND"
             subtitle="Scoring and certification are shipped. Agent-native trust is next."
             color="text-corsair-turquoise"
@@ -512,7 +594,7 @@ export default function VisionPage() {
       <section className="px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <StageHeader
-            number={7}
+            number={8}
             name="FROM GRC ENGINEERING"
             subtitle="Deep dives on the ideas behind Corsair"
             color="text-corsair-gold"

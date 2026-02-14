@@ -35,6 +35,7 @@ export default function LogPage() {
             </p>
             <p className="mx-auto mt-2 max-w-md text-xs text-corsair-text-dim/60">
               Like Certificate Transparency for TLS, but for compliance attestations.
+              Proof-only registrations store a cryptographic hash and COSE receipt — proving the CPOE was registered — without exposing the credential itself.
             </p>
             <a
               href="/api/scitt/feed.xml"

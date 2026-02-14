@@ -87,6 +87,8 @@ corsair sign --file evidence.json --format prowler  # Force format
 corsair sign --file evidence.json --json       # Structured JSON output
 corsair sign --file evidence.json --dry-run    # Preview without signing
 corsair sign --file evidence.json --score      # Include evidence quality score
+corsair sign --file evidence.json --sd-jwt     # SD-JWT selective disclosure
+corsair sign --file evidence.json --sd-jwt --sd-fields scope  # Disclose only scope
 corsair sign --file - < data.json              # Sign from stdin
 ```
 
@@ -180,6 +182,29 @@ The CPOE is a signed fact: "Prowler said PASS on Jan 15." Not an opinion. Not a 
 
 ---
 
+## Privacy Architecture
+
+Companies fear publishing detailed control data. Corsair solves this with three privacy layers — share proof, not secrets.
+
+| Layer | What It Does | How |
+|:------|:-------------|:----|
+| **Summary-Only CPOEs** | Aggregate pass/fail counts, no raw evidence | Default CPOE omits control details and configuration data |
+| **Evidence Sanitization** | Strip sensitive identifiers before signing | ARNs, IPs, file paths, account IDs, API keys removed recursively |
+| **SD-JWT Selective Disclosure** | Reveal only chosen claims per verifier | IETF SD-JWT — holder controls which fields are disclosed |
+
+### Proof-Only SCITT
+
+Register a CPOE in the transparency log without storing the credential itself — only a SHA-256 hash and COSE receipt. The CPOE is shared bilaterally while the log proves it was registered at a specific time.
+
+### SD-JWT in the Sign Pipeline
+
+```bash
+corsair sign --file evidence.json --sd-jwt                    # SD-JWT with default disclosable fields
+corsair sign --file evidence.json --sd-jwt --sd-fields scope  # Only scope is disclosable
+```
+
+---
+
 ## Architecture
 
 ```
@@ -221,6 +246,7 @@ The protocol composing Corsair is called **Parley**. It composes open standards 
 | [**SSF/CAEP**](https://openid.net/specs/openid-sharedsignals-framework-1_0.html) | Real-time signals | Compliance change notifications via signed SETs |
 | **Ed25519** | Signatures | Curve25519 — fast, compact, no weak keys |
 | [**in-toto/SLSA**](https://in-toto.io/) | Process provenance | COSE-signed pipeline receipts with Merkle root chain |
+| **SD-JWT** | Selective disclosure | Prove specific claims without revealing the full CPOE |
 
 ### DID Identity
 

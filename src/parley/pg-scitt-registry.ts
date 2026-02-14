@@ -40,11 +40,11 @@ export class PgSCITTRegistry implements SCITTRegistry {
     this.logId = logId;
   }
 
-  async register(statement: string): Promise<SCITTRegistration> {
+  async register(statement: string, options?: { proofOnly?: boolean }): Promise<SCITTRegistration> {
     const entryId = `entry-${crypto.randomUUID()}`;
     const registrationTime = new Date().toISOString();
 
-    // Hash the statement
+    // Hash the statement (always computed from the full statement for Merkle integrity)
     const statementHash = crypto.createHash("sha256").update(statement).digest("hex");
 
     // Get current tree size
@@ -69,10 +69,13 @@ export class PgSCITTRegistry implements SCITTRegistry {
       ? computeRootHash(existingRows.map((r) => computeLeafHash(r.statement_hash)))
       : null;
 
+    // In proofOnly mode, store null instead of the full JWT statement
+    const storedStatement = options?.proofOnly ? null : statement;
+
     // Insert entry
     await this.db`
       INSERT INTO scitt_entries (entry_id, statement, statement_hash, tree_size, tree_hash, parent_hash, registration_time)
-      VALUES (${entryId}, ${statement}, ${statementHash}, ${newTreeSize}, ${treeHash}, ${parentHash}, ${registrationTime}::timestamptz)
+      VALUES (${entryId}, ${storedStatement}, ${statementHash}, ${newTreeSize}, ${treeHash}, ${parentHash}, ${registrationTime}::timestamptz)
     `;
 
     // Generate COSE_Sign1 receipt
@@ -156,7 +159,7 @@ export class PgSCITTRegistry implements SCITTRegistry {
       OFFSET ${options.issuer || options.framework ? 0 : offset}
     `) as Array<{
       entry_id: string;
-      statement: string;
+      statement: string | null;
       tree_size: number;
       registration_time: string;
     }>;
@@ -164,6 +167,25 @@ export class PgSCITTRegistry implements SCITTRegistry {
     let entries: SCITTListEntry[] = [];
 
     for (const row of rows) {
+      // Proof-only entries have null statement -- use defaults for metadata
+      if (row.statement === null) {
+        const entry: SCITTListEntry = {
+          entryId: row.entry_id,
+          registrationTime: row.registration_time,
+          treeSize: row.tree_size,
+          issuer: "unknown",
+          scope: "unknown",
+          provenance: { source: "unknown" },
+          proofOnly: true,
+        };
+
+        // Proof-only entries cannot be filtered by issuer or framework
+        if (options.issuer || options.framework) continue;
+
+        entries.push(entry);
+        continue;
+      }
+
       const payload = decodeJWTPayload(row.statement);
       const vc = payload.vc as Record<string, unknown> | undefined;
       const subject = vc?.credentialSubject as Record<string, unknown> | undefined;
@@ -229,7 +251,7 @@ export class PgSCITTRegistry implements SCITTRegistry {
       FROM scitt_entries
     `) as Array<{
       entry_id: string;
-      statement: string;
+      statement: string | null;
       registration_time: string;
     }>;
 
@@ -244,6 +266,9 @@ export class PgSCITTRegistry implements SCITTRegistry {
     }> = [];
 
     for (const row of rows) {
+      // Skip proof-only entries (no statement to decode, cannot match issuer)
+      if (row.statement === null) continue;
+
       const payload = decodeJWTPayload(row.statement);
       const iss = payload.iss as string | undefined;
       if (iss !== issuerDID) continue;

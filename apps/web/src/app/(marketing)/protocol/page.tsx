@@ -289,15 +289,97 @@ export default function ProtocolPage() {
           </FadeIn>
 
           <MerkleViz />
+
+          <FadeIn delay={0.3}>
+            <div className="mt-6 rounded-xl border border-corsair-turquoise/20 bg-[#0A0A0A] p-5">
+              <p className="mb-2 font-pixel text-[7px] tracking-widest text-corsair-turquoise/60">
+                PROOF-ONLY MODE
+              </p>
+              <p className="text-xs text-corsair-text-dim">
+                In proof-only mode, only the SHA-256 hash and COSE receipt are stored in the log — not the full CPOE.
+                This proves the credential was registered at a specific time without exposing its contents. The CPOE
+                itself is shared bilaterally between issuer and verifier. Merkle tree integrity is identical in both modes.
+              </p>
+            </div>
+          </FadeIn>
         </div>
       </section>
 
-      {/* ═══ LAYER 6: SIGNALS — FLAGSHIP / SSF / CAEP ═══ */}
+      {/* ═══ LAYER 6: SELECTIVE DISCLOSURE — SD-JWT ═══ */}
       <PixelDivider variant="diamond" className="my-4" />
       <section className="px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <StageHeader
             number={6}
+            name="SELECTIVE DISCLOSURE"
+            subtitle="SD-JWT — prove claims without revealing the full CPOE"
+            color="text-corsair-cyan"
+            icon={<SpyglassIcon size={32} />}
+          />
+
+          <FadeIn delay={0.1}>
+            <p className="mb-6 max-w-2xl text-sm text-corsair-text-dim">
+              Not every verifier needs the full CPOE. SD-JWT (IETF draft-ietf-oauth-selective-disclosure-jwt) allows
+              holders to reveal only specific claims — like &ldquo;we passed SOC 2 access controls&rdquo; — while
+              keeping everything else as SHA-256 hashes. The Ed25519 signature covers all claims, disclosed or not.
+            </p>
+          </FadeIn>
+
+          <FadeIn delay={0.2}>
+            <div className="space-y-3">
+              {[
+                {
+                  tier: "Full Disclosure",
+                  desc: "All claims visible. Standard JWT-VC. Default behavior when --sd-jwt is not used.",
+                  color: "text-corsair-green",
+                  bgColor: "bg-corsair-green/10",
+                },
+                {
+                  tier: "Selective Disclosure",
+                  desc: "Holder chooses which claims to reveal per verifier. Undisclosed claims appear as SHA-256 digests. Use --sd-jwt --sd-fields to control.",
+                  color: "text-corsair-cyan",
+                  bgColor: "bg-corsair-cyan/10",
+                },
+                {
+                  tier: "Proof-Only",
+                  desc: "Only the hash is registered in SCITT. CPOE shared bilaterally. Maximum privacy with public proof of existence.",
+                  color: "text-corsair-gold",
+                  bgColor: "bg-corsair-gold/10",
+                },
+              ].map((item) => (
+                <div key={item.tier} className="flex items-start gap-4 rounded-lg border border-corsair-border bg-[#0A0A0A] p-4">
+                  <span className={`flex h-8 w-20 shrink-0 items-center justify-center rounded font-mono text-xs font-bold ${item.bgColor} ${item.color}`}>
+                    {item.tier.split(" ")[0]}
+                  </span>
+                  <div>
+                    <p className={`text-sm font-medium ${item.color}`}>{item.tier}</p>
+                    <p className="text-xs text-corsair-text-dim">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.3}>
+            <div className="mt-4 rounded-xl border border-corsair-border bg-[#0A0A0A] p-5">
+              <p className="mb-3 font-pixel text-[7px] tracking-widest text-corsair-cyan/60">
+                CLI USAGE
+              </p>
+              <div className="space-y-1 font-mono text-xs text-corsair-text-dim">
+                <p><span className="text-corsair-cyan">$</span> corsair sign --file evidence.json --sd-jwt</p>
+                <p><span className="text-corsair-cyan">$</span> corsair sign --file evidence.json --sd-jwt --sd-fields summary,provenance</p>
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ═══ LAYER 7: SIGNALS — FLAGSHIP / SSF / CAEP ═══ */}
+      <PixelDivider variant="diamond" className="my-4" />
+      <section className="px-6 py-16">
+        <div className="mx-auto max-w-5xl">
+          <StageHeader
+            number={7}
             name="SIGNAL"
             subtitle="FLAGSHIP — real-time compliance notifications"
             color="text-corsair-crimson"
@@ -318,12 +400,12 @@ export default function ProtocolPage() {
         </div>
       </section>
 
-      {/* ═══ LAYER 7: PROVENANCE — in-toto/SLSA Receipt Chain ═══ */}
+      {/* ═══ LAYER 8: PROVENANCE — in-toto/SLSA Receipt Chain ═══ */}
       <PixelDivider className="my-4" />
       <section className="px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <StageHeader
-            number={7}
+            number={8}
             name="PROVENANCE"
             subtitle="Advanced — in-toto/SLSA pipeline receipts"
             color="text-corsair-green"
@@ -376,12 +458,12 @@ export default function ProtocolPage() {
         </div>
       </section>
 
-      {/* ═══ LAYER 2: INTELLIGENCE ═══ */}
+      {/* ═══ LAYER 9: INTELLIGENCE ═══ */}
       <PixelDivider variant="diamond" className="my-4" />
       <section className="px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <StageHeader
-            number={8}
+            number={9}
             name="INTELLIGENCE"
             subtitle="Advanced — Evidence quality scoring and normalization"
             color="text-corsair-turquoise"
@@ -422,12 +504,12 @@ export default function ProtocolPage() {
         </div>
       </section>
 
-      {/* ═══ LAYER 3: DECISION ═══ */}
+      {/* ═══ LAYER 10: DECISION ═══ */}
       <PixelDivider className="my-4" />
       <section className="px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <StageHeader
-            number={9}
+            number={10}
             name="DECISION"
             subtitle="Advanced — Automated audit, certification, and TPRM"
             color="text-corsair-green"

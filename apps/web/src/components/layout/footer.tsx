@@ -7,6 +7,7 @@ const productLinks = [
   { href: "/docs", label: "Documentation" },
   { href: "/marque", label: "Verify CPOE" },
   { href: "/blog", label: "Blog" },
+  { href: "/faq", label: "FAQ" },
 ];
 
 const resourceLinks = [
@@ -16,6 +17,7 @@ const resourceLinks = [
   { href: "/protocol", label: "Protocol Deep Dive" },
   { href: "/docs/integrations/ci-cd", label: "CI/CD Integration" },
   { href: "/docs/integrations/jwt-vc", label: "JWT-VC Integration" },
+  { href: "/faq#selective-disclosure", label: "Selective Disclosure" },
 ];
 
 const communityLinks = [

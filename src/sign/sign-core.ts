@@ -45,6 +45,12 @@ export interface SignInput {
 
   /** Parse + classify but don't sign. Returns would-be credentialSubject */
   dryRun?: boolean;
+
+  /** Enable SD-JWT selective disclosure */
+  sdJwt?: boolean;
+
+  /** Fields in credentialSubject to make disclosable (default: summary, frameworks) */
+  sdFields?: string[];
 }
 
 export interface SignOutput {
@@ -81,6 +87,9 @@ export interface SignOutput {
 
   /** Would-be credentialSubject (always present, useful for dry-run) */
   credentialSubject?: Record<string, unknown>;
+
+  /** SD-JWT disclosures (only present when sdJwt=true) */
+  disclosures?: Array<{ claim: string; disclosure: string; digest: string }>;
 }
 
 // =============================================================================
@@ -212,6 +221,34 @@ export async function signEvidence(
     credentialSubject = payload.vc?.credentialSubject;
   } catch {
     // Non-critical — credentialSubject is optional in output
+  }
+
+  // 6. SD-JWT selective disclosure (optional)
+  if (input.sdJwt) {
+    const parts = jwt.split(".");
+    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+
+    // Default disclosable fields if not specified
+    const disclosableFields = input.sdFields ?? ["summary", "frameworks"];
+
+    const { createSDJWT } = await import("../parley/sd-jwt");
+    const loadedKeypair = await keyManager.loadKeypair();
+    const sdResult = await createSDJWT(payload, disclosableFields, {
+      privateKeyPem: loadedKeypair!.privateKey.toString(),
+      issuerDid: payload.iss,
+    });
+
+    return {
+      jwt: sdResult.sdJwt,
+      marqueId,
+      detectedFormat,
+      summary,
+      provenance,
+      warnings,
+      document: doc,
+      credentialSubject,
+      disclosures: sdResult.disclosures,
+    };
   }
 
   return {
