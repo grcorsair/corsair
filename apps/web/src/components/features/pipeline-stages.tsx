@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "motion/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,160 +15,87 @@ import {
   MarkIcon,
 } from "@/components/pixel-art/pixel-icons";
 
-/* ─── Layer definitions ──────────────────────────────────── */
+/* ─── Stage definitions ──────────────────────────────────── */
 
 interface Stage {
   name: string;
   description: string;
+  analogy: string;
   icon: React.ReactNode;
 }
 
-interface Layer {
-  number: number;
-  label: string;
-  tagline: string;
-  color: string;
-  glowColor: string;
-  borderColor: string;
-  bgTint: string;
-  stages: Stage[];
+const primitives: Stage[] = [
+  {
+    name: "SIGN",
+    description:
+      "Parse tool output, record provenance, sign as a JWT-VC (Ed25519, did:web)",
+    analogy: "like git commit",
+    icon: <MarqueIcon size={36} />,
+  },
+  {
+    name: "LOG",
+    description:
+      "Register in an append-only SCITT transparency log with COSE receipts",
+    analogy: "like git log",
+    icon: <ChartIcon size={36} />,
+  },
+  {
+    name: "VERIFY",
+    description:
+      "Anyone verifies a CPOE using standard JWT libraries and DID:web — free, no account",
+    analogy: "like git verify-commit",
+    icon: <QuarterIcon size={36} />,
+  },
+  {
+    name: "DIFF",
+    description:
+      "Compare CPOEs to detect compliance regressions over time",
+    analogy: "like git diff",
+    icon: <RaidIcon size={36} />,
+  },
+  {
+    name: "SIGNAL",
+    description:
+      "Real-time compliance change notifications via FLAGSHIP (SSF/CAEP)",
+    analogy: "like git webhooks",
+    icon: <ReconIcon size={36} />,
+  },
+];
+
+/* ─── Advanced features (L2-L3, collapsed by default) ───── */
+
+interface AdvancedFeature {
+  name: string;
+  description: string;
+  flag: string;
 }
 
-const layers: Layer[] = [
+const advancedFeatures: AdvancedFeature[] = [
   {
-    number: 1,
-    label: "Infrastructure",
-    tagline: "Ed25519 signing, SCITT transparency, DID:web identity",
-    color: "#D4A853",
-    glowColor: "rgba(212,168,83,0.15)",
-    borderColor: "rgba(212,168,83,0.3)",
-    bgTint: "rgba(212,168,83,0.04)",
-    stages: [
-      {
-        name: "EVIDENCE",
-        description:
-          "Accept structured output from security tools — Prowler, InSpec, Trivy, SecurityHub",
-        icon: <ReconIcon size={36} />,
-      },
-      {
-        name: "SIGN",
-        description:
-          "Record provenance and sign as a JWT-VC (Ed25519, did:web) — a verifiable CPOE",
-        icon: <MarqueIcon size={36} />,
-      },
-      {
-        name: "LOG",
-        description:
-          "Register in an append-only SCITT transparency log with COSE receipts",
-        icon: <ChartIcon size={36} />,
-      },
-      {
-        name: "VERIFY",
-        description:
-          "Anyone verifies a CPOE using standard JWT libraries and DID:web",
-        icon: <QuarterIcon size={36} />,
-      },
-      {
-        name: "DIFF",
-        description:
-          "Compare CPOEs to detect compliance regressions over time",
-        icon: <RaidIcon size={36} />,
-      },
-    ],
+    name: "Evidence Quality Score",
+    description: "7-dimension evidence quality assessment — like FICO for compliance",
+    flag: "--score",
   },
   {
-    number: 2,
-    label: "Intelligence",
-    tagline:
-      "8+ tool formats, 7-dimension scoring, evidence search, governance review",
-    color: "#7FDBCA",
-    glowColor: "rgba(127,219,202,0.15)",
-    borderColor: "rgba(127,219,202,0.3)",
-    bgTint: "rgba(127,219,202,0.04)",
-    stages: [
-      {
-        name: "NORMALIZE",
-        description:
-          "Parse 8+ tool formats into a unified evidence schema automatically",
-        icon: <MarkIcon size={36} />,
-      },
-      {
-        name: "SCORE",
-        description:
-          "7-dimension evidence quality assessment — like FICO for compliance",
-        icon: <PlunderIcon size={36} />,
-      },
-      {
-        name: "QUERY",
-        description:
-          "Search and filter signed evidence across the transparency log",
-        icon: <SpyglassIcon size={36} />,
-      },
-      {
-        name: "QUARTER",
-        description:
-          "Quartermaster governance review — 5 deterministic + 2 model-assisted dimensions",
-        icon: <QuarterIcon size={36} />,
-      },
-    ],
+    name: "Compliance Audit",
+    description: "Multi-file audit with scoring and governance checks",
+    flag: "corsair audit",
   },
   {
-    number: 3,
-    label: "Decision",
-    tagline:
-      "Multi-agent audit, continuous certification, vendor risk, webhooks",
-    color: "#2ECC71",
-    glowColor: "rgba(46,204,113,0.15)",
-    borderColor: "rgba(46,204,113,0.3)",
-    bgTint: "rgba(46,204,113,0.04)",
-    stages: [
-      {
-        name: "AUDIT",
-        description:
-          "Multi-agent audit workflows — automated evidence collection and review",
-        icon: <SpyglassIcon size={36} />,
-      },
-      {
-        name: "CERTIFY",
-        description:
-          "Continuous certification — re-validate CPOEs on schedule, auto-downgrade on drift",
-        icon: <MarqueIcon size={36} />,
-      },
-      {
-        name: "TPRM",
-        description:
-          "Vendor risk management — ingest, compare, and monitor third-party CPOEs",
-        icon: <ChartIcon size={36} />,
-      },
-      {
-        name: "AUTOMATE",
-        description:
-          "Webhooks and FLAGSHIP signals — trigger actions on compliance changes",
-        icon: <ReconIcon size={36} />,
-      },
-    ],
+    name: "Continuous Certification",
+    description: "Policy-based compliance monitoring with auto-renewal",
+    flag: "corsair cert",
+  },
+  {
+    name: "Vendor Risk (TPRM)",
+    description: "Automated third-party assessment from signed CPOEs",
+    flag: "corsair tprm",
   },
 ];
 
 /* ─── Animation variants ─────────────────────────────────── */
 
-const layerContainerVariants = {
-  hidden: {},
-  visible: {
-    transition: { staggerChildren: 0.2 },
-  },
-};
-
-const layerVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: "easeOut" as const },
-  },
-};
-
-const stageContainerVariants = {
+const containerVariants = {
   hidden: {},
   visible: {
     transition: { staggerChildren: 0.08 },
@@ -184,146 +112,120 @@ const stageVariants = {
   },
 };
 
-/* ─── Connector between layers ───────────────────────────── */
-
-function LayerConnector({ fromColor, toColor }: { fromColor: string; toColor: string }) {
-  return (
-    <div className="flex flex-col items-center py-3">
-      <div
-        className="h-6 w-px"
-        style={{
-          background: `linear-gradient(to bottom, ${fromColor}, ${toColor})`,
-          opacity: 0.5,
-        }}
-      />
-      <div
-        className="font-pixel text-[7px] tracking-wider"
-        style={{ color: toColor, opacity: 0.6 }}
-      >
-        FEEDS INTO
-      </div>
-      <div
-        className="h-3 w-px"
-        style={{
-          background: toColor,
-          opacity: 0.3,
-        }}
-      />
-    </div>
-  );
-}
-
 /* ─── Main component ─────────────────────────────────────── */
 
 export function PipelineStages() {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   return (
-    <motion.div
-      className="flex flex-col"
-      variants={layerContainerVariants}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-60px" }}
-    >
-      {layers.map((layer, layerIndex) => (
-        <div key={layer.label}>
-          {/* Connector between layers */}
-          {layerIndex > 0 && (
-            <LayerConnector
-              fromColor={layers[layerIndex - 1].color}
-              toColor={layer.color}
-            />
-          )}
-
-          {/* Layer card */}
-          <motion.div variants={layerVariants}>
-            <div
-              className="rounded-xl border p-5 sm:p-6"
-              style={{
-                borderColor: layer.borderColor,
-                backgroundColor: layer.bgTint,
-              }}
-            >
-              {/* Layer header */}
-              <div className="mb-5 flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:gap-3">
-                <Badge
-                  variant="outline"
-                  className="shrink-0 border-transparent font-pixel text-[8px] tracking-widest"
-                  style={{ color: layer.color }}
-                >
-                  L{layer.number}
-                </Badge>
-                <span
-                  className="font-display text-sm font-semibold tracking-wide sm:text-base"
-                  style={{ color: layer.color }}
-                >
-                  {layer.label}
-                </span>
-                <span className="hidden text-xs text-corsair-text-dim sm:inline">
-                  {layer.tagline}
-                </span>
-              </div>
-
-              {/* Tagline on mobile (hidden on desktop where it's inline) */}
-              <p className="mb-4 text-center text-xs text-corsair-text-dim sm:hidden">
-                {layer.tagline}
-              </p>
-
-              {/* Stage cards */}
-              <motion.div
-                className={`grid gap-4 ${
-                  layer.stages.length === 5
-                    ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
-                    : layer.stages.length === 4
-                      ? "grid-cols-2 sm:grid-cols-4"
-                      : "grid-cols-2 sm:grid-cols-3"
-                }`}
-                variants={stageContainerVariants}
-              >
-                {layer.stages.map((stage, stageIndex) => (
-                  <motion.div
-                    key={stage.name}
-                    variants={stageVariants}
-                    className="group flex flex-col items-center text-center"
-                  >
-                    <Card
-                      className="pixel-card-hover mb-2 flex h-16 w-16 items-center justify-center bg-corsair-surface transition-all"
-                      style={
-                        {
-                          "--glow-color": layer.glowColor,
-                        } as React.CSSProperties
-                      }
-                    >
-                      <CardContent className="p-0">{stage.icon}</CardContent>
-                    </Card>
-
-                    <Badge
-                      variant="outline"
-                      className="mb-1 border-transparent font-pixel text-[8px] tracking-wider"
-                      style={{ color: layer.color }}
-                    >
-                      {stage.name}
-                    </Badge>
-
-                    <span className="text-xs leading-snug text-corsair-text-dim">
-                      {stage.description}
-                    </span>
-
-                    {/* Arrow connector between stages (desktop, not last) */}
-                    {stageIndex < layer.stages.length - 1 && (
-                      <span
-                        className="mt-1 hidden font-pixel text-[7px] sm:block"
-                        style={{ color: layer.borderColor }}
-                      >
-                        &gt;
-                      </span>
-                    )}
-                  </motion.div>
-                ))}
-              </motion.div>
-            </div>
-          </motion.div>
+    <div className="flex flex-col gap-6">
+      {/* Core primitives */}
+      <div
+        className="rounded-xl border p-5 sm:p-6"
+        style={{
+          borderColor: "rgba(212,168,83,0.3)",
+          backgroundColor: "rgba(212,168,83,0.04)",
+        }}
+      >
+        <div className="mb-5 flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <Badge
+            variant="outline"
+            className="shrink-0 border-transparent font-pixel text-[8px] tracking-widest text-corsair-gold"
+          >
+            PROTOCOL
+          </Badge>
+          <span className="font-display text-sm font-semibold tracking-wide text-corsair-gold sm:text-base">
+            Five Primitives
+          </span>
+          <span className="hidden text-xs text-corsair-text-dim sm:inline">
+            Ed25519 signing, SCITT transparency, DID:web identity, SSF/CAEP signals
+          </span>
         </div>
-      ))}
-    </motion.div>
+
+        <motion.div
+          className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+        >
+          {primitives.map((stage) => (
+            <motion.div
+              key={stage.name}
+              variants={stageVariants}
+              className="group flex flex-col items-center text-center"
+            >
+              <Card
+                className="pixel-card-hover mb-2 flex h-16 w-16 items-center justify-center bg-corsair-surface transition-all"
+                style={
+                  {
+                    "--glow-color": "rgba(212,168,83,0.15)",
+                  } as React.CSSProperties
+                }
+              >
+                <CardContent className="p-0">{stage.icon}</CardContent>
+              </Card>
+
+              <Badge
+                variant="outline"
+                className="mb-1 border-transparent font-pixel text-[8px] tracking-wider text-corsair-gold"
+              >
+                {stage.name}
+              </Badge>
+
+              <span className="text-xs leading-snug text-corsair-text-dim">
+                {stage.description}
+              </span>
+
+              <span className="mt-1 text-[10px] italic text-corsair-text-dim/50">
+                {stage.analogy}
+              </span>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+
+      {/* Advanced features toggle */}
+      <div className="text-center">
+        <button
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="inline-flex items-center gap-2 rounded-lg border border-corsair-border/50 px-4 py-2 text-xs text-corsair-text-dim transition-colors hover:border-corsair-gold/30 hover:text-corsair-gold"
+        >
+          <span>{showAdvanced ? "Hide" : "Show"} Advanced Features</span>
+          <span className="text-[10px]">{showAdvanced ? "▲" : "▼"}</span>
+        </button>
+      </div>
+
+      {/* Advanced features (collapsed) */}
+      {showAdvanced && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          className="rounded-xl border border-corsair-border/30 bg-corsair-surface/50 p-5"
+        >
+          <p className="mb-4 text-center text-xs text-corsair-text-dim">
+            Built on the five primitives. Available via CLI flags and dedicated commands.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {advancedFeatures.map((feature) => (
+              <div
+                key={feature.name}
+                className="rounded-lg border border-corsair-border/20 p-3"
+              >
+                <p className="text-sm font-medium text-corsair-text">
+                  {feature.name}
+                </p>
+                <p className="mt-1 text-xs text-corsair-text-dim">
+                  {feature.description}
+                </p>
+                <code className="mt-2 block text-[10px] text-corsair-cyan">
+                  {feature.flag}
+                </code>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+    </div>
   );
 }

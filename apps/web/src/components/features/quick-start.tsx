@@ -12,35 +12,24 @@ curl -fsSL https://bun.sh/install | bash
 git clone https://github.com/Arudjreis/corsair.git
 cd corsair && bun install
 
-# Generate Ed25519 signing keys
-bun run corsair.ts keygen
+# Initialize a project (generates keys + example evidence)
+bun run corsair.ts init
 
 # Sign tool output into a CPOE (like git commit)
-bun run corsair.ts sign --file prowler-findings.json --output cpoe.jwt
+# Keys are auto-generated on first use — no setup needed
+prowler scan --output-format json | bun run corsair.ts sign
 
-# Sign with evidence quality scoring (FICO-style)
-bun run corsair.ts sign --file evidence.json --score --json
+# Or sign a file directly
+bun run corsair.ts sign --file prowler-findings.json
 
 # Verify any CPOE (always free, no account needed)
-bun run corsair.ts verify --file cpoe.jwt
+bun run corsair.ts verify --file prowler-findings.cpoe.jwt
 
 # Compare two CPOEs (like git diff)
 bun run corsair.ts diff --current new.jwt --previous old.jwt
 
-# List signed CPOEs (like git log)
+# Query the SCITT transparency log (like git log)
 bun run corsair.ts log --last 10
-
-# Run a full compliance audit (like git bisect)
-bun run corsair.ts audit --files prowler.json inspec.json --scope "AWS Production"
-
-# Manage continuous certifications
-bun run corsair.ts cert create --scope "AWS Prod" --frameworks SOC2 --files evidence/*.json
-
-# Third-party risk management
-bun run corsair.ts tprm register --name "Acme Cloud" --domain acme.com --risk-tier high
-
-# Re-sign a CPOE with fresh dates (like git commit --amend)
-bun run corsair.ts renew --file cpoe.jwt --output renewed.jwt
 
 # View FLAGSHIP signal info (like git webhooks)
 bun run corsair.ts signal --help`;

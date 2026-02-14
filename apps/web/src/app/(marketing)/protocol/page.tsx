@@ -41,8 +41,8 @@ export default function ProtocolPage() {
             protocol
           </h1>
           <p className="mx-auto max-w-2xl text-center text-lg text-corsair-text-dim sm:text-xl">
-            Three layers. Five open standards. Zero vendor lock-in.
-            Infrastructure, intelligence, and automated decisions — every layer traceable, every proof verifiable.
+            Five primitives. Five open standards. Zero vendor lock-in.
+            Sign, verify, diff, log, signal — every proof traceable, every step verifiable.
           </p>
         </FadeIn>
 
@@ -64,7 +64,7 @@ export default function ProtocolPage() {
         <FadeIn delay={0.5}>
           <p className="mt-6 max-w-lg text-center text-xs text-corsair-text-dim">
             Parley composes open standards so any JWT library can verify a CPOE.
-            This page explains every layer — from infrastructure primitives to intelligence scoring to automated decisions.
+            This page explains every primitive — from signing to transparency to real-time signals.
           </p>
         </FadeIn>
       </section>
@@ -76,15 +76,14 @@ export default function ProtocolPage() {
           <FadeIn>
             <div className="mb-10 text-center">
               <p className="mb-3 font-pixel text-[8px] tracking-widest text-corsair-gold/60">
-                THREE LAYERS
+                FIVE PRIMITIVES
               </p>
               <h2 className="mb-4 font-display text-3xl font-bold text-corsair-text">
-                Infrastructure &rarr; Intelligence &rarr; Decision
+                Sign &rarr; Log &rarr; Verify &rarr; Diff &rarr; Signal
               </h2>
               <p className="mx-auto max-w-2xl text-sm text-corsair-text-dim">
-                Layer 1 handles cryptographic infrastructure — five primitives, each backed by open standards.
-                Layer 2 adds intelligence — evidence normalization, quality scoring, and the Quartermaster.
-                Layer 3 automates decisions — continuous certification, TPRM, and multi-agent audit.
+                Five primitives, each backed by open standards. Tool output goes in, signed proof comes out.
+                Like git for compliance — sign evidence, diff changes, query history, verify proof.
               </p>
             </div>
           </FadeIn>
@@ -93,15 +92,15 @@ export default function ProtocolPage() {
             <div className="space-y-4">
               <div className="rounded-xl border border-corsair-gold/20 bg-[#0A0A0A] p-6">
                 <p className="mb-3 font-pixel text-[7px] tracking-widest text-corsair-gold/60">
-                  LAYER 1 — INFRASTRUCTURE
+                  PROTOCOL PRIMITIVES
                 </p>
                 <div className="space-y-3 font-mono text-xs">
                   {[
-                    { primitive: "Sign", crypto: "JWT-VC + Ed25519", color: "text-corsair-gold" },
-                    { primitive: "Verify", crypto: "DID:web resolution + signature check", color: "text-corsair-green" },
-                    { primitive: "Diff", crypto: "Compare two JWT-VC payloads", color: "text-corsair-turquoise" },
-                    { primitive: "Log", crypto: "SCITT transparency log + Merkle proofs", color: "text-corsair-cyan" },
-                    { primitive: "Signal", crypto: "FLAGSHIP / SSF/CAEP event streams", color: "text-corsair-crimson" },
+                    { primitive: "Sign", crypto: "JWT-VC + Ed25519 — parse evidence, record provenance, sign", color: "text-corsair-gold", analogy: "like git commit" },
+                    { primitive: "Log", crypto: "SCITT transparency log + Merkle proofs + COSE receipts", color: "text-corsair-cyan", analogy: "like git log" },
+                    { primitive: "Verify", crypto: "DID:web resolution + Ed25519 signature check", color: "text-corsair-green", analogy: "like HTTPS" },
+                    { primitive: "Diff", crypto: "Compare two JWT-VC payloads, detect regressions", color: "text-corsair-turquoise", analogy: "like git diff" },
+                    { primitive: "Signal", crypto: "FLAGSHIP / SSF/CAEP real-time event streams", color: "text-corsair-crimson", analogy: "like webhooks" },
                   ].map((item) => (
                     <div key={item.primitive} className="flex items-center gap-3">
                       <span className={`w-16 shrink-0 font-bold ${item.color}`}>
@@ -110,54 +109,35 @@ export default function ProtocolPage() {
                       <span className="text-corsair-border">&rarr;</span>
                       <span className="text-corsair-text">
                         {item.crypto}
+                      </span>
+                      <span className="ml-auto text-corsair-text-dim/50 italic text-[10px]">
+                        {item.analogy}
                       </span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="rounded-xl border border-corsair-turquoise/20 bg-[#0A0A0A] p-6">
-                <p className="mb-3 font-pixel text-[7px] tracking-widest text-corsair-turquoise/60">
-                  LAYER 2 — INTELLIGENCE
+              <div className="rounded-xl border border-corsair-border/30 bg-[#0A0A0A] p-6">
+                <p className="mb-3 font-pixel text-[7px] tracking-widest text-corsair-text-dim/60">
+                  ADVANCED — BUILT ON THE FIVE PRIMITIVES
                 </p>
-                <div className="space-y-3 font-mono text-xs">
-                  {[
-                    { primitive: "Normalize", crypto: "Multi-format evidence normalization (8+ tool formats)", color: "text-corsair-turquoise" },
-                    { primitive: "Score", crypto: "Evidence quality scoring — FICO for compliance", color: "text-corsair-turquoise" },
-                    { primitive: "Query", crypto: "Structured compliance queries across SCITT log", color: "text-corsair-turquoise" },
-                    { primitive: "Quarter", crypto: "Quartermaster 7-dimension evidence assessment", color: "text-corsair-turquoise" },
-                  ].map((item) => (
-                    <div key={item.primitive} className="flex items-center gap-3">
-                      <span className={`w-16 shrink-0 font-bold ${item.color}`}>
-                        {item.primitive}
-                      </span>
-                      <span className="text-corsair-border">&rarr;</span>
-                      <span className="text-corsair-text">
-                        {item.crypto}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-corsair-green/20 bg-[#0A0A0A] p-6">
-                <p className="mb-3 font-pixel text-[7px] tracking-widest text-corsair-green/60">
-                  LAYER 3 — DECISION
+                <p className="mb-3 text-xs text-corsair-text-dim">
+                  Evidence quality scoring, compliance audit orchestration, continuous certification, and automated TPRM — all available via CLI flags and dedicated commands.
                 </p>
-                <div className="space-y-3 font-mono text-xs">
+                <div className="space-y-2 font-mono text-xs">
                   {[
-                    { primitive: "Audit", crypto: "Multi-agent audit orchestration across evidence sets", color: "text-corsair-green" },
-                    { primitive: "Certify", crypto: "Continuous certification with automated re-validation", color: "text-corsair-green" },
-                    { primitive: "TPRM", crypto: "Automated third-party risk decisions from CPOE scores", color: "text-corsair-green" },
-                    { primitive: "Automate", crypto: "Policy-driven compliance workflows and responses", color: "text-corsair-green" },
+                    { op: "Score", desc: "7-dimension evidence quality assessment (--score)", color: "text-corsair-turquoise" },
+                    { op: "Audit", desc: "Multi-file compliance audit orchestration (corsair audit)", color: "text-corsair-green" },
+                    { op: "Certify", desc: "Continuous certification with drift detection (corsair cert)", color: "text-corsair-green" },
+                    { op: "TPRM", desc: "Automated vendor risk decisions (corsair tprm)", color: "text-corsair-green" },
                   ].map((item) => (
-                    <div key={item.primitive} className="flex items-center gap-3">
-                      <span className={`w-16 shrink-0 font-bold ${item.color}`}>
-                        {item.primitive}
+                    <div key={item.op} className="flex items-center gap-3">
+                      <span className={`w-16 shrink-0 ${item.color}`}>
+                        {item.op}
                       </span>
-                      <span className="text-corsair-border">&rarr;</span>
-                      <span className="text-corsair-text">
-                        {item.crypto}
+                      <span className="text-corsair-text-dim">
+                        {item.desc}
                       </span>
                     </div>
                   ))}
@@ -175,7 +155,7 @@ export default function ProtocolPage() {
           <StageHeader
             number={1}
             name="COMPOSITION"
-            subtitle="Layer 1 — Five standards, one protocol"
+            subtitle="Five standards, one protocol"
             color="text-corsair-gold"
             icon={<ChartIcon size={32} />}
           />
@@ -403,15 +383,15 @@ export default function ProtocolPage() {
           <StageHeader
             number={8}
             name="INTELLIGENCE"
-            subtitle="Layer 2 — Evidence quality scoring and normalization"
+            subtitle="Advanced — Evidence quality scoring and normalization"
             color="text-corsair-turquoise"
             icon={<QuarterIcon size={32} />}
           />
 
           <FadeIn delay={0.1}>
             <p className="mb-2 max-w-2xl text-sm text-corsair-text-dim">
-              Layer 1 handles the plumbing — signing, logging, verification. Layer 2 makes
-              that data useful. Evidence from 8+ tool formats is normalized into a common
+              The five primitives handle the plumbing — signing, logging, verification. The intelligence
+              layer makes that data useful. Evidence from 8+ tool formats is normalized into a common
               structure, scored for quality across 7 dimensions, and made queryable. This
               is the FICO layer — standardized evidence quality scores that any platform
               can consume, regardless of which tool produced the evidence.
@@ -449,22 +429,22 @@ export default function ProtocolPage() {
           <StageHeader
             number={9}
             name="DECISION"
-            subtitle="Layer 3 — Automated audit, certification, and TPRM"
+            subtitle="Advanced — Automated audit, certification, and TPRM"
             color="text-corsair-green"
             icon={<MarkIcon size={32} />}
           />
 
           <FadeIn delay={0.1}>
             <p className="mb-2 max-w-2xl text-sm text-corsair-text-dim">
-              Layer 3 turns scored evidence into automated decisions. Continuous
+              The decision layer turns scored evidence into automated decisions. Continuous
               certification replaces point-in-time audits. TPRM automation replaces
               security questionnaires. Multi-agent audit orchestration coordinates
               specialized agents across evidence sets — each agent signs its findings
               as a CPOE, creating a verifiable audit trail with no human bottleneck.
             </p>
             <p className="mb-6 max-w-2xl text-xs text-corsair-text-dim/60 italic">
-              Layer 3 consumes Layer 2 scores and Layer 1 proofs. Each layer is independently
-              useful. Together they replace the annual audit cycle.
+              These features consume quality scores and signed proofs from the five primitives.
+              Together they replace the annual audit cycle.
             </p>
           </FadeIn>
 

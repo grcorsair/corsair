@@ -1,5 +1,5 @@
 ---
-title: "Layer 2: Intelligence"
+title: "Advanced: Evidence Intelligence"
 description: "Evidence normalization, quality scoring, and the Quartermaster governance engine."
 section: "concepts"
 order: 12
@@ -7,7 +7,7 @@ order: 12
 
 ## Overview
 
-Layer 2 adds intelligence on top of Layer 1's cryptographic signing infrastructure. While Layer 1 answers "is this evidence signed and verifiable?", Layer 2 answers "how good is this evidence?"
+The intelligence features build on top of Corsair's five core primitives (sign, verify, diff, log, signal). While the primitives answer "is this evidence signed and verifiable?", the intelligence layer answers "how good is this evidence?"
 
 The intelligence pipeline transforms raw tool output into a standardized, scored, queryable format:
 
@@ -294,10 +294,10 @@ The Quartermaster is not "AI-powered." It is a deterministic governance engine w
 
 ## How Intelligence Feeds Into Decisions
 
-Layer 2 outputs become inputs to Layer 3 (Decision):
+Intelligence outputs feed into the decision features (audit, certification, TPRM):
 
-| Layer 2 Output | Layer 3 Consumer | How It Is Used |
-|---------------|------------------|----------------|
+| Intelligence Output | Decision Consumer | How It Is Used |
+|---------------------|-------------------|----------------|
 | Evidence quality score | Audit engine | Score is included in audit results |
 | Governance findings | Audit engine | Findings surface as audit findings |
 | Normalized controls | Certification engine | Drift detection compares normalized controls |

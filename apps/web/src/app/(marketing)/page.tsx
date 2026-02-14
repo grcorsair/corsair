@@ -25,17 +25,21 @@ export default function Home() {
               THE PIPELINE
             </p>
             <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
-              Three Layers. One Protocol.
+              Five Primitives. Like Git.
             </h2>
             <p className="mb-4 text-center text-corsair-text-dim">
-              From tool output to signed, traceable, real-time proof — then intelligence and automated decisions on top.
+              Tool output goes in, signed proof comes out. Sign, verify, diff, log, signal.
             </p>
             <div className="mb-12 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 font-mono text-xs">
-              <span className="text-corsair-gold">L1 Infrastructure</span>
+              <span className="text-corsair-gold">SIGN</span>
               <span className="text-corsair-border">&rarr;</span>
-              <span className="text-corsair-turquoise">L2 Intelligence</span>
+              <span className="text-corsair-gold">LOG</span>
               <span className="text-corsair-border">&rarr;</span>
-              <span className="text-corsair-green">L3 Decision</span>
+              <span className="text-corsair-gold">VERIFY</span>
+              <span className="text-corsair-border">&rarr;</span>
+              <span className="text-corsair-gold">DIFF</span>
+              <span className="text-corsair-border">&rarr;</span>
+              <span className="text-corsair-gold">SIGNAL</span>
             </div>
           </FadeIn>
           <FadeIn delay={0.2}>
@@ -57,7 +61,7 @@ export default function Home() {
               See What Each Primitive Does
             </h2>
             <p className="mb-8 text-center text-corsair-text-dim">
-              Layer 1 handles the infrastructure — sign, verify, diff, log, signal. Layer 2 adds intelligence — evidence quality scoring, normalization, and the Quartermaster. Layer 3 automates decisions — continuous certification, TPRM, and multi-agent audit. Together they replace the compliance trust stack that doesn&apos;t exist today.
+              Prowler says PASS, Corsair signs &ldquo;Prowler said PASS.&rdquo; The tool&apos;s finding, signed, verifiable. Each primitive maps to a git command you already know.
             </p>
           </FadeIn>
           <FadeIn delay={0.2}>
@@ -101,7 +105,7 @@ export default function Home() {
               Questionnaires Are Dead
             </h2>
             <p className="mb-12 text-center text-corsair-text-dim">
-              $8.57B in TPRM spend. Built on trust. Not verification. Corsair replaces it with cryptographic proof (Layer 1), evidence quality scoring like FICO for compliance (Layer 2), and automated TPRM decisions with continuous certification (Layer 3).
+              $8.57B in TPRM spend. Built on trust. Not verification. Corsair replaces it with cryptographic proof — signed tool output that anyone can verify. No questionnaires. No PDFs. No trust required.
             </p>
           </FadeIn>
           <DisruptionSection />
@@ -141,7 +145,7 @@ export default function Home() {
               Quick Start
             </h2>
             <p className="mb-8 text-center text-corsair-text-dim">
-              Sign tool output. Verify any CPOE. Diff over time. Log everything. Signal changes. Score evidence quality. Automate TPRM decisions. No API keys needed.
+              Sign tool output. Verify any CPOE. Diff over time. Log everything. No API keys needed to get started.
             </p>
           </FadeIn>
           <FadeIn delay={0.2}>

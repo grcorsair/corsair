@@ -381,7 +381,7 @@ export default function VisionPage() {
           <StageHeader
             number={5}
             name="THE MODEL"
-            subtitle="Three layers — infrastructure, intelligence, decision"
+            subtitle="Five primitives — sign, verify, diff, log, signal"
             color="text-corsair-green"
             icon={<QuarterIcon size={32} />}
           />
@@ -391,30 +391,32 @@ export default function VisionPage() {
               <p>
                 Not all compliance evidence is equal. A policy PDF is not the
                 same as a Prowler scan. A self-assessment is not the same as a
-                third-party audit. Corsair addresses this with three layers, not
-                one. <span className="text-corsair-gold">Layer 1</span>{" "}
-                (Infrastructure) records provenance: who produced the evidence,
-                what tool generated it, and when. <span className="text-corsair-turquoise">Layer 2</span>{" "}
-                (Intelligence) normalizes evidence from 8+ tool formats, scores
-                quality across 7 dimensions, and produces a standardized
-                confidence score — like FICO for compliance. <span className="text-corsair-green">Layer 3</span>{" "}
-                (Decision) automates what humans used to do: continuous
-                certification, TPRM approvals, and multi-agent audit
-                orchestration.
+                third-party audit. Corsair addresses this with five protocol
+                primitives:{" "}
+                <span className="text-corsair-gold">Sign</span> evidence as
+                Ed25519 verifiable credentials.{" "}
+                <span className="text-corsair-green">Verify</span> any CPOE
+                with standard JWT libraries.{" "}
+                <span className="text-corsair-turquoise">Diff</span> two
+                CPOEs to detect regressions.{" "}
+                <span className="text-corsair-cyan">Log</span> every
+                attestation in an append-only SCITT transparency log.{" "}
+                <span className="text-corsair-crimson">Signal</span> compliance
+                changes in real time via FLAGSHIP.
               </p>
               <p>
                 Three provenance types — self, tool, auditor — give buyers the
                 information they need to set their own thresholds. An enterprise
                 might require tool-generated evidence for all vendors. A startup
                 might accept self-assessed for low-risk suppliers. The CPOE
-                carries the facts. The Quartermaster scores them. The buyer — or
-                their agent — makes the decision.
+                carries the facts. The buyer — or their agent — makes the
+                decision.
               </p>
               <p>
-                Each layer is independently useful. Layer 1 alone gives you signed,
-                verifiable compliance proofs. Add Layer 2 and every CPOE carries a
-                quality score. Add Layer 3 and the entire audit-to-certification
-                cycle runs on protocol, not spreadsheets.
+                Advanced features build on top of the primitives. Evidence quality
+                scoring adds a FICO-like confidence score. Continuous certification
+                automates re-validation. TPRM automation replaces security
+                questionnaires. Every feature composes the same five primitives.
               </p>
             </div>
           </FadeIn>
@@ -464,15 +466,14 @@ export default function VisionPage() {
           <FadeIn delay={0.1}>
             <div className="max-w-2xl space-y-4 text-sm text-corsair-text-dim">
               <p>
-                The three-layer architecture is not a roadmap — it is{" "}
+                The protocol is not a roadmap — it is{" "}
                 <span className="text-corsair-turquoise">shipped</span>.
-                Layer 1 signs and verifies compliance evidence with Ed25519.
-                Layer 2 normalizes evidence from 8+ tool formats, scores quality
-                across 7 dimensions via the Quartermaster, and produces
-                standardized confidence scores. Layer 3 orchestrates multi-agent
-                audits, automates TPRM decisions from CPOE scores, and runs
-                continuous certification with automated re-validation. Every
-                layer is live, tested, and in production.
+                Five primitives sign and verify compliance evidence with Ed25519,
+                log it in SCITT transparency logs, diff for regressions, and
+                signal changes in real time. Advanced features normalize evidence
+                from 8+ formats, score quality across 7 dimensions, orchestrate
+                audits, and automate TPRM decisions. Everything is live, tested,
+                and in production.
               </p>
               <p>
                 What comes next is agent-native trust exchange. A procurement
@@ -497,11 +498,9 @@ export default function VisionPage() {
                 The verification network is already being seeded by
                 tool-generated CPOEs. The same CPOE format that wraps a Prowler
                 scan today wraps Wiz telemetry tomorrow and agent-witnessed
-                control tests next year. All three layers carry forward
-                unchanged: infrastructure primitives sign and verify, the
-                intelligence layer scores and normalizes, the decision layer
-                automates audits and certifications. The evidence evolves. The
-                protocol does not.
+                control tests next year. The five primitives carry forward
+                unchanged — sign, verify, diff, log, signal. The evidence
+                evolves. The protocol does not.
               </p>
             </div>
           </FadeIn>

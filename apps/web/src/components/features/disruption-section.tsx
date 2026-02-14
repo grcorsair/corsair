@@ -86,88 +86,42 @@ export function DisruptionSection() {
           </CardHeader>
           <CardContent>
             <motion.div
-              className="space-y-6"
+              className="space-y-3"
               variants={containerVariants}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
             >
-              {/* Layer 1 */}
               <motion.div variants={layerVariants}>
-                <p className="mb-2 font-mono text-xs font-semibold text-corsair-gold">
-                  Layer 1 &mdash; Cryptographic Proof
-                </p>
-                <ul className="space-y-2 text-sm text-corsair-text-dim">
+                <ul className="space-y-3 text-sm text-corsair-text-dim">
                   <li className="flex items-start gap-2">
                     <span className="mt-0.5 text-corsair-green">&#x2713;</span>
                     <span>
-                      <code className="text-corsair-cyan">corsair sign</code> &mdash; tools generate evidence, Corsair signs it into Ed25519 verifiable credentials
+                      <code className="text-corsair-cyan">corsair sign</code> &mdash; pipe tool output, get a signed Ed25519 verifiable credential. Like git commit.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="mt-0.5 text-corsair-green">&#x2713;</span>
                     <span>
-                      <code className="text-corsair-cyan">corsair verify</code> &mdash; four-step DID:web verification, free forever, no account needed
+                      <code className="text-corsair-cyan">corsair verify</code> &mdash; four-step DID:web verification. Free forever, no account needed. Like HTTPS.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="mt-0.5 text-corsair-green">&#x2713;</span>
                     <span>
-                      <code className="text-corsair-cyan">corsair log</code> &mdash; SCITT transparency log with Merkle proofs and COSE receipts
-                    </span>
-                  </li>
-                </ul>
-              </motion.div>
-
-              {/* Layer 2 */}
-              <motion.div variants={layerVariants}>
-                <p className="mb-2 font-mono text-xs font-semibold text-corsair-turquoise">
-                  Layer 2 &mdash; Evidence Intelligence
-                </p>
-                <ul className="space-y-2 text-sm text-corsair-text-dim">
-                  <li className="flex items-start gap-2">
-                    <span className="mt-0.5 text-corsair-green">&#x2713;</span>
-                    <span>
-                      <code className="text-corsair-cyan">corsair sign --score</code> &mdash; 7-dimension evidence quality scoring, a FICO score for compliance
+                      <code className="text-corsair-cyan">corsair diff</code> &mdash; compare two CPOEs, detect compliance regressions instantly. Like git diff.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="mt-0.5 text-corsair-green">&#x2713;</span>
                     <span>
-                      Normalized evidence from 8+ tools into a canonical format &mdash; Prowler, InSpec, Trivy, SecurityHub, and more
+                      <code className="text-corsair-cyan">corsair log</code> &mdash; SCITT transparency log with Merkle proofs and COSE receipts. Like git log.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="mt-0.5 text-corsair-green">&#x2713;</span>
                     <span>
-                      Quartermaster governance review &mdash; methodology, integrity, completeness, and bias across every attestation
-                    </span>
-                  </li>
-                </ul>
-              </motion.div>
-
-              {/* Layer 3 */}
-              <motion.div variants={layerVariants}>
-                <p className="mb-2 font-mono text-xs font-semibold text-corsair-green">
-                  Layer 3 &mdash; Automated Decisions
-                </p>
-                <ul className="space-y-2 text-sm text-corsair-text-dim">
-                  <li className="flex items-start gap-2">
-                    <span className="mt-0.5 text-corsair-green">&#x2713;</span>
-                    <span>
-                      <code className="text-corsair-cyan">corsair cert</code> &mdash; continuous certification with lifecycle tracking, renewal, suspension, and revocation
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-0.5 text-corsair-green">&#x2713;</span>
-                    <span>
-                      <code className="text-corsair-cyan">corsair tprm</code> &mdash; vendor risk assessment from signed scores &mdash; approve, conditional, or reject
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-0.5 text-corsair-green">&#x2713;</span>
-                    <span>
-                      <code className="text-corsair-cyan">corsair signal</code> &mdash; FLAGSHIP real-time notifications for drift, tier changes, and revocations
+                      <code className="text-corsair-cyan">corsair signal</code> &mdash; FLAGSHIP real-time notifications for drift, tier changes, and revocations. Like webhooks.
                     </span>
                   </li>
                 </ul>

@@ -1,5 +1,5 @@
 ---
-title: "Layer 3: Decision"
+title: "Advanced: Automated Decisions"
 description: "Automated audit, continuous certification, and third-party risk management."
 section: "concepts"
 order: 13
@@ -7,9 +7,9 @@ order: 13
 
 ## Overview
 
-Layer 3 automates compliance decisions using Layer 1 proofs (signing, verification) and Layer 2 intelligence (normalization, scoring, governance). While Layer 1 creates verifiable evidence and Layer 2 scores it, Layer 3 acts on it: running audits, managing certifications, and assessing vendor risk.
+The decision features automate compliance workflows using signed proofs from the five primitives and quality scores from the intelligence layer. While the primitives create verifiable evidence and the scoring engine rates it, the decision features act on it: running audits, managing certifications, and assessing vendor risk.
 
-Three engines compose Layer 3:
+Three engines compose the decision layer:
 
 | Engine | CLI Command | What It Does |
 |--------|-------------|--------------|
@@ -28,8 +28,8 @@ The audit engine orchestrates the complete compliance audit pipeline: ingest evi
 2. Parse each file (auto-detect or format override)
 3. Normalize to canonical form
 4. Filter excluded controls
-5. Score combined evidence (Layer 2)
-6. Run governance checks (optional, Layer 2 Quartermaster)
+5. Score combined evidence
+6. Run governance checks (optional, Quartermaster)
 7. Generate findings from normalized evidence
 8. Compute summary statistics
 9. Return complete AuditResult
@@ -476,22 +476,22 @@ interface VendorProfile {
 }
 ```
 
-## How the Three Layers Connect
+## How Everything Connects
 
 ```
-Layer 1: Infrastructure (Signing, Verification, SCITT, FLAGSHIP)
+Five Primitives: Sign, Verify, Diff, Log, Signal
     |
     | Signed CPOEs, verified evidence, transparency log
     v
-Layer 2: Intelligence (Normalize, Score, Query, Quartermaster)
+Intelligence: Normalize, Score, Query, Quartermaster
     |
     | Canonical controls, quality scores, governance findings
     v
-Layer 3: Decision (Audit, Certification, TPRM)
+Decisions: Audit, Certification, TPRM
     |
     | Audit results, certification status, vendor decisions
     v
 Outcome: approve/deny/suspend/renew decisions backed by cryptographic proof
 ```
 
-Each layer adds value without replacing the one below it. A CPOE is verifiable without scoring (Layer 1 alone). A score is meaningful without an audit workflow (Layer 2 alone). But the full stack -- signed evidence, scored quality, automated decisions -- replaces questionnaire-based compliance theater with cryptographically verifiable proof.
+Each level adds value without replacing what's below it. A CPOE is verifiable without scoring (primitives alone). A score is meaningful without an audit workflow (intelligence alone). But the full stack -- signed evidence, scored quality, automated decisions -- replaces questionnaire-based compliance theater with cryptographically verifiable proof.
