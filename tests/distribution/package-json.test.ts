@@ -21,7 +21,7 @@ describe("package.json npm publish readiness", () => {
 
     test("has name field", () => {
       const p = getPkg();
-      expect(p.name).toBe("corsair");
+      expect(p.name).toBe("@grcorsair/cli");
     });
 
     test("has version field", () => {

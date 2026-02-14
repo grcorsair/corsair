@@ -1,0 +1,106 @@
+{
+  "info": {
+    "name": "Corsair API v1",
+    "description": "Corsair — Open protocol for cryptographically verifiable compliance attestations",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{api_key}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://api.grcorsair.com/v1"
+    },
+    {
+      "key": "api_key",
+      "value": "YOUR_API_KEY_HERE"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Returns server health status. No auth required."
+      }
+    },
+    {
+      "name": "Sign Evidence",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"evidence\": {\n    \"metadata\": {\n      \"tool\": \"prowler\",\n      \"version\": \"3.1\",\n      \"timestamp\": \"2026-02-14T00:00:00Z\"\n    },\n    \"controls\": [\n      {\n        \"id\": \"iam-mfa-root\",\n        \"name\": \"MFA Enabled for Root Account\",\n        \"status\": \"effective\",\n        \"evidence\": \"Hardware MFA device attached to root account\"\n      }\n    ]\n  },\n  \"scope\": \"SOC 2 Type II — AWS Production\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/sign",
+          "host": ["{{base_url}}"],
+          "path": ["sign"]
+        },
+        "description": "Sign compliance evidence as a CPOE (JWT-VC). Requires API key."
+      }
+    },
+    {
+      "name": "Verify CPOE",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cpoe\": \"eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCJ9...\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/verify",
+          "host": ["{{base_url}}"],
+          "path": ["verify"]
+        },
+        "description": "Verify a CPOE signature. Always free, no auth required."
+      }
+    },
+    {
+      "name": "List Formats",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": {
+          "raw": "{{base_url}}/formats",
+          "host": ["{{base_url}}"],
+          "path": ["formats"]
+        },
+        "description": "List all supported evidence formats."
+      }
+    }
+  ]
+}

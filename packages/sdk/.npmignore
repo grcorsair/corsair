@@ -1,0 +1,7 @@
+# Tests
+tests/
+*.test.ts
+
+# Development
+tsconfig.json
+.env*

@@ -1,5 +1,5 @@
 {
-  "name": "@corsair/sdk",
+  "name": "@grcorsair/sdk",
   "version": "0.1.0",
   "description": "Corsair SDK — sign, verify, score, and query compliance evidence (CPOEs)",
   "type": "module",

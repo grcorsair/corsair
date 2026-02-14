@@ -1,0 +1,281 @@
+openapi: "3.0.3"
+
+info:
+  title: Corsair API
+  version: "1.0.0"
+  description: |
+    Open protocol for machine-readable, cryptographically verifiable compliance attestations.
+    Sign tool output as CPOEs (W3C Verifiable Credentials with Ed25519 signatures).
+    Verify any CPOE for free — no account required.
+  contact:
+    name: Corsair
+    url: https://grcorsair.com
+    email: support@grcorsair.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: https://api.grcorsair.com/v1
+    description: Production API
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Health check
+      description: Returns server health status. Always available, no auth required.
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  status:
+                    type: string
+                    enum: [ready, starting]
+                  version:
+                    type: string
+                    example: "0.6.0"
+
+  /sign:
+    post:
+      operationId: signEvidence
+      summary: Sign evidence as a CPOE
+      description: |
+        Parse compliance evidence, record provenance, and sign as a JWT-VC (W3C Verifiable Credential)
+        with Ed25519 signature. Auto-detects evidence format from JSON structure.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - evidence
+              properties:
+                evidence:
+                  oneOf:
+                    - type: object
+                      description: Raw JSON evidence object
+                    - type: string
+                      description: JSON string of evidence
+                format:
+                  type: string
+                  description: Force evidence format (auto-detected if omitted)
+                  enum:
+                    - generic
+                    - prowler
+                    - securityhub
+                    - inspec
+                    - trivy
+                    - gitlab
+                    - ciso-assistant-api
+                    - ciso-assistant-export
+                scope:
+                  type: string
+                  description: Human-readable assessment scope
+                  example: "SOC 2 Type II — AWS Production"
+                did:
+                  type: string
+                  description: DID of the issuer (defaults to server DID)
+                  example: "did:web:grcorsair.com"
+                expiryDays:
+                  type: integer
+                  description: Days until CPOE expires (default 7)
+                  example: 7
+                dryRun:
+                  type: boolean
+                  description: Preview without signing
+                  default: false
+                score:
+                  type: boolean
+                  description: Include 7-dimension evidence quality score
+                  default: false
+      responses:
+        "200":
+          description: Evidence signed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignResponse"
+        "400":
+          description: Invalid evidence format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /verify:
+    post:
+      operationId: verifyCPOE
+      summary: Verify a CPOE
+      description: |
+        Verify the Ed25519 signature and structure of a CPOE (JWT-VC).
+        Always free. No account required. Returns validity, metadata, and trust tier.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cpoe
+              properties:
+                cpoe:
+                  type: string
+                  description: JWT-VC string (base64url-encoded header.payload.signature)
+                  example: "eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCJ9..."
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyResponse"
+        "400":
+          description: Invalid JWT format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /formats:
+    get:
+      operationId: getFormats
+      summary: List supported evidence formats
+      description: Returns all supported evidence formats with detection criteria.
+      responses:
+        "200":
+          description: Supported formats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        description:
+                          type: string
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: API key for authenticated endpoints (sign, issue). Verify is always free.
+
+  schemas:
+    SignResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            jwt:
+              type: string
+              description: Signed JWT-VC (CPOE)
+            marqueId:
+              type: string
+              description: Unique CPOE identifier
+              example: "marque-a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+            detectedFormat:
+              type: string
+              description: Auto-detected evidence format
+              example: "prowler"
+            summary:
+              type: object
+              properties:
+                controlsTested:
+                  type: integer
+                controlsPassed:
+                  type: integer
+                controlsFailed:
+                  type: integer
+                overallScore:
+                  type: number
+            provenance:
+              type: object
+              properties:
+                source:
+                  type: string
+                  enum: [self, tool, auditor]
+                sourceIdentity:
+                  type: string
+            warnings:
+              type: array
+              items:
+                type: string
+
+    VerifyResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        data:
+          type: object
+          properties:
+            valid:
+              type: boolean
+              description: Whether the CPOE signature is valid
+            trustTier:
+              type: string
+              description: Trust classification
+              enum:
+                - corsair-verified
+                - self-signed-valid
+                - unverifiable
+                - invalid
+            issuer:
+              type: string
+              description: DID of the issuer
+            issuedAt:
+              type: string
+              format: date-time
+            expiresAt:
+              type: string
+              format: date-time
+            subject:
+              type: object
+              description: CPOE credential subject (summary, provenance, frameworks)
+
+    ErrorResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "bad_request"
+            message:
+              type: string
+              example: "Invalid evidence format"

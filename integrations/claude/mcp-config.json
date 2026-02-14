@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "corsair": {
+      "command": "bun",
+      "args": ["run", "bin/corsair-mcp.ts"],
+      "env": {
+        "CORSAIR_KEY_DIR": "./keys"
+      }
+    }
+  }
+}

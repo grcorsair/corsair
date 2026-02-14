@@ -1,5 +1,5 @@
 {
-  "name": "corsair",
+  "name": "@grcorsair/cli",
   "version": "0.6.0",
   "description": "CORSAIR - CPOE ingestion and trust exchange platform",
   "type": "module",

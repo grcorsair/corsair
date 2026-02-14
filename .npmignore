@@ -1,0 +1,35 @@
+# Tests
+tests/
+*.test.ts
+
+# Apps & packages (published separately)
+apps/
+packages/
+
+# Server & deployment
+server.ts
+railway.json
+docker/
+functions/
+Dockerfile
+
+# Database
+src/db/migrations/
+
+# Development
+.env*
+.github/
+.claude/
+*.cast
+tsconfig.json
+bun.lockb
+
+# Documentation (not needed in package)
+CONTRIBUTING.md
+SECURITY.md
+CLAUDE.md
+L0-L4_ISSUANCE_SPEC.md
+assets/
+
+# Integration templates
+integrations/
