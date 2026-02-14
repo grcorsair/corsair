@@ -41,7 +41,7 @@ jobs:
       run: |
         gh release create "$TAG_NAME" \
           --title "$TAG_NAME" \
-          --generate-notes
+          --generate-notes || echo "Release $TAG_NAME already exists"
 
   publish-npm:
     needs: test
