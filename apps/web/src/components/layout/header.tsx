@@ -25,6 +25,7 @@ const navLinks = [
   { href: "/log", label: "Log" },
   { href: "/blog", label: "Blog" },
   { href: "/faq", label: "FAQ" },
+  { href: "/glossary", label: "Glossary" },
 ];
 
 export function Header() {

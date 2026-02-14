@@ -337,6 +337,44 @@ bun test   # 1920 tests, 76 files — all passing
 
 ---
 
+## Glossary
+
+Lost in the acronyms? Here's every term in plain English.
+
+### Corsair Terms
+
+| Term | What It Means |
+|:-----|:--------------|
+| **CPOE** | Certificate of Proof of Operational Effectiveness — a signed compliance proof. Think "digitally signed SOC 2 result." |
+| **Parley** | The open protocol behind Corsair. Like SMTP is for email, Parley is for compliance proofs. |
+| **MARQUE** | A signed CPOE — the actual JWT you hand to a verifier. Named after letters of marque (pirate commissions). |
+| **QUARTERMASTER** | The governance engine that reviews evidence quality. 7 dimensions, mostly deterministic. |
+| **FLAGSHIP** | Real-time compliance change notifications. If your controls drift, subscribers know immediately. |
+
+### Standards Used
+
+| Term | What It Means |
+|:-----|:--------------|
+| **JWT-VC** | JSON Web Token — Verifiable Credential. A W3C standard for digitally signed claims. The envelope a CPOE lives in. |
+| **DID:web** | Decentralized Identifier anchored to a domain. `did:web:acme.com` means "look up acme.com's public key at `/.well-known/did.json`." |
+| **Ed25519** | A modern digital signature algorithm. Fast, small, no weak keys. What Corsair signs with. |
+| **SCITT** | Supply Chain Integrity, Transparency, and Trust — an IETF draft for append-only transparency logs. Corsair's audit trail. |
+| **SSF/CAEP** | Shared Signals Framework / Continuous Access Evaluation Protocol — OpenID standards for real-time security events. Powers FLAGSHIP. |
+| **SD-JWT** | Selective Disclosure JWT — prove specific claims without revealing the full document. Share your SOC 2 score without exposing every control. |
+| **in-toto/SLSA** | Supply chain provenance standards. Records the full pipeline that produced a CPOE — who ran what, when, in what order. |
+| **COSE** | CBOR Object Signing and Encryption — a compact binary signing format. Used in SCITT receipts. |
+
+### GRC Terms
+
+| Term | What It Means |
+|:-----|:--------------|
+| **GRC** | Governance, Risk, and Compliance — the industry Corsair operates in. |
+| **SOC 2** | A trust framework for service organizations. The most common compliance report in SaaS. |
+| **TPRM** | Third-Party Risk Management — assessing whether your vendors are secure. What buyers do with CPOEs. |
+| **NIST 800-53** | A US government catalog of security controls. One of many frameworks Corsair maps evidence to. |
+
+---
+
 <details>
 <summary><strong>Advanced Features</strong></summary>
 
