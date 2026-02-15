@@ -1,0 +1,538 @@
+/**
+ * compliance.txt Test Contract
+ *
+ * Tests parsing, generation, validation, and resolution of compliance.txt files.
+ * Modeled after security.txt (RFC 9116) — a discovery layer for compliance proofs.
+ *
+ * Spec: /.well-known/compliance.txt
+ * Origin: @toufik-airane (GitHub issue #2)
+ */
+
+import { describe, test, expect } from "bun:test";
+import {
+  parseComplianceTxt,
+  generateComplianceTxt,
+  validateComplianceTxt,
+  resolveComplianceTxt,
+} from "../../src/parley/compliance-txt";
+import type { ComplianceTxt } from "../../src/parley/compliance-txt";
+
+// =============================================================================
+// PARSE
+// =============================================================================
+
+describe("compliance.txt - parseComplianceTxt", () => {
+  test("parses a full compliance.txt with all fields", () => {
+    const input = `# Corsair Compliance Discovery
+DID: did:web:acme.com
+CPOE: https://acme.com/compliance/soc2-2026-q1.jwt
+CPOE: https://acme.com/compliance/iso27001-2026.jwt
+SCITT: https://log.grcorsair.com/v1/entries?issuer=did:web:acme.com
+FLAGSHIP: https://signals.grcorsair.com/v1/streams/acme-prod
+Frameworks: SOC2, ISO27001, NIST-800-53
+Contact: compliance@acme.com
+Expires: 2026-12-31T23:59:59Z
+`;
+
+    const result = parseComplianceTxt(input);
+    expect(result.did).toBe("did:web:acme.com");
+    expect(result.cpoes).toEqual([
+      "https://acme.com/compliance/soc2-2026-q1.jwt",
+      "https://acme.com/compliance/iso27001-2026.jwt",
+    ]);
+    expect(result.scitt).toBe("https://log.grcorsair.com/v1/entries?issuer=did:web:acme.com");
+    expect(result.flagship).toBe("https://signals.grcorsair.com/v1/streams/acme-prod");
+    expect(result.frameworks).toEqual(["SOC2", "ISO27001", "NIST-800-53"]);
+    expect(result.contact).toBe("compliance@acme.com");
+    expect(result.expires).toBe("2026-12-31T23:59:59Z");
+  });
+
+  test("parses minimal compliance.txt (DID only)", () => {
+    const input = `DID: did:web:acme.com\n`;
+    const result = parseComplianceTxt(input);
+    expect(result.did).toBe("did:web:acme.com");
+    expect(result.cpoes).toEqual([]);
+    expect(result.scitt).toBeUndefined();
+    expect(result.flagship).toBeUndefined();
+    expect(result.frameworks).toEqual([]);
+    expect(result.contact).toBeUndefined();
+    expect(result.expires).toBeUndefined();
+  });
+
+  test("ignores comment lines starting with #", () => {
+    const input = `# This is a comment
+# Another comment
+DID: did:web:acme.com
+# Inline comment
+CPOE: https://acme.com/cpoe.jwt
+`;
+
+    const result = parseComplianceTxt(input);
+    expect(result.did).toBe("did:web:acme.com");
+    expect(result.cpoes).toEqual(["https://acme.com/cpoe.jwt"]);
+  });
+
+  test("ignores blank lines", () => {
+    const input = `
+DID: did:web:acme.com
+
+CPOE: https://acme.com/cpoe.jwt
+
+`;
+
+    const result = parseComplianceTxt(input);
+    expect(result.did).toBe("did:web:acme.com");
+    expect(result.cpoes).toEqual(["https://acme.com/cpoe.jwt"]);
+  });
+
+  test("handles multiple CPOE entries (repeatable key)", () => {
+    const input = `DID: did:web:acme.com
+CPOE: https://acme.com/soc2.jwt
+CPOE: https://acme.com/iso27001.jwt
+CPOE: https://acme.com/pentest.jwt
+`;
+
+    const result = parseComplianceTxt(input);
+    expect(result.cpoes).toHaveLength(3);
+    expect(result.cpoes[0]).toBe("https://acme.com/soc2.jwt");
+    expect(result.cpoes[1]).toBe("https://acme.com/iso27001.jwt");
+    expect(result.cpoes[2]).toBe("https://acme.com/pentest.jwt");
+  });
+
+  test("trims whitespace from values", () => {
+    const input = `DID:   did:web:acme.com
+CPOE:  https://acme.com/cpoe.jwt
+Contact:  compliance@acme.com
+`;
+
+    const result = parseComplianceTxt(input);
+    expect(result.did).toBe("did:web:acme.com");
+    expect(result.cpoes).toEqual(["https://acme.com/cpoe.jwt"]);
+    expect(result.contact).toBe("compliance@acme.com");
+  });
+
+  test("handles frameworks with various spacing", () => {
+    const input = `DID: did:web:acme.com
+Frameworks: SOC2,ISO27001, NIST-800-53 , PCI-DSS
+`;
+
+    const result = parseComplianceTxt(input);
+    expect(result.frameworks).toEqual(["SOC2", "ISO27001", "NIST-800-53", "PCI-DSS"]);
+  });
+
+  test("is case-insensitive for keys", () => {
+    const input = `did: did:web:acme.com
+cpoe: https://acme.com/cpoe.jwt
+scitt: https://log.grcorsair.com/v1/entries
+flagship: https://signals.grcorsair.com/v1/streams/acme
+frameworks: SOC2
+contact: compliance@acme.com
+expires: 2026-12-31T23:59:59Z
+`;
+
+    const result = parseComplianceTxt(input);
+    expect(result.did).toBe("did:web:acme.com");
+    expect(result.cpoes).toEqual(["https://acme.com/cpoe.jwt"]);
+    expect(result.scitt).toBe("https://log.grcorsair.com/v1/entries");
+    expect(result.flagship).toBe("https://signals.grcorsair.com/v1/streams/acme");
+    expect(result.frameworks).toEqual(["SOC2"]);
+    expect(result.contact).toBe("compliance@acme.com");
+    expect(result.expires).toBe("2026-12-31T23:59:59Z");
+  });
+
+  test("ignores unknown keys", () => {
+    const input = `DID: did:web:acme.com
+UnknownKey: some value
+CPOE: https://acme.com/cpoe.jwt
+`;
+
+    const result = parseComplianceTxt(input);
+    expect(result.did).toBe("did:web:acme.com");
+    expect(result.cpoes).toEqual(["https://acme.com/cpoe.jwt"]);
+  });
+
+  test("returns empty structure for empty input", () => {
+    const result = parseComplianceTxt("");
+    expect(result.did).toBeUndefined();
+    expect(result.cpoes).toEqual([]);
+    expect(result.frameworks).toEqual([]);
+  });
+
+  test("returns empty structure for comments-only input", () => {
+    const result = parseComplianceTxt("# Just comments\n# Nothing else\n");
+    expect(result.did).toBeUndefined();
+    expect(result.cpoes).toEqual([]);
+  });
+
+  test("last DID wins if multiple are specified", () => {
+    const input = `DID: did:web:first.com
+DID: did:web:second.com
+`;
+    const result = parseComplianceTxt(input);
+    expect(result.did).toBe("did:web:second.com");
+  });
+});
+
+// =============================================================================
+// GENERATE
+// =============================================================================
+
+describe("compliance.txt - generateComplianceTxt", () => {
+  test("generates a full compliance.txt with all fields", () => {
+    const input: ComplianceTxt = {
+      did: "did:web:acme.com",
+      cpoes: [
+        "https://acme.com/compliance/soc2.jwt",
+        "https://acme.com/compliance/iso27001.jwt",
+      ],
+      scitt: "https://log.grcorsair.com/v1/entries?issuer=did:web:acme.com",
+      flagship: "https://signals.grcorsair.com/v1/streams/acme-prod",
+      frameworks: ["SOC2", "ISO27001", "NIST-800-53"],
+      contact: "compliance@acme.com",
+      expires: "2026-12-31T23:59:59Z",
+    };
+
+    const output = generateComplianceTxt(input);
+    expect(output).toContain("DID: did:web:acme.com");
+    expect(output).toContain("CPOE: https://acme.com/compliance/soc2.jwt");
+    expect(output).toContain("CPOE: https://acme.com/compliance/iso27001.jwt");
+    expect(output).toContain("SCITT: https://log.grcorsair.com/v1/entries?issuer=did:web:acme.com");
+    expect(output).toContain("FLAGSHIP: https://signals.grcorsair.com/v1/streams/acme-prod");
+    expect(output).toContain("Frameworks: SOC2, ISO27001, NIST-800-53");
+    expect(output).toContain("Contact: compliance@acme.com");
+    expect(output).toContain("Expires: 2026-12-31T23:59:59Z");
+  });
+
+  test("generates minimal compliance.txt with DID only", () => {
+    const input: ComplianceTxt = {
+      did: "did:web:acme.com",
+      cpoes: [],
+      frameworks: [],
+    };
+
+    const output = generateComplianceTxt(input);
+    expect(output).toContain("DID: did:web:acme.com");
+    expect(output).not.toContain("CPOE:");
+    expect(output).not.toContain("SCITT:");
+    expect(output).not.toContain("FLAGSHIP:");
+    expect(output).not.toContain("Contact:");
+    expect(output).not.toContain("Expires:");
+  });
+
+  test("includes header comment with spec URL", () => {
+    const input: ComplianceTxt = {
+      did: "did:web:acme.com",
+      cpoes: [],
+      frameworks: [],
+    };
+
+    const output = generateComplianceTxt(input);
+    expect(output).toContain("# Corsair Compliance Discovery");
+    expect(output).toContain("# Spec: https://grcorsair.com/spec/compliance-txt");
+  });
+
+  test("omits Frameworks line when array is empty", () => {
+    const input: ComplianceTxt = {
+      did: "did:web:acme.com",
+      cpoes: [],
+      frameworks: [],
+    };
+
+    const output = generateComplianceTxt(input);
+    expect(output).not.toContain("Frameworks:");
+  });
+});
+
+// =============================================================================
+// ROUND-TRIP
+// =============================================================================
+
+describe("compliance.txt - round-trip", () => {
+  test("parse(generate(obj)) preserves all fields", () => {
+    const original: ComplianceTxt = {
+      did: "did:web:acme.com",
+      cpoes: [
+        "https://acme.com/compliance/soc2.jwt",
+        "https://acme.com/compliance/iso27001.jwt",
+      ],
+      scitt: "https://log.grcorsair.com/v1/entries?issuer=did:web:acme.com",
+      flagship: "https://signals.grcorsair.com/v1/streams/acme-prod",
+      frameworks: ["SOC2", "ISO27001"],
+      contact: "compliance@acme.com",
+      expires: "2026-12-31T23:59:59Z",
+    };
+
+    const generated = generateComplianceTxt(original);
+    const parsed = parseComplianceTxt(generated);
+
+    expect(parsed.did).toBe(original.did);
+    expect(parsed.cpoes).toEqual(original.cpoes);
+    expect(parsed.scitt).toBe(original.scitt);
+    expect(parsed.flagship).toBe(original.flagship);
+    expect(parsed.frameworks).toEqual(original.frameworks);
+    expect(parsed.contact).toBe(original.contact);
+    expect(parsed.expires).toBe(original.expires);
+  });
+
+  test("round-trip with zero CPOEs", () => {
+    const original: ComplianceTxt = {
+      did: "did:web:minimal.com",
+      cpoes: [],
+      frameworks: [],
+    };
+
+    const generated = generateComplianceTxt(original);
+    const parsed = parseComplianceTxt(generated);
+
+    expect(parsed.did).toBe(original.did);
+    expect(parsed.cpoes).toEqual([]);
+    expect(parsed.frameworks).toEqual([]);
+  });
+
+  test("round-trip with many CPOEs", () => {
+    const original: ComplianceTxt = {
+      did: "did:web:big.com",
+      cpoes: Array.from({ length: 10 }, (_, i) => `https://big.com/cpoe-${i}.jwt`),
+      frameworks: ["SOC2", "ISO27001", "NIST-800-53", "PCI-DSS", "HIPAA"],
+    };
+
+    const generated = generateComplianceTxt(original);
+    const parsed = parseComplianceTxt(generated);
+
+    expect(parsed.cpoes).toHaveLength(10);
+    expect(parsed.frameworks).toHaveLength(5);
+  });
+});
+
+// =============================================================================
+// VALIDATE
+// =============================================================================
+
+describe("compliance.txt - validateComplianceTxt", () => {
+  test("valid compliance.txt passes validation", () => {
+    const input: ComplianceTxt = {
+      did: "did:web:acme.com",
+      cpoes: ["https://acme.com/cpoe.jwt"],
+      frameworks: ["SOC2"],
+      contact: "compliance@acme.com",
+      expires: "2026-12-31T23:59:59Z",
+    };
+
+    const result = validateComplianceTxt(input);
+    expect(result.valid).toBe(true);
+    expect(result.errors).toEqual([]);
+  });
+
+  test("missing DID fails validation", () => {
+    const input: ComplianceTxt = {
+      cpoes: ["https://acme.com/cpoe.jwt"],
+      frameworks: ["SOC2"],
+    };
+
+    const result = validateComplianceTxt(input);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes("DID"))).toBe(true);
+  });
+
+  test("invalid DID format fails validation", () => {
+    const input: ComplianceTxt = {
+      did: "not-a-did",
+      cpoes: [],
+      frameworks: [],
+    };
+
+    const result = validateComplianceTxt(input);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes("did:web:"))).toBe(true);
+  });
+
+  test("non-HTTPS CPOE URL fails validation", () => {
+    const input: ComplianceTxt = {
+      did: "did:web:acme.com",
+      cpoes: ["http://acme.com/cpoe.jwt"],
+      frameworks: [],
+    };
+
+    const result = validateComplianceTxt(input);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes("HTTPS"))).toBe(true);
+  });
+
+  test("malformed CPOE URL fails validation", () => {
+    const input: ComplianceTxt = {
+      did: "did:web:acme.com",
+      cpoes: ["not-a-url"],
+      frameworks: [],
+    };
+
+    const result = validateComplianceTxt(input);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes("URL"))).toBe(true);
+  });
+
+  test("expired Expires date fails validation", () => {
+    const input: ComplianceTxt = {
+      did: "did:web:acme.com",
+      cpoes: [],
+      frameworks: [],
+      expires: "2020-01-01T00:00:00Z",
+    };
+
+    const result = validateComplianceTxt(input);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes("expired"))).toBe(true);
+  });
+
+  test("invalid Expires date format fails validation", () => {
+    const input: ComplianceTxt = {
+      did: "did:web:acme.com",
+      cpoes: [],
+      frameworks: [],
+      expires: "not-a-date",
+    };
+
+    const result = validateComplianceTxt(input);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes("Expires"))).toBe(true);
+  });
+
+  test("non-HTTPS SCITT URL fails validation", () => {
+    const input: ComplianceTxt = {
+      did: "did:web:acme.com",
+      cpoes: [],
+      frameworks: [],
+      scitt: "http://log.example.com/entries",
+    };
+
+    const result = validateComplianceTxt(input);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes("SCITT"))).toBe(true);
+  });
+
+  test("non-HTTPS FLAGSHIP URL fails validation", () => {
+    const input: ComplianceTxt = {
+      did: "did:web:acme.com",
+      cpoes: [],
+      frameworks: [],
+      flagship: "http://signals.example.com/stream",
+    };
+
+    const result = validateComplianceTxt(input);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes("FLAGSHIP"))).toBe(true);
+  });
+
+  test("private/reserved CPOE URL fails validation", () => {
+    const input: ComplianceTxt = {
+      did: "did:web:acme.com",
+      cpoes: ["https://192.168.1.1/cpoe.jwt"],
+      frameworks: [],
+    };
+
+    const result = validateComplianceTxt(input);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes("private") || e.includes("Blocked"))).toBe(true);
+  });
+
+  test("minimal valid compliance.txt passes", () => {
+    const input: ComplianceTxt = {
+      did: "did:web:acme.com",
+      cpoes: [],
+      frameworks: [],
+    };
+
+    const result = validateComplianceTxt(input);
+    expect(result.valid).toBe(true);
+    expect(result.errors).toEqual([]);
+  });
+});
+
+// =============================================================================
+// RESOLVE
+// =============================================================================
+
+describe("compliance.txt - resolveComplianceTxt", () => {
+  test("resolves compliance.txt from a domain via mock fetch", async () => {
+    const mockTxt = `DID: did:web:acme.com
+CPOE: https://acme.com/soc2.jwt
+Frameworks: SOC2
+Contact: compliance@acme.com
+Expires: 2030-12-31T23:59:59Z
+`;
+
+    const mockFetch = async (url: string) => {
+      expect(url).toBe("https://acme.com/.well-known/compliance.txt");
+      return {
+        ok: true,
+        text: async () => mockTxt,
+      } as unknown as Response;
+    };
+
+    const result = await resolveComplianceTxt("acme.com", mockFetch);
+    expect(result.complianceTxt).not.toBeNull();
+    expect(result.complianceTxt!.did).toBe("did:web:acme.com");
+    expect(result.complianceTxt!.cpoes).toEqual(["https://acme.com/soc2.jwt"]);
+    expect(result.error).toBeUndefined();
+  });
+
+  test("constructs correct URL for domain", async () => {
+    let capturedUrl = "";
+    const mockFetch = async (url: string) => {
+      capturedUrl = url;
+      return {
+        ok: true,
+        text: async () => "DID: did:web:example.com\n",
+      } as unknown as Response;
+    };
+
+    await resolveComplianceTxt("example.com", mockFetch);
+    expect(capturedUrl).toBe("https://example.com/.well-known/compliance.txt");
+  });
+
+  test("returns error for HTTP failure", async () => {
+    const mockFetch = async () => ({
+      ok: false,
+      status: 404,
+      statusText: "Not Found",
+    }) as unknown as Response;
+
+    const result = await resolveComplianceTxt("unknown.example.com", mockFetch);
+    expect(result.complianceTxt).toBeNull();
+    expect(result.error).toBeDefined();
+    expect(result.error).toContain("404");
+  });
+
+  test("returns error for network failure", async () => {
+    const mockFetch = async (): Promise<Response> => {
+      throw new Error("Network error");
+    };
+
+    const result = await resolveComplianceTxt("unreachable.example.com", mockFetch);
+    expect(result.complianceTxt).toBeNull();
+    expect(result.error).toBeDefined();
+  });
+
+  test("blocks private/reserved domains (SSRF)", async () => {
+    const result = await resolveComplianceTxt("192.168.1.1");
+    expect(result.complianceTxt).toBeNull();
+    expect(result.error).toContain("Blocked");
+  });
+
+  test("blocks localhost (SSRF)", async () => {
+    const result = await resolveComplianceTxt("localhost");
+    expect(result.complianceTxt).toBeNull();
+    expect(result.error).toContain("Blocked");
+  });
+
+  test("blocks 127.0.0.1 (SSRF)", async () => {
+    const result = await resolveComplianceTxt("127.0.0.1");
+    expect(result.complianceTxt).toBeNull();
+    expect(result.error).toContain("Blocked");
+  });
+
+  test("blocks cloud metadata service (SSRF)", async () => {
+    const result = await resolveComplianceTxt("169.254.169.254");
+    expect(result.complianceTxt).toBeNull();
+    expect(result.error).toContain("Blocked");
+  });
+});
