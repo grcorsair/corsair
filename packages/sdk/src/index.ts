@@ -2,7 +2,7 @@
  * @corsair/sdk — Public API
  *
  * Cryptographic compliance proof infrastructure SDK.
- * Sign, verify, score, and query compliance evidence.
+ * Sign and verify compliance evidence (CPOEs).
  */
 
 export { CorsairClient } from "./client";
@@ -13,25 +13,10 @@ export type {
   SignOptions,
   SignResult,
   VerifyResult,
-  ScoreResult,
-  ScoreInputOptions,
 } from "./types";
 
 // Re-exported core types consumers need
 export type {
   EvidenceFormat,
-  EvidenceQualityScore,
-  ScoredDimension,
-  LetterGrade,
-  ScoringMethod,
-  EvidenceQuery,
-  QueryResult,
-  QueryAggregations,
-  CanonicalControlEvidence,
-  CanonicalStatus,
-  CanonicalSeverity,
-  EvidenceType,
-  ProvenanceSource,
-  NormalizedEvidence,
   MarqueVerificationResult,
 } from "./types";

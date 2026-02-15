@@ -1,8 +1,9 @@
 /**
- * CorsairClient SDK Tests — TDD Red Phase
+ * CorsairClient SDK Tests
  *
  * Tests the public API surface of @corsair/sdk.
- * Every method of CorsairClient is covered.
+ * L2/L3 methods (score, query) shelved — recover via:
+ *   git show v0.5.1-with-layers:packages/sdk/tests/client.test.ts
  */
 
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
@@ -16,8 +17,6 @@ import type {
   SignOptions,
   SignResult,
   VerifyResult,
-  ScoreResult,
-  QueryResult,
   CorsairClientConfig,
 } from "../src/types";
 
@@ -272,156 +271,6 @@ describe("CorsairClient", () => {
       const result = await client.verify("not-a-jwt");
 
       expect(result.valid).toBe(false);
-    });
-  });
-
-  // ===========================================================================
-  // SCORE
-  // ===========================================================================
-
-  describe("score", () => {
-    let client: CorsairClient;
-
-    beforeAll(async () => {
-      client = new CorsairClient({ keyDir: TEMP_KEY_DIR });
-    });
-
-    test("should score Prowler evidence", async () => {
-      const result = await client.score(prowlerEvidence);
-
-      expect(result).toBeDefined();
-      expect(typeof result.composite).toBe("number");
-      expect(result.composite).toBeGreaterThanOrEqual(0);
-      expect(result.composite).toBeLessThanOrEqual(100);
-    });
-
-    test("should return a letter grade", async () => {
-      const result = await client.score(prowlerEvidence);
-
-      expect(["A", "B", "C", "D", "F"]).toContain(result.grade);
-    });
-
-    test("should return 7 dimensions", async () => {
-      const result = await client.score(prowlerEvidence);
-
-      expect(result.dimensions).toHaveLength(7);
-    });
-
-    test("should include dimension details", async () => {
-      const result = await client.score(prowlerEvidence);
-
-      for (const dim of result.dimensions) {
-        expect(dim.name).toBeString();
-        expect(typeof dim.score).toBe("number");
-        expect(typeof dim.weight).toBe("number");
-        expect(typeof dim.weighted).toBe("number");
-        expect(["deterministic", "model-assisted"]).toContain(dim.method);
-        expect(dim.detail).toBeString();
-      }
-    });
-
-    test("should include controlsScored count", async () => {
-      const result = await client.score(prowlerEvidence);
-
-      expect(result.controlsScored).toBeGreaterThan(0);
-    });
-
-    test("should include scoredAt timestamp", async () => {
-      const result = await client.score(prowlerEvidence);
-
-      expect(result.scoredAt).toBeString();
-      // Should be a valid ISO date
-      expect(new Date(result.scoredAt).getTime()).not.toBeNaN();
-    });
-
-    test("should score generic evidence", async () => {
-      const result = await client.score(genericEvidence);
-
-      expect(result.composite).toBeGreaterThanOrEqual(0);
-      expect(result.controlsScored).toBeGreaterThan(0);
-    });
-
-    test("should accept format override for scoring", async () => {
-      const result = await client.score(prowlerEvidence, { format: "prowler" });
-
-      expect(result.composite).toBeGreaterThanOrEqual(0);
-    });
-
-    test("should return empty score for empty controls", async () => {
-      const emptyEvidence = { metadata: { title: "empty", issuer: "test", date: "2026-01-01", scope: "none" }, controls: [] };
-      const result = await client.score(emptyEvidence);
-
-      expect(result.composite).toBe(0);
-      expect(result.grade).toBe("F");
-      expect(result.controlsScored).toBe(0);
-    });
-  });
-
-  // ===========================================================================
-  // QUERY
-  // ===========================================================================
-
-  describe("query", () => {
-    let client: CorsairClient;
-
-    beforeAll(async () => {
-      client = new CorsairClient({ keyDir: TEMP_KEY_DIR });
-    });
-
-    test("should query controls with no filters (return all)", async () => {
-      const result = await client.query(prowlerEvidence);
-
-      expect(result).toBeDefined();
-      expect(result.controls.length).toBeGreaterThan(0);
-      expect(result.total).toBeGreaterThan(0);
-    });
-
-    test("should filter by status=fail", async () => {
-      const result = await client.query(prowlerEvidence, { status: "fail" });
-
-      expect(result.controls.length).toBeGreaterThan(0);
-      for (const ctrl of result.controls) {
-        expect(ctrl.status).toBe("fail");
-      }
-    });
-
-    test("should filter by severity", async () => {
-      const result = await client.query(prowlerEvidence, { severity: "critical" });
-
-      for (const ctrl of result.controls) {
-        expect(ctrl.severity).toBe("critical");
-      }
-    });
-
-    test("should return aggregations", async () => {
-      const result = await client.query(prowlerEvidence);
-
-      expect(result.aggregations).toBeDefined();
-      expect(result.aggregations.byStatus).toBeDefined();
-      expect(result.aggregations.bySeverity).toBeDefined();
-      expect(result.aggregations.byFramework).toBeDefined();
-    });
-
-    test("should support pagination with limit", async () => {
-      const result = await client.query(prowlerEvidence, { limit: 3 });
-
-      expect(result.controls.length).toBeLessThanOrEqual(3);
-      expect(result.total).toBeGreaterThan(3);
-    });
-
-    test("should support text search", async () => {
-      const result = await client.query(prowlerEvidence, { search: "MFA" });
-
-      expect(result.controls.length).toBeGreaterThan(0);
-    });
-
-    test("should sort by severity", async () => {
-      const result = await client.query(prowlerEvidence, {
-        sortBy: "severity",
-        sortDirection: "asc",
-      });
-
-      expect(result.controls.length).toBeGreaterThan(0);
     });
   });
 

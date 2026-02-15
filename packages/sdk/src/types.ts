@@ -2,32 +2,13 @@
  * @corsair/sdk Public Types
  *
  * Re-exports core types and defines SDK-specific types.
+ *
+ * L2/L3 types (scoring, query, normalize) shelved — recover via:
+ *   git show v0.5.1-with-layers:packages/sdk/src/types.ts
  */
 
 // Re-export from sign engine
 export type { EvidenceFormat, SignInput, SignOutput } from "../../../src/sign/sign-core";
-
-// Re-export from scoring engine
-export type {
-  EvidenceQualityScore,
-  ScoredDimension,
-  LetterGrade,
-  ScoringMethod,
-} from "../../../src/scoring/types";
-export type { ScoreOptions } from "../../../src/scoring/scoring-engine";
-
-// Re-export from query engine
-export type { EvidenceQuery, QueryResult, QueryAggregations } from "../../../src/query/types";
-
-// Re-export from normalize
-export type {
-  CanonicalControlEvidence,
-  CanonicalStatus,
-  CanonicalSeverity,
-  EvidenceType,
-  ProvenanceSource,
-  NormalizedEvidence,
-} from "../../../src/normalize/types";
 
 // Re-export from verifier
 export type { MarqueVerificationResult } from "../../../src/parley/marque-verifier";
@@ -112,16 +93,4 @@ export interface VerifyResult {
     overallScore: number;
   };
   issuerTier?: "corsair-verified" | "self-signed" | "unverifiable" | "invalid";
-}
-
-/** Result of a score operation (alias for EvidenceQualityScore) */
-export type ScoreResult = EvidenceQualityScore;
-
-/** Options for the score method */
-export interface ScoreInputOptions {
-  /** Force a specific evidence format */
-  format?: EvidenceFormat;
-
-  /** Whether process provenance receipts are present */
-  hasProcessProvenance?: boolean;
 }

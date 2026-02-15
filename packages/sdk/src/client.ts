@@ -1,11 +1,14 @@
 /**
  * CorsairClient — SDK entry point
  *
- * Wraps core Corsair functions (sign, verify, score, query, keygen, formats)
+ * Wraps core Corsair functions (sign, verify, keygen, formats)
  * into a clean API for external developers.
  *
  * All operations delegate to the root package's engines.
  * This class adds no logic — it is a thin, typed facade.
+ *
+ * L2/L3 methods (score, query) shelved — recover via:
+ *   git show v0.5.1-with-layers:packages/sdk/src/client.ts
  */
 
 import { createKeyManager } from "../../../src/parley/marque-key-manager";
@@ -13,21 +16,13 @@ import type { KeyManager } from "../../../src/parley/marque-key-manager";
 import { signEvidence } from "../../../src/sign/sign-core";
 import type { EvidenceFormat } from "../../../src/sign/sign-core";
 import { MarqueVerifier } from "../../../src/parley/marque-verifier";
-import { normalizeDocument } from "../../../src/normalize/normalize";
-import { scoreEvidence } from "../../../src/scoring/scoring-engine";
-import { queryEvidence } from "../../../src/query/query-engine";
-import { parseJSON } from "../../../src/ingestion/json-parser";
 
 import type {
   CorsairClientConfig,
   SignOptions,
   SignResult,
   VerifyResult,
-  ScoreResult,
-  ScoreInputOptions,
 } from "./types";
-import type { QueryResult, EvidenceQuery } from "../../../src/query/types";
-import type { CanonicalControlEvidence } from "../../../src/normalize/types";
 
 // =============================================================================
 // SUPPORTED FORMATS
@@ -148,48 +143,6 @@ export class CorsairClient {
   }
 
   // ---------------------------------------------------------------------------
-  // SCORE
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Score evidence quality across 7 dimensions.
-   *
-   * Parses the evidence, normalizes to canonical format, then runs
-   * the scoring engine. Returns a composite 0-100 score and letter grade.
-   *
-   * @param evidence - Raw JSON object or JSON string
-   * @param options - Format override and process provenance flag
-   * @returns ScoreResult with composite score, grade, and per-dimension breakdown
-   */
-  async score(evidence: unknown, options?: ScoreInputOptions): Promise<ScoreResult> {
-    const controls = this.normalizeEvidence(evidence, options?.format);
-    return scoreEvidence(controls, {
-      hasProcessProvenance: options?.hasProcessProvenance,
-    });
-  }
-
-  // ---------------------------------------------------------------------------
-  // QUERY
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Query and filter normalized evidence controls.
-   *
-   * @param evidence - Raw JSON object or JSON string
-   * @param query - Filter, sort, and pagination options
-   * @param format - Optional format override for parsing
-   * @returns QueryResult with matched controls, total, and aggregations
-   */
-  async query(
-    evidence: unknown,
-    query?: EvidenceQuery,
-    format?: EvidenceFormat,
-  ): Promise<QueryResult> {
-    const controls = this.normalizeEvidence(evidence, format);
-    return queryEvidence(controls, query ?? {});
-  }
-
-  // ---------------------------------------------------------------------------
   // FORMATS
   // ---------------------------------------------------------------------------
 
@@ -198,26 +151,5 @@ export class CorsairClient {
    */
   formats(): string[] {
     return [...SUPPORTED_FORMATS];
-  }
-
-  // ---------------------------------------------------------------------------
-  // INTERNAL
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Parse raw evidence and normalize it to canonical format.
-   * Shared by score() and query() to avoid duplicate parsing.
-   */
-  private normalizeEvidence(
-    evidence: unknown,
-    format?: EvidenceFormat,
-  ): CanonicalControlEvidence[] {
-    const doc = parseJSON(evidence as string | object, {
-      source: undefined,
-      format,
-    });
-
-    const normalized = normalizeDocument(doc);
-    return normalized.controls;
   }
 }
