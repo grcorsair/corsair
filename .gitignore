@@ -49,6 +49,7 @@ npm-debug.log*
 # Key directories (Ed25519 keypairs — never commit)
 .test-keys-*/
 .demo-keys/
+keys/
 
 # Mission directories (generated during testing)
 missions/
