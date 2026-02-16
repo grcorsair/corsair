@@ -5,8 +5,8 @@
  * FLAGSHIP events. Uses the same Ed25519 keypair as MARQUE signing,
  * via the jose library for JWT operations.
  *
- * SETs carry CAEP event data (compliance changes, trust tier transitions,
- * CPOE lifecycle events) as signed JWTs for tamper-proof delivery.
+ * SETs carry CAEP event data (compliance changes, CPOE lifecycle events)
+ * as signed JWTs for tamper-proof delivery.
  */
 
 import { SignJWT, jwtVerify, importPKCS8, importSPKI } from "jose";
@@ -17,10 +17,10 @@ import type {
   SETPayload,
   FlagshipEventType,
   CAEPEventData,
-  ColorsChangedData,
   FleetAlertData,
   PapersChangedData,
   MarqueRevokedData,
+  ColorsChangedData,
 } from "./flagship-types";
 import { FLAGSHIP_EVENTS } from "./flagship-types";
 
@@ -94,8 +94,11 @@ export function generateFlagshipDescription(event: FlagshipEvent): string {
     case FLAGSHIP_EVENTS.COLORS_CHANGED: {
       const data = event.data as ColorsChangedData;
       const direction = data.change_direction === "increase" ? "upgraded" : "downgraded";
-      return `Assurance level ${direction} from "${data.previous_level}" to "${data.current_level}"${providerNote}. ` +
-        `CPOE ${marqueId} now reflects ${data.change_direction === "increase" ? "stronger" : "weaker"} evidence of control effectiveness.`;
+      const strengthNote = data.change_direction === "decrease"
+        ? "This indicates weaker evidence."
+        : "This indicates stronger evidence.";
+      return `CPOE ${marqueId} was ${direction} from ${data.previous_level} to ${data.current_level}${providerNote}. ` +
+        strengthNote;
     }
 
     case FLAGSHIP_EVENTS.FLEET_ALERT: {

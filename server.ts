@@ -42,14 +42,16 @@ import { createDIDJsonHandler } from "./functions/did-json";
 import { createJWKSJsonHandler } from "./functions/jwks-json";
 import { createIssueRouter } from "./functions/issue";
 import { createSignRouter } from "./functions/sign";
+import { createDemoSignRouter } from "./functions/sign-demo";
 import { requireAuth } from "./src/middleware/auth";
-import { rateLimit } from "./src/middleware/rate-limit";
+import { rateLimitPg } from "./src/middleware/rate-limit";
 import { withSecurityHeaders } from "./src/middleware/security-headers";
 import { getDb, closeDb } from "./src/db/connection";
 import { migrate } from "./src/db/migrate";
 import { PgSSFStreamManager } from "./src/flagship/pg-ssf-stream";
 import { PgSCITTRegistry } from "./src/parley/pg-scitt-registry";
 import { PgKeyManager } from "./src/parley/pg-key-manager";
+import { EnvKeyManager } from "./src/parley/env-key-manager";
 import { processDeliveryQueue } from "./functions/ssf-delivery-worker";
 
 // =============================================================================
@@ -74,6 +76,7 @@ let initError: string | null = null;
 let healthHandler: ((req: Request) => Promise<Response>) | null = null;
 let verifyRouter: ((req: Request) => Promise<Response>) | null = null;
 let signRouter: ((req: Request) => Response | Promise<Response>) | null = null;
+let demoSignRouter: ((req: Request) => Response | Promise<Response>) | null = null;
 let issueRouter: ((req: Request) => Response | Promise<Response>) | null = null;
 let didJsonHandler: ((req: Request) => Promise<Response>) | null = null;
 let jwksJsonHandler: ((req: Request) => Promise<Response>) | null = null;
@@ -150,6 +153,7 @@ const server = Bun.serve({
     // CORS preflight
     if (req.method === "OPTIONS") {
       const isPublic = path === "/verify" || path === "/v1/verify" ||
+        path === "/sign/demo" || path === "/v1/sign/demo" ||
         path.startsWith("/.well-known/") ||
         path.startsWith("/badge/") || path.startsWith("/profile/") ||
         ((path === "/scitt/entries" || path === "/v1/scitt/entries") && req.method === "GET");
@@ -173,6 +177,10 @@ const server = Bun.serve({
 
     if (path === "/sign" || path === "/v1/sign") {
       return signRouter!(req);
+    }
+
+    if (path === "/sign/demo" || path === "/v1/sign/demo") {
+      return demoSignRouter!(req);
     }
 
     if (path === "/issue" || path === "/v1/issue") {
@@ -291,6 +299,27 @@ async function initialize() {
   const streamManager = new PgSSFStreamManager(db as any);
   const registry = new PgSCITTRegistry(db as any, signingKeyPem);
 
+  // 6.5 Demo key manager (optional)
+  const demoKeyManager = EnvKeyManager.fromEnv();
+  let demoPublicKey: Buffer | undefined;
+  if (demoKeyManager) {
+    const demoKeypair = await demoKeyManager.loadKeypair();
+    demoPublicKey = demoKeypair?.publicKey;
+    console.log("  Init: Demo signing keys loaded");
+  } else {
+    console.warn("  Init: Demo signing not configured (CORSAIR_DEMO_PUBLIC_KEY/PRIVATE_KEY missing)");
+  }
+
+  // 6.6 Periodic cleanup for rate limits + idempotency
+  setInterval(async () => {
+    try {
+      await (db as any)`DELETE FROM rate_limits WHERE window_start < NOW() - INTERVAL '10 minutes'`;
+      await (db as any)`DELETE FROM idempotency_keys WHERE expires_at < NOW()`;
+    } catch {
+      // Non-critical cleanup failures
+    }
+  }, 10 * 60 * 1000);
+
   // 7. Validate API keys in production
   const configuredApiKeys = (Bun.env.CORSAIR_API_KEYS || "").split(",").filter((k: string) => k.trim());
   if (configuredApiKeys.length === 0) {
@@ -301,15 +330,18 @@ async function initialize() {
   }
 
   // 8. Wire up routers
-  verifyRouter = rateLimit(100)(createVerifyRouter({ keyManager }));
+  verifyRouter = rateLimitPg(db as any, 100)(createVerifyRouter({
+    keyManager,
+    extraTrustedKeys: demoPublicKey ? [demoPublicKey] : [],
+  }));
   healthHandler = createHealthHandler({ db });
   didJsonHandler = createDIDJsonHandler({ keyManager, domain: DOMAIN });
   jwksJsonHandler = createJWKSJsonHandler({ keyManager, domain: DOMAIN });
   ssfConfigHandler = createSSFConfigHandler(DOMAIN);
-  scittListRouter = rateLimit(30)(createSCITTListRouter({
+  scittListRouter = rateLimitPg(db as any, 30)(createSCITTListRouter({
     listEntries: (options) => registry.listEntries(options),
   }));
-  badgeRouter = rateLimit(60)(createBadgeRouter({
+  badgeRouter = rateLimitPg(db as any, 60)(createBadgeRouter({
     getCPOEById: async (_marqueId) => null,
     getLatestByDomain: async (domain) => {
       const profile = await registry.getIssuerProfile(`did:web:${domain}`);
@@ -317,7 +349,6 @@ async function initialize() {
       return {
         marqueId: profile.latestCPOE.marqueId,
         tier: "self-signed" as const,
-        assuranceLevel: profile.latestCPOE.assuranceLevel,
         controlsTested: undefined,
         overallScore: profile.latestCPOE.overallScore,
         jwt: "",
@@ -325,14 +356,18 @@ async function initialize() {
     },
     generateBadge: defaultGenerateBadge,
   }));
-  profileRouter = rateLimit(30)(createProfileRouter({
+  profileRouter = rateLimitPg(db as any, 30)(createProfileRouter({
     getIssuerProfile: (issuerDID) => registry.getIssuerProfile(issuerDID),
   }));
 
-  signRouter = requireAuth(rateLimit(10)(createSignRouter({ keyManager, domain: DOMAIN })));
-  issueRouter = requireAuth(rateLimit(10)(createIssueRouter({ keyManager, domain: DOMAIN })));
-  ssfRouter = requireAuth(rateLimit(30)(createSSFStreamRouter({ streamManager })));
-  scittRouter = requireAuth(rateLimit(30)(createSCITTRouter({ registry })));
+  signRouter = requireAuth(rateLimitPg(db as any, 10)(createSignRouter({ keyManager, domain: DOMAIN, db })));
+  demoSignRouter = rateLimitPg(db as any, 5)(createDemoSignRouter({
+    keyManager: demoKeyManager,
+    demoDid: Bun.env.CORSAIR_DEMO_DID || `did:web:${DOMAIN}:demo`,
+  }));
+  issueRouter = requireAuth(rateLimitPg(db as any, 10)(createIssueRouter({ keyManager, domain: DOMAIN, db })));
+  ssfRouter = requireAuth(rateLimitPg(db as any, 30)(createSSFStreamRouter({ streamManager })));
+  scittRouter = requireAuth(rateLimitPg(db as any, 30)(createSCITTRouter({ registry })));
 
   // 9. Start delivery worker if enabled
   if (Bun.env.ENABLE_DELIVERY_WORKER === "true") {

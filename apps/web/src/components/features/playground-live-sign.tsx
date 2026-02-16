@@ -59,12 +59,16 @@ export function PlaygroundLiveSign({
       const res = await fetch("/api/sign", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ evidence: evidenceJson, dryRun: true }),
+        body: JSON.stringify({ evidence: evidenceJson }),
       });
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({ error: "Sign request failed" }));
-        throw new Error(body.error ?? `HTTP ${res.status}`);
+        const msg = body.error ?? `HTTP ${res.status}`;
+        if (msg.includes("Demo signing unavailable")) {
+          throw new Error("Demo signing is not configured on this server. Ask the admin to set CORSAIR_DEMO_PUBLIC_KEY and CORSAIR_DEMO_PRIVATE_KEY.");
+        }
+        throw new Error(msg);
       }
 
       const data = await res.json();
@@ -96,10 +100,10 @@ export function PlaygroundLiveSign({
         >
           {state === "signing" ? "Signing..." : "Sign as CPOE"}
         </Button>
-        <span className="text-xs text-corsair-text-dim">
-          Dry-run mode — preview the CPOE without persisting
-        </span>
-      </div>
+          <span className="text-xs text-corsair-text-dim">
+            Demo mode — signed with a public demo keypair
+          </span>
+        </div>
 
       {/* Step animation */}
       {state === "signing" && (
@@ -156,7 +160,7 @@ export function PlaygroundLiveSign({
                 </Badge>
               </div>
               <Badge variant="outline" className="font-mono text-[10px] text-corsair-gold border-corsair-gold/30">
-                dry-run
+                demo
               </Badge>
             </div>
 

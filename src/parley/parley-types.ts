@@ -67,9 +67,6 @@ export interface ParleyConfig {
   /** MARQUE issuer identity */
   issuer: MarqueIssuer;
 
-  /** Whether to run Quartermaster evaluation */
-  quartermasterEnabled?: boolean;
-
   /** MARQUE expiry in days (default: 90) */
   expiryDays?: number;
 

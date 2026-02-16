@@ -8,7 +8,7 @@
 
 import { describe, test, expect } from "bun:test";
 import { parseJSON } from "../../src/ingestion/json-parser";
-import { deriveProvenance } from "../../src/ingestion/assurance-calculator";
+import { deriveProvenance } from "../../src/ingestion/provenance-utils";
 import { mapToMarqueInput } from "../../src/ingestion/mapper";
 
 // =============================================================================
@@ -445,10 +445,10 @@ describe("parseJSON — pipeline integration", () => {
 
     expect(provenance.source).toBe("tool"); // json source = tool provenance
     expect(provenance.sourceIdentity).toBe("Acme");
-    expect(doc.toolAssuranceLevel).toBe(0); // generic JSON = L0
+    expect(doc.metadata.scope).toBe("AWS Production");
   });
 
-  test("should produce output with tool-level assurance and provenance", () => {
+  test("should produce output with provenance", () => {
     const input = {
       metadata: {
         title: "Scan",
@@ -465,7 +465,6 @@ describe("parseJSON — pipeline integration", () => {
     const doc = parseJSON(input);
     const provenance = deriveProvenance(doc.source, doc.metadata);
 
-    expect(doc.toolAssuranceLevel).toBe(0); // generic = L0
     expect(provenance.source).toBe("tool");
     expect(provenance.sourceIdentity).toBe("Tool");
   });
@@ -498,7 +497,7 @@ describe("parseJSON — pipeline integration", () => {
     expect(marqueInput.document).toBeDefined();
   });
 
-  test("prowler source should get tool provenance and L1 assurance", () => {
+  test("prowler source should get tool provenance", () => {
     const prowlerOutput = [
       {
         StatusCode: "PASS",
@@ -514,7 +513,7 @@ describe("parseJSON — pipeline integration", () => {
     const provenance = deriveProvenance(doc.source, doc.metadata);
 
     expect(provenance.source).toBe("tool");
-    expect(doc.toolAssuranceLevel).toBe(1); // Prowler = L1
+    expect(doc.metadata.reportType).toBe("Prowler OCSF");
   });
 });
 
@@ -1054,7 +1053,7 @@ describe("parseJSON — GitLab security report auto-detection", () => {
     const doc = parseJSON(glReport);
     const provenance = deriveProvenance(doc.source, doc.metadata);
     expect(provenance.source).toBe("tool");
-    expect(doc.toolAssuranceLevel).toBe(1); // GitLab = L1
+    expect(doc.metadata.reportType).toBe("GitLab Security Report");
 
     const marqueInput = mapToMarqueInput(doc);
     expect(marqueInput.document).toBeDefined();
@@ -1332,8 +1331,8 @@ describe("parseJSON — CISO Assistant auto-detection", () => {
     const provenance = deriveProvenance(doc.source, doc.metadata);
 
     expect(provenance.source).toBe("tool");
-    // CISO Assistant with evidences → L2, without → L1
-    expect(doc.toolAssuranceLevel).toBeGreaterThanOrEqual(1);
+    // CISO Assistant should still be parsed with metadata and controls
+    expect(doc.controls.length).toBeGreaterThan(0);
   });
 
   test("should produce correct provenance for ciso-assistant source", () => {

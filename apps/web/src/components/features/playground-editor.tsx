@@ -2,214 +2,88 @@
 
 import { useState, useCallback } from "react";
 import { PLAYGROUND_EXAMPLES, type PlaygroundExample } from "@/data/playground-examples";
+import { signDemoViaAPI, type APISignResponse } from "@/lib/corsair-api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { CopyIcon, CheckIcon } from "lucide-react";
 
-type PlaygroundState = "idle" | "previewing" | "error";
+type PlaygroundState = "idle" | "signing" | "signed" | "error";
 
-interface PreviewResult {
-  format: string;
-  controlCount: number;
-  passCount: number;
-  failCount: number;
-  score: number;
-  provenance: string;
-  cliCommand: string;
-}
-
-/** Parse evidence JSON and extract a preview of what the CPOE would contain */
-function previewEvidence(raw: string): PreviewResult | { error: string } {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return { error: "Invalid JSON — could not parse input." };
-  }
-
-  // Detect format and extract controls
-  if (Array.isArray(parsed)) {
-    // Prowler array
-    const first = parsed[0] as Record<string, unknown> | undefined;
-    if (first && "StatusCode" in first) {
-      const pass = parsed.filter((f: Record<string, unknown>) => f.StatusCode === "PASS").length;
-      const fail = parsed.length - pass;
-      return {
-        format: "prowler",
-        controlCount: parsed.length,
-        passCount: pass,
-        failCount: fail,
-        score: Math.round((pass / parsed.length) * 100),
-        provenance: "tool (Prowler)",
-        cliCommand: `corsair sign --file findings.json --format prowler`,
-      };
-    }
-  }
-
-  if (typeof parsed === "object" && parsed !== null) {
-    const obj = parsed as Record<string, unknown>;
-
-    // SecurityHub
-    if ("Findings" in obj && Array.isArray(obj.Findings)) {
-      const findings = obj.Findings as Array<{ Compliance?: { Status?: string } }>;
-      const pass = findings.filter((f) => f.Compliance?.Status === "PASSED").length;
-      return {
-        format: "securityhub",
-        controlCount: findings.length,
-        passCount: pass,
-        failCount: findings.length - pass,
-        score: Math.round((pass / findings.length) * 100),
-        provenance: "tool (SecurityHub)",
-        cliCommand: `corsair sign --file findings.json --format securityhub`,
-      };
-    }
-
-    // InSpec
-    if ("profiles" in obj && Array.isArray(obj.profiles)) {
-      const profiles = obj.profiles as Array<{ controls?: Array<{ results?: Array<{ status?: string }> }> }>;
-      let total = 0, pass = 0;
-      for (const p of profiles) {
-        for (const c of p.controls ?? []) {
-          total++;
-          const allPassed = (c.results ?? []).every((r) => r.status === "passed");
-          if (allPassed) pass++;
-        }
-      }
-      return {
-        format: "inspec",
-        controlCount: total,
-        passCount: pass,
-        failCount: total - pass,
-        score: total > 0 ? Math.round((pass / total) * 100) : 0,
-        provenance: "tool (InSpec)",
-        cliCommand: `corsair sign --file report.json --format inspec`,
-      };
-    }
-
-    // Trivy
-    if ("Results" in obj && Array.isArray(obj.Results)) {
-      const results = obj.Results as Array<{ Vulnerabilities?: Array<{ Severity?: string }> }>;
-      let total = 0, crit = 0;
-      for (const r of results) {
-        for (const v of r.Vulnerabilities ?? []) {
-          total++;
-          if (v.Severity === "CRITICAL" || v.Severity === "HIGH") crit++;
-        }
-      }
-      return {
-        format: "trivy",
-        controlCount: total,
-        passCount: total - crit,
-        failCount: crit,
-        score: total > 0 ? Math.round(((total - crit) / total) * 100) : 100,
-        provenance: "tool (Trivy)",
-        cliCommand: `corsair sign --file trivy.json --format trivy`,
-      };
-    }
-
-    // GitLab SAST
-    if ("vulnerabilities" in obj && Array.isArray(obj.vulnerabilities)) {
-      const vulns = obj.vulnerabilities as Array<{ severity?: string }>;
-      const crit = vulns.filter((v) => v.severity === "Critical" || v.severity === "High").length;
-      return {
-        format: "gitlab",
-        controlCount: vulns.length,
-        passCount: vulns.length - crit,
-        failCount: crit,
-        score: vulns.length > 0 ? Math.round(((vulns.length - crit) / vulns.length) * 100) : 100,
-        provenance: "tool (GitLab SAST)",
-        cliCommand: `corsair sign --file gl-sast.json --format gitlab`,
-      };
-    }
-
-    // CISO Assistant Export
-    if ("requirement_assessments" in obj && Array.isArray(obj.requirement_assessments)) {
-      const assessments = obj.requirement_assessments as Array<{ result?: string }>;
-      const pass = assessments.filter((a) => a.result === "compliant").length;
-      return {
-        format: "ciso-assistant-export",
-        controlCount: assessments.length,
-        passCount: pass,
-        failCount: assessments.length - pass,
-        score: Math.round((pass / assessments.length) * 100),
-        provenance: "tool (CISO Assistant)",
-        cliCommand: `corsair sign --file export.json --format ciso-assistant-export`,
-      };
-    }
-
-    // CISO Assistant API
-    if ("results" in obj && Array.isArray(obj.results)) {
-      const results = obj.results as Array<{ result?: string }>;
-      const pass = results.filter((r) => r.result === "compliant").length;
-      return {
-        format: "ciso-assistant-api",
-        controlCount: results.length,
-        passCount: pass,
-        failCount: results.length - pass,
-        score: Math.round((pass / results.length) * 100),
-        provenance: "tool (CISO Assistant)",
-        cliCommand: `corsair sign --file api-response.json --format ciso-assistant-api`,
-      };
-    }
-
-    // Generic
-    if ("controls" in obj && Array.isArray(obj.controls)) {
-      const controls = obj.controls as Array<{ status?: string }>;
-      const pass = controls.filter((c) => c.status === "pass" || c.status === "effective").length;
-      return {
-        format: "generic",
-        controlCount: controls.length,
-        passCount: pass,
-        failCount: controls.length - pass,
-        score: controls.length > 0 ? Math.round((pass / controls.length) * 100) : 0,
-        provenance: "json",
-        cliCommand: `corsair sign --file evidence.json`,
-      };
-    }
-  }
-
-  return { error: "Unrecognized format. Supported: generic, prowler, securityhub, inspec, trivy, gitlab, ciso-assistant-api, ciso-assistant-export." };
+function buildCliCommand(format?: string): string {
+  if (!format || format === "generic") return "corsair sign --file evidence.json";
+  return `corsair sign --file evidence.json --format ${format}`;
 }
 
 export function PlaygroundEditor() {
   const [inputJson, setInputJson] = useState("");
   const [selectedExample, setSelectedExample] = useState<PlaygroundExample | null>(null);
   const [state, setState] = useState<PlaygroundState>("idle");
-  const [preview, setPreview] = useState<PreviewResult | null>(null);
+  const [result, setResult] = useState<APISignResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const handleSelectExample = useCallback((example: PlaygroundExample) => {
     const json = JSON.stringify(example.data, null, 2);
     setInputJson(json);
     setSelectedExample(example);
     setState("idle");
-    setPreview(null);
+    setResult(null);
     setError(null);
   }, []);
 
-  const handlePreview = useCallback(() => {
+  const handleSignDemo = useCallback(async () => {
     if (!inputJson.trim()) return;
 
-    const result = previewEvidence(inputJson);
-    if ("error" in result) {
-      setError(result.error);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(inputJson);
+    } catch {
+      setError("Invalid JSON — could not parse input.");
       setState("error");
-      setPreview(null);
-    } else {
-      setPreview(result);
-      setState("previewing");
-      setError(null);
+      setResult(null);
+      return;
     }
-  }, [inputJson]);
+
+    setState("signing");
+    setError(null);
+    setResult(null);
+
+    const apiResult = await signDemoViaAPI({
+      evidence: parsed,
+      ...(selectedExample?.format ? { format: selectedExample.format } : {}),
+    });
+
+    if (apiResult.ok) {
+      setResult(apiResult.data);
+      setCopied(false);
+      setState("signed");
+    } else {
+      const msg = apiResult.error.message.includes("Demo signing unavailable")
+        ? "Demo signing is not configured on this server. Ask the admin to set CORSAIR_DEMO_PUBLIC_KEY and CORSAIR_DEMO_PRIVATE_KEY."
+        : apiResult.error.message;
+      setError(msg);
+      setState("error");
+      setResult(null);
+    }
+  }, [inputJson, selectedExample]);
 
   const handleClear = useCallback(() => {
     setInputJson("");
     setSelectedExample(null);
     setState("idle");
-    setPreview(null);
+    setResult(null);
     setError(null);
+    setCopied(false);
   }, []);
+
+  const handleCopy = useCallback(async () => {
+    if (!result?.cpoe) return;
+    await navigator.clipboard.writeText(result.cpoe);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [result]);
 
   return (
     <div className="space-y-6">
@@ -258,7 +132,7 @@ export function PlaygroundEditor() {
             setInputJson(e.target.value);
             if (state !== "idle") {
               setState("idle");
-              setPreview(null);
+              setResult(null);
               setError(null);
             }
           }}
@@ -271,12 +145,12 @@ export function PlaygroundEditor() {
       {/* Actions */}
       <div className="flex gap-3">
         <Button
-          onClick={handlePreview}
-          disabled={!inputJson.trim()}
+          onClick={handleSignDemo}
+          disabled={!inputJson.trim() || state === "signing"}
           size="lg"
           className="font-display font-semibold"
         >
-          Preview CPOE
+          {state === "signing" ? "Signing..." : "Sign Demo CPOE"}
         </Button>
         <Button
           variant="outline"
@@ -301,8 +175,8 @@ export function PlaygroundEditor() {
         </Card>
       )}
 
-      {/* Preview Result */}
-      {preview && (
+      {/* Signed Result */}
+      {result && state === "signed" && (
         <Card className="border-corsair-green/30 bg-corsair-green/5">
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -311,10 +185,13 @@ export function PlaygroundEditor() {
               </div>
               <div>
                 <span className="font-display text-lg font-bold text-corsair-green">
-                  CPOE PREVIEW
+                  CPOE SIGNED
                 </span>
                 <Badge variant="outline" className="ml-2 font-mono text-[10px] text-corsair-cyan border-corsair-cyan/40">
-                  {preview.format}
+                  {result.detectedFormat}
+                </Badge>
+                <Badge variant="outline" className="ml-2 font-mono text-[10px] text-corsair-gold border-corsair-gold/30">
+                  DEMO
                 </Badge>
               </div>
             </div>
@@ -328,20 +205,20 @@ export function PlaygroundEditor() {
                     Controls Summary
                   </span>
                   <span className="font-display text-2xl font-bold text-foreground">
-                    {preview.score}<span className="text-sm text-muted-foreground">/100</span>
+                    {result.summary.overallScore}<span className="text-sm text-muted-foreground">/100</span>
                   </span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-corsair-deep">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-corsair-cyan to-corsair-green transition-all"
-                    style={{ width: `${preview.score}%` }}
+                    style={{ width: `${result.summary.overallScore}%` }}
                   />
                 </div>
                 <div className="mt-2 flex justify-between text-xs text-muted-foreground">
                   <span>
-                    {preview.passCount}/{preview.controlCount} controls passed
+                    {result.summary.controlsPassed}/{result.summary.controlsTested} controls passed
                   </span>
-                  <span>{preview.failCount} failed</span>
+                  <span>{result.summary.controlsFailed} failed</span>
                 </div>
               </CardContent>
             </Card>
@@ -353,7 +230,7 @@ export function PlaygroundEditor() {
                   <span className="block font-mono text-xs uppercase text-muted-foreground">
                     Detected Format
                   </span>
-                  <span className="text-sm font-semibold text-corsair-gold">{preview.format}</span>
+                  <span className="text-sm font-semibold text-corsair-gold">{result.detectedFormat}</span>
                   <span className="block mt-1 text-xs text-muted-foreground">Auto-detected from evidence structure</span>
                 </CardContent>
               </Card>
@@ -362,11 +239,19 @@ export function PlaygroundEditor() {
                   <span className="block font-mono text-xs uppercase text-muted-foreground">
                     Evidence Provenance
                   </span>
-                  <span className="text-sm font-semibold text-corsair-cyan">{preview.provenance}</span>
+                  <span className="text-sm font-semibold text-corsair-cyan">
+                    {result.provenance.sourceIdentity || result.provenance.source}
+                  </span>
                   <span className="block mt-1 text-xs text-muted-foreground">Recorded in CPOE metadata</span>
                 </CardContent>
               </Card>
             </div>
+
+            {result.warnings.length > 0 && (
+              <div className="rounded-lg border border-corsair-gold/30 bg-corsair-gold/5 p-3 text-xs text-corsair-text-dim">
+                {result.warnings.join(" ")}
+              </div>
+            )}
 
             <Separator className="bg-corsair-border/50" />
 
@@ -384,7 +269,7 @@ export function PlaygroundEditor() {
                 </div>
                 <div className="p-3">
                   <code className="font-mono text-xs text-corsair-cyan">
-                    $ {preview.cliCommand}
+                    $ {buildCliCommand(result.detectedFormat)}
                   </code>
                 </div>
               </div>
@@ -395,6 +280,38 @@ export function PlaygroundEditor() {
                 </a>
                 .
               </p>
+            </div>
+
+            {/* JWT Output */}
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <span className="font-mono text-xs uppercase text-muted-foreground">
+                  JWT-VC Output (demo)
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 px-2 font-mono text-[10px]"
+                  onClick={handleCopy}
+                >
+                  {copied ? (
+                    <span className="flex items-center gap-1">
+                      <CheckIcon className="h-3 w-3 text-corsair-green" />
+                      Copied
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <CopyIcon className="h-3 w-3" />
+                      Copy JWT
+                    </span>
+                  )}
+                </Button>
+              </div>
+              <div className="overflow-hidden rounded-lg border border-corsair-border bg-[#0A0A0A] p-3">
+                <code className="block max-h-24 overflow-y-auto break-all font-mono text-[11px] text-corsair-cyan/80">
+                  {result.cpoe}
+                </code>
+              </div>
             </div>
           </CardContent>
         </Card>

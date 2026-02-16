@@ -373,7 +373,6 @@ describe("CPOE integration", () => {
     const subject = {
       type: "CorsairCPOE" as const,
       scope: "test",
-      assurance: { declared: 1 as const, verified: true, method: "automated-config-check" as const, breakdown: { "1": 5 } },
       provenance: { source: "tool" as const },
       summary: { controlsTested: 5, controlsPassed: 5, controlsFailed: 0, overallScore: 100 },
     };
@@ -387,7 +386,6 @@ describe("CPOE integration", () => {
     const subject = {
       type: "CorsairCPOE" as const,
       scope: "test",
-      assurance: { declared: 1 as const, verified: true, method: "automated-config-check" as const, breakdown: { "1": 5 } },
       provenance: { source: "tool" as const },
       summary: { controlsTested: 5, controlsPassed: 5, controlsFailed: 0, overallScore: 100 },
       freshness: staple,

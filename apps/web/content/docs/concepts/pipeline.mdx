@@ -13,11 +13,7 @@ The Corsair pipeline transforms security tool output into cryptographically sign
 EVIDENCE → SIGN → LOG → VERIFY → DIFF
 ```
 
-Optional enrichment layers (available via `--enrich`):
-
-- **CHART** — Map controls to 13+ compliance frameworks
-- **QUARTER** — AI-powered evidence governance review
-- **FLAGSHIP** — Real-time compliance change notifications via SSF/SET/CAEP
+FLAGSHIP delivers real-time compliance change notifications via SSF/SET/CAEP.
 
 ## Core Pipeline
 
@@ -89,45 +85,7 @@ Track compliance changes between assessments — like `git diff` for compliance:
 corsair diff --current cpoe-v2.jwt --previous cpoe-v1.jwt
 ```
 
-Shows control-level additions, removals, status changes, and score deltas.
-
-## Higher-Level Workflows
-
-Built on top of the core primitives, these commands compose the pipeline stages into end-to-end workflows:
-
-### AUDIT — Full Compliance Audit
-
-Run a complete audit across multiple evidence files with scoring, framework targeting, and optional governance checks:
-
-```bash
-corsair audit --files prowler.json inspec.json --scope "AWS Production" --frameworks SOC2,NIST-800-53
-```
-
-Audit combines EVIDENCE + SIGN + scoring into a single operation, producing a comprehensive audit result with findings, score breakdowns, and optional governance review.
-
-### CERT — Continuous Certifications
-
-Manage ongoing compliance certifications with lifecycle tracking:
-
-```bash
-corsair cert create --scope "AWS Production" --frameworks SOC2 --files evidence/*.json
-corsair cert check <cert-id>
-corsair cert renew <cert-id> --files new-evidence/*.json
-```
-
-Certifications track status (active, warning, degraded, suspended, expired, revoked), detect drift on renewal, and enforce minimum score thresholds.
-
-### TPRM — Third-Party Risk Management
-
-Automate vendor risk assessment using CPOEs as the evidence layer:
-
-```bash
-corsair tprm register --name "Acme Cloud" --domain acme.com --risk-tier high
-corsair tprm assess --vendor <id> --frameworks SOC2 --cpoes vendor-cpoe.jwt
-corsair tprm dashboard
-```
-
-TPRM replaces questionnaire-based vendor assessment with cryptographically verifiable CPOE-based evaluation, producing approve/conditional/deny decisions with composite scoring.
+Shows control-level additions, removals, and status changes.
 
 ### RENEW — Re-sign CPOEs
 
@@ -137,43 +95,5 @@ Re-sign an existing CPOE with fresh dates, or with new evidence while preserving
 corsair renew --file cpoe.jwt --output renewed.jwt
 corsair renew --file cpoe.jwt --evidence new-findings.json --output renewed.jwt
 ```
-
-## Evidence Quality Scoring
-
-The `--score` flag on `corsair sign` runs a 7-dimension evidence quality assessment (FICO-style composite score):
-
-```bash
-corsair sign --file evidence.json --score --json
-```
-
-Dimensions include evidence integrity, completeness, methodology, freshness, provenance strength, control coverage, and consistency. The composite score (0-100) with letter grade provides a standardized quality metric for CPOE consumers.
-
-## Optional Enrichment (--enrich)
-
-These layers are available via the `--enrich` flag but are not part of the default signing path:
-
-### CHART — Framework Mapping
-
-Maps controls to 13+ compliance frameworks using a 2-tier resolution system:
-
-1. **CTID ATT&CK-to-NIST data** — 6,300+ mappings from the Center for Threat-Informed Defense
-2. **SCF crosswalk** — Secure Controls Framework mapping to 175+ frameworks
-
-Supported frameworks include NIST 800-53, NIST CSF, SOC 2, ISO 27001, PCI-DSS, HIPAA, GDPR, CMMC, FedRAMP, CIS Controls, SOX, and COBIT.
-
-### QUARTER — Governance Review
-
-AI-powered governance assessment evaluating four dimensions:
-
-| Dimension | Weight | What It Measures |
-|-----------|--------|------------------|
-| Methodology | 30% | Assessment approach quality and rigor |
-| Evidence Integrity | 25% | Cryptographic chain validity and completeness |
-| Completeness | 25% | Coverage of in-scope controls |
-| Bias | 20% | Independence and objectivity of evidence |
-
-Produces a confidence score (0-100) and trust tier.
-
-### FLAGSHIP — Real-Time Compliance Signals
 
 FLAGSHIP delivers standardized compliance change notifications via the OpenID Shared Signals Framework (SSF) and Continuous Access Evaluation Protocol (CAEP). See [FLAGSHIP Events](/docs/concepts/flagship-events) for details.

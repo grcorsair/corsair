@@ -19,7 +19,6 @@ function buildMockJWT(claims: {
   iss: string;
   scope?: string;
   provenance?: { source: string; sourceIdentity?: string };
-  assurance?: { declared: number };
   summary?: { controlsTested: number; controlsPassed: number; controlsFailed: number; overallScore: number };
   frameworks?: Record<string, unknown>;
 }): string {
@@ -37,7 +36,6 @@ function buildMockJWT(claims: {
         type: "CorsairCPOE",
         scope: claims.scope ?? "Test Scope",
         ...(claims.provenance ? { provenance: claims.provenance } : {}),
-        ...(claims.assurance ? { assurance: claims.assurance } : {}),
         ...(claims.summary ? { summary: claims.summary } : {}),
         ...(claims.frameworks ? { frameworks: claims.frameworks } : {}),
       },

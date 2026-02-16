@@ -20,7 +20,6 @@ const MOCK_PROFILE: IssuerProfile = {
     marqueId: "marque-latest-001",
     scope: "SOC 2 Type II - Cloud Platform",
     provenance: { source: "tool", sourceIdentity: "Prowler v3.1" },
-    assuranceLevel: 2,
     overallScore: 92,
     issuedAt: "2026-02-10T00:00:00Z",
     expiresAt: "2026-05-10T00:00:00Z",
@@ -101,7 +100,6 @@ describe("GET /profile/:domain — Vendor Profile", () => {
     expect(body.latestCPOE!.marqueId).toBeTruthy();
     expect(body.latestCPOE!.scope).toBeTruthy();
     expect(body.latestCPOE!.provenance).toEqual({ source: "tool", sourceIdentity: "Prowler v3.1" });
-    expect(body.latestCPOE!.assuranceLevel).toBe(2);
     expect(body.latestCPOE!.overallScore).toBe(92);
     expect(body.latestCPOE!.issuedAt).toBeTruthy();
   });

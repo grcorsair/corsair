@@ -34,19 +34,6 @@ Every `corsair sign` invocation flows through the core primitives. No flags requ
 | **DIFF** | `git diff` | Compare two CPOEs, detect compliance regressions |
 | **SIGNAL** | `git webhooks` | Real-time compliance change notifications via FLAGSHIP (SSF/CAEP) |
 
-### Advanced Features (via `--score` / `--enrich`)
-
-Built on top of the five primitives, these features add intelligence and automation. Activated with `--score`, `--enrich`, or dedicated commands.
-
-| Feature | Command | What It Does |
-|---------|---------|--------------|
-| **SCORE** | `corsair sign --score` | 7-dimension evidence quality assessment (FICO-style, 0-100) |
-| **AUDIT** | `corsair audit` | Multi-source compliance audit with scoring and governance |
-| **CERTIFY** | `corsair cert` | Continuous certification lifecycle with drift detection |
-| **TPRM** | `corsair tprm` | Vendor risk assessment using CPOEs |
-
-The `--score` flag runs a 7-dimension evidence quality assessment, producing a FICO-style composite score (0-100) with letter grade. Five of the seven dimensions are fully deterministic. Two use model-assisted analysis. Like FICO, it uses models but is not defined by them.
-
 ## Tool Adapters
 
 Corsair accepts structured output from security scanning tools and compliance platforms. Each adapter translates tool-native formats into the canonical evidence format for signing. Override auto-detection with `--format <name>`.
@@ -72,7 +59,6 @@ Every CPOE records **provenance** — where the evidence came from. Corsair does
 | **tool** | Tool-Generated | Security tool (Prowler, InSpec, Trivy) produced the evidence |
 | **auditor** | Auditor-Verified | Independent third party reviewed and verified the assessment |
 
-Assurance levels (L0-L4) are available as optional enrichment via the `--enrich` flag but are not part of the default signing path.
 
 ## Evidence Chain
 

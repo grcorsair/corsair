@@ -193,7 +193,6 @@ export class PgSCITTRegistry implements SCITTRegistry {
       const issuer = (payload.iss as string) || "unknown";
       const scope = (subject?.scope as string) || "unknown";
       const provenanceRaw = subject?.provenance as Record<string, unknown> | undefined;
-      const assurance = subject?.assurance as Record<string, unknown> | undefined;
       const summary = subject?.summary as SCITTListEntry["summary"] | undefined;
       const frameworks = subject?.frameworks as Record<string, unknown> | undefined;
 
@@ -221,10 +220,6 @@ export class PgSCITTRegistry implements SCITTRegistry {
         scope,
         provenance,
       };
-
-      if (assurance?.declared !== undefined) {
-        entry.assuranceLevel = assurance.declared as number;
-      }
 
       if (summary) {
         entry.summary = summary;
@@ -261,7 +256,6 @@ export class PgSCITTRegistry implements SCITTRegistry {
       scope: string;
       score: number;
       provenance: SCITTProvenance;
-      assuranceLevel?: number;
       frameworks: string[];
     }> = [];
 
@@ -276,7 +270,6 @@ export class PgSCITTRegistry implements SCITTRegistry {
       const vc = payload.vc as Record<string, unknown> | undefined;
       const subject = vc?.credentialSubject as Record<string, unknown> | undefined;
       const provenanceRaw = subject?.provenance as Record<string, unknown> | undefined;
-      const assurance = subject?.assurance as Record<string, unknown> | undefined;
       const summary = subject?.summary as Record<string, unknown> | undefined;
       const frameworks = subject?.frameworks as Record<string, unknown> | undefined;
 
@@ -291,7 +284,6 @@ export class PgSCITTRegistry implements SCITTRegistry {
         scope: (subject?.scope as string) || "unknown",
         score: (summary?.overallScore as number) || 0,
         provenance,
-        assuranceLevel: assurance?.declared !== undefined ? (assurance.declared as number) : undefined,
         frameworks: frameworks ? Object.keys(frameworks) : [],
       });
     }
@@ -307,18 +299,18 @@ export class PgSCITTRegistry implements SCITTRegistry {
     const allFrameworks = new Set<string>();
     let totalScore = 0;
     const provenanceSummary = { self: 0, tool: 0, auditor: 0 };
-    let maxAssurance: number | undefined;
-
+    let maxAssuranceLevel: number | undefined;
+    const assuranceBySource: Record<string, number> = { self: 0, tool: 1, auditor: 2 };
     for (const entry of issuerEntries) {
       totalScore += entry.score;
       // Aggregate provenance (primary signal)
       const src = entry.provenance.source;
       if (src === "self" || src === "tool" || src === "auditor") {
         provenanceSummary[src]++;
-      }
-      // Track max assurance (secondary, optional)
-      if (entry.assuranceLevel !== undefined) {
-        maxAssurance = Math.max(maxAssurance ?? 0, entry.assuranceLevel);
+        const level = assuranceBySource[src];
+        if (maxAssuranceLevel === undefined || level > maxAssuranceLevel) {
+          maxAssuranceLevel = level;
+        }
       }
       for (const fw of entry.frameworks) allFrameworks.add(fw);
     }
@@ -328,8 +320,8 @@ export class PgSCITTRegistry implements SCITTRegistry {
       totalCPOEs: issuerEntries.length,
       frameworks: Array.from(allFrameworks),
       averageScore: Math.round(totalScore / issuerEntries.length),
+      currentAssuranceLevel: maxAssuranceLevel,
       provenanceSummary,
-      currentAssuranceLevel: maxAssurance,
       lastCPOEDate: issuerEntries[0].registrationTime,
       history: issuerEntries.slice(0, 20).map((e) => ({
         entryId: e.entryId,
@@ -337,7 +329,6 @@ export class PgSCITTRegistry implements SCITTRegistry {
         scope: e.scope,
         score: e.score,
         provenance: e.provenance,
-        assuranceLevel: e.assuranceLevel,
       })),
     };
   }

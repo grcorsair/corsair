@@ -55,10 +55,10 @@ Anyone can verify a CPOE. Free to check. No account required. Four steps with an
 # Install
 git clone https://github.com/Arudjreis/corsair.git && cd corsair && bun install
 
-# Generate signing keys
-bun run corsair.ts keygen --output ./keys
+# Initialize a project (generates keys + example evidence)
+bun run corsair.ts init
 
-# Sign your Prowler scan as a CPOE
+# Sign your Prowler scan as a CPOE (keys auto-generate on first use)
 bun run corsair.ts sign --file prowler-findings.json
 
 # Verify any CPOE (always free)
@@ -100,7 +100,6 @@ corsair sign --file evidence.json              # Auto-detect format, sign
 corsair sign --file evidence.json --format prowler  # Force format
 corsair sign --file evidence.json --json       # Structured JSON output
 corsair sign --file evidence.json --dry-run    # Preview without signing
-corsair sign --file evidence.json --score      # Include evidence quality score
 corsair sign --file evidence.json --sd-jwt     # SD-JWT selective disclosure
 corsair sign --file evidence.json --sd-jwt --sd-fields scope  # Disclose only scope
 corsair sign --file - < data.json              # Sign from stdin
@@ -297,7 +296,6 @@ Real-time compliance signals via OpenID SSF/CAEP:
 
 | Event | CAEP Type | Trigger |
 |:------|:----------|:--------|
-| `COLORS_CHANGED` | `assurance-level-change` | Trust tier changed |
 | `FLEET_ALERT` | `compliance-change` | Drift detected |
 | `PAPERS_CHANGED` | `credential-change` | CPOE issued, renewed, or revoked |
 | `MARQUE_REVOKED` | `session-revoked` | Emergency revocation |
@@ -382,7 +380,6 @@ Lost in the acronyms? Here's every term in plain English.
 | **CPOE** | Certificate of Proof of Operational Effectiveness — a signed compliance proof. Think "digitally signed SOC 2 result." |
 | **Parley** | The open protocol behind Corsair. Like SMTP is for email, Parley is for compliance proofs. |
 | **MARQUE** | A signed CPOE — the actual JWT you hand to a verifier. Named after letters of marque (pirate commissions). |
-| **QUARTERMASTER** | The governance engine that reviews evidence quality. 7 dimensions, mostly deterministic. |
 | **FLAGSHIP** | Real-time compliance change notifications. If your controls drift, subscribers know immediately. |
 
 ### Standards Used
@@ -404,67 +401,9 @@ Lost in the acronyms? Here's every term in plain English.
 |:-----|:--------------|
 | **GRC** | Governance, Risk, and Compliance — the industry Corsair operates in. |
 | **SOC 2** | A trust framework for service organizations. The most common compliance report in SaaS. |
-| **TPRM** | Third-Party Risk Management — assessing whether your vendors are secure. What buyers do with CPOEs. |
 | **NIST 800-53** | A US government catalog of security controls. One of many frameworks Corsair maps evidence to. |
 
 ---
-
-<details>
-<summary><strong>Advanced Features</strong></summary>
-
-<br/>
-
-### Evidence Quality Score (`--score`)
-
-Add `--score` to any sign command to get a 7-dimension evidence quality assessment:
-
-```bash
-corsair sign --file prowler-findings.json --score
-# Evidence Quality: 82/100 (B)
-# Dimensions: source=90 recency=95 coverage=80 reproducibility=85 consistency=70 quality=80 completeness=75
-```
-
-### Compliance Audit
-
-Multi-file audit with optional scoring and governance checks:
-
-```bash
-corsair audit --files evidence/*.json --scope "SOC 2 Type II" --score --governance --json
-```
-
-### Continuous Certification
-
-Policy-based continuous compliance monitoring:
-
-```bash
-corsair cert create --scope "Production" --policy policy.json
-corsair cert check --id cert-abc123
-corsair cert list
-```
-
-### Third-Party Risk Management
-
-Automated vendor assessment from CPOEs:
-
-```bash
-corsair tprm register --name "Acme Corp" --tier critical
-corsair tprm assess --vendor vendor-123 --cpoes cpoe1.jwt cpoe2.jwt
-corsair tprm dashboard
-```
-
-### Assurance Levels (Optional Enrichment)
-
-When `--enrich` is passed, Corsair classifies evidence at L0-L4 assurance levels:
-
-| Level | Name | Evidence Required |
-|:---:|:-----|:------------------|
-| **L0** | Documented | Policy docs only |
-| **L1** | Configured | Config exports, tool scans |
-| **L2** | Demonstrated | Test results, pentest findings |
-| **L3** | Observed | Continuous monitoring |
-| **L4** | Attested | Independent third-party verification |
-
-</details>
 
 <details>
 <summary><strong>Project Structure</strong></summary>
@@ -485,16 +424,6 @@ src/
   security/                # URL validation for DID resolver
   middleware/              # HTTP auth, rate-limit, security headers
   db/                      # Postgres via Bun.sql + migrations
-
-  normalize/               # Evidence normalization engine
-  scoring/                 # 7-dimension evidence quality scoring
-  query/                   # Evidence query engine
-  quartermaster/           # Governance checks
-  audit/                   # Audit engine + orchestrator
-  certification/           # Continuous certification
-  tprm/                    # Third-party risk management
-  billing/                 # Subscription management
-  webhooks/                # Webhook delivery
   api/                     # Versioned API router
   mcp/                     # MCP server
 
@@ -503,7 +432,7 @@ functions/                 # Railway API endpoints
 examples/                  # Evidence format examples (8 files)
 apps/web/                  # grcorsair.com (Next.js 15)
 packages/sdk/              # @corsair/sdk
-tests/                     # 1920 tests across 76 files
+tests/                     # Test suite
 ```
 
 </details>

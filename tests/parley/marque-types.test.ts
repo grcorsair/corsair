@@ -14,7 +14,6 @@ import type {
   MarqueSummary,
   MarqueEvidenceChain,
   MarqueFrameworkResult,
-  MarqueQuartermasterAttestation,
   MarqueIssuer,
   MarqueThreatModelSummary,
 } from "../../src/parley/marque-types";
@@ -108,25 +107,4 @@ describe("MARQUE Types - Proof of Operational Effectiveness", () => {
     expect(result.controls[2].status).toBe("failed");
   });
 
-  test("MarqueQuartermasterAttestation has confidenceScore, dimensions, trustTier", () => {
-    const attestation: MarqueQuartermasterAttestation = {
-      confidenceScore: 0.87,
-      dimensions: [
-        { dimension: "evidence-quality", score: 0.9 },
-        { dimension: "coverage-breadth", score: 0.85 },
-        { dimension: "temporal-consistency", score: 0.86 },
-      ],
-      trustTier: "ai-verified",
-      evaluatedAt: new Date().toISOString(),
-      reportHash: "sha256-abc123def456",
-    };
-
-    expect(attestation.confidenceScore).toBe(0.87);
-    expect(attestation.dimensions).toHaveLength(3);
-    expect(attestation.dimensions[0].dimension).toBe("evidence-quality");
-    expect(attestation.dimensions[0].score).toBe(0.9);
-    expect(attestation.trustTier).toBe("ai-verified");
-    expect(attestation.evaluatedAt).toBeDefined();
-    expect(attestation.reportHash).toBe("sha256-abc123def456");
-  });
 });

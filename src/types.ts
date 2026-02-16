@@ -6,7 +6,6 @@
  * - Parley protocol (JWT-VC, SCITT, FLAGSHIP)
  * - Chart engine (framework mapping)
  * - Evidence engine (hash chain)
- * - Quartermaster (governance)
  * - Output (OSCAL, reports)
  */
 

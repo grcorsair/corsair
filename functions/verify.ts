@@ -7,7 +7,7 @@
  * 1. JWT structure and signature
  * 2. Expiration
  * 3. VC schema (W3C Verifiable Credential)
- * 4. CPOE fields (assurance, provenance, scope)
+ * 4. CPOE fields (provenance, scope)
  *
  * Two verification modes:
  * - DID-based (default): Resolves issuer's did:web to fetch public key
@@ -21,6 +21,7 @@ import type { KeyManager } from "../src/parley/marque-key-manager";
 
 export interface VerifyRouterDeps {
   keyManager: KeyManager;
+  extraTrustedKeys?: Buffer[];
 }
 
 function jsonError(status: number, message: string): Response {
@@ -56,7 +57,7 @@ function jsonOk(data: unknown, status = 200): Response {
 export function createVerifyRouter(
   deps: VerifyRouterDeps,
 ): (req: Request) => Promise<Response> {
-  const { keyManager } = deps;
+  const { keyManager, extraTrustedKeys } = deps;
 
   return async (req: Request): Promise<Response> => {
     if (req.method !== "POST") {
@@ -106,13 +107,13 @@ export function createVerifyRouter(
       result = await verifyVCJWTViaDID(jwt);
     } catch {
       // DID resolution failed — fall back to trusted keys
-      result = await verifyWithTrustedKeys(jwt, keyManager);
+      result = await verifyWithTrustedKeys(jwt, keyManager, extraTrustedKeys);
     }
 
     // If DID verification failed, try trusted keys as fallback.
     // DID resolution may return wrong key (e.g., stale static DID doc) or fail entirely.
     if (!result.valid) {
-      const trustedResult = await verifyWithTrustedKeys(jwt, keyManager);
+      const trustedResult = await verifyWithTrustedKeys(jwt, keyManager, extraTrustedKeys);
       // Prefer the trusted-key result if it succeeds, or if it gives a more specific error
       if (trustedResult.valid || result.issuerTier === "unverifiable") {
         result = trustedResult;
@@ -146,9 +147,6 @@ export function createVerifyRouter(
       verified: result.valid,
       issuer: result.signedBy || null,
       issuerTier: result.issuerTier || null,
-      assurance: result.assuranceLevel !== undefined
-        ? { level: result.assuranceLevel, name: result.assuranceName || null }
-        : null,
       provenance: result.provenance || null,
       scope: result.scope || null,
       summary: result.summary || null,
@@ -171,17 +169,25 @@ export function createVerifyRouter(
 async function verifyWithTrustedKeys(
   jwt: string,
   keyManager: KeyManager,
+  extraTrustedKeys?: Buffer[],
 ): Promise<MarqueVerificationResult> {
   const { verifyVCJWT } = await import("../src/parley/vc-verifier");
 
-  const keypair = await keyManager.loadKeypair();
-  if (!keypair) {
-    return { valid: false, reason: "schema_invalid", issuerTier: "unverifiable" };
+  const trustedKeys: Buffer[] = [];
+  if (extraTrustedKeys && extraTrustedKeys.length > 0) {
+    trustedKeys.push(...extraTrustedKeys);
   }
 
-  const trustedKeys = [keypair.publicKey];
-  const retired = await keyManager.getRetiredKeys();
-  trustedKeys.push(...retired);
+  const keypair = await keyManager.loadKeypair();
+  if (keypair) {
+    trustedKeys.push(keypair.publicKey);
+    const retired = await keyManager.getRetiredKeys();
+    trustedKeys.push(...retired);
+  }
+
+  if (trustedKeys.length === 0) {
+    return { valid: false, reason: "schema_invalid", issuerTier: "unverifiable" };
+  }
 
   return verifyVCJWT(jwt, trustedKeys);
 }
@@ -195,7 +201,6 @@ export interface VerifyResponse {
   reason?: string;
   issuer: string | null;
   issuerTier: string | null;
-  assurance: { level: number; name: string | null } | null;
   provenance: { source: string; sourceIdentity?: string; sourceDate?: string } | null;
   scope: string | null;
   summary: { controlsTested: number; controlsPassed: number; controlsFailed: number; overallScore: number } | null;

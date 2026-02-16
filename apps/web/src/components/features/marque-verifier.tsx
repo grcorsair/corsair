@@ -41,10 +41,6 @@ function generatePlainLanguageSummary(result: MarqueVerificationResult): string 
     );
   }
 
-  if (result.assuranceName !== undefined) {
-    parts.push(`Assurance level: L${result.assuranceLevel} (${result.assuranceName}).`);
-  }
-
   if (result.provenance) {
     const sourceLabel = result.provenance.source === "auditor"
       ? "auditor-produced"
@@ -56,15 +52,6 @@ function generatePlainLanguageSummary(result: MarqueVerificationResult): string 
 
   return parts.join(" ");
 }
-
-/** Assurance level color mapping */
-const ASSURANCE_COLORS: Record<number, string> = {
-  0: "border-yellow-500/40 text-yellow-400",
-  1: "border-corsair-cyan/40 text-corsair-cyan",
-  2: "border-corsair-green/40 text-corsair-green",
-  3: "border-blue-400/40 text-blue-400",
-  4: "border-purple-400/40 text-purple-400",
-};
 
 /** Issuer tier display config */
 const TIER_CONFIG = {
@@ -98,16 +85,12 @@ export function MarqueVerifier() {
       // Extract fields for preview
       const vc = payload.vc as Record<string, unknown> | undefined;
       const cs = vc?.credentialSubject as Record<string, unknown> | undefined;
-      const assuranceData = cs?.assurance as { declared?: number } | undefined;
-      const NAMES: Record<number, string> = { 0: "Documented", 1: "Configured", 2: "Demonstrated", 3: "Observed", 4: "Attested" };
 
       setResult({
         valid: false, // Not yet verified
         reason: "Decoded — click Verify to check signature via DID:web",
         format: "jwt",
         issuerTier: undefined,
-        assuranceLevel: assuranceData?.declared,
-        assuranceName: assuranceData?.declared !== undefined ? NAMES[assuranceData.declared] : undefined,
         scope: typeof cs?.scope === "string" ? cs.scope : undefined,
         provenance: cs?.provenance as MarqueVerificationResult["provenance"],
         summary: cs?.summary as MarqueVerificationResult["summary"],
@@ -152,14 +135,10 @@ export function MarqueVerifier() {
       if (decoded) {
         const vc = decoded.vc as Record<string, unknown> | undefined;
         const cs = vc?.credentialSubject as Record<string, unknown> | undefined;
-        const assuranceData = cs?.assurance as { declared?: number } | undefined;
-        const NAMES: Record<number, string> = { 0: "Documented", 1: "Configured", 2: "Demonstrated", 3: "Observed", 4: "Attested" };
         setResult({
           valid: false,
           reason: `API unavailable: ${apiResult.error.message}. Decoded payload shown below — signature not verified.`,
           format: "jwt",
-          assuranceLevel: assuranceData?.declared,
-          assuranceName: assuranceData?.declared !== undefined ? NAMES[assuranceData.declared] : undefined,
           scope: typeof cs?.scope === "string" ? cs.scope : undefined,
           provenance: cs?.provenance as MarqueVerificationResult["provenance"],
           summary: cs?.summary as MarqueVerificationResult["summary"],
@@ -205,14 +184,10 @@ export function MarqueVerifier() {
       if (decoded) {
         const vc = decoded.vc as Record<string, unknown> | undefined;
         const cs = vc?.credentialSubject as Record<string, unknown> | undefined;
-        const assurance = cs?.assurance as { declared?: number } | undefined;
-        const NAMES: Record<number, string> = { 0: "Documented", 1: "Configured", 2: "Demonstrated", 3: "Observed", 4: "Attested" };
         setResult({
           valid: false,
           reason: `${SAMPLE_NOTE} (API unavailable: ${apiResult.error.message})`,
           format: "jwt",
-          assuranceLevel: assurance?.declared,
-          assuranceName: assurance?.declared !== undefined ? NAMES[assurance.declared] : undefined,
           scope: typeof cs?.scope === "string" ? cs.scope : undefined,
           provenance: cs?.provenance as MarqueVerificationResult["provenance"],
           summary: cs?.summary as MarqueVerificationResult["summary"],
@@ -312,14 +287,6 @@ export function MarqueVerifier() {
                       {result.format === "jwt" ? "JWT-VC" : "JSON"}
                     </Badge>
                   )}
-                  {result.assuranceLevel !== undefined && (
-                    <Badge
-                      variant="outline"
-                      className={ASSURANCE_COLORS[result.assuranceLevel] ?? "text-muted-foreground"}
-                    >
-                      L{result.assuranceLevel} {result.assuranceName}
-                    </Badge>
-                  )}
                   {result.issuerTier && (
                     <Badge
                       variant="outline"
@@ -346,7 +313,7 @@ export function MarqueVerifier() {
           )}
 
           {/* Details section */}
-          {(result.summary || result.assurance || result.provenance || result.document || result.vcMetadata) && (
+          {(result.summary || result.provenance || result.document || result.vcMetadata) && (
             <CardContent className="space-y-6">
               {/* VC Metadata */}
               {result.vcMetadata && (
@@ -450,65 +417,6 @@ export function MarqueVerifier() {
 
               <Separator className="bg-corsair-border/50" />
 
-              {/* Assurance Level Detail */}
-              {result.assurance && (
-                <Card className="bg-corsair-surface">
-                  <CardContent className="space-y-3 p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs uppercase text-muted-foreground">
-                        Assurance Level
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          className={`text-sm font-bold ${ASSURANCE_COLORS[result.assurance.declared] ?? ""}`}
-                        >
-                          L{result.assurance.declared} {result.assuranceName}
-                        </Badge>
-                        {result.assurance.verified && (
-                          <span className="text-xs text-corsair-green">Verified</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Method: <span className="text-foreground">{result.assurance.method.replace(/-/g, " ")}</span>
-                    </div>
-                    {/* Breakdown bars */}
-                    {Object.keys(result.assurance.breakdown).length > 0 && (
-                      <div className="space-y-1">
-                        <span className="text-[10px] uppercase text-muted-foreground">Control Breakdown</span>
-                        <div className="flex gap-1">
-                          {Object.entries(result.assurance.breakdown)
-                            .sort(([a], [b]) => Number(a) - Number(b))
-                            .map(([level, count]) => (
-                              <div
-                                key={level}
-                                className="flex items-center gap-1 rounded bg-corsair-deep px-2 py-1"
-                              >
-                                <span className={`text-xs font-bold ${ASSURANCE_COLORS[Number(level)]?.split(" ")[1] ?? "text-muted-foreground"}`}>
-                                  L{level}
-                                </span>
-                                <span className="text-xs text-muted-foreground">{count}</span>
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                    {/* Excluded controls */}
-                    {result.assurance.excluded && result.assurance.excluded.length > 0 && (
-                      <div className="space-y-1">
-                        <span className="text-[10px] uppercase text-muted-foreground">Excluded Controls</span>
-                        {result.assurance.excluded.map((exc) => (
-                          <div key={exc.controlId} className="text-xs text-muted-foreground">
-                            <span className="font-mono text-yellow-400">{exc.controlId}</span>: {exc.reason}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
               {/* Provenance */}
               {result.provenance && (
                 <Card className="bg-corsair-surface">
@@ -549,33 +457,6 @@ export function MarqueVerifier() {
                 </Card>
               )}
 
-              {/* Provenance Quality Score */}
-              {result.provenanceQuality !== undefined && (
-                <Card className="bg-corsair-surface">
-                  <CardContent className="p-4">
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="font-mono text-xs uppercase text-muted-foreground">
-                        Provenance Quality
-                      </span>
-                      <span className="font-display text-lg font-bold text-foreground">
-                        {result.provenanceQuality}<span className="text-sm text-muted-foreground">/100</span>
-                      </span>
-                    </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-corsair-deep">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          result.provenanceQuality >= 75 ? "bg-corsair-green" :
-                          result.provenanceQuality >= 50 ? "bg-corsair-cyan" :
-                          result.provenanceQuality >= 25 ? "bg-yellow-400" :
-                          "bg-corsair-crimson"
-                        }`}
-                        style={{ width: `${result.provenanceQuality}%` }}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
               {/* Score */}
               {result.summary && result.summary.controlsTested > 0 && (
                 <Card className="bg-corsair-surface">
@@ -608,148 +489,6 @@ export function MarqueVerifier() {
                 </Card>
               )}
 
-              {/* 7-Dimension Assurance Profile */}
-              {result.dimensions && (
-                <Card className="bg-corsair-surface">
-                  <CardContent className="space-y-3 p-4">
-                    <span className="block font-mono text-xs uppercase text-muted-foreground">
-                      Assurance Dimensions (FAIR-CAM + GRADE + COSO)
-                    </span>
-                    {(["capability", "coverage", "reliability", "methodology", "freshness", "independence", "consistency"] as const).map((dim) => {
-                      const value = result.dimensions![dim];
-                      const labels: Record<string, string> = {
-                        capability: "Capability", coverage: "Coverage", reliability: "Reliability",
-                        methodology: "Methodology", freshness: "Freshness", independence: "Independence", consistency: "Consistency",
-                      };
-                      const sources: Record<string, string> = {
-                        capability: "FAIR-CAM", coverage: "FAIR-CAM + COBIT", reliability: "COSO",
-                        methodology: "GRADE + NIST 53A", freshness: "ISO 27004", independence: "Three Lines Model", consistency: "GRADE + IEC 62443",
-                      };
-                      return (
-                        <div key={dim} className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-foreground">{labels[dim]}</span>
-                            <span className="text-xs text-muted-foreground">{sources[dim]} — {value}/100</span>
-                          </div>
-                          <div className="h-1.5 overflow-hidden rounded-full bg-corsair-deep">
-                            <div
-                              className={`h-full rounded-full transition-all ${
-                                value >= 75 ? "bg-corsair-green" :
-                                value >= 50 ? "bg-corsair-cyan" :
-                                value >= 25 ? "bg-yellow-400" :
-                                "bg-corsair-crimson"
-                              }`}
-                              style={{ width: `${value}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Assessment Depth (NIST 800-53A) */}
-              {result.assessmentDepth && (
-                <Card className="bg-corsair-surface">
-                  <CardContent className="p-4">
-                    <span className="mb-2 block font-mono text-xs uppercase text-muted-foreground">
-                      Assessment Depth (NIST 800-53A)
-                    </span>
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <div>
-                        <span className="block text-xs text-muted-foreground">Methods</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {result.assessmentDepth.methods.map((m) => (
-                            <Badge key={m} variant="outline" className="text-xs">
-                              {m}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <span className="block text-xs text-muted-foreground">Depth</span>
-                        <span className="text-sm font-semibold text-foreground capitalize">{result.assessmentDepth.depth}</span>
-                      </div>
-                      <div>
-                        <span className="block text-xs text-muted-foreground">Rigor Score</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-foreground">{result.assessmentDepth.rigorScore}/100</span>
-                          <div className="flex-1 h-1.5 overflow-hidden rounded-full bg-corsair-deep">
-                            <div
-                              className={`h-full rounded-full transition-all ${
-                                result.assessmentDepth.rigorScore >= 60 ? "bg-corsair-green" :
-                                result.assessmentDepth.rigorScore >= 30 ? "bg-yellow-400" :
-                                "bg-corsair-crimson"
-                              }`}
-                              style={{ width: `${result.assessmentDepth.rigorScore}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* DORA Metrics */}
-              {result.doraMetrics && (
-                <Card className="bg-corsair-surface">
-                  <CardContent className="space-y-3 p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs uppercase text-muted-foreground">
-                        DORA Evidence Quality
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className={
-                          result.doraMetrics.band === "elite" ? "border-purple-400/40 text-purple-400" :
-                          result.doraMetrics.band === "high" ? "border-corsair-green/40 text-corsair-green" :
-                          result.doraMetrics.band === "medium" ? "border-corsair-cyan/40 text-corsair-cyan" :
-                          "border-yellow-500/40 text-yellow-400"
-                        }
-                      >
-                        {result.doraMetrics.band}
-                      </Badge>
-                    </div>
-                    {(["freshness", "specificity", "independence", "reproducibility"] as const).map((metric) => {
-                      const value = result.doraMetrics![metric];
-                      const labels: Record<string, string> = {
-                        freshness: "Freshness", specificity: "Specificity",
-                        independence: "Independence", reproducibility: "Reproducibility",
-                      };
-                      return (
-                        <div key={metric} className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-foreground">{labels[metric]}</span>
-                            <span className="text-xs text-muted-foreground">{value}/100</span>
-                          </div>
-                          <div className="h-1.5 overflow-hidden rounded-full bg-corsair-deep">
-                            <div
-                              className={`h-full rounded-full transition-all ${
-                                value >= 75 ? "bg-corsair-green" :
-                                value >= 50 ? "bg-corsair-cyan" :
-                                value >= 25 ? "bg-yellow-400" :
-                                "bg-corsair-crimson"
-                              }`}
-                              style={{ width: `${value}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {/* Pairing flags */}
-                    {result.doraMetrics.pairingFlags && result.doraMetrics.pairingFlags.length > 0 && (
-                      <div className="space-y-1 pt-1">
-                        <span className="text-[10px] uppercase text-muted-foreground">Pairing Flags</span>
-                        {result.doraMetrics.pairingFlags.map((flag, i) => (
-                          <div key={i} className="text-xs text-yellow-400">{flag}</div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
 
               {/* Evidence Types */}
               {result.evidenceTypes && result.evidenceTypes.length > 0 && (
@@ -813,53 +552,11 @@ export function MarqueVerifier() {
                     </div>
                     {!result.observationPeriod.sufficient && (
                       <div className="mt-2 text-xs text-yellow-400">
-                        Period of {result.observationPeriod.durationDays} days is below the 90-day minimum for L2+ assurance.
+                        Period of {result.observationPeriod.durationDays} days is below the 90-day minimum for operating effectiveness.
                       </div>
                     )}
                   </CardContent>
                 </Card>
-              )}
-
-              {/* Risk Quantification */}
-              {result.riskQuantification && (
-                <Card className="bg-corsair-surface">
-                  <CardContent className="space-y-3 p-4">
-                    <span className="block font-mono text-xs uppercase text-muted-foreground">
-                      Risk Quantification (CRQ)
-                    </span>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <span className="block text-xs text-muted-foreground">BetaPERT Shape</span>
-                        <span className="text-sm text-foreground">
-                          {"\u03B3"}={result.riskQuantification.betaPert.shapeParameter} ({result.riskQuantification.betaPert.confidenceWidth.replace(/-/g, " ")})
-                        </span>
-                      </div>
-                      <div>
-                        <span className="block text-xs text-muted-foreground">FAIR-CAM Resistance</span>
-                        <span className="text-sm text-foreground">
-                          {result.riskQuantification.fairMapping.resistanceStrength.replace(/-/g, " ")}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="block text-xs text-muted-foreground">Provenance Modifier</span>
-                        <span className="text-sm text-foreground">
-                          {result.riskQuantification.provenanceModifier}x
-                        </span>
-                      </div>
-                      <div>
-                        <span className="block text-xs text-muted-foreground">Freshness Decay</span>
-                        <span className="text-sm text-foreground">
-                          {Math.round(result.riskQuantification.freshnessDecay * 100)}%
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Control Classifications */}
-              {result.controlClassifications && result.controlClassifications.length > 0 && (
-                <ControlClassificationsSection controls={result.controlClassifications} />
               )}
 
               {/* Framework Results Tabs */}
@@ -867,21 +564,6 @@ export function MarqueVerifier() {
                 <FrameworkTabs frameworks={result.frameworks} />
               )}
 
-              {/* Trust tier */}
-              {result.document?.quartermasterAttestation && (
-                <Card className="bg-corsair-surface">
-                  <CardContent className="flex items-center justify-between p-4">
-                    <span className="font-mono text-xs uppercase text-muted-foreground">
-                      Quartermaster Review
-                    </span>
-                    <Badge className="bg-corsair-cyan/10 text-corsair-cyan hover:bg-corsair-cyan/20">
-                      {result.document.quartermasterAttestation.trustTier} (
-                      {result.document.quartermasterAttestation.confidenceScore}
-                      %)
-                    </Badge>
-                  </CardContent>
-                </Card>
-              )}
 
               {/* Evidence chain */}
               {result.document?.evidenceChain && (
@@ -976,16 +658,6 @@ export function MarqueVerifier() {
                 </div>
               )}
 
-              {/* Technical Details Drawer */}
-              {(result.ruleTrace || result.calculationVersion) && (
-                <TechnicalDrawer
-                  ruleTrace={result.ruleTrace}
-                  calculationVersion={result.calculationVersion}
-                  parleyVersion={result.vcMetadata?.parleyVersion}
-                  issuerDID={result.vcMetadata?.issuerDID}
-                />
-              )}
-
               {/* Download as JSON */}
               {(verifyState === "verified" || verifyState === "decoded") && (
                 <div className="flex justify-end">
@@ -1000,17 +672,11 @@ export function MarqueVerifier() {
                           issuerTier: result.issuerTier,
                           format: result.format,
                         },
-                        assurance: result.assurance,
                         provenance: result.provenance,
                         summary: result.summary,
                         scope: result.scope,
-                        dimensions: result.dimensions,
                         evidenceTypes: result.evidenceTypes,
                         observationPeriod: result.observationPeriod,
-                        riskQuantification: result.riskQuantification,
-                        doraMetrics: result.doraMetrics,
-                        assessmentDepth: result.assessmentDepth,
-                        provenanceQuality: result.provenanceQuality,
                         processProvenance: result.processProvenance,
                         vcMetadata: result.vcMetadata,
                       };
@@ -1092,57 +758,6 @@ function InfoField({ label, value }: { label: string; value: string }) {
 }
 
 /** Control Classifications — expandable per-control table */
-function ControlClassificationsSection({ controls }: {
-  controls: Array<{
-    controlId: string;
-    level: number;
-    methodology: string;
-    trace: string;
-    boilerplateFlags?: string[];
-  }>;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <Card className="bg-corsair-surface">
-      <CardContent className="p-4">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex w-full items-center justify-between text-left"
-        >
-          <span className="font-mono text-xs uppercase text-muted-foreground">
-            Control Classifications ({controls.length})
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {isOpen ? "Hide" : "Show"}
-          </span>
-        </button>
-        {isOpen && (
-          <div className="mt-3 space-y-1 max-h-64 overflow-y-auto">
-            {controls.map((ctrl) => (
-              <div key={ctrl.controlId} className="flex items-center gap-3 rounded bg-corsair-deep px-3 py-1.5">
-                <span className="font-mono text-xs font-bold text-foreground w-14">{ctrl.controlId}</span>
-                <Badge
-                  variant="outline"
-                  className={`text-[10px] ${ASSURANCE_COLORS[ctrl.level]?.split(" ")[1] ?? "text-muted-foreground"}`}
-                >
-                  L{ctrl.level}
-                </Badge>
-                <span className="text-xs text-muted-foreground truncate flex-1">{ctrl.trace}</span>
-                {ctrl.boilerplateFlags && ctrl.boilerplateFlags.length > 0 && (
-                  <Badge variant="outline" className="text-[10px] border-yellow-500/40 text-yellow-400">
-                    boilerplate
-                  </Badge>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 /** Framework filter tabs — shows per-framework control results */
 function FrameworkTabs({ frameworks }: {
   frameworks: Record<string, {
@@ -1198,68 +813,6 @@ function FrameworkTabs({ frameworks }: {
                 </div>
               ))}
             </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-/** Technical details drawer — collapsible section for audit/debug info */
-function TechnicalDrawer({ ruleTrace, calculationVersion, parleyVersion, issuerDID }: {
-  ruleTrace?: string[];
-  calculationVersion?: string;
-  parleyVersion?: string;
-  issuerDID?: string;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <Card className="bg-corsair-surface">
-      <CardContent className="p-4">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex w-full items-center justify-between text-left"
-        >
-          <span className="font-mono text-xs uppercase text-muted-foreground">
-            Technical Details
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {isOpen ? "Hide" : "Show"}
-          </span>
-        </button>
-        {isOpen && (
-          <div className="mt-3 space-y-3">
-            {calculationVersion && (
-              <div>
-                <span className="block text-xs text-muted-foreground">Calculation Version</span>
-                <span className="font-mono text-xs text-foreground">{calculationVersion}</span>
-              </div>
-            )}
-            {parleyVersion && (
-              <div>
-                <span className="block text-xs text-muted-foreground">Parley Version</span>
-                <span className="font-mono text-xs text-foreground">{parleyVersion}</span>
-              </div>
-            )}
-            {issuerDID && (
-              <div>
-                <span className="block text-xs text-muted-foreground">Issuer DID</span>
-                <span className="font-mono text-xs text-corsair-cyan break-all">{issuerDID}</span>
-              </div>
-            )}
-            {ruleTrace && ruleTrace.length > 0 && (
-              <div>
-                <span className="block text-xs text-muted-foreground mb-1">Rule Trace</span>
-                <div className="rounded bg-corsair-deep p-2 font-mono text-[11px] text-muted-foreground space-y-0.5 max-h-48 overflow-y-auto">
-                  {ruleTrace.map((entry, i) => (
-                    <div key={i} className={entry.startsWith("SAFEGUARD:") ? "text-yellow-400" : ""}>
-                      {entry}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </CardContent>

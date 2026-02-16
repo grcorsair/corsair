@@ -62,8 +62,8 @@ export function WeaponsSection() {
           </CardHeader>
           <CardContent className="space-y-4">
             <pre className="rounded-lg border border-corsair-border/60 bg-[#0A0A0A] p-4 font-mono text-[11px] leading-relaxed text-corsair-text-dim">
-              {weapon.snippet.map((line) => (
-                <div key={line}>{line}</div>
+              {weapon.snippet.map((line, idx) => (
+                <div key={idx}>{line}</div>
               ))}
             </pre>
             <Button

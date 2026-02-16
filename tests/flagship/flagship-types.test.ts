@@ -11,7 +11,6 @@ import {
   type FlagshipEventType,
   type FlagshipSubject,
   type CAEPEventData,
-  type ColorsChangedData,
   type FleetAlertData,
   type PapersChangedData,
   type MarqueRevokedData,
@@ -24,12 +23,6 @@ import {
 
 describe("FLAGSHIP Types", () => {
   describe("FLAGSHIP_EVENTS constants", () => {
-    test("COLORS_CHANGED maps to assurance-level-change event URI", () => {
-      expect(FLAGSHIP_EVENTS.COLORS_CHANGED).toBe(
-        "https://grcorsair.com/events/assurance-level-change/v1",
-      );
-    });
-
     test("FLEET_ALERT maps to compliance-change event URI", () => {
       expect(FLAGSHIP_EVENTS.FLEET_ALERT).toBe(
         "https://grcorsair.com/events/compliance-change/v1",
@@ -48,7 +41,7 @@ describe("FLAGSHIP Types", () => {
       );
     });
 
-    test("all four event types are defined", () => {
+    test("all event types are defined", () => {
       const keys = Object.keys(FLAGSHIP_EVENTS);
       expect(keys).toHaveLength(4);
       expect(keys).toContain("COLORS_CHANGED");
@@ -86,40 +79,6 @@ describe("FLAGSHIP Types", () => {
       expect(subject.corsair.marqueId).toBe("marque-002");
       expect(subject.corsair.provider).toBeUndefined();
       expect(subject.corsair.criterion).toBeUndefined();
-    });
-  });
-
-  describe("ColorsChangedData (assurance-level-change)", () => {
-    test("carries trust tier transition data", () => {
-      const data: ColorsChangedData = {
-        subject: {
-          format: "complex",
-          corsair: { marqueId: "marque-001" },
-        },
-        event_timestamp: 1707300000,
-        previous_level: "self-assessed",
-        current_level: "ai-verified",
-        change_direction: "increase",
-      };
-
-      expect(data.previous_level).toBe("self-assessed");
-      expect(data.current_level).toBe("ai-verified");
-      expect(data.change_direction).toBe("increase");
-    });
-
-    test("supports decrease direction", () => {
-      const data: ColorsChangedData = {
-        subject: {
-          format: "complex",
-          corsair: { marqueId: "marque-001" },
-        },
-        event_timestamp: 1707300000,
-        previous_level: "ai-verified",
-        current_level: "self-assessed",
-        change_direction: "decrease",
-      };
-
-      expect(data.change_direction).toBe("decrease");
     });
   });
 
@@ -191,20 +150,20 @@ describe("FLAGSHIP Types", () => {
   describe("FlagshipEvent", () => {
     test("wraps event type and data together", () => {
       const event: FlagshipEvent = {
-        type: FLAGSHIP_EVENTS.COLORS_CHANGED,
+        type: FLAGSHIP_EVENTS.FLEET_ALERT,
         data: {
           subject: {
             format: "complex",
             corsair: { marqueId: "marque-001" },
           },
           event_timestamp: 1707300000,
-          previous_level: "self-assessed",
-          current_level: "ai-verified",
-          change_direction: "increase",
-        } as ColorsChangedData,
+          drift_type: "config-drift",
+          severity: "HIGH",
+          affected_controls: ["CC6.1"],
+        } as FleetAlertData,
       };
 
-      expect(event.type).toBe(FLAGSHIP_EVENTS.COLORS_CHANGED);
+      expect(event.type).toBe(FLAGSHIP_EVENTS.FLEET_ALERT);
       expect(event.data.event_timestamp).toBe(1707300000);
     });
   });
@@ -217,21 +176,20 @@ describe("FLAGSHIP Types", () => {
         jti: "set-unique-id",
         aud: "did:web:partner.example.com",
         events: {
-          [FLAGSHIP_EVENTS.COLORS_CHANGED]: {
+          [FLAGSHIP_EVENTS.PAPERS_CHANGED]: {
             subject: {
               format: "complex",
               corsair: { marqueId: "marque-001" },
             },
             event_timestamp: 1707300000,
-            previous_level: "self-assessed",
-            current_level: "ai-verified",
-            change_direction: "increase",
-          } as ColorsChangedData,
+            credential_type: "CorsairCPOE",
+            change_type: "issued",
+          } as PapersChangedData,
         },
       };
 
       expect(payload.iss).toBe("did:web:grcorsair.com");
-      expect(payload.events[FLAGSHIP_EVENTS.COLORS_CHANGED]).toBeDefined();
+      expect(payload.events[FLAGSHIP_EVENTS.PAPERS_CHANGED]).toBeDefined();
     });
   });
 
@@ -243,7 +201,6 @@ describe("FLAGSHIP Types", () => {
           endpoint_url: "https://receiver.example.com/events",
         },
         events_requested: [
-          FLAGSHIP_EVENTS.COLORS_CHANGED,
           FLAGSHIP_EVENTS.FLEET_ALERT,
         ],
         format: "jwt",
@@ -253,7 +210,7 @@ describe("FLAGSHIP Types", () => {
       expect(config.delivery.endpoint_url).toBe(
         "https://receiver.example.com/events",
       );
-      expect(config.events_requested).toHaveLength(2);
+      expect(config.events_requested).toHaveLength(1);
       expect(config.format).toBe("jwt");
     });
 

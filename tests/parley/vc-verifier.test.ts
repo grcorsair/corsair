@@ -193,17 +193,13 @@ describe("VC Verifier - JWT-VC Verification", () => {
     expect(result.signedBy).toBeDefined();
   });
 
-  test("verifyVCJWT returns result with provenance and tool-level assurance", async () => {
+  test("verifyVCJWT returns result with provenance and summary", async () => {
     const { keyManager, input, publicKey } = await setup();
     const jwt = await generateVCJWT(input, keyManager);
 
     const result = await verifyVCJWT(jwt, [publicKey]);
 
     expect(result.valid).toBe(true);
-    // Tool-level assurance is always present
-    expect(result.assuranceLevel).toBeDefined();
-    expect(typeof result.assuranceLevel).toBe("number");
-    expect(result.assuranceName).toBeDefined();
     // Provenance is always populated
     expect(result.provenance).toBeDefined();
     expect(result.provenance!.source).toBeDefined();
@@ -315,7 +311,7 @@ describe("VC Verifier - verifyVCJWTViaDID", () => {
     expect(result.signedBy).toBeDefined();
     expect(result.generatedAt).toBeDefined();
     expect(result.expiresAt).toBeDefined();
-    // Provenance-first: assurance is optional, scope is always present
+    // Provenance-first: scope is always present
     expect(result.scope).toBeDefined();
   });
 

@@ -35,7 +35,6 @@ beforeAll(async () => {
       credentialSubject: {
         type: "CorsairCPOE",
         scope: "Test scope",
-        assurance: { declared: 1, verified: true, method: "self-assessed", breakdown: { "1": 3 } },
         provenance: { source: "tool", sourceIdentity: "Test Tool" },
         summary: { controlsTested: 3, controlsPassed: 3, controlsFailed: 0, overallScore: 100 },
       },
@@ -74,8 +73,6 @@ describe("POST /verify", () => {
     const body: VerifyResponse = await res.json();
     expect(body.verified).toBe(true);
     expect(body.issuer).toBeTruthy();
-    expect(body.assurance).toBeTruthy();
-    expect(body.assurance!.level).toBe(1);
     expect(body.summary).toBeTruthy();
     expect(body.summary!.controlsTested).toBe(3);
     expect(body.timestamps.issuedAt).toBeTruthy();
@@ -154,7 +151,7 @@ describe("POST /verify", () => {
       vc: {
         "@context": ["https://www.w3.org/ns/credentials/v2", "https://grcorsair.com/credentials/cpoe/v1"],
         type: ["VerifiableCredential", "CorsairCPOE"],
-        credentialSubject: { type: "CorsairCPOE", scope: "test", assurance: { declared: 0 }, provenance: { source: "self" }, summary: { controlsTested: 1, controlsPassed: 1, controlsFailed: 0, overallScore: 100 } },
+        credentialSubject: { type: "CorsairCPOE", scope: "test", provenance: { source: "self" }, summary: { controlsTested: 1, controlsPassed: 1, controlsFailed: 0, overallScore: 100 } },
       },
       parley: "2.0",
     })
@@ -299,7 +296,6 @@ describe("POST /issue", () => {
     expect(body.cpoe).toBeTruthy();
     expect(body.cpoe.split(".").length).toBe(3); // Valid JWT
     expect(body.marqueId).toContain("marque-");
-    expect(body.assurance).toBeTruthy();
     expect(body.provenance.source).toBe("auditor"); // SOC 2 = auditor provenance
     expect(body.expiresAt).toBeTruthy();
   });
@@ -388,7 +384,7 @@ describe("POST /issue", () => {
     expect(res.status).toBe(405);
   });
 
-  test("accepts manual source for L0 issuance", async () => {
+  test("accepts manual source for issuance", async () => {
     const router = createIssueRouter({ keyManager: keyManager as any, domain: TEST_DOMAIN });
     const req = new Request("http://localhost/issue", {
       method: "POST",
@@ -410,7 +406,6 @@ describe("POST /issue", () => {
     expect(res.status).toBe(201);
 
     const body: IssueResponse = await res.json();
-    expect(body.assurance.declared).toBe(0); // Manual = L0
     expect(body.provenance.source).toBe("self"); // Manual = self
   });
 });

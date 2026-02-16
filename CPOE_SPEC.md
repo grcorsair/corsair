@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-A CPOE is a signed compliance attestation in W3C Verifiable Credential format (JWT-VC). It asserts that a specific set of controls was assessed at a specific assurance level, with cryptographic proof of who made the assertion and when. Anyone can verify a CPOE using standard JWT libraries and the issuer's public key, resolved via DID:web.
+A CPOE is a signed compliance attestation in W3C Verifiable Credential format (JWT-VC). It asserts that a specific set of controls was assessed, with cryptographic proof of who made the assertion and when. Anyone can verify a CPOE using standard JWT libraries and the issuer's public key, resolved via DID:web.
 
 ## 2. Format
 
@@ -46,12 +46,6 @@ A CPOE is a standard JWT with three base64url-encoded segments: `header.payload.
     "credentialSubject": {
       "type": "CorsairCPOE",
       "scope": "SOC 2 Type II - Cloud Infrastructure Controls",
-      "assurance": {
-        "declared": 1,
-        "verified": true,
-        "method": "automated-config-check",
-        "breakdown": { "0": 2, "1": 20 }
-      },
       "provenance": {
         "source": "tool",
         "sourceIdentity": "Prowler v3.1",
@@ -91,15 +85,8 @@ All claims live under `vc.credentialSubject`. The provenance-first model (v0.5.0
 | `provenance.sourceIdentity` | string | Who produced the evidence (e.g., "Deloitte LLP", "Prowler v3.1") |
 | `provenance.sourceDocument` | string | SHA-256 hash of the source document |
 | `provenance.sourceDate` | string | ISO 8601 date of the source assessment |
-| `assurance` | object | **Optional enrichment** (via `--enrich`). Assurance scoring with declared level, breakdown, and method. |
-| `assurance.declared` | 0-4 | Assurance level claimed for this CPOE (see section 6) |
-| `assurance.verified` | boolean | Whether all in-scope controls meet the declared level |
-| `assurance.method` | string | One of: `"self-assessed"`, `"automated-config-check"`, `"ai-evidence-review"`, `"continuous-observation"`, `"third-party-attested"` |
-| `assurance.breakdown` | object | Count of controls at each level, keyed by level number: `{ "0": 2, "1": 18 }` |
-| `assurance.excluded` | array | Controls excluded from scope: `[{ controlId, reason, acceptedBy? }]` |
 | `evidenceChain` | object | Hash chain metadata: `{ hashChainRoot, recordCount, chainVerified }` |
 | `frameworks` | object | Per-framework results (keyed by framework name) |
-| `quartermasterAttestation` | object | AI governance review: `{ confidenceScore, trustTier, dimensions }` |
 | `processProvenance` | object | Pipeline receipt chain: `{ chainDigest, receiptCount, chainVerified, format, reproducibleSteps, attestedSteps, scittEntryIds? }` — in-toto/SLSA provenance trail |
 
 ## 4. Verification Flow
@@ -123,7 +110,7 @@ const didDoc = await fetch(didUrl).then(r => r.json());
 const jwk = didDoc.verificationMethod[0].publicKeyJwk;
 const key = await importJWK(jwk, "EdDSA");
 const { payload } = await jwtVerify(cpoeJwt, key);
-console.log(payload.vc.credentialSubject.assurance.declared); // 1
+console.log(payload.vc.credentialSubject.summary.overallScore); // 91
 ```
 
 ### Python (using PyJWT + cryptography)
@@ -137,7 +124,7 @@ did_doc = requests.get(did_url).json()
 jwk = did_doc["verificationMethod"][0]["publicKeyJwk"]
 key = OKPAlgorithm.from_jwk(jwk)
 payload = jwt.decode(cpoe_jwt, key, algorithms=["EdDSA"])
-print(payload["vc"]["credentialSubject"]["assurance"]["declared"])  # 1
+print(payload["vc"]["credentialSubject"]["summary"]["overallScore"])  # 91
 ```
 
 ### DID Resolution
@@ -177,21 +164,7 @@ Contact: security@acme.com
 Expires: 2026-06-01
 ```
 
-## 6. Assurance Levels
-
-A CPOE's declared assurance level is the **minimum** level across all in-scope controls. Controls may be explicitly excluded with rationale.
-
-| Level | Name | Meaning | Evidence Type |
-|-------|------|---------|---------------|
-| L0 | Documented | Policy asserts compliance | PDF, policy text |
-| L1 | Configured | Settings confirm control is enabled | Config exports, tool scans |
-| L2 | Demonstrated | Test results prove control works | Pentest results, audit findings |
-| L3 | Observed | Continuous monitoring confirms effectiveness | Live dashboards, real-time signals |
-| L4 | Attested | Third party verified and co-signed | Auditor co-signature (VP) |
-
-The `assurance.breakdown` field shows how many controls sit at each level, giving consumers granular visibility even when the declared level is the floor.
-
-## 7. Issuer Identity (DID:web)
+## 6. Issuer Identity (DID:web)
 
 CPOE issuers are identified by `did:web` DIDs, which map directly to HTTPS domains. The DID document hosted at the resolved URL contains the Ed25519 public key in JWK format. Example at `https://grcorsair.com/.well-known/did.json`:
 
@@ -210,7 +183,7 @@ CPOE issuers are identified by `did:web` DIDs, which map directly to HTTPS domai
 }
 ```
 
-## 8. Trust Tiers (Verification Display)
+## 7. Trust Tiers (Verification Display)
 
 When a verifier checks a CPOE, the result falls into one of four display tiers:
 
@@ -221,14 +194,14 @@ When a verifier checks a CPOE, the result falls into one of four display tiers:
 | **Unverifiable** | DID resolution failed (issuer unreachable, not invalid) |
 | **Invalid** | Signature verification failed, JWT malformed, or credential expired |
 
-## 9. Extensions (Optional)
+## 8. Extensions (Optional)
 
 These are not required for verification but enable advanced trust workflows.
 
 - **SCITT**: Register CPOEs in an IETF SCITT transparency log for tamper-evident auditability.
 - **FLAGSHIP**: Real-time compliance change signals via OpenID SSF/CAEP (drift, revocation, tier changes).
 - **SD-JWT**: Selective disclosure -- prove compliance without exposing the full assessment.
-- **Verifiable Presentations**: Bundle multiple VCs for L4 third-party attested credentials.
+- **Verifiable Presentations**: Bundle multiple VCs for third-party attestations.
 
 ---
 

@@ -21,7 +21,6 @@ export interface VendorProfile {
   frameworks: string[];
   averageScore: number;
   provenanceSummary?: ProvenanceSummary;
-  currentAssuranceLevel?: number;
   lastCPOEDate: string;
   history: Array<{
     entryId: string;
@@ -29,7 +28,6 @@ export interface VendorProfile {
     scope: string;
     score: number;
     provenance?: SCITTProvenance;
-    assuranceLevel?: number;
   }>;
 }
 

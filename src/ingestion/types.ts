@@ -32,17 +32,6 @@ export type DocumentSource =
   | "ciso-assistant";
 
 /**
- * Assurance levels per the 5-Level Assurance Ladder.
- *
- *   L0 = Claimed    (policy document says so)
- *   L1 = Configured (settings show it's turned on)
- *   L2 = Demonstrated (test results prove it works)
- *   L3 = Observed   (continuous monitoring confirms it)
- *   L4 = Attested   (independent third party verified it)
- */
-export type AssuranceLevel = 0 | 1 | 2 | 3 | 4;
-
-/**
  * The canonical ingested document format.
  * Every parser (SOC 2, Prowler, manual) must output this shape.
  */
@@ -55,15 +44,6 @@ export interface IngestedDocument {
 
   /** Extracted controls with their assessment status */
   controls: IngestedControl[];
-
-  /**
-   * Tool-declared assurance level.
-   * Set by the parser based on tool class — NOT content analysis.
-   *   L0 = human statement (manual, generic)
-   *   L1 = machine-observed state (Prowler, SecurityHub, InSpec, Trivy, GitLab)
-   *   L2 = assessed/tested result (CISO Assistant with linked evidence)
-   */
-  toolAssuranceLevel: AssuranceLevel;
 
   /**
    * Layer 2: Structured Assessment Context (optional).
@@ -132,9 +112,6 @@ export interface IngestedControl {
 
   /** Evidence supporting this control's status */
   evidence?: string;
-
-  /** Assurance level of the evidence (L0-L4) */
-  assuranceLevel?: AssuranceLevel;
 }
 
 /** A reference to a specific framework control */

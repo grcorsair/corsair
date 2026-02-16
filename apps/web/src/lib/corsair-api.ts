@@ -10,7 +10,6 @@ export interface APIVerifyResponse {
   reason?: string;
   issuer: string | null;
   issuerTier: "corsair-verified" | "self-signed" | "unverifiable" | "invalid" | null;
-  assurance: { level: number; name: string | null } | null;
   provenance: { source: string; sourceIdentity?: string; sourceDate?: string } | null;
   scope: string | null;
   summary: { controlsTested: number; controlsPassed: number; controlsFailed: number; overallScore: number } | null;
@@ -101,6 +100,7 @@ export interface APISignResponse {
   };
   warnings: string[];
   expiresAt?: string;
+  demo?: boolean;
 }
 
 export type APISignResult =
@@ -146,6 +146,46 @@ export async function signViaAPI(request: APISignRequest, apiKey?: string): Prom
     return {
       ok: false,
       error: { type: "network", message: "Could not reach signing API" },
+    };
+  }
+}
+
+/**
+ * Demo sign via the Corsair API.
+ * POST /sign/demo with evidence + options. 10s timeout. Never throws.
+ */
+export async function signDemoViaAPI(request: APISignRequest): Promise<APISignResult> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const res = await fetch(`${API_BASE}/sign/demo`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      return {
+        ok: false,
+        error: { type: "server", message: body.error || `HTTP ${res.status}` },
+      };
+    }
+
+    const data: APISignResponse = await res.json();
+    return { ok: true, data };
+  } catch (err) {
+    clearTimeout(timeout);
+    if (err instanceof DOMException && err.name === "AbortError") {
+      return { ok: false, error: { type: "timeout", message: "Demo signing timed out (10s)" } };
+    }
+    return {
+      ok: false,
+      error: { type: "network", message: "Could not reach demo signing API" },
     };
   }
 }

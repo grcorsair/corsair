@@ -24,7 +24,6 @@ export interface SCITTListEntry {
   issuer: string;
   scope: string;
   provenance: SCITTProvenance;
-  assuranceLevel?: number;
   summary?: {
     controlsTested: number;
     controlsPassed: number;

@@ -18,7 +18,6 @@ import type {
   MarqueFrameworkResult,
   MARQUEControlResult,
   MarqueThreatModelSummary,
-  MarqueQuartermasterAttestation,
   MarqueIssuer,
   MarqueOutput,
 } from "./marque-types";
@@ -42,7 +41,6 @@ export interface MarqueGeneratorInput {
 
   /** Kept fields */
   chartResults: ChartResult[];
-  quartermasterAttestation?: MarqueQuartermasterAttestation;
   issuer: MarqueIssuer;
   providers: string[];
 
@@ -131,10 +129,6 @@ export class MarqueGenerator {
 
     if (threatModel) {
       marque.threatModel = threatModel;
-    }
-
-    if (input.quartermasterAttestation) {
-      marque.quartermasterAttestation = input.quartermasterAttestation;
     }
 
     // Sanitize the entire marque payload as a safety net

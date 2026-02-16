@@ -45,6 +45,9 @@ switch (subcommand) {
   case "keygen":
     await handleKeygen();
     break;
+  case "demo-keygen":
+    await handleDemoKeygen();
+    break;
   case "compliance-txt":
     await handleComplianceTxt();
     break;
@@ -543,26 +546,16 @@ EXAMPLES:
     }
   }
 
-  // Assurance level comparison
-  const currentAssurance = currentSubject.assurance?.declared ?? -1;
-  const previousAssurance = previousSubject.assurance?.declared ?? -1;
-  const assuranceChange = currentAssurance - previousAssurance;
-
   // Score comparison
   const currentScore = currentSubject.summary?.overallScore ?? 0;
   const previousScore = previousSubject.summary?.overallScore ?? 0;
   const scoreChange = currentScore - previousScore;
 
   // Output results
-  const hasRegression = newFailures.length > 0 || assuranceChange < 0;
+  const hasRegression = newFailures.length > 0 || scoreChange < 0;
 
   if (jsonOutput) {
     const report = {
-      assurance: {
-        previous: previousAssurance,
-        current: currentAssurance,
-        change: assuranceChange,
-      },
       score: {
         previous: previousScore,
         current: currentScore,
@@ -581,13 +574,6 @@ EXAMPLES:
   console.log("CORSAIR DIFF REPORT");
   console.log("===================");
   console.log("");
-
-  if (assuranceChange !== 0) {
-    const arrow = assuranceChange > 0 ? "↑" : "↓";
-    console.log(`  Assurance: L${previousAssurance} → L${currentAssurance} (${arrow})`);
-  } else {
-    console.log(`  Assurance: L${currentAssurance} (unchanged)`);
-  }
 
   if (scoreChange !== 0) {
     const arrow = scoreChange > 0 ? "↑" : "↓";
@@ -821,7 +807,6 @@ ABOUT:
 
 EVENT TYPES:
   FLEET_ALERT       compliance-change        Control drift detected
-  COLORS_CHANGED    assurance-level-change   Trust tier transition
   PAPERS_CHANGED    credential-change        CPOE issued/renewed/revoked
   MARQUE_REVOKED    session-revoked          Emergency revocation
 
@@ -989,6 +974,56 @@ OPTIONS:
   console.log("Ed25519 keypair generated:");
   console.log(`  Private key: ${outputDir}/corsair-signing.key`);
   console.log(`  Public key:  ${outputDir}/corsair-signing.pub`);
+}
+
+// =============================================================================
+// DEMO KEYGEN
+// =============================================================================
+
+async function handleDemoKeygen(): Promise<void> {
+  const args = process.argv.slice(3);
+  let did = "did:web:demo.grcorsair.com";
+  let showHelp = false;
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "--did":
+        did = args[++i];
+        break;
+      case "--help":
+      case "-h":
+        showHelp = true;
+        break;
+    }
+  }
+
+  if (showHelp) {
+    console.log(`
+CORSAIR DEMO KEYGEN — Generate demo signing keys (local dev)
+
+USAGE:
+  corsair demo-keygen [--did <did>]
+
+OPTIONS:
+  --did <DID>    Demo DID to export (default: did:web:demo.grcorsair.com)
+  -h, --help     Show this help
+
+This prints env exports for CORSAIR_DEMO_PUBLIC_KEY and CORSAIR_DEMO_PRIVATE_KEY.
+Do NOT use these keys in production.
+`);
+    return;
+  }
+
+  const crypto = await import("crypto");
+  const { publicKey, privateKey } = crypto.generateKeyPairSync("ed25519", {
+    publicKeyEncoding: { type: "spki", format: "pem" },
+    privateKeyEncoding: { type: "pkcs8", format: "pem" },
+  });
+
+  console.log(`\n# Demo signing keys (DO NOT USE IN PRODUCTION)\n`);
+  console.log(`export CORSAIR_DEMO_PUBLIC_KEY='${publicKey.trim().replace(/'/g, "'\\\\''")}'`);
+  console.log(`export CORSAIR_DEMO_PRIVATE_KEY='${privateKey.trim().replace(/'/g, "'\\\\''")}'`);
+  console.log(`export CORSAIR_DEMO_DID='${did}'\n`);
 }
 
 // =============================================================================
@@ -1180,7 +1215,7 @@ EXAMPLES:
 }
 
 // =============================================================================
-// L2/L3 SHELVED — audit, cert, tprm, scoring, normalize, quartermaster, etc.
+// L2/L3 SHELVED — scoring/normalize extensions removed from current CLI flow.
 // Recover: git checkout v0.5.1-with-layers -- corsair.ts
 // =============================================================================
 
@@ -1398,7 +1433,7 @@ EXAMPLES:
 
 async function handleComplianceTxtValidate(args: string[]): Promise<void> {
   const domain = args.find(a => !a.startsWith("--"));
-  let jsonOutput = args.includes("--json");
+  const jsonOutput = args.includes("--json");
 
   if (!domain) {
     console.error("Error: domain is required");
@@ -1457,8 +1492,8 @@ async function handleComplianceTxtValidate(args: string[]): Promise<void> {
 
 async function handleComplianceTxtDiscover(args: string[]): Promise<void> {
   const domain = args.find(a => !a.startsWith("--"));
-  let jsonOutput = args.includes("--json");
-  let verify = args.includes("--verify");
+  const jsonOutput = args.includes("--json");
+  const verify = args.includes("--verify");
 
   if (!domain) {
     console.error("Error: domain is required");
@@ -1718,6 +1753,7 @@ COMMANDS:
   renew           Re-sign a CPOE with fresh dates          like git commit --amend
   signal          FLAGSHIP real-time notifications         like git webhooks
   keygen          Generate Ed25519 signing keypair
+  demo-keygen     Generate demo signing keys (local dev)
   help            Show this help message
 
 ALIASES:

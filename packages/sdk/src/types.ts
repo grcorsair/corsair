@@ -82,8 +82,6 @@ export interface VerifyResult {
   signedBy?: string;
   generatedAt?: string;
   expiresAt?: string;
-  assuranceLevel?: number;
-  assuranceName?: string;
   provenance?: { source: string; sourceIdentity?: string; sourceDate?: string };
   scope?: string;
   summary?: {

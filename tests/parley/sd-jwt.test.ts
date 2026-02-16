@@ -63,12 +63,6 @@ function buildTestPayload() {
       credentialSubject: {
         type: "CorsairCPOE" as const,
         scope: "SOC 2 Type II - Cloud Infrastructure Controls",
-        assurance: {
-          declared: 2,
-          verified: true,
-          method: "automated-config-check",
-          breakdown: { "1": 4, "2": 18 },
-        },
         provenance: {
           source: "tool",
           sourceIdentity: "Prowler v3.1",
@@ -205,7 +199,6 @@ describe("SD-JWT Issuance", () => {
     // Non-disclosable claims should remain
     expect(decodedPayload.vc.credentialSubject.type).toBe("CorsairCPOE");
     expect(decodedPayload.vc.credentialSubject.scope).toBeDefined();
-    expect(decodedPayload.vc.credentialSubject.assurance).toBeDefined();
     expect(decodedPayload.vc.credentialSubject.provenance).toBeDefined();
   });
 
@@ -310,7 +303,6 @@ describe("SD-JWT Issuance", () => {
     const payload = buildTestPayload();
     const allFields = [
       "scope",
-      "assurance",
       "provenance",
       "summary",
       "frameworks",
@@ -320,7 +312,7 @@ describe("SD-JWT Issuance", () => {
       issuerDid: "did:web:grcorsair.com",
     });
 
-    expect(result.disclosures).toHaveLength(5);
+    expect(result.disclosures).toHaveLength(4);
 
     const jwtPart = result.sdJwt.split("~")[0];
     const [, payloadB64] = jwtPart.split(".");
@@ -330,9 +322,8 @@ describe("SD-JWT Issuance", () => {
 
     // Only type and _sd/_sd_alg should remain
     expect(decodedPayload.vc.credentialSubject.type).toBe("CorsairCPOE");
-    expect(decodedPayload.vc.credentialSubject._sd).toHaveLength(5);
+    expect(decodedPayload.vc.credentialSubject._sd).toHaveLength(4);
     expect(decodedPayload.vc.credentialSubject.scope).toBeUndefined();
-    expect(decodedPayload.vc.credentialSubject.assurance).toBeUndefined();
   });
 
   test("should ignore disclosable fields that do not exist in payload", async () => {
@@ -635,7 +626,7 @@ describe("SD-JWT Full Integration Flow", () => {
     // 1. Issuer signs with selective disclosure on all major fields
     const issued = await createSDJWT(
       payload,
-      ["summary", "frameworks", "provenance", "assurance"],
+      ["summary", "frameworks", "provenance"],
       {
         privateKeyPem,
         issuerDid: "did:web:grcorsair.com",
@@ -660,13 +651,12 @@ describe("SD-JWT Full Integration Flow", () => {
       overallScore: 91,
     });
 
-    // Buyer cannot see: frameworks, provenance, assurance details
+    // Buyer cannot see: frameworks, provenance
     expect(verification.disclosedClaims.frameworks).toBeUndefined();
     expect(verification.disclosedClaims.provenance).toBeUndefined();
-    expect(verification.disclosedClaims.assurance).toBeUndefined();
 
     // But buyer knows 3 claims are undisclosed (the hashes are visible)
-    expect(verification.undisclosedDigests).toHaveLength(3);
+    expect(verification.undisclosedDigests).toHaveLength(2);
   });
 
   test("issue → present frameworks → verify: buyer sees SOC2 results", async () => {
@@ -729,7 +719,7 @@ describe("SD-JWT Full Integration Flow", () => {
 
     const issued = await createSDJWT(
       payload,
-      ["summary", "frameworks", "provenance", "assurance"],
+      ["summary", "frameworks", "provenance"],
       {
         privateKeyPem,
         issuerDid: "did:web:grcorsair.com",
@@ -741,7 +731,7 @@ describe("SD-JWT Full Integration Flow", () => {
     const verification = await verifySDJWT(presentation, publicKeyJwk);
     expect(verification.valid).toBe(true);
     expect(Object.keys(verification.disclosedClaims)).toHaveLength(0);
-    expect(verification.undisclosedDigests).toHaveLength(4);
+    expect(verification.undisclosedDigests).toHaveLength(3);
   });
 });
 
@@ -752,15 +742,15 @@ describe("SD-JWT Full Integration Flow", () => {
 describe("SD-JWT Edge Cases", () => {
   test("should handle nested object values in disclosures", async () => {
     const payload = buildTestPayload();
-    const result = await createSDJWT(payload, ["assurance"], {
+    const result = await createSDJWT(payload, ["frameworks"], {
       privateKeyPem,
       issuerDid: "did:web:grcorsair.com",
     });
 
     const verification = await verifySDJWT(result.sdJwt, publicKeyJwk);
     expect(verification.valid).toBe(true);
-    expect(verification.disclosedClaims.assurance).toEqual(
-      payload.vc.credentialSubject.assurance,
+    expect(verification.disclosedClaims.frameworks).toEqual(
+      payload.vc.credentialSubject.frameworks,
     );
   });
 

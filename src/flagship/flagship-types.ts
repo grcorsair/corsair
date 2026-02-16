@@ -24,8 +24,8 @@
  * Each maps a Corsair concept to a CAEP-compliant event URI.
  */
 export const FLAGSHIP_EVENTS = {
-  /** Trust tier changed (e.g., self-assessed -> ai-verified) */
-  COLORS_CHANGED: "https://grcorsair.com/events/assurance-level-change/v1",
+  /** Assurance level changed (colors raised or lowered) */
+  COLORS_CHANGED: "https://grcorsair.com/events/colors-changed/v1",
 
   /** Drift detected, controls degraded */
   FLEET_ALERT: "https://grcorsair.com/events/compliance-change/v1",
@@ -71,16 +71,6 @@ export interface CAEPEventData {
 }
 
 /**
- * COLORS_CHANGED: Trust tier transition (assurance-level-change).
- * Fired when a CPOE's trust tier changes (e.g., self-assessed -> ai-verified).
- */
-export interface ColorsChangedData extends CAEPEventData {
-  previous_level: string;
-  current_level: string;
-  change_direction: "increase" | "decrease";
-}
-
-/**
  * FLEET_ALERT: Drift detected (compliance-change).
  * Fired when MARK detects configuration drift that degrades controls.
  */
@@ -88,6 +78,16 @@ export interface FleetAlertData extends CAEPEventData {
   drift_type: string;
   severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
   affected_controls: string[];
+}
+
+/**
+ * COLORS_CHANGED: Assurance level changed (colors raised/lowered).
+ * Fired when evidence quality or verification strength changes.
+ */
+export interface ColorsChangedData extends CAEPEventData {
+  previous_level: string;
+  current_level: string;
+  change_direction: "increase" | "decrease";
 }
 
 /**

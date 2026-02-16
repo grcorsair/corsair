@@ -99,9 +99,6 @@ export default function MarquePage() {
                   </div>
                 ))}
               </div>
-              <p className="mt-3 text-xs text-corsair-text-dim/60 italic">
-                Assurance levels (L0-L4) are available as optional enrichment via --enrich but are not part of the default CPOE.
-              </p>
             </div>
           </FadeIn>
 

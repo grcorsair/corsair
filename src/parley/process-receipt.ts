@@ -21,7 +21,7 @@ import { sortKeysDeep } from "./marque-generator";
 // TYPES
 // =============================================================================
 
-export type PipelineStep = "evidence" | "classify" | "chart" | "quarter" | "sign";
+export type PipelineStep = "evidence" | "classify" | "summarize" | "chart" | "quarter" | "sign";
 
 export interface ToolAttestation {
   toolName: string;           // "Prowler", "InSpec", "Vanta Monitor"
@@ -129,6 +129,7 @@ export function generateReceipt(
   input: GenerateReceiptInput,
   privateKeyPem: string,
 ): ProcessReceipt {
+  const canonicalStep = input.step === "summarize" ? "classify" : input.step;
   const inputHash = hashData(input.inputData);
   const outputHash = hashData(input.outputData);
   const now = new Date().toISOString();
@@ -149,16 +150,16 @@ export function generateReceipt(
   const receipt: ProcessReceipt = {
     _type: "https://in-toto.io/Statement/v1",
     subject: [{
-      name: `${input.step}-output`,
+      name: `${canonicalStep}-output`,
       digest: { sha256: outputHash },
     }],
     predicateType: "https://grcorsair.com/provenance/v1",
     predicate: {
-      step: input.step,
+      step: canonicalStep,
       builder,
       reproducible: input.reproducible,
       materials: [{
-        uri: `${input.step}-input`,
+        uri: `${canonicalStep}-input`,
         digest: { sha256: inputHash },
       }],
       metadata: {

@@ -55,8 +55,6 @@ export const metadata: Metadata = {
     "trust exchange",
     "JWT-VC",
     "Ed25519",
-    "TPRM",
-    "third-party risk management",
     "Marque",
     "SCITT",
     "Parley protocol",

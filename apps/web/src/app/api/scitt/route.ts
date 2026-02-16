@@ -10,7 +10,6 @@ interface DemoEntry {
   issuer: string;
   scope: string;
   provenance: { source: string; sourceIdentity?: string };
-  assuranceLevel?: number;
   summary?: {
     controlsTested: number;
     controlsPassed: number;

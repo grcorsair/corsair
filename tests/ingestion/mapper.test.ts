@@ -51,7 +51,6 @@ const documentWithContext: IngestedDocument = {
   controls: [
     {
       ...minimalDocument.controls[0],
-      assuranceLevel: 2,
       evidence: "Pen test confirmed MFA blocks unauthenticated access",
     },
   ],
@@ -212,7 +211,7 @@ describe("Ingestion Mapper", () => {
       expect(result.markResults[0].driftDetected).toBe(false);
     });
 
-    test("should pass through document reference for assurance/provenance building", () => {
+    test("should pass through document reference for provenance building", () => {
       const result = mapToMarqueInput(minimalDocument);
       expect(result.document).toBeDefined();
       expect(result.document).toBe(minimalDocument);

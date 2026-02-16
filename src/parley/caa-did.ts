@@ -13,7 +13,7 @@
  */
 
 import type { DIDDocument, VerificationMethod } from "./did-resolver";
-import type { VCJWTPayload, AssuranceLevel, CPOECredentialSubject } from "./vc-types";
+import type { VCJWTPayload, CPOECredentialSubject } from "./vc-types";
 
 // =============================================================================
 // TYPES
@@ -23,9 +23,6 @@ import type { VCJWTPayload, AssuranceLevel, CPOECredentialSubject } from "./vc-t
 export interface CorsairDIDScope {
   /** Frameworks this key can sign for. Empty/undefined = all allowed. */
   frameworks?: string[];
-
-  /** Maximum assurance level this key can declare. Undefined = unrestricted. */
-  maxAssurance?: AssuranceLevel;
 
   /** Key purpose constraints. Undefined = all allowed. */
   purpose?: ("sign" | "attest" | "revoke")[];
@@ -75,7 +72,6 @@ export interface CAAVerificationResult {
  *
  * Checks:
  * - Framework is allowed (if frameworks constraint exists)
- * - Assurance level <= maxAssurance (if maxAssurance constraint exists)
  * - Provenance source is allowed (if allowedSources constraint exists)
  * - Key purpose includes "sign" (if purpose constraint exists)
  */
@@ -100,16 +96,6 @@ export function validateCPOEAgainstScope(
       }
     }
     // If CPOE has no frameworks field, nothing to violate
-  }
-
-  // --- Assurance level constraint ---
-  if (scope.maxAssurance !== undefined) {
-    const declared = subject.assurance?.declared;
-    if (declared !== undefined && declared > scope.maxAssurance) {
-      violations.push(
-        `Declared assurance level ${declared} exceeds key's maximum assurance level ${scope.maxAssurance}`,
-      );
-    }
   }
 
   // --- Source constraint ---

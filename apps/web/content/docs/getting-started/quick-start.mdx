@@ -61,69 +61,6 @@ corsair diff --current cpoe-v2.jwt --previous cpoe-v1.jwt
 corsair keygen --output ./keys
 ```
 
-## Evidence Quality Scoring
-
-Run the 7-dimension evidence quality scorer alongside signing:
-
-```bash
-# Sign with evidence quality score (FICO-style composite)
-corsair sign --file prowler-results.json --score
-
-# Dry-run with score preview (no signing)
-corsair sign --file evidence.json --dry-run --score
-```
-
-## Run a Full Compliance Audit
-
-Combine multiple evidence files into a single audit with scoring, framework mapping, and optional governance checks:
-
-```bash
-# Audit multiple evidence files
-corsair audit --files prowler.json inspec.json --scope "AWS Production"
-
-# Audit with framework targeting
-corsair audit --files evidence/*.json --scope "SOC 2" --frameworks SOC2,NIST-800-53
-
-# Audit with governance checks
-corsair audit --files report.json --scope "Cloud" --score --governance --json
-```
-
-## Manage Continuous Certifications
-
-Create and manage ongoing compliance certifications that track status over time:
-
-```bash
-# Create a certification from evidence
-corsair cert create --scope "AWS Production" --frameworks SOC2,NIST-800-53 --files evidence/*.json
-
-# Check certification status
-corsair cert check <cert-id>
-
-# List active certifications
-corsair cert list --status active
-
-# Renew with new evidence
-corsair cert renew <cert-id> --files new-evidence/*.json
-
-# View certification history
-corsair cert history <cert-id>
-```
-
-## Third-Party Risk Management
-
-Register vendors and assess their compliance posture using CPOEs:
-
-```bash
-# Register a vendor
-corsair tprm register --name "Acme Cloud" --domain acme.com --risk-tier high
-
-# Assess a vendor using their CPOEs
-corsair tprm assess --vendor <id> --frameworks SOC2,NIST-800-53 --cpoes cpoe1.jwt cpoe2.jwt
-
-# View TPRM dashboard
-corsair tprm dashboard
-```
-
 ## Re-sign an Expiring CPOE
 
 ```bash
@@ -142,9 +79,6 @@ corsair renew --file cpoe.jwt --evidence new-findings.json --output renewed.jwt
 | `corsair verify` | Verify a CPOE's Ed25519 signature and check validity |
 | `corsair diff` | Compare two CPOEs and show control-level changes |
 | `corsair log` | List signed CPOEs (local SCITT log) |
-| `corsair audit` | Run a full compliance audit across multiple evidence files |
-| `corsair cert` | Manage continuous compliance certifications (create, check, renew, suspend, revoke) |
-| `corsair tprm` | Third-party risk management automation (register vendors, assess, dashboard) |
 | `corsair renew` | Re-sign a CPOE with fresh dates or new evidence |
 | `corsair signal` | FLAGSHIP real-time compliance notifications |
 | `corsair keygen` | Generate Ed25519 signing keypair |

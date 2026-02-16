@@ -140,8 +140,6 @@ export interface SCITTListEntry {
   scope: string;
   /** Provenance — who produced the evidence (primary signal) */
   provenance: SCITTProvenance;
-  /** Assurance level — optional enrichment (secondary, only with --enrich) */
-  assuranceLevel?: number;
   summary?: {
     controlsTested: number;
     controlsPassed: number;
@@ -174,10 +172,10 @@ export interface IssuerProfile {
   totalCPOEs: number;
   frameworks: string[];
   averageScore: number;
+  /** Highest assurance level observed (0=self, 1=tool, 2=auditor) */
+  currentAssuranceLevel?: number;
   /** Provenance distribution across all CPOEs (primary signal) */
   provenanceSummary: ProvenanceSummary;
-  /** Highest assurance level seen (optional, secondary) */
-  currentAssuranceLevel?: number;
   lastCPOEDate: string;
   history: Array<{
     entryId: string;
@@ -185,6 +183,5 @@ export interface IssuerProfile {
     scope: string;
     score: number;
     provenance: SCITTProvenance;
-    assuranceLevel?: number;
   }>;
 }

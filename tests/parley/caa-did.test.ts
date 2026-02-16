@@ -6,7 +6,7 @@
  */
 
 import { describe, test, expect } from "bun:test";
-import type { VCJWTPayload, AssuranceLevel } from "../../src/parley/vc-types";
+import type { VCJWTPayload } from "../../src/parley/vc-types";
 import type { DIDDocument, VerificationMethod } from "../../src/parley/did-resolver";
 import {
   type CorsairDIDScope,
@@ -26,7 +26,6 @@ import {
 
 function makeCPOEPayload(overrides?: {
   frameworks?: Record<string, unknown>;
-  assuranceDeclared?: AssuranceLevel;
   provenanceSource?: "self" | "tool" | "auditor";
   kid?: string;
 }): VCJWTPayload {
@@ -52,12 +51,6 @@ function makeCPOEPayload(overrides?: {
       credentialSubject: {
         type: "CorsairCPOE",
         scope: "Test SOC 2 Type II",
-        assurance: {
-          declared: overrides?.assuranceDeclared ?? 1,
-          verified: true,
-          method: "automated-config-check",
-          breakdown: { "1": 10 },
-        },
         provenance: {
           source: overrides?.provenanceSource ?? "tool",
           sourceIdentity: "Prowler v3.1",
@@ -77,7 +70,6 @@ function makeCPOEPayload(overrides?: {
 function makeScope(overrides?: Partial<CorsairDIDScope>): CorsairDIDScope {
   return {
     frameworks: overrides?.frameworks,
-    maxAssurance: overrides?.maxAssurance,
     purpose: overrides?.purpose,
     allowedSources: overrides?.allowedSources,
   };
@@ -164,37 +156,6 @@ describe("CAA-in-DID: validateCPOEAgainstScope", () => {
     expect(result.violations.some((v: string) => v.includes("PCI"))).toBe(true);
   });
 
-  // --- Assurance level constraints ---
-
-  test("should pass when assurance is at max level", () => {
-    const cpoe = makeCPOEPayload({ assuranceDeclared: 2 });
-    const scope = makeScope({ maxAssurance: 2 });
-    const result = validateCPOEAgainstScope(cpoe, scope);
-    expect(result.valid).toBe(true);
-  });
-
-  test("should pass when assurance is below max level", () => {
-    const cpoe = makeCPOEPayload({ assuranceDeclared: 1 });
-    const scope = makeScope({ maxAssurance: 3 });
-    const result = validateCPOEAgainstScope(cpoe, scope);
-    expect(result.valid).toBe(true);
-  });
-
-  test("should fail when assurance exceeds max level", () => {
-    const cpoe = makeCPOEPayload({ assuranceDeclared: 3 });
-    const scope = makeScope({ maxAssurance: 2 });
-    const result = validateCPOEAgainstScope(cpoe, scope);
-    expect(result.valid).toBe(false);
-    expect(result.violations.some((v: string) => v.includes("assurance"))).toBe(true);
-  });
-
-  test("should pass when no maxAssurance constraint (unrestricted)", () => {
-    const cpoe = makeCPOEPayload({ assuranceDeclared: 4 });
-    const scope = makeScope({}); // no maxAssurance
-    const result = validateCPOEAgainstScope(cpoe, scope);
-    expect(result.valid).toBe(true);
-  });
-
   // --- Source constraints ---
 
   test("should pass when provenance source is in allowed sources", () => {
@@ -247,30 +208,26 @@ describe("CAA-in-DID: validateCPOEAgainstScope", () => {
 
   test("should collect multiple violations when several constraints fail", () => {
     const cpoe = makeCPOEPayload({
-      assuranceDeclared: 4,
       provenanceSource: "self",
       frameworks: { PCI: { controlsMapped: 5, passed: 5, failed: 0, controls: [] } },
     });
     const scope = makeScope({
       frameworks: ["SOC2"],
-      maxAssurance: 2,
       allowedSources: ["tool"],
       purpose: ["revoke"],
     });
     const result = validateCPOEAgainstScope(cpoe, scope);
     expect(result.valid).toBe(false);
-    expect(result.violations.length).toBeGreaterThanOrEqual(3);
+    expect(result.violations.length).toBeGreaterThanOrEqual(2);
   });
 
   test("should pass when all constraints are satisfied", () => {
     const cpoe = makeCPOEPayload({
-      assuranceDeclared: 1,
       provenanceSource: "tool",
       frameworks: { SOC2: { controlsMapped: 10, passed: 9, failed: 1, controls: [] } },
     });
     const scope = makeScope({
       frameworks: ["SOC2", "NIST-800-53"],
-      maxAssurance: 2,
       allowedSources: ["tool", "auditor"],
       purpose: ["sign", "attest"],
     });
@@ -314,7 +271,6 @@ describe("CAA-in-DID: generateCorsairDIDDocument", () => {
   test("should generate a DID document with scope constraints", () => {
     const scope: CorsairDIDScope = {
       frameworks: ["SOC2"],
-      maxAssurance: 2,
       purpose: ["sign"],
       allowedSources: ["tool"],
     };
@@ -328,7 +284,6 @@ describe("CAA-in-DID: generateCorsairDIDDocument", () => {
     const vm = doc.verificationMethod[0] as CorsairVerificationMethod;
     expect(vm.corsairScope).toBeDefined();
     expect(vm.corsairScope!.frameworks).toEqual(["SOC2"]);
-    expect(vm.corsairScope!.maxAssurance).toBe(2);
     expect(vm.corsairScope!.purpose).toEqual(["sign"]);
     expect(vm.corsairScope!.allowedSources).toEqual(["tool"]);
   });
@@ -363,7 +318,7 @@ describe("CAA-in-DID: generateCorsairDIDDocument", () => {
 
 describe("CAA-in-DID: extractScopeFromDIDDocument", () => {
   test("should extract scope for a matching key ID", () => {
-    const scope: CorsairDIDScope = { frameworks: ["SOC2"], maxAssurance: 3 };
+    const scope: CorsairDIDScope = { frameworks: ["SOC2"] };
     const doc = makeCorsairDIDDoc(scope);
     const result = extractScopeFromDIDDocument(doc, "did:web:grcorsair.com#key-1");
     expect(result).toBeDefined();
@@ -399,13 +354,11 @@ describe("CAA-in-DID: verifyCPOEWithCAA", () => {
 
   test("should return scopeValid=true when CPOE satisfies all scope constraints", () => {
     const cpoe = makeCPOEPayload({
-      assuranceDeclared: 1,
       provenanceSource: "tool",
       frameworks: { SOC2: { controlsMapped: 10, passed: 9, failed: 1, controls: [] } },
     });
     const scope: CorsairDIDScope = {
       frameworks: ["SOC2"],
-      maxAssurance: 2,
       allowedSources: ["tool"],
       purpose: ["sign"],
     };
@@ -418,11 +371,9 @@ describe("CAA-in-DID: verifyCPOEWithCAA", () => {
 
   test("should return scopeValid=false when CPOE violates scope constraints", () => {
     const cpoe = makeCPOEPayload({
-      assuranceDeclared: 4,
       provenanceSource: "self",
     });
     const scope: CorsairDIDScope = {
-      maxAssurance: 2,
       allowedSources: ["tool"],
     };
     const doc = makeCorsairDIDDoc(scope);
@@ -434,7 +385,7 @@ describe("CAA-in-DID: verifyCPOEWithCAA", () => {
 
   test("should return scopeChecked=false when key ID is not found in DID doc", () => {
     const cpoe = makeCPOEPayload();
-    const doc = makeCorsairDIDDoc({ maxAssurance: 1 });
+    const doc = makeCorsairDIDDoc({ frameworks: ["SOC2"] });
     const result = verifyCPOEWithCAA(cpoe, doc, "did:web:grcorsair.com#key-99");
     expect(result.scopeValid).toBe(true);
     expect(result.scopeChecked).toBe(false);

@@ -1,6 +1,6 @@
 ---
 title: "Introducing Marque: Signed Proof of Operational Effectiveness"
-description: "How Ed25519-signed W3C Verifiable Credentials replace self-attested questionnaires in third-party risk management."
+description: "How Ed25519-signed W3C Verifiable Credentials replace self-attested questionnaires with verifiable proof."
 date: "2026-02-06"
 tag: "Product"
 author: "Ayoub Fandi"
@@ -9,9 +9,9 @@ published: true
 
 Today we're introducing **Marque** — Corsair's cryptographically signed attestation system that replaces self-attested questionnaires with verifiable proof.
 
-## The Problem with TPRM Today
+## The Problem with Questionnaires
 
-Third-party risk management (TPRM) is an $8.57 billion market built entirely on trust. Here's how it works today:
+Compliance questionnaires are built entirely on trust. Here's how it works today:
 
 1. Company A sends Company B a 300-question security questionnaire
 2. Company B's compliance team answers the questions
@@ -32,7 +32,7 @@ eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCIsImtpZCI6ImRpZDp3ZWI6ZXhhbXBsZS5jb20ja2V5
 
 The JWT payload contains a CPOE credential subject with assessment scope, control test results, evidence chain metadata, and framework mappings. The credential type is `["VerifiableCredential", "CorsairCPOE"]`.
 
-The vendor runs their security tools (Prowler, InSpec, Trivy) and feeds the structured output to Corsair. Corsair classifies the evidence, maps it to compliance frameworks, and signs the results as a JWT-VC with Ed25519. The resulting Marque can be verified by **anyone** — using Corsair tooling, any W3C VC verifier, or any JWT library with EdDSA support. No Corsair account needed, no server calls, no data sharing.
+The vendor runs their security tools (Prowler, InSpec, Trivy) and feeds the structured output to Corsair. Corsair records provenance and signs the results as a JWT-VC with Ed25519. The resulting Marque can be verified by **anyone** — using Corsair tooling, any W3C VC verifier, or any JWT library with EdDSA support. No Corsair account needed, no server calls, no data sharing.
 
 ## Client-Side Verification
 

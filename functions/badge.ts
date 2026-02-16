@@ -18,7 +18,6 @@ export interface CPOEMetadata {
   marqueId: string;
   tier: "verified" | "self-signed" | "expired" | "invalid";
   provenanceSource?: "self" | "tool" | "auditor";
-  assuranceLevel?: number;
   controlsTested?: number;
   overallScore?: number;
   jwt: string;
@@ -33,7 +32,6 @@ export interface BadgeDeps {
 export interface BadgeParams {
   tier: string;
   provenanceSource?: string;
-  level?: number;
   controls?: number;
   score?: number;
 }
@@ -216,7 +214,6 @@ export function createBadgeRouter(
     const svg = generateBadge({
       tier: cpoe.tier,
       provenanceSource: cpoe.provenanceSource,
-      level: cpoe.assuranceLevel,
       controls: cpoe.controlsTested,
       score: cpoe.overallScore,
     });

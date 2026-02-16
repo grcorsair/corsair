@@ -15,15 +15,12 @@ import type {
   VCJWTHeader,
   VCJWTPayload,
   CorsairCPOE,
-  AssuranceLevel,
-  CPOEAssurance,
   CPOEProvenance,
 } from "../../src/parley/vc-types";
 import {
   VC_CONTEXT,
   CORSAIR_CONTEXT,
   CPOE_TYPE,
-  ASSURANCE_NAMES,
 } from "../../src/parley/vc-types";
 
 describe("VC Types - W3C Verifiable Credential 2.0", () => {
@@ -123,12 +120,6 @@ describe("VC Types - W3C Verifiable Credential 2.0", () => {
     const subject: CPOECredentialSubject = {
       type: "CorsairCPOE",
       scope: "aws-cognito, aws-s3 — 12 resources, SOC2 + NIST-800-53",
-      assurance: {
-        declared: 1,
-        verified: true,
-        method: "automated-config-check",
-        breakdown: { "1": 20, "0": 5 },
-      },
       provenance: {
         source: "tool",
         sourceIdentity: "Corsair Engine",
@@ -159,9 +150,6 @@ describe("VC Types - W3C Verifiable Credential 2.0", () => {
 
     expect(subject.type).toBe("CorsairCPOE");
     expect(subject.scope).toContain("aws-cognito");
-    expect(subject.assurance.declared).toBe(1);
-    expect(subject.assurance.verified).toBe(true);
-    expect(subject.assurance.method).toBe("automated-config-check");
     expect(subject.provenance.source).toBe("tool");
     expect(subject.summary.controlsTested).toBe(25);
     expect(subject.summary.overallScore).toBe(80);
@@ -170,16 +158,10 @@ describe("VC Types - W3C Verifiable Credential 2.0", () => {
     expect(subject.frameworks!["SOC2"].controls[0].controlId).toBe("CC6.1");
   });
 
-  test("CPOECredentialSubject supports optional threatModel and quartermasterAttestation", () => {
+  test("CPOECredentialSubject supports optional threatModel", () => {
     const subject: CPOECredentialSubject = {
       type: "CorsairCPOE",
       scope: "aws-cognito — 1 resource, SOC2",
-      assurance: {
-        declared: 2,
-        verified: true,
-        method: "ai-evidence-review",
-        breakdown: { "2": 5 },
-      },
       provenance: { source: "tool", sourceIdentity: "Corsair Test" },
       summary: { controlsTested: 5, controlsPassed: 5, controlsFailed: 0, overallScore: 100 },
       evidenceChain: { hashChainRoot: "sha256-root", recordCount: 10, chainVerified: true },
@@ -190,22 +172,11 @@ describe("VC Types - W3C Verifiable Credential 2.0", () => {
         totalThreats: 6,
         riskDistribution: { critical: 1, high: 2, medium: 3 },
       },
-      quartermasterAttestation: {
-        confidenceScore: 0.92,
-        trustTier: "ai-verified",
-        dimensions: [
-          { dimension: "methodology", score: 0.95 },
-          { dimension: "evidence_integrity", score: 0.90 },
-        ],
-      },
     };
 
     expect(subject.threatModel).toBeDefined();
     expect(subject.threatModel!.methodology).toBe("STRIDE");
     expect(subject.threatModel!.totalThreats).toBe(6);
-    expect(subject.quartermasterAttestation).toBeDefined();
-    expect(subject.quartermasterAttestation!.confidenceScore).toBe(0.92);
-    expect(subject.quartermasterAttestation!.trustTier).toBe("ai-verified");
   });
 
   test("VCJWTHeader uses EdDSA algorithm and vc+jwt type", () => {
@@ -236,7 +207,6 @@ describe("VC Types - W3C Verifiable Credential 2.0", () => {
         credentialSubject: {
           type: "CorsairCPOE",
           scope: "test scope",
-          assurance: { declared: 0, verified: false, method: "self-assessed", breakdown: {} },
           provenance: { source: "self" },
           summary: { controlsTested: 0, controlsPassed: 0, controlsFailed: 0, overallScore: 0 },
         } as CPOECredentialSubject,
@@ -262,12 +232,6 @@ describe("VC Types - W3C Verifiable Credential 2.0", () => {
       credentialSubject: {
         type: "CorsairCPOE",
         scope: "aws-cognito — 3 resources, SOC2",
-        assurance: {
-          declared: 1,
-          verified: true,
-          method: "automated-config-check",
-          breakdown: { "1": 8, "0": 2 },
-        },
         provenance: { source: "tool", sourceIdentity: "Corsair Engine" },
         summary: { controlsTested: 10, controlsPassed: 8, controlsFailed: 2, overallScore: 80 },
         evidenceChain: { hashChainRoot: "sha256-root", recordCount: 20, chainVerified: true },
@@ -278,39 +242,6 @@ describe("VC Types - W3C Verifiable Credential 2.0", () => {
     expect(cpoe.type).toEqual(["VerifiableCredential", "CorsairCPOE"]);
     expect(cpoe.credentialSubject.type).toBe("CorsairCPOE");
     expect(cpoe.credentialSubject.scope).toContain("aws-cognito");
-  });
-
-  test("ASSURANCE_NAMES maps all five levels from L0 to L4", () => {
-    expect(ASSURANCE_NAMES[0]).toBe("Documented");
-    expect(ASSURANCE_NAMES[1]).toBe("Configured");
-    expect(ASSURANCE_NAMES[2]).toBe("Demonstrated");
-    expect(ASSURANCE_NAMES[3]).toBe("Observed");
-    expect(ASSURANCE_NAMES[4]).toBe("Attested");
-    expect(Object.keys(ASSURANCE_NAMES)).toHaveLength(5);
-  });
-
-  test("AssuranceLevel type restricts to valid values 0-4", () => {
-    const levels: AssuranceLevel[] = [0, 1, 2, 3, 4];
-    for (const level of levels) {
-      expect(ASSURANCE_NAMES[level]).toBeDefined();
-    }
-  });
-
-  test("CPOEAssurance supports excluded controls", () => {
-    const assurance: CPOEAssurance = {
-      declared: 1,
-      verified: true,
-      method: "automated-config-check",
-      breakdown: { "1": 18, "0": 2 },
-      excluded: [
-        { controlId: "CC7.2", reason: "Not applicable to SaaS deployment" },
-        { controlId: "CC8.1", reason: "Compensating control via Okta", acceptedBy: "CISO" },
-      ],
-    };
-
-    expect(assurance.excluded).toHaveLength(2);
-    expect(assurance.excluded![0].controlId).toBe("CC7.2");
-    expect(assurance.excluded![1].acceptedBy).toBe("CISO");
   });
 
   test("CPOEProvenance captures all source metadata", () => {
@@ -331,7 +262,6 @@ describe("VC Types - W3C Verifiable Credential 2.0", () => {
     const subject: CPOECredentialSubject = {
       type: "CorsairCPOE",
       scope: "Document ingestion scope",
-      assurance: { declared: 0, verified: false, method: "self-assessed", breakdown: { "0": 5 } },
       provenance: { source: "self" },
       summary: { controlsTested: 5, controlsPassed: 3, controlsFailed: 2, overallScore: 60 },
     };
@@ -339,7 +269,6 @@ describe("VC Types - W3C Verifiable Credential 2.0", () => {
     expect(subject.evidenceChain).toBeUndefined();
     expect(subject.frameworks).toBeUndefined();
     expect(subject.scope).toBe("Document ingestion scope");
-    expect(subject.assurance.declared).toBe(0);
     expect(subject.provenance.source).toBe("self");
   });
 });

@@ -7,11 +7,11 @@ author: "Ayoub Fandi"
 published: true
 ---
 
-Today we're shipping **Parley** — Corsair's standards-based trust exchange protocol. CPOEs (Certificates of Proof of Operational Effectiveness) are W3C Verifiable Credentials, compliance changes are broadcast via OpenID SSF/CAEP, and transparency logging follows the IETF SCITT architecture. The pipeline is simple: accept tool EVIDENCE, CLASSIFY assurance levels, CHART framework mappings, QUARTER governance review, MARQUE the signed proof.
+Today we're shipping **Parley** — Corsair's standards-based trust exchange protocol. CPOEs (Certificates of Proof of Operational Effectiveness) are W3C Verifiable Credentials, compliance changes are broadcast via OpenID SSF/CAEP, and transparency logging follows the IETF SCITT architecture. The pipeline is simple: accept tool evidence, sign a proof, and make it verifiable anywhere.
 
 ## The Problem: Questionnaire Theater
 
-The $8.57 billion TPRM market is built on trust, not verification. Vendors self-attest to 300+ questions. Customers review the answers. Nobody actually tests whether controls work.
+Vendors self-attest to 300+ questions. Customers review the answers. Nobody actually tests whether controls work.
 
 If the goal is to replace questionnaire theater with cryptographic proof, the proof format can't be a walled garden. A vendor shouldn't need to convince their customer to install specific tooling just to verify an attestation.
 
@@ -23,7 +23,7 @@ Parley composes three open standards:
 
 **W3C Verifiable Credentials 2.0** — The credential envelope. A CPOE is a VC with `type: ["VerifiableCredential", "CorsairCPOE"]`, encoded as a JWT with `alg: EdDSA`. Any VC verifier can validate it. Ed25519 signing — same algorithm, deterministic signatures. The container is standard.
 
-**OpenID SSF / CAEP** — Real-time compliance signals. We call this module **FLAGSHIP** (the command ship that signals fleet-wide changes). When a vendor's compliance status changes — drift detected, trust tier upgraded, credential revoked — subscribers get a standardized Security Event Token immediately. No more quarterly reviews to discover that MFA was disabled three months ago.
+**OpenID SSF / CAEP** — Real-time compliance signals. We call this module **FLAGSHIP** (the command ship that signals fleet-wide changes). When a vendor's compliance status changes — drift detected, credential revoked — subscribers get a standardized Security Event Token immediately. No more quarterly reviews to discover that MFA was disabled three months ago.
 
 **IETF SCITT** — Transparency logging. When a CPOE is issued, it can be registered in a SCITT append-only log. This provides non-repudiation (the issuer can't deny the attestation) and discoverability (anyone can audit the history). SCITT interfaces are defined; full transparency service integration tracks the IETF draft.
 
@@ -42,11 +42,10 @@ Organizations identify themselves with `did:web` — a DID that resolves to a JS
 
 ## FLAGSHIP Events
 
-Four CAEP event types, with pirate names:
+Three CAEP event types, with pirate names:
 
 | Event | Meaning |
 |-------|---------|
-| **COLORS_CHANGED** | Trust tier transition |
 | **FLEET_ALERT** | Drift detected |
 | **PAPERS_CHANGED** | CPOE lifecycle event |
 | **MARQUE_REVOKED** | Emergency revocation |
@@ -57,7 +56,7 @@ Events are encoded as RFC 8417 Security Event Tokens and delivered via push or p
 
 - **Ed25519 signing** — Deterministic signatures, 64-byte, fast verification
 - **Evidence chains** — SHA-256 hash chains with tamper-proof integrity
-- **Pirate names** — EVIDENCE, CHART, QUARTER, MARQUE (and FLAGSHIP for real-time signals)
+- **Pirate names** — MARQUE and FLAGSHIP (for real-time signals)
 - **Client-side verification** — The [web verifier](/marque) verifies entirely in-browser
 - **Zero external signing dependencies** — Node.js crypto module for key generation and signing
 - **Universal verification** — Any W3C VC 2.0 verifier, any JWT library with EdDSA support

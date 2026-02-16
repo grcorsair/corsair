@@ -28,7 +28,7 @@ export default function SignPage() {
             <p className="mx-auto max-w-xl text-corsair-text-dim">
               Turn security tool output into a{" "}
               <span className="font-semibold text-corsair-gold">CPOE</span>. Try the signing flow
-              below, then sign with an API key when you&apos;re ready for production.
+              below using demo keys, then sign with an API key when you&apos;re ready for production.
             </p>
           </div>
         </FadeIn>
@@ -43,8 +43,8 @@ export default function SignPage() {
               See signing in action
             </h2>
             <p className="mx-auto max-w-xl text-sm text-corsair-text-dim">
-              Paste or select real evidence formats and preview the signed CPOE.
-              No API key required.
+              Paste or select real evidence formats and sign a demo CPOE.
+              This is a real JWT-VC signed with a public demo keypair.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               {[
@@ -124,10 +124,10 @@ export default function SignPage() {
                   <span className="text-corsair-cyan">$</span> git clone https://github.com/Arudjreis/corsair.git &amp;&amp; cd corsair &amp;&amp; bun install
                 </div>
                 <div className="mt-4">
-                  <span className="text-corsair-text-dim/40"># Generate signing keys</span>
+                  <span className="text-corsair-text-dim/40"># Initialize (generates keys + example evidence)</span>
                 </div>
                 <div>
-                  <span className="text-corsair-cyan">$</span> bun run corsair.ts keygen
+                  <span className="text-corsair-cyan">$</span> bun run corsair.ts init
                 </div>
                 <div className="mt-4">
                   <span className="text-corsair-text-dim/40"># Sign tool output</span>

@@ -1,7 +1,7 @@
 /**
  * New Migration File Validation Tests
  *
- * Validates SQL migration files 008-011 (billing, certifications, TPRM, webhooks).
+ * Validates SQL migration files 008, 011, 012 (billing, webhooks, rate limit/idempotency).
  * Tests file existence, SQL structure, idempotency, table names, constraints,
  * indexes, and foreign keys. Does NOT run against a real database.
  */
@@ -34,16 +34,12 @@ describe("Migration file existence", () => {
     expect(migrationExists("008_billing.sql")).toBe(true);
   });
 
-  test("009_certifications.sql should exist", () => {
-    expect(migrationExists("009_certifications.sql")).toBe(true);
-  });
-
-  test("010_tprm.sql should exist", () => {
-    expect(migrationExists("010_tprm.sql")).toBe(true);
-  });
-
   test("011_webhooks.sql should exist", () => {
     expect(migrationExists("011_webhooks.sql")).toBe(true);
+  });
+
+  test("012_rate_limit_idempotency.sql should exist", () => {
+    expect(migrationExists("012_rate_limit_idempotency.sql")).toBe(true);
   });
 });
 
@@ -57,18 +53,13 @@ describe("Migration files are non-empty", () => {
     expect(sql.trim().length).toBeGreaterThan(0);
   });
 
-  test("009_certifications.sql should have content", () => {
-    const sql = readMigration("009_certifications.sql");
-    expect(sql.trim().length).toBeGreaterThan(0);
-  });
-
-  test("010_tprm.sql should have content", () => {
-    const sql = readMigration("010_tprm.sql");
-    expect(sql.trim().length).toBeGreaterThan(0);
-  });
-
   test("011_webhooks.sql should have content", () => {
     const sql = readMigration("011_webhooks.sql");
+    expect(sql.trim().length).toBeGreaterThan(0);
+  });
+
+  test("012_rate_limit_idempotency.sql should have content", () => {
+    const sql = readMigration("012_rate_limit_idempotency.sql");
     expect(sql.trim().length).toBeGreaterThan(0);
   });
 });
@@ -83,18 +74,13 @@ describe("Migration files contain valid SQL", () => {
     expect(sql).toContain("CREATE TABLE");
   });
 
-  test("009_certifications.sql should contain CREATE TABLE statements", () => {
-    const sql = readMigration("009_certifications.sql");
-    expect(sql).toContain("CREATE TABLE");
-  });
-
-  test("010_tprm.sql should contain CREATE TABLE statements", () => {
-    const sql = readMigration("010_tprm.sql");
-    expect(sql).toContain("CREATE TABLE");
-  });
-
   test("011_webhooks.sql should contain CREATE TABLE statements", () => {
     const sql = readMigration("011_webhooks.sql");
+    expect(sql).toContain("CREATE TABLE");
+  });
+
+  test("012_rate_limit_idempotency.sql should contain CREATE TABLE statements", () => {
+    const sql = readMigration("012_rate_limit_idempotency.sql");
     expect(sql).toContain("CREATE TABLE");
   });
 });
@@ -112,22 +98,6 @@ describe("Migration files are idempotent", () => {
     expect(ifNotExistsCount).toBe(createCount);
   });
 
-  test("009_certifications.sql should use IF NOT EXISTS for all tables", () => {
-    const sql = readMigration("009_certifications.sql");
-    const createCount = (sql.match(/CREATE TABLE/g) || []).length;
-    const ifNotExistsCount = (sql.match(/CREATE TABLE IF NOT EXISTS/g) || []).length;
-    expect(createCount).toBeGreaterThan(0);
-    expect(ifNotExistsCount).toBe(createCount);
-  });
-
-  test("010_tprm.sql should use IF NOT EXISTS for all tables", () => {
-    const sql = readMigration("010_tprm.sql");
-    const createCount = (sql.match(/CREATE TABLE/g) || []).length;
-    const ifNotExistsCount = (sql.match(/CREATE TABLE IF NOT EXISTS/g) || []).length;
-    expect(createCount).toBeGreaterThan(0);
-    expect(ifNotExistsCount).toBe(createCount);
-  });
-
   test("011_webhooks.sql should use IF NOT EXISTS for all tables", () => {
     const sql = readMigration("011_webhooks.sql");
     const createCount = (sql.match(/CREATE TABLE/g) || []).length;
@@ -136,13 +106,37 @@ describe("Migration files are idempotent", () => {
     expect(ifNotExistsCount).toBe(createCount);
   });
 
+  test("012_rate_limit_idempotency.sql should use IF NOT EXISTS for all tables", () => {
+    const sql = readMigration("012_rate_limit_idempotency.sql");
+    const createCount = (sql.match(/CREATE TABLE/g) || []).length;
+    const ifNotExistsCount = (sql.match(/CREATE TABLE IF NOT EXISTS/g) || []).length;
+    expect(createCount).toBeGreaterThan(0);
+    expect(ifNotExistsCount).toBe(createCount);
+  });
+
   test("all indexes should use IF NOT EXISTS", () => {
-    for (const file of ["008_billing.sql", "009_certifications.sql", "010_tprm.sql", "011_webhooks.sql"]) {
+    for (const file of ["008_billing.sql", "011_webhooks.sql", "012_rate_limit_idempotency.sql"]) {
       const sql = readMigration(file);
       const indexStatements = sql.match(/CREATE\s+(UNIQUE\s+)?INDEX\b/g) || [];
       const ifNotExistsIndexes = sql.match(/CREATE\s+(UNIQUE\s+)?INDEX\s+IF NOT EXISTS/g) || [];
       expect(ifNotExistsIndexes.length).toBe(indexStatements.length);
     }
+  });
+});
+
+// =============================================================================
+// 012_RATE_LIMIT_IDEMPOTENCY: TABLE NAMES
+// =============================================================================
+
+describe("012_rate_limit_idempotency.sql table structure", () => {
+  test("should create rate_limits table", () => {
+    const sql = readMigration("012_rate_limit_idempotency.sql");
+    expect(sql).toContain("CREATE TABLE IF NOT EXISTS rate_limits");
+  });
+
+  test("should create idempotency_keys table", () => {
+    const sql = readMigration("012_rate_limit_idempotency.sql");
+    expect(sql).toContain("CREATE TABLE IF NOT EXISTS idempotency_keys");
   });
 });
 
@@ -202,130 +196,6 @@ describe("008_billing.sql table structure", () => {
 });
 
 // =============================================================================
-// 009_CERTIFICATIONS: TABLE NAMES + STRUCTURE
-// =============================================================================
-
-describe("009_certifications.sql table structure", () => {
-  test("should create certifications table", () => {
-    const sql = readMigration("009_certifications.sql");
-    expect(sql).toContain("CREATE TABLE IF NOT EXISTS certifications");
-  });
-
-  test("should create certification_policies table", () => {
-    const sql = readMigration("009_certifications.sql");
-    expect(sql).toContain("CREATE TABLE IF NOT EXISTS certification_policies");
-  });
-
-  test("certifications table should have status CHECK constraint", () => {
-    const sql = readMigration("009_certifications.sql");
-    expect(sql).toContain("active");
-    expect(sql).toContain("warning");
-    expect(sql).toContain("degraded");
-    expect(sql).toContain("suspended");
-    expect(sql).toContain("expired");
-    expect(sql).toContain("revoked");
-    expect(sql).toMatch(/CHECK\s*\(\s*status\s+IN\s*\(/);
-  });
-
-  test("should create index on certifications(org_id)", () => {
-    const sql = readMigration("009_certifications.sql");
-    expect(sql).toContain("idx_certifications_org");
-    expect(sql).toMatch(/ON\s+certifications\s*\(\s*org_id\s*\)/);
-  });
-
-  test("should create index on certifications(status)", () => {
-    const sql = readMigration("009_certifications.sql");
-    expect(sql).toContain("idx_certifications_status");
-    expect(sql).toMatch(/ON\s+certifications\s*\(\s*status\s*\)/);
-  });
-
-  test("certification_policies should have default values for thresholds", () => {
-    const sql = readMigration("009_certifications.sql");
-    expect(sql).toContain("DEFAULT 70");
-    expect(sql).toContain("DEFAULT 80");
-    expect(sql).toContain("DEFAULT 90");
-    expect(sql).toContain("DEFAULT 7");
-    expect(sql).toContain("DEFAULT 14");
-  });
-});
-
-// =============================================================================
-// 010_TPRM: TABLE NAMES + STRUCTURE
-// =============================================================================
-
-describe("010_tprm.sql table structure", () => {
-  test("should create vendors table", () => {
-    const sql = readMigration("010_tprm.sql");
-    expect(sql).toContain("CREATE TABLE IF NOT EXISTS vendors");
-  });
-
-  test("should create assessment_requests table", () => {
-    const sql = readMigration("010_tprm.sql");
-    expect(sql).toContain("CREATE TABLE IF NOT EXISTS assessment_requests");
-  });
-
-  test("should create assessment_results table", () => {
-    const sql = readMigration("010_tprm.sql");
-    expect(sql).toContain("CREATE TABLE IF NOT EXISTS assessment_results");
-  });
-
-  test("should create vendor_monitoring table", () => {
-    const sql = readMigration("010_tprm.sql");
-    expect(sql).toContain("CREATE TABLE IF NOT EXISTS vendor_monitoring");
-  });
-
-  test("vendors table should have risk_tier CHECK constraint", () => {
-    const sql = readMigration("010_tprm.sql");
-    expect(sql).toMatch(/CHECK\s*\(\s*risk_tier\s+IN\s*\(/);
-    expect(sql).toContain("critical");
-    expect(sql).toContain("high");
-    expect(sql).toContain("medium");
-    expect(sql).toContain("low");
-    expect(sql).toContain("minimal");
-  });
-
-  test("assessment_results should have decision CHECK constraint", () => {
-    const sql = readMigration("010_tprm.sql");
-    expect(sql).toMatch(/CHECK\s*\(\s*decision\s+IN\s*\(/);
-    expect(sql).toContain("approved");
-    expect(sql).toContain("conditional");
-    expect(sql).toContain("review_required");
-    expect(sql).toContain("rejected");
-  });
-
-  test("assessment_requests should reference vendors(id)", () => {
-    const sql = readMigration("010_tprm.sql");
-    expect(sql).toContain("REFERENCES vendors(id)");
-  });
-
-  test("assessment_results should reference assessment_requests(id) and vendors(id)", () => {
-    const sql = readMigration("010_tprm.sql");
-    expect(sql).toContain("REFERENCES assessment_requests(id)");
-    // vendors(id) referenced from both assessment_requests and assessment_results
-    const vendorRefs = (sql.match(/REFERENCES vendors\(id\)/g) || []).length;
-    expect(vendorRefs).toBeGreaterThanOrEqual(2);
-  });
-
-  test("vendor_monitoring should reference vendors(id)", () => {
-    const sql = readMigration("010_tprm.sql");
-    // vendor_monitoring has REFERENCES vendors(id) as part of its PK definition
-    const vendorRefs = (sql.match(/REFERENCES vendors\(id\)/g) || []).length;
-    expect(vendorRefs).toBeGreaterThanOrEqual(3); // assessment_requests + assessment_results + vendor_monitoring
-  });
-
-  test("should create indexes on assessment_results", () => {
-    const sql = readMigration("010_tprm.sql");
-    expect(sql).toContain("idx_assessments_vendor");
-    expect(sql).toContain("idx_assessments_decision");
-  });
-
-  test("should create index on vendors(risk_tier)", () => {
-    const sql = readMigration("010_tprm.sql");
-    expect(sql).toContain("idx_vendors_risk_tier");
-  });
-});
-
-// =============================================================================
 // 011_WEBHOOKS: TABLE NAMES + STRUCTURE
 // =============================================================================
 
@@ -373,14 +243,13 @@ describe("Migration naming conventions", () => {
     }
   });
 
-  test("new migrations should be numbered sequentially after existing ones", () => {
+  test("expected migration numbers are present", () => {
     const files = fs.readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).sort();
     const numbers = files.map((f) => parseInt(f.split("_")[0], 10));
-    // 008, 009, 010, 011 should all be present
+    // 008, 011, 012 should all be present
     expect(numbers).toContain(8);
-    expect(numbers).toContain(9);
-    expect(numbers).toContain(10);
     expect(numbers).toContain(11);
+    expect(numbers).toContain(12);
   });
 });
 
@@ -390,7 +259,7 @@ describe("Migration naming conventions", () => {
 
 describe("SQL quality conventions", () => {
   test("all tables should use TIMESTAMPTZ for timestamps (not TIMESTAMP)", () => {
-    for (const file of ["008_billing.sql", "009_certifications.sql", "010_tprm.sql", "011_webhooks.sql"]) {
+    for (const file of ["008_billing.sql", "011_webhooks.sql", "012_rate_limit_idempotency.sql"]) {
       const sql = readMigration(file);
       // Every timestamp column should be TIMESTAMPTZ, not bare TIMESTAMP
       const timestampMatches = sql.match(/\bTIMESTAMP\b(?!TZ)/g) || [];
@@ -399,14 +268,14 @@ describe("SQL quality conventions", () => {
   });
 
   test("all tables should have created_at columns", () => {
-    for (const file of ["008_billing.sql", "009_certifications.sql", "010_tprm.sql", "011_webhooks.sql"]) {
+    for (const file of ["008_billing.sql", "011_webhooks.sql", "012_rate_limit_idempotency.sql"]) {
       const sql = readMigration(file);
       expect(sql).toContain("created_at");
     }
   });
 
   test("all TEXT PRIMARY KEY columns should be present", () => {
-    for (const file of ["008_billing.sql", "009_certifications.sql", "010_tprm.sql", "011_webhooks.sql"]) {
+    for (const file of ["008_billing.sql", "011_webhooks.sql", "012_rate_limit_idempotency.sql"]) {
       const sql = readMigration(file);
       expect(sql).toContain("TEXT PRIMARY KEY");
     }

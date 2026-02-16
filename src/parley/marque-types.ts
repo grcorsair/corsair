@@ -52,8 +52,6 @@ export interface MarqueDocument {
     /** Optional threat model summary (from STRIDE analysis) */
     threatModel?: MarqueThreatModelSummary;
 
-    /** Optional quartermaster (AI) attestation of confidence */
-    quartermasterAttestation?: MarqueQuartermasterAttestation;
   };
 
   /** Base64-encoded Ed25519 signature over the serialized marque field */
@@ -224,38 +222,4 @@ export interface MarqueThreatModelSummary {
   riskDistribution: Record<string, number>;
 }
 
-// =============================================================================
-// ADMIRAL ATTESTATION
-// =============================================================================
-
-/**
- * AI-generated attestation of confidence in the MARQUE findings.
- * The "quartermaster" is the AI evaluator that reviews evidence quality.
- */
-export interface MarqueQuartermasterAttestation {
-  /** Overall confidence score (0.0 - 1.0) */
-  confidenceScore: number;
-
-  /** Individual evaluation dimensions with scores */
-  dimensions: MARQUEAttestationDimension[];
-
-  /** Trust tier classification */
-  trustTier: "self-assessed" | "ai-verified" | "auditor-verified";
-
-  /** ISO 8601 timestamp when evaluation was performed */
-  evaluatedAt: string;
-
-  /** Hash of the full report that was evaluated */
-  reportHash: string;
-}
-
-/**
- * A single dimension of the quartermaster attestation evaluation.
- */
-export interface MARQUEAttestationDimension {
-  /** Name of the evaluation dimension */
-  dimension: string;
-
-  /** Score for this dimension (0.0 - 1.0) */
-  score: number;
-}
+// (Quartermaster attestation removed.)

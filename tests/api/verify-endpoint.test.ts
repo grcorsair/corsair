@@ -47,7 +47,6 @@ beforeAll(async () => {
       credentialSubject: {
         type: "CorsairCPOE",
         scope: "SOC 2 Type II - Test Infrastructure",
-        assurance: { declared: 1, verified: true, method: "automated-config-check", breakdown: { "1": 5 } },
         provenance: { source: "tool", sourceIdentity: "Prowler v3.1", sourceDate: "2026-02-10" },
         summary: { controlsTested: 5, controlsPassed: 5, controlsFailed: 0, overallScore: 100 },
         processProvenance: {
@@ -77,7 +76,6 @@ beforeAll(async () => {
       credentialSubject: {
         type: "CorsairCPOE",
         scope: "Expired test",
-        assurance: { declared: 0, verified: true, method: "self-assessed", breakdown: { "0": 1 } },
         provenance: { source: "self" },
         summary: { controlsTested: 1, controlsPassed: 1, controlsFailed: 0, overallScore: 100 },
       },
@@ -158,13 +156,6 @@ describe("V1 Verify — Valid CPOE", () => {
     expect(body.data?.provenance).toBeTruthy();
     expect(body.data?.provenance?.source).toBe("tool");
     expect(body.data?.provenance?.sourceIdentity).toBe("Prowler v3.1");
-  });
-
-  test("extracts assurance level", async () => {
-    const res = await handler(postVerify({ cpoe: testJWT }));
-    const body: APIEnvelope<V1VerifyResponse> = await res.json();
-    expect(body.data?.assurance).toBeTruthy();
-    expect(body.data?.assurance?.level).toBe(1);
   });
 
   test("extracts timestamps", async () => {

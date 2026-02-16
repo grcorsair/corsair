@@ -8,8 +8,7 @@
  *   Header: { alg: "EdDSA", typ: "vc+jwt", kid: "did:web:domain#key-1" }
  *   Payload: { iss, sub, exp, iat, jti, vc: {...}, parley: "2.1" }
  *
- * Pipeline: parse → provenance → tool-level assurance → sign.
- * No content-based classification. The tool adapter declares the assurance level.
+ * Pipeline: parse → provenance → sign.
  */
 
 import * as crypto from "crypto";
@@ -19,12 +18,12 @@ import { existsSync } from "fs";
 import { MarqueKeyManager } from "./marque-key-manager";
 import { sanitize } from "./marque-generator";
 import type { MarqueGeneratorInput } from "./marque-generator";
-import type { CPOECredentialSubject, CPOEAssurance, CPOEProvenance } from "./vc-types";
+import type { CPOECredentialSubject, CPOEProvenance } from "./vc-types";
 import { VC_CONTEXT, CORSAIR_CONTEXT, CPOE_TYPE } from "./vc-types";
 import {
   deriveProvenance,
   deriveEvidenceTypeDistribution,
-} from "../ingestion/assurance-calculator";
+} from "../ingestion/provenance-utils";
 import { computeSummaryFromControls } from "../ingestion/summary";
 import { EvidenceEngine } from "../evidence";
 import { hashReceipt } from "./process-receipt";
@@ -98,9 +97,8 @@ export async function generateVCJWT(
 /**
  * Build CPOE credential subject from assessment input.
  *
- * Provenance-first with tool-level assurance:
+ * Provenance-first:
  *   - scope, provenance, summary (always)
- *   - assurance from tool-declared level (always)
  *   - frameworks passthrough from tool output (when present)
  *   - processProvenance from receipt chain (when present)
  *   - evidenceChain from JSONL files (when present)
@@ -136,13 +134,9 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
   // Build scope (now a string)
   const scope = buildScope(input);
 
-  // Build tool-level assurance (always — declared by tool class, not content analysis)
-  const assurance = buildToolAssurance(input);
-
   const subject: CPOECredentialSubject = {
     type: "CorsairCPOE",
     scope,
-    assurance,
     provenance,
     summary,
   };
@@ -183,17 +177,6 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
     };
   }
 
-  if (input.quartermasterAttestation) {
-    subject.quartermasterAttestation = {
-      confidenceScore: input.quartermasterAttestation.confidenceScore,
-      trustTier: input.quartermasterAttestation.trustTier,
-      dimensions: input.quartermasterAttestation.dimensions.map((d) => ({
-        dimension: d.dimension,
-        score: d.score,
-      })),
-    };
-  }
-
   // Process provenance (in-toto/SLSA — from pipeline receipt chain)
   const processReceipts = input.processReceipts || [];
   if (processReceipts.length > 0) {
@@ -220,38 +203,6 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
   return subject;
 }
 
-// =============================================================================
-// INTERNAL: TOOL-LEVEL ASSURANCE
-// =============================================================================
-
-/** Build CPOEAssurance from tool-declared level (no content analysis) */
-function buildToolAssurance(input: MarqueGeneratorInput): CPOEAssurance {
-  const level = input.document?.toolAssuranceLevel ?? 0;
-
-  // Method derives from tool class
-  const methodMap: Record<number, CPOEAssurance["method"]> = {
-    0: "self-assessed",
-    1: "automated-config-check",
-    2: "automated-config-check",
-    3: "continuous-observation",
-    4: "third-party-attested",
-  };
-
-  // Count all controls at the tool-declared level
-  const controlCount = input.document?.controls.length ?? 0;
-  const breakdown: Record<string, number> = {};
-  if (controlCount > 0) {
-    breakdown[String(level)] = controlCount;
-  }
-
-  return {
-    declared: level,
-    verified: true,
-    method: methodMap[level] ?? "self-assessed",
-    breakdown,
-  };
-}
-
 function computeSummaryFromFrameworks(
   frameworks: NonNullable<CPOECredentialSubject["frameworks"]>,
 ): { controlsTested: number; controlsPassed: number; controlsFailed: number; overallScore: number } {
@@ -276,7 +227,7 @@ function computeSummaryFromFrameworks(
 }
 
 // =============================================================================
-// INTERNAL: PROVENANCE (delegates to assurance-calculator)
+// INTERNAL: PROVENANCE (delegates to provenance-utils)
 // =============================================================================
 
 /** Build CPOEProvenance from input */

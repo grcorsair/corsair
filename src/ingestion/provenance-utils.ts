@@ -1,11 +1,10 @@
 /**
- * Assurance Calculator — Provenance & Freshness Utilities
+ * Provenance & Freshness Utilities
  *
- * Provenance-first model (v0.5.0): Records WHO produced evidence,
- * lets buyers decide what's sufficient. Tool adapters declare
- * assurance levels based on tool class, not content analysis.
+ * Provenance-first model (v0.5.0): Records WHO produced evidence
+ * and lets buyers decide what's sufficient.
  *
- * Retained functions:
+ * Exposed utilities:
  *   - deriveProvenance: Map source + metadata → CPOEProvenance
  *   - assessFreshness: Temporal validity assessment
  *   - deriveEvidenceTypes: ISO 19011 evidence type derivation
@@ -42,9 +41,8 @@ export interface FreshnessAssessment {
 /**
  * Derive evidence provenance from document source and metadata.
  *
- * Provenance captures WHO produced the evidence, independent of the
- * cryptographic assurance level. A SOC 2 from Deloitte is L0/L1 crypto
- * but "auditor" provenance — these are separate dimensions.
+ * Provenance captures WHO produced the evidence, independent of
+ * verification strength or scoring.
  */
 export function deriveProvenance(
   source: DocumentSource,
@@ -211,33 +209,4 @@ export function deriveEvidenceTypeDistribution(
   return distribution;
 }
 
-// =============================================================================
-// TOOL ASSURANCE INFERENCE (for pre-parsed documents)
-// =============================================================================
-
-/**
- * Infer tool assurance level when a document is already parsed.
- * This mirrors the JSON parser defaults for known source types.
- */
-export function inferToolAssuranceLevel(
-  source: DocumentSource,
-  controls: IngestedControl[],
-): AssuranceLevel {
-  switch (source) {
-    case "prowler":
-    case "securityhub":
-      return 1;
-    case "pentest":
-      return 2;
-    case "ciso-assistant": {
-      const hasEvidence = controls.some((c) => c.evidence && c.evidence.trim().length > 0);
-      return hasEvidence ? 2 : 1;
-    }
-    case "soc2":
-    case "iso27001":
-    case "json":
-    case "manual":
-    default:
-      return 0;
-  }
-}
+// (Assurance inference intentionally removed.)

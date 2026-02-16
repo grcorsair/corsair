@@ -22,7 +22,7 @@ export const QUICK_START_SNIPPET = `# Install Bun (if you don't have it)
 curl -fsSL https://bun.sh/install | bash
 
 # Clone and install
-git clone https://github.com/Arudjreis/corsair.git
+git clone https://github.com/grcorsair/corsair.git
 cd corsair && bun install
 
 # Initialize a project (generates keys + example evidence)

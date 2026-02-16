@@ -251,17 +251,11 @@ async function handleDiff(args: Record<string, unknown>): Promise<MCPToolResult>
     // Compare summaries
     const currentScore = currentSubject.summary?.overallScore ?? 0;
     const previousScore = previousSubject.summary?.overallScore ?? 0;
-    const currentAssurance = currentSubject.assurance?.declared ?? -1;
-    const previousAssurance = previousSubject.assurance?.declared ?? -1;
-
     const output = {
       scoreChange: currentScore - previousScore,
       currentScore,
       previousScore,
-      assuranceChange: currentAssurance - previousAssurance,
-      currentAssurance,
-      previousAssurance,
-      hasRegression: currentScore < previousScore || currentAssurance < previousAssurance,
+      hasRegression: currentScore < previousScore,
       currentScope: currentSubject.scope,
       previousScope: previousSubject.scope,
     };

@@ -71,7 +71,6 @@ async function createTestCPOE(
       credentialSubject: {
         type: "CorsairCPOE",
         scope: "SOC 2 Type II - Acme Cloud",
-        assurance: { declared: 1, verified: true, method: "automated-config-check", breakdown: { "1": 10 } },
         provenance: { source: "tool", sourceIdentity: "Prowler v3.1" },
         summary: { controlsTested: 10, controlsPassed: 9, controlsFailed: 1, overallScore: 90 },
       },
@@ -161,7 +160,6 @@ describe("Key Attestation - Certificate Chain of Trust", () => {
     test("should generate valid attestation JWT for org key", async () => {
       const scope: AttestationScope = {
         frameworks: ["SOC2", "ISO27001"],
-        maxAssurance: 2,
         validFrom: new Date().toISOString(),
         validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       };
@@ -205,7 +203,6 @@ describe("Key Attestation - Certificate Chain of Trust", () => {
       const expiry = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
       const scope: AttestationScope = {
         frameworks: ["SOC2"],
-        maxAssurance: 3,
         validFrom: now.toISOString(),
         validUntil: expiry.toISOString(),
       };
@@ -227,7 +224,6 @@ describe("Key Attestation - Certificate Chain of Trust", () => {
       expect(payload.type).toBe("CorsairKeyAttestation");
       expect(payload.scope).toBeDefined();
       expect(payload.scope.frameworks).toEqual(["SOC2"]);
-      expect(payload.scope.maxAssurance).toBe(3);
       expect(payload.orgKeyFingerprint).toBeDefined();
       expect(typeof payload.orgKeyFingerprint).toBe("string");
       expect(payload.iat).toBeDefined();
@@ -276,26 +272,6 @@ describe("Key Attestation - Certificate Chain of Trust", () => {
       expect(payload.scope.frameworks).toBeUndefined();
     });
 
-    test("should default maxAssurance to 4 when omitted", async () => {
-      const scope: AttestationScope = {
-        validFrom: new Date().toISOString(),
-        validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-      };
-
-      const attestation = await attestOrgKey(
-        "did:web:acme.com",
-        orgJWK,
-        scope,
-        rootKeyManager,
-        "did:web:grcorsair.com",
-      );
-
-      const payloadB64 = attestation.split(".")[1];
-      const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString());
-
-      expect(payload.scope.maxAssurance).toBe(4);
-    });
-
     test("should throw if root key manager has no keypair", async () => {
       const emptyDir = trackDir(createTestDir());
       const emptyKm = new MarqueKeyManager(emptyDir);
@@ -320,7 +296,6 @@ describe("Key Attestation - Certificate Chain of Trust", () => {
     test("should verify valid attestation against root public key", async () => {
       const scope: AttestationScope = {
         frameworks: ["SOC2"],
-        maxAssurance: 2,
         validFrom: new Date().toISOString(),
         validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       };
@@ -340,7 +315,6 @@ describe("Key Attestation - Certificate Chain of Trust", () => {
       expect(result.subject).toBe("did:web:acme.com");
       expect(result.scope).toBeDefined();
       expect(result.scope!.frameworks).toEqual(["SOC2"]);
-      expect(result.scope!.maxAssurance).toBe(2);
       expect(result.orgKeyFingerprint).toBeDefined();
     });
 
@@ -424,7 +398,6 @@ describe("Key Attestation - Certificate Chain of Trust", () => {
     test("should return scope constraints on valid attestation", async () => {
       const scope: AttestationScope = {
         frameworks: ["SOC2", "NIST-800-53", "ISO27001"],
-        maxAssurance: 1,
         validFrom: new Date().toISOString(),
         validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       };
@@ -440,7 +413,6 @@ describe("Key Attestation - Certificate Chain of Trust", () => {
       const result = await verifyKeyAttestation(attestation, rootJWK);
       expect(result.valid).toBe(true);
       expect(result.scope!.frameworks).toEqual(["SOC2", "NIST-800-53", "ISO27001"]);
-      expect(result.scope!.maxAssurance).toBe(1);
     });
   });
 
@@ -451,7 +423,6 @@ describe("Key Attestation - Certificate Chain of Trust", () => {
   describe("Chain Verification", () => {
     test("should verify full chain: root -> attestation -> CPOE", async () => {
       const scope: AttestationScope = {
-        maxAssurance: 4,
         validFrom: new Date().toISOString(),
         validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       };
@@ -604,63 +575,9 @@ describe("Key Attestation - Certificate Chain of Trust", () => {
   // ===========================================================================
 
   describe("Scope Constraints", () => {
-    test("should accept attestation with maxAssurance >= CPOE assurance", async () => {
-      const scope: AttestationScope = {
-        maxAssurance: 3,
-        validFrom: new Date().toISOString(),
-        validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-      };
-
-      const attestation = await attestOrgKey(
-        "did:web:acme.com",
-        orgJWK,
-        scope,
-        rootKeyManager,
-        "did:web:grcorsair.com",
-      );
-
-      // CPOE with assurance L1 (within scope max of 3)
-      const cpoe = await createTestCPOE(
-        orgKeys.privateKey,
-        "did:web:acme.com",
-        "did:web:acme.com#key-1",
-      );
-
-      const result = await verifyChain(cpoe, attestation, rootJWK, orgJWK);
-      expect(result.valid).toBe(true);
-    });
-
-    test("should reject when CPOE assurance exceeds attestation maxAssurance", async () => {
-      const scope: AttestationScope = {
-        maxAssurance: 0, // Only L0 permitted
-        validFrom: new Date().toISOString(),
-        validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-      };
-
-      const attestation = await attestOrgKey(
-        "did:web:acme.com",
-        orgJWK,
-        scope,
-        rootKeyManager,
-        "did:web:grcorsair.com",
-      );
-
-      // CPOE with assurance L1 (exceeds scope max of 0)
-      const cpoe = await createTestCPOE(
-        orgKeys.privateKey,
-        "did:web:acme.com",
-        "did:web:acme.com#key-1",
-      );
-
-      const result = await verifyChain(cpoe, attestation, rootJWK, orgJWK);
-      expect(result.valid).toBe(false);
-      expect(result.reason).toContain("assurance");
-    });
-
     test("should accept when CPOE frameworks match attestation scope", async () => {
       const scope: AttestationScope = {
         frameworks: ["SOC2", "NIST-800-53"],
-        maxAssurance: 4,
         validFrom: new Date().toISOString(),
         validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       };
@@ -686,7 +603,6 @@ describe("Key Attestation - Certificate Chain of Trust", () => {
     test("should accept when attestation has no framework restrictions", async () => {
       const scope: AttestationScope = {
         // No frameworks = unrestricted
-        maxAssurance: 4,
         validFrom: new Date().toISOString(),
         validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       };
@@ -829,7 +745,6 @@ describe("Key Attestation - Certificate Chain of Trust", () => {
     test("should handle attestation with all optional scope fields", async () => {
       const scope: AttestationScope = {
         frameworks: ["SOC2", "ISO27001", "NIST-800-53", "PCI-DSS", "HIPAA"],
-        maxAssurance: 0,
         validFrom: new Date().toISOString(),
         validUntil: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
       };
@@ -845,7 +760,6 @@ describe("Key Attestation - Certificate Chain of Trust", () => {
       const result = await verifyKeyAttestation(attestation, rootJWK);
       expect(result.valid).toBe(true);
       expect(result.scope!.frameworks!.length).toBe(5);
-      expect(result.scope!.maxAssurance).toBe(0);
     });
 
     test("should handle very short validity period", async () => {

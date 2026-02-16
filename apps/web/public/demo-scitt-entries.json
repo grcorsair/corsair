@@ -9,7 +9,6 @@
       "source": "tool",
       "sourceIdentity": "Prowler"
     },
-    "assuranceLevel": 1,
     "summary": {
       "controlsTested": 15,
       "controlsPassed": 10,
@@ -32,7 +31,6 @@
       "source": "tool",
       "sourceIdentity": "InSpec"
     },
-    "assuranceLevel": 1,
     "summary": {
       "controlsTested": 10,
       "controlsPassed": 7,
@@ -55,7 +53,6 @@
       "source": "tool",
       "sourceIdentity": "Trivy"
     },
-    "assuranceLevel": 1,
     "summary": {
       "controlsTested": 12,
       "controlsPassed": 3,
@@ -79,7 +76,6 @@
       "source": "tool",
       "sourceIdentity": "AWS SecurityHub"
     },
-    "assuranceLevel": 1,
     "summary": {
       "controlsTested": 12,
       "controlsPassed": 8,
@@ -102,7 +98,6 @@
       "source": "auditor",
       "sourceIdentity": "Coalfire ISO Audit Team"
     },
-    "assuranceLevel": 2,
     "summary": {
       "controlsTested": 10,
       "controlsPassed": 6,
@@ -120,7 +115,6 @@
       "source": "auditor",
       "sourceIdentity": "Deloitte LLP"
     },
-    "assuranceLevel": 2,
     "summary": {
       "controlsTested": 8,
       "controlsPassed": 5,
@@ -138,7 +132,6 @@
       "source": "tool",
       "sourceIdentity": "Semgrep"
     },
-    "assuranceLevel": 1,
     "summary": {
       "controlsTested": 6,
       "controlsPassed": 0,
@@ -162,7 +155,6 @@
       "source": "self",
       "sourceIdentity": "Acme Corp Security Team"
     },
-    "assuranceLevel": 0,
     "summary": {
       "controlsTested": 10,
       "controlsPassed": 7,

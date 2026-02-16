@@ -17,7 +17,6 @@ function makeEntry(overrides: Partial<SCITTListEntry> = {}): SCITTListEntry {
     issuer: "did:web:acme.com",
     scope: "SOC 2 Type II - Cloud Platform",
     provenance: { source: "tool", sourceIdentity: "Prowler v3.1" },
-    assuranceLevel: 1,
     summary: {
       controlsTested: 24,
       controlsPassed: 22,

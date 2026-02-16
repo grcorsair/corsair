@@ -14,7 +14,6 @@ import * as fs from "fs";
 import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
 import { MarqueGenerator, sortKeysDeep } from "../../src/parley/marque-generator";
 import type { MarqueGeneratorInput } from "../../src/parley/marque-generator";
-import type { MarqueQuartermasterAttestation } from "../../src/parley/marque-types";
 import type {
   MarkResult,
   RaidResult,
@@ -351,25 +350,4 @@ describe("MARQUE Generator - Document Generation", () => {
     expect(Math.abs(expiresAt - generatedAt - thirtyDaysMs)).toBeLessThan(1000);
   });
 
-  test("quartermaster attestation embedded when provided", async () => {
-    const { generator, keyDir } = await setupGenerator();
-    const input = await buildInput(keyDir);
-    input.quartermasterAttestation = {
-      confidenceScore: 0.92,
-      dimensions: [
-        { dimension: "evidence-quality", score: 0.95 },
-        { dimension: "coverage-breadth", score: 0.89 },
-      ],
-      trustTier: "ai-verified",
-      evaluatedAt: new Date().toISOString(),
-      reportHash: "sha256-test-hash",
-    };
-
-    const doc = await generator.generate(input);
-
-    expect(doc.marque.quartermasterAttestation).toBeDefined();
-    expect(doc.marque.quartermasterAttestation!.confidenceScore).toBe(0.92);
-    expect(doc.marque.quartermasterAttestation!.dimensions).toHaveLength(2);
-    expect(doc.marque.quartermasterAttestation!.trustTier).toBe("ai-verified");
-  });
 });

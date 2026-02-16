@@ -7,22 +7,19 @@
  *   - JSON evidence body with controls and metadata
  *   - Returns a signed JWT-VC CPOE
  *
- * This is the revenue endpoint:
- *   L0 (Documented) — free, self-reported controls
- *   L1+ (Configured, Demonstrated, etc.) — requires API key (future)
- *
  * The endpoint runs the full issuance pipeline:
  *   evidence → IngestedDocument → signDocument → signed CPOE
  */
 
+import { createHash } from "crypto";
 import type { KeyManager } from "../src/parley/marque-key-manager";
 import type { IngestedDocument, IngestedControl, DocumentSource, DocumentMetadata } from "../src/ingestion/types";
-import { inferToolAssuranceLevel } from "../src/ingestion/assurance-calculator";
 import { signDocument } from "../src/sign/sign-core";
 
 export interface IssueRouterDeps {
   keyManager: KeyManager;
   domain: string;
+  db?: IssueIdempotencyDb;
 }
 
 function jsonError(status: number, message: string): Response {
@@ -93,16 +90,34 @@ export interface IssueRequest {
 export interface IssueResponse {
   cpoe: string;
   marqueId: string;
-  assurance: {
-    declared: number;
-    verified: boolean;
-    method: string;
-  };
   provenance: {
     source: string;
     sourceIdentity?: string;
   };
   expiresAt: string;
+}
+
+type IssueIdempotencyDb = (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown[]>;
+
+const idempotencyCache = new Map<string, { response: IssueResponse; expiresAt: number }>();
+
+function cleanIdempotencyCache(): void {
+  const now = Date.now();
+  for (const [key, entry] of idempotencyCache) {
+    if (entry.expiresAt < now) {
+      idempotencyCache.delete(key);
+    }
+  }
+}
+
+setInterval(cleanIdempotencyCache, 5 * 60 * 1000);
+
+function hashString(input: string): string {
+  return createHash("sha256").update(input).digest("hex");
+}
+
+function computeRequestHash(body: IssueRequest): string {
+  return hashString(JSON.stringify(body));
 }
 
 /**
@@ -111,7 +126,7 @@ export interface IssueResponse {
 export function createIssueRouter(
   deps: IssueRouterDeps,
 ): (req: Request) => Promise<Response> {
-  const { keyManager, domain } = deps;
+  const { keyManager, domain, db } = deps;
 
   return async (req: Request): Promise<Response> => {
     if (req.method !== "POST") {
@@ -130,6 +145,52 @@ export function createIssueRouter(
     const validation = validateIssueRequest(body);
     if (validation) {
       return jsonError(400, validation);
+    }
+
+    // Idempotency handling
+    const idempotencyKey = req.headers.get("x-idempotency-key");
+    const requestHash = idempotencyKey ? computeRequestHash(body) : null;
+    if (idempotencyKey && db) {
+      try {
+        const inserted = await db`
+          INSERT INTO idempotency_keys (key, route, request_hash, expires_at)
+          VALUES (${idempotencyKey}, ${"/issue"}, ${requestHash}, NOW() + INTERVAL '1 hour')
+          ON CONFLICT (key) DO NOTHING
+          RETURNING key
+        `;
+
+        if ((inserted as Array<{ key: string }>).length === 0) {
+          const rows = await db`
+            SELECT request_hash, status, response, expires_at
+            FROM idempotency_keys
+            WHERE key = ${idempotencyKey}
+          `;
+          const existing = (rows as Array<{ request_hash: string; status: number | null; response: unknown | null; expires_at: string }>)[0];
+          if (existing) {
+            if (existing.request_hash !== requestHash) {
+              return jsonError(409, "Idempotency key reuse with different payload");
+            }
+            if (existing.response) {
+              const cached = typeof existing.response === "string"
+                ? JSON.parse(existing.response)
+                : existing.response;
+              return jsonOk(cached, existing.status || 200);
+            }
+            return jsonError(202, "Request in progress. Retry shortly.");
+          }
+        }
+      } catch {
+        // Fail open: fall back to in-memory cache
+        const cached = idempotencyCache.get(idempotencyKey);
+        if (cached && cached.expiresAt > Date.now()) {
+          return jsonOk(cached.response);
+        }
+      }
+    } else if (idempotencyKey) {
+      const cached = idempotencyCache.get(idempotencyKey);
+      if (cached && cached.expiresAt > Date.now()) {
+        return jsonOk(cached.response);
+      }
     }
 
     try {
@@ -161,7 +222,6 @@ export function createIssueRouter(
         source: body.source,
         metadata,
         controls,
-        toolAssuranceLevel: inferToolAssuranceLevel(body.source, controls),
       };
 
       const did = body.did || `did:web:${domain}`;
@@ -180,17 +240,11 @@ export function createIssueRouter(
       const payload = decodeJwt(output.jwt) as Record<string, unknown>;
       const vc = payload.vc as Record<string, unknown>;
       const cs = vc?.credentialSubject as Record<string, unknown>;
-      const assurance = cs?.assurance as { declared: number; verified: boolean; method: string };
       const provenance = cs?.provenance as { source: string; sourceIdentity?: string };
 
       const response: IssueResponse = {
         cpoe: output.jwt,
         marqueId: output.marqueId,
-        assurance: {
-          declared: assurance?.declared ?? 0,
-          verified: assurance?.verified ?? false,
-          method: assurance?.method ?? "self-assessed",
-        },
         provenance: {
           source: provenance?.source ?? "self",
           sourceIdentity: provenance?.sourceIdentity,
@@ -198,8 +252,38 @@ export function createIssueRouter(
         expiresAt: vc?.validUntil as string || new Date(Date.now() + 90 * 86400000).toISOString(),
       };
 
+      if (idempotencyKey && db && requestHash) {
+        try {
+          await db`
+            UPDATE idempotency_keys
+            SET status = ${201}, response = ${JSON.stringify(response)}
+            WHERE key = ${idempotencyKey} AND request_hash = ${requestHash}
+          `;
+        } catch {
+          idempotencyCache.set(idempotencyKey, {
+            response,
+            expiresAt: Date.now() + 60 * 60 * 1000,
+          });
+        }
+      } else if (idempotencyKey) {
+        idempotencyCache.set(idempotencyKey, {
+          response,
+          expiresAt: Date.now() + 60 * 60 * 1000,
+        });
+      }
+
       return jsonOk(response, 201);
     } catch (err) {
+      if (idempotencyKey && db && requestHash) {
+        const errorPayload = { error: "CPOE issuance failed" };
+        try {
+          await db`
+            UPDATE idempotency_keys
+            SET status = ${500}, response = ${JSON.stringify(errorPayload)}
+            WHERE key = ${idempotencyKey} AND request_hash = ${requestHash}
+          `;
+        } catch { /* ignore */ }
+      }
       console.error("CPOE issuance failed:", err instanceof Error ? err.message : err);
       return jsonError(500, "CPOE issuance failed");
     }

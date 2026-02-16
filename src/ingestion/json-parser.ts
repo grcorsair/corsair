@@ -11,7 +11,7 @@
  *
  * This is the evidence-agnostic ingestion entry point: any tool, scanner,
  * or agent that outputs JSON can feed into the full Corsair pipeline
- * (assurance classification, framework mapping, governance, signing).
+ * (framework mapping, governance, signing).
  */
 
 import { createHash } from "crypto";
@@ -465,7 +465,6 @@ function parseProwler(
       rawTextHash: rawHash,
     },
     controls,
-    toolAssuranceLevel: 1, // L1: config scanner — machine-observed state
   };
 }
 
@@ -537,11 +536,10 @@ function parseGitLab(
         ? report.scan.end_time.split("T")[0]
         : new Date().toISOString().split("T")[0],
       scope: `GitLab ${scanType} scan`,
-      reportType: `GitLab ${scanType}`,
+      reportType: "GitLab Security Report",
       rawTextHash: rawHash,
     },
     controls,
-    toolAssuranceLevel: 1, // L1: automated scanner — machine-observed state
   };
 }
 
@@ -624,7 +622,6 @@ function parseSecurityHub(
       rawTextHash: rawHash,
     },
     controls,
-    toolAssuranceLevel: 1, // L1: config scanner — machine-observed state
   };
 }
 
@@ -671,7 +668,6 @@ function parseInSpec(
       rawTextHash: rawHash,
     },
     controls,
-    toolAssuranceLevel: 1, // L1: compliance-as-code — machine-observed state
   };
 }
 
@@ -780,7 +776,6 @@ function parseTrivy(
       rawTextHash: rawHash,
     },
     controls,
-    toolAssuranceLevel: 1, // L1: vulnerability scanner — machine-observed state
   };
 }
 
@@ -819,11 +814,6 @@ function parseCISOAssistant(
     };
   });
 
-  // L2 if any assessment has linked evidence artifacts or applied controls (structural check)
-  const hasLinkedEvidence = assessments.some(
-    (a) => (a.evidences && a.evidences.length > 0) || (a.applied_controls && a.applied_controls.length > 0),
-  );
-
   return {
     source: sourceOverride || "ciso-assistant",
     metadata: {
@@ -835,7 +825,6 @@ function parseCISOAssistant(
       rawTextHash: rawHash,
     },
     controls,
-    toolAssuranceLevel: hasLinkedEvidence ? 2 : 1, // L2: assessed with evidence artifacts, L1: configured
   };
 }
 
@@ -950,7 +939,6 @@ function parseGeneric(
     source: sourceOverride || "json",
     metadata,
     controls,
-    toolAssuranceLevel: 0, // L0: generic/unknown source — self-assessed
     assessmentContext: input.assessmentContext,
   };
 }

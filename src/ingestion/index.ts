@@ -2,17 +2,16 @@
  * Ingestion Module — Evidence → CPOE Pipeline
  *
  * Barrel exports for the ingestion layer.
- * Core: types (canonical format), assurance-calculator (provenance + freshness),
+ * Core: types (canonical format), provenance utils (provenance + freshness),
  * mapper (IngestedDocument → MarqueGeneratorInput), json-parser (tool adapters).
  *
  * PDF-specific code was DELETED on Feb 12, 2026.
  * Enrichment code (per-control classification, dimensions, anti-gaming) was
- * SHELVED on Feb 13, 2026 — tool adapters now declare assurance levels.
+ * SHELVED on Feb 13, 2026.
  */
 
 export type {
   DocumentSource,
-  AssuranceLevel,
   IngestedDocument,
   DocumentMetadata,
   IngestedControl,
@@ -33,5 +32,5 @@ export {
   assessFreshness,
   deriveEvidenceTypes,
   deriveEvidenceTypeDistribution,
-} from "./assurance-calculator";
-export type { FreshnessAssessment } from "./assurance-calculator";
+} from "./provenance-utils";
+export type { FreshnessAssessment } from "./provenance-utils";

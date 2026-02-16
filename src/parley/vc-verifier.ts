@@ -9,8 +9,7 @@
 
 import { jwtVerify, importSPKI, decodeJwt, decodeProtectedHeader } from "jose";
 import type { MarqueVerificationResult } from "./marque-verifier";
-import { VC_CONTEXT, ASSURANCE_NAMES } from "./vc-types";
-import type { AssuranceLevel } from "./vc-types";
+import { VC_CONTEXT } from "./vc-types";
 
 /**
  * Verify a JWT-VC against trusted public keys.
@@ -88,17 +87,11 @@ export async function verifyVCJWT(
 
       // Extract CPOE-specific fields from verified payload
       const cs = verifiedVc.credentialSubject as Record<string, unknown>;
-      const assurance = cs?.assurance as { declared?: number } | undefined;
-
       return {
         valid: true,
         signedBy,
         generatedAt,
         expiresAt,
-        assuranceLevel: assurance?.declared,
-        assuranceName: assurance?.declared !== undefined
-          ? ASSURANCE_NAMES[assurance.declared as AssuranceLevel]
-          : undefined,
         provenance: cs?.provenance as MarqueVerificationResult["provenance"],
         scope: typeof cs?.scope === "string" ? cs.scope : undefined,
         summary: cs?.summary as MarqueVerificationResult["summary"],
@@ -223,17 +216,11 @@ export async function verifyVCJWTViaDID(
 
     // Extract CPOE fields
     const cs = vc.credentialSubject as Record<string, unknown>;
-    const assurance = cs?.assurance as { declared?: number } | undefined;
-
     return {
       valid: true,
       signedBy,
       generatedAt,
       expiresAt,
-      assuranceLevel: assurance?.declared,
-      assuranceName: assurance?.declared !== undefined
-        ? ASSURANCE_NAMES[assurance.declared as AssuranceLevel]
-        : undefined,
       provenance: cs?.provenance as MarqueVerificationResult["provenance"],
       scope: typeof cs?.scope === "string" ? cs.scope : undefined,
       summary: cs?.summary as MarqueVerificationResult["summary"],

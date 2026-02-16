@@ -148,14 +148,14 @@ describe("generateReceipt", () => {
 
   test("should include code version when provided", () => {
     const receipt = generateReceipt({
-      step: "classify",
+      step: "summarize",
       inputData: "in",
       outputData: "out",
       reproducible: true,
-      codeVersion: "assurance-calculator@2026-02-09",
+      codeVersion: "ingestion-summary@2026-02-16",
     }, keypair.privateKeyPem);
 
-    expect(receipt.predicate.builder.version).toBe("assurance-calculator@2026-02-09");
+    expect(receipt.predicate.builder.version).toBe("ingestion-summary@2026-02-16");
   });
 
   test("should include code digest when provided", () => {
@@ -708,13 +708,13 @@ describe("full pipeline simulation", () => {
       },
     });
 
-    // Step 2: CLASSIFY (deterministic)
+    // Step 2: SUMMARIZE (deterministic)
     await chain.captureStep({
-      step: "classify",
+      step: "summarize",
       inputData: { controls: [{ id: "CC1.1" }, { id: "CC1.2" }] },
-      outputData: { levels: { "CC1.1": 1, "CC1.2": 1 } },
+      outputData: { summary: { controlsTested: 2 } },
       reproducible: true,
-      codeVersion: "assurance-calculator@2026-02-09",
+      codeVersion: "ingestion-summary@2026-02-16",
     });
 
     // Step 3: CHART (deterministic)

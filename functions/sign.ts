@@ -9,6 +9,7 @@
  * Follows the same router factory pattern as functions/verify.ts.
  */
 
+import { createHash } from "crypto";
 import type { KeyManager } from "../src/parley/marque-key-manager";
 import type { EvidenceFormat, SignOutput } from "../src/sign/sign-core";
 
@@ -19,6 +20,7 @@ import type { EvidenceFormat, SignOutput } from "../src/sign/sign-core";
 export interface SignRouterDeps {
   keyManager: KeyManager;
   domain: string;
+  db?: SignIdempotencyDb;
 }
 
 export interface SignRequest {
@@ -49,11 +51,14 @@ export interface SignResponse {
   provenance: SignOutput["provenance"];
   warnings: string[];
   expiresAt?: string;
+  demo?: boolean;
 }
 
 // =============================================================================
 // HELPERS
 // =============================================================================
+
+type SignIdempotencyDb = (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown[]>;
 
 function jsonError(status: number, message: string): Response {
   return Response.json(
@@ -96,6 +101,25 @@ function cleanIdempotencyCache(): void {
 // Clean every 5 minutes
 setInterval(cleanIdempotencyCache, 5 * 60 * 1000);
 
+function hashString(input: string): string {
+  return createHash("sha256").update(input).digest("hex");
+}
+
+function computeIdempotencyHash(
+  evidenceHash: string,
+  body: SignRequest,
+): string {
+  const payload = {
+    evidenceHash,
+    format: body.format || null,
+    did: body.did || null,
+    scope: body.scope || null,
+    expiryDays: body.expiryDays || null,
+    dryRun: body.dryRun === true,
+  };
+  return hashString(JSON.stringify(payload));
+}
+
 // =============================================================================
 // ROUTER
 // =============================================================================
@@ -109,7 +133,7 @@ setInterval(cleanIdempotencyCache, 5 * 60 * 1000);
 export function createSignRouter(
   deps: SignRouterDeps,
 ): (req: Request) => Promise<Response> {
-  const { keyManager } = deps;
+  const { keyManager, db } = deps;
 
   return async (req: Request): Promise<Response> => {
     if (req.method !== "POST") {
@@ -128,9 +152,51 @@ export function createSignRouter(
       return jsonError(400, 'Missing required field: "evidence"');
     }
 
+    const evidenceStr = typeof body.evidence === "string"
+      ? body.evidence
+      : JSON.stringify(body.evidence);
+    const evidenceHash = hashString(evidenceStr);
+
     // Check idempotency
     const idempotencyKey = req.headers.get("x-idempotency-key");
-    if (idempotencyKey) {
+    const requestHash = idempotencyKey ? computeIdempotencyHash(evidenceHash, body) : null;
+    if (idempotencyKey && db) {
+      try {
+        const inserted = await db`
+          INSERT INTO idempotency_keys (key, route, request_hash, expires_at)
+          VALUES (${idempotencyKey}, ${"/sign"}, ${requestHash}, NOW() + INTERVAL '1 hour')
+          ON CONFLICT (key) DO NOTHING
+          RETURNING key
+        `;
+
+        if ((inserted as Array<{ key: string }>).length === 0) {
+          const rows = await db`
+            SELECT request_hash, status, response, expires_at
+            FROM idempotency_keys
+            WHERE key = ${idempotencyKey}
+          `;
+          const existing = (rows as Array<{ request_hash: string; status: number | null; response: unknown | null; expires_at: string }>)[0];
+          if (existing) {
+            if (existing.request_hash !== requestHash) {
+              return jsonError(409, "Idempotency key reuse with different payload");
+            }
+            if (existing.response) {
+              const cached = typeof existing.response === "string"
+                ? JSON.parse(existing.response)
+                : existing.response;
+              return jsonOk(cached, existing.status || 200);
+            }
+            return jsonError(202, "Request in progress. Retry shortly.");
+          }
+        }
+      } catch {
+        // Fail open: fall back to in-memory cache
+        const cached = idempotencyCache.get(idempotencyKey);
+        if (cached && cached.expiresAt > Date.now()) {
+          return jsonOk(cached.response);
+        }
+      }
+    } else if (idempotencyKey) {
       const cached = idempotencyCache.get(idempotencyKey);
       if (cached && cached.expiresAt > Date.now()) {
         return jsonOk(cached.response);
@@ -138,9 +204,6 @@ export function createSignRouter(
     }
 
     // Reject oversized evidence (500KB)
-    const evidenceStr = typeof body.evidence === "string"
-      ? body.evidence
-      : JSON.stringify(body.evidence);
     if (evidenceStr.length > 500_000) {
       return jsonError(400, "Evidence exceeds maximum size (500KB)");
     }
@@ -181,7 +244,21 @@ export function createSignRouter(
       };
 
       // Cache for idempotency (1 hour TTL)
-      if (idempotencyKey) {
+      if (idempotencyKey && db && requestHash) {
+        try {
+          await db`
+            UPDATE idempotency_keys
+            SET status = ${200}, response = ${JSON.stringify(response)}
+            WHERE key = ${idempotencyKey} AND request_hash = ${requestHash}
+          `;
+        } catch {
+          // Fall back to in-memory cache
+          idempotencyCache.set(idempotencyKey, {
+            response,
+            expiresAt: Date.now() + 60 * 60 * 1000,
+          });
+        }
+      } else if (idempotencyKey) {
         idempotencyCache.set(idempotencyKey, {
           response,
           expiresAt: Date.now() + 60 * 60 * 1000,
@@ -191,6 +268,16 @@ export function createSignRouter(
       return jsonOk(response, result.jwt ? 200 : 200);
     } catch (err) {
       const { SignError: SE } = await import("../src/sign/sign-core");
+      if (idempotencyKey && db && requestHash) {
+        const errorPayload = { error: err instanceof Error ? err.message : "Internal error" };
+        try {
+          await db`
+            UPDATE idempotency_keys
+            SET status = ${err instanceof SE ? 400 : 500}, response = ${JSON.stringify(errorPayload)}
+            WHERE key = ${idempotencyKey} AND request_hash = ${requestHash}
+          `;
+        } catch { /* ignore */ }
+      }
       if (err instanceof SE) {
         return jsonError(400, err.message);
       }

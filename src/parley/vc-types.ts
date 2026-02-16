@@ -64,13 +64,6 @@ export interface VCProof {
 }
 
 // =============================================================================
-// ASSURANCE & PROVENANCE TYPES
-// =============================================================================
-
-/** Assurance level — L0 (Documented) through L4 (Attested) */
-export type AssuranceLevel = 0 | 1 | 2 | 3 | 4;
-
-// =============================================================================
 // EVIDENCE TYPE HIERARCHY (ISO 19011 + SOC 2 + NIST 800-53A)
 // =============================================================================
 
@@ -87,42 +80,6 @@ export type EvidenceType =
   | "documented-record"       // Policies, procedures, reports
   | "interview"               // Personnel discussions
   | "self-attestation";       // Lowest: Self-reported
-
-/** Human-readable assurance level names */
-export const ASSURANCE_NAMES: Record<AssuranceLevel, string> = {
-  0: "Documented",
-  1: "Configured",
-  2: "Demonstrated",
-  3: "Observed",
-  4: "Attested",
-};
-
-/** Assurance metadata for a CPOE */
-export interface CPOEAssurance {
-  /** Declared assurance level (0-4). Set by tool class. */
-  declared: AssuranceLevel;
-
-  /** Has the declared level been verified against all controls? */
-  verified: boolean;
-
-  /** Method used to establish assurance */
-  method:
-    | "self-assessed"
-    | "automated-config-check"
-    | "ai-evidence-review"
-    | "continuous-observation"
-    | "third-party-attested";
-
-  /** Count of controls at each level: { "0": 2, "1": 18 } */
-  breakdown: Record<string, number>;
-
-  /** Controls explicitly excluded from scope */
-  excluded?: Array<{
-    controlId: string;
-    reason: string;
-    acceptedBy?: string;
-  }>;
-}
 
 /** Evidence provenance — who produced the underlying evidence */
 export interface CPOEProvenance {
@@ -152,9 +109,6 @@ export interface CPOECredentialSubject extends CredentialSubject {
 
   /** Assessment scope (human-readable description) */
   scope: string;
-
-  /** Assurance metadata — always present, declared by tool class */
-  assurance: CPOEAssurance;
 
   /** Evidence provenance (required — every CPOE must state its source) */
   provenance: CPOEProvenance;
@@ -194,13 +148,6 @@ export interface CPOECredentialSubject extends CredentialSubject {
     providersAnalyzed: string[];
     totalThreats: number;
     riskDistribution: Record<string, number>;
-  };
-
-  /** Optional Quartermaster AI attestation */
-  quartermasterAttestation?: {
-    confidenceScore: number;
-    trustTier: string;
-    dimensions: Array<{ dimension: string; score: number }>;
   };
 
   /** OCSP-style freshness staple — signed JWT proving compliance state is current */

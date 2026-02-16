@@ -9,7 +9,6 @@ interface FeedEntry {
   issuer: string;
   scope: string;
   provenance?: { source: string; sourceIdentity?: string };
-  assuranceLevel?: number;
   summary?: { overallScore: number; controlsTested: number };
 }
 

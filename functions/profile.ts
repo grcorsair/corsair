@@ -34,7 +34,6 @@ export interface IssuerProfile {
     marqueId: string;
     scope: string;
     provenance?: SCITTProvenance;
-    assuranceLevel?: number;
     overallScore?: number;
     issuedAt: string;
     expiresAt?: string;

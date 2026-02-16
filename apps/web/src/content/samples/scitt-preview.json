@@ -8,7 +8,6 @@
       "source": "tool",
       "sourceIdentity": "Prowler"
     },
-    "assuranceLevel": 1,
     "summary": {
       "controlsTested": 15,
       "controlsPassed": 10,
@@ -25,7 +24,6 @@
       "source": "tool",
       "sourceIdentity": "InSpec"
     },
-    "assuranceLevel": 1,
     "summary": {
       "controlsTested": 10,
       "controlsPassed": 7,
@@ -42,7 +40,6 @@
       "source": "tool",
       "sourceIdentity": "Trivy"
     },
-    "assuranceLevel": 1,
     "summary": {
       "controlsTested": 12,
       "controlsPassed": 3,

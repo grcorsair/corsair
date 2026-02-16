@@ -13,8 +13,7 @@
  * Corsair attests org key -> org key signs CPOE.
  *
  * Attestation is a JWT (typ: "attestation+jwt") signed by root key that
- * authorizes an org key within a defined scope (frameworks, max assurance,
- * validity period).
+ * authorizes an org key within a defined scope (frameworks, validity period).
  */
 
 import * as crypto from "crypto";
@@ -29,9 +28,6 @@ import type { KeyManager } from "./marque-key-manager";
 export interface AttestationScope {
   /** Frameworks this key is authorized to sign for (empty/undefined = all) */
   frameworks?: string[];
-
-  /** Maximum assurance level this key can declare (0-4, default 4) */
-  maxAssurance?: number;
 
   /** ISO 8601 timestamp when attestation becomes valid */
   validFrom: string;
@@ -90,7 +86,6 @@ export interface KeyAttestation {
   /** Scope constraints */
   scope: {
     frameworks?: string[];
-    maxAssurance: number;
     validFrom: string;
     validUntil: string;
   };
@@ -178,7 +173,6 @@ export async function attestOrgKey(
 
   // Build scope payload (omit frameworks if not set)
   const scopePayload: Record<string, unknown> = {
-    maxAssurance: scope.maxAssurance ?? 4,
     validFrom: scope.validFrom,
     validUntil: scope.validUntil,
   };
@@ -269,7 +263,6 @@ export async function verifyKeyAttestation(
 
   const scope: AttestationScope = {
     frameworks: scopeRaw.frameworks as string[] | undefined,
-    maxAssurance: scopeRaw.maxAssurance as number | undefined,
     validFrom: scopeRaw.validFrom as string,
     validUntil: scopeRaw.validUntil as string,
   };
@@ -294,7 +287,7 @@ export async function verifyKeyAttestation(
  * 1. Verify attestation signature against root public key
  * 2. Verify CPOE signature against org public key
  * 3. Verify org key fingerprint matches attestation
- * 4. Verify scope constraints (maxAssurance, frameworks)
+ * 4. Verify scope constraints (frameworks)
  *
  * @param cpoe - The CPOE JWT string
  * @param attestation - The attestation JWT string
@@ -348,22 +341,7 @@ export async function verifyChain(
   // Step 4: Verify scope constraints
   const vc = cpoePayload.vc as Record<string, unknown> | undefined;
   const cs = vc?.credentialSubject as Record<string, unknown> | undefined;
-  const assurance = cs?.assurance as Record<string, unknown> | undefined;
-
-  if (assurance && attResult.scope) {
-    const declaredLevel = assurance.declared as number | undefined;
-    const maxAssurance = attResult.scope.maxAssurance ?? 4;
-
-    if (declaredLevel !== undefined && declaredLevel > maxAssurance) {
-      return {
-        valid: false,
-        chain: ["root", "attestation"],
-        trustLevel: "invalid",
-        reason: `CPOE assurance level ${declaredLevel} exceeds attestation maxAssurance ${maxAssurance}`,
-      };
-    }
-
-    // Framework scope check
+  if (attResult.scope) {
     const attFrameworks = attResult.scope.frameworks;
     if (attFrameworks && attFrameworks.length > 0) {
       const cpoeFrameworks = cs?.frameworks as Record<string, unknown> | undefined;

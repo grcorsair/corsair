@@ -199,7 +199,7 @@ describe("VC Generator - JWT-VC Generation", () => {
     expect(["2.0", "2.1"]).toContain(payload.parley);
   });
 
-  test("JWT vc.credentialSubject contains CPOE data with tool-level assurance", async () => {
+  test("JWT vc.credentialSubject contains core CPOE data", async () => {
     const { keyManager, input } = await setup();
     const jwt = await generateVCJWT(input, keyManager);
 
@@ -211,8 +211,6 @@ describe("VC Generator - JWT-VC Generation", () => {
     expect(subject.scope).toBeDefined();
     expect(subject.summary).toBeDefined();
     expect(subject.provenance).toBeDefined();
-    // Tool-level assurance is always present
-    expect(subject.assurance).toBeDefined();
     // frameworks and evidenceChain are optional in CPOECredentialSubject
     // but should be present when chartResults and evidencePaths are provided
     expect(subject.frameworks).toBeDefined();
@@ -277,8 +275,6 @@ describe("VC Generator - JWT-VC Generation", () => {
     const vc = payload.vc as Record<string, unknown>;
     const subject = vc.credentialSubject as Record<string, unknown>;
 
-    // Tool-level assurance is always present
-    expect(subject.assurance).toBeDefined();
     // Shelved enrichment fields should not be present
     expect(subject.dimensions).toBeUndefined();
     expect(subject.evidenceTypes).toBeUndefined();
@@ -307,7 +303,6 @@ describe("VC Generator - JWT-VC Generation", () => {
       controls: [
         { id: "CC6.1", description: "Logical access", status: "effective", evidence: "Tested" },
       ],
-      toolAssuranceLevel: 0,
     };
 
     const jwt = await generateVCJWT(input, keyManager);

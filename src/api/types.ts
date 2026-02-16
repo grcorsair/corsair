@@ -60,10 +60,6 @@ export interface V1VerifyResponse {
     sourceIdentity?: string;
     sourceDate?: string;
   } | null;
-  assurance: {
-    level: number;
-    name: string | null;
-  } | null;
   timestamps: {
     issuedAt: string | null;
     expiresAt: string | null;

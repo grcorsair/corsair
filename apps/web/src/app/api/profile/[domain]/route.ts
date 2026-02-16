@@ -9,7 +9,6 @@ interface DemoEntry {
   issuer: string;
   scope: string;
   provenance: { source: string; sourceIdentity?: string };
-  assuranceLevel?: number;
   summary?: {
     controlsTested: number;
     controlsPassed: number;
@@ -56,7 +55,6 @@ function buildDemoProfile(domain: string) {
       marqueId: latest.entryId.replace("scitt-", ""),
       scope: latest.scope,
       provenance: latest.provenance,
-      assuranceLevel: latest.assuranceLevel,
       overallScore: latest.summary?.overallScore ?? 0,
       issuedAt: latest.registrationTime,
       expiresAt: new Date(

@@ -177,9 +177,6 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
       scope: result.scope || null,
       summary: result.summary || null,
       provenance: result.provenance || null,
-      assurance: result.assuranceLevel !== undefined
-        ? { level: result.assuranceLevel, name: result.assuranceName || null }
-        : null,
       timestamps: {
         issuedAt: result.generatedAt || null,
         expiresAt: result.expiresAt || null,

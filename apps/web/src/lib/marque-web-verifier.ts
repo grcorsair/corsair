@@ -19,10 +19,6 @@ export interface MarqueVerificationResult {
   format?: MarqueFormat;
   /** Issuer trust tier (how trustworthy is the signer) */
   issuerTier?: IssuerTier;
-  /** Assurance level (0-4) */
-  assuranceLevel?: number;
-  /** Human-readable assurance name */
-  assuranceName?: string;
   /** Evidence provenance */
   provenance?: {
     source: "self" | "tool" | "auditor";
@@ -37,18 +33,6 @@ export interface MarqueVerificationResult {
     controlsPassed: number;
     controlsFailed: number;
     overallScore: number;
-  };
-  /** Full assurance breakdown */
-  assurance?: {
-    declared: number;
-    verified: boolean;
-    method: string;
-    breakdown: Record<string, number>;
-    excluded?: Array<{
-      controlId: string;
-      reason: string;
-      acceptedBy?: string;
-    }>;
   };
   /** Legacy document format (JSON envelope) */
   document?: {
@@ -73,11 +57,6 @@ export interface MarqueVerificationResult {
       recordCount: number;
       algorithm: string;
     };
-    quartermasterAttestation?: {
-      confidenceScore: number;
-      trustTier: string;
-      dimensions: Record<string, number>;
-    };
     findings?: Array<{
       criterion: string;
       status: "SATISFIED" | "FAILED";
@@ -93,16 +72,6 @@ export interface MarqueVerificationResult {
     generatedAt?: string;
     expiresAt?: string;
   };
-  /** 7-dimension assurance scores (FAIR-CAM + GRADE + COSO) */
-  dimensions?: {
-    capability: number;
-    coverage: number;
-    reliability: number;
-    methodology: number;
-    freshness: number;
-    independence: number;
-    consistency: number;
-  };
   /** Evidence types present (ISO 19011 hierarchy) */
   evidenceTypes?: string[];
   /** Observation period (COSO Design vs Operating) */
@@ -114,14 +83,6 @@ export interface MarqueVerificationResult {
     cosoClassification: string;
     soc2Equivalent: string;
   };
-  /** CRQ risk quantification data */
-  riskQuantification?: {
-    betaPert: { shapeParameter: number; confidenceWidth: string };
-    fairMapping: { resistanceStrength: string; controlEffectiveness: number; controlFunction: string };
-    provenanceModifier: number;
-    freshnessDecay: number;
-    dimensionConfidence: number;
-  };
   /** Per-framework compliance results */
   frameworks?: Record<string, {
     controlsMapped: number;
@@ -129,35 +90,6 @@ export interface MarqueVerificationResult {
     failed: number;
     controls: Array<{ controlId: string; status: string }>;
   }>;
-  /** Rule trace for deterministic calculation audit */
-  ruleTrace?: string[];
-  /** Calculation version (e.g., "l0-l4@2026-02-09") */
-  calculationVersion?: string;
-  /** Per-control classification with level, methodology, trace */
-  controlClassifications?: Array<{
-    controlId: string;
-    level: number;
-    methodology: string;
-    trace: string;
-    boilerplateFlags?: string[];
-  }>;
-  /** NIST 800-53A assessment depth */
-  assessmentDepth?: {
-    methods: string[];
-    depth: string;
-    rigorScore: number;
-  };
-  /** Provenance quality score (0-100) */
-  provenanceQuality?: number;
-  /** DORA evidence quality metrics */
-  doraMetrics?: {
-    freshness: number;
-    specificity: number;
-    independence: number;
-    reproducibility: number;
-    band: string;
-    pairingFlags?: string[];
-  };
   /** Process provenance chain (in-toto/SLSA format) */
   processProvenance?: {
     chainDigest: string;
@@ -189,7 +121,7 @@ export function decodeJWTPayload(jwt: string): Record<string, unknown> | null {
 
 /**
  * Merge API verify response with client-side decoded JWT payload.
- * API provides: verified, issuerTier. Decoded payload provides: rich L0-L4 fields.
+ * API provides: verified, issuerTier. Decoded payload provides: provenance + summary fields.
  */
 export function mergeAPIResultWithDecoded(
   apiData: APIVerifyResponse,
@@ -206,25 +138,14 @@ export function mergeAPIResultWithDecoded(
       : apiData.reason || "Verification failed",
     format: "jwt",
     issuerTier: apiData.issuerTier || cpoeFields.issuerTier,
-    assuranceLevel: apiData.assurance?.level ?? cpoeFields.assuranceLevel,
-    assuranceName: apiData.assurance?.name ?? cpoeFields.assuranceName,
-    assurance: cpoeFields.assurance,
     provenance: apiData.provenance
       ? { ...apiData.provenance, source: apiData.provenance.source as "self" | "tool" | "auditor" }
       : cpoeFields.provenance,
     scope: apiData.scope ?? cpoeFields.scope,
     summary: apiData.summary ?? cpoeFields.summary,
-    dimensions: cpoeFields.dimensions,
     evidenceTypes: cpoeFields.evidenceTypes,
     observationPeriod: cpoeFields.observationPeriod,
-    riskQuantification: cpoeFields.riskQuantification,
     frameworks: cpoeFields.frameworks,
-    ruleTrace: cpoeFields.ruleTrace,
-    calculationVersion: cpoeFields.calculationVersion,
-    controlClassifications: cpoeFields.controlClassifications,
-    assessmentDepth: cpoeFields.assessmentDepth,
-    provenanceQuality: cpoeFields.provenanceQuality,
-    doraMetrics: cpoeFields.doraMetrics,
     processProvenance: apiData.processProvenance ?? cpoeFields.processProvenance ?? undefined,
     vcMetadata: vcMetadata ? {
       ...vcMetadata,
@@ -433,7 +354,6 @@ function mapVCToDocument(payload: {
   const scope = (subject.scope ?? {}) as Record<string, unknown>;
   const summary = (subject.summary ?? {}) as Record<string, unknown>;
   const evidence = (subject.evidenceChain ?? {}) as Record<string, unknown>;
-  const qm = subject.quartermasterAttestation as Record<string, unknown> | undefined;
 
   const issuerName = typeof vc.issuer === "string"
     ? vc.issuer
@@ -464,28 +384,8 @@ function mapVCToDocument(payload: {
       recordCount: (evidence.recordCount as number) ?? 0,
       algorithm: "SHA-256",
     },
-    quartermasterAttestation: qm
-      ? {
-          confidenceScore: (qm.confidenceScore as number) ?? 0,
-          trustTier: (qm.trustTier as string) ?? "unknown",
-          dimensions: Object.fromEntries(
-            ((qm.dimensions as Array<{ dimension: string; score: number }>) ?? []).map(
-              (d) => [d.dimension, d.score]
-            )
-          ),
-        }
-      : undefined,
   };
 }
-
-/** Human-readable assurance level names */
-const ASSURANCE_NAMES: Record<number, string> = {
-  0: "Documented",
-  1: "Configured",
-  2: "Demonstrated",
-  3: "Observed",
-  4: "Attested",
-};
 
 /**
  * Determine issuer trust tier from payload.
@@ -499,7 +399,7 @@ function determineIssuerTier(payload: { iss?: string }): IssuerTier {
 }
 
 /**
- * Extract CPOE-specific fields (assurance, provenance, scope, summary, issuer tier).
+ * Extract CPOE-specific fields (provenance, scope, summary, issuer tier).
  */
 function extractCPOEFields(payload: {
   iss?: string;
@@ -515,14 +415,6 @@ function extractCPOEFields(payload: {
   const cs = payload.vc?.credentialSubject;
   if (!cs) return {};
 
-  const assuranceData = cs.assurance as {
-    declared?: number;
-    verified?: boolean;
-    method?: string;
-    breakdown?: Record<string, number>;
-    excluded?: Array<{ controlId: string; reason: string; acceptedBy?: string }>;
-  } | undefined;
-
   const provenanceData = cs.provenance as {
     source?: "self" | "tool" | "auditor";
     sourceIdentity?: string;
@@ -536,12 +428,6 @@ function extractCPOEFields(payload: {
     overallScore?: number;
   } | undefined;
 
-  // Extract new framework-grounded fields
-  const dimensionsData = cs.dimensions as {
-    capability: number; coverage: number; reliability: number;
-    methodology: number; freshness: number; independence: number; consistency: number;
-  } | undefined;
-
   const evidenceTypesData = cs.evidenceTypes as string[] | undefined;
 
   const observationPeriodData = cs.observationPeriod as {
@@ -549,25 +435,8 @@ function extractCPOEFields(payload: {
     sufficient: boolean; cosoClassification: string; soc2Equivalent: string;
   } | undefined;
 
-  const riskQuantificationData = cs.riskQuantification as {
-    betaPert: { shapeParameter: number; confidenceWidth: string };
-    fairMapping: { resistanceStrength: string; controlEffectiveness: number; controlFunction: string };
-    provenanceModifier: number; freshnessDecay: number; dimensionConfidence: number;
-  } | undefined;
-
   return {
     issuerTier: determineIssuerTier(payload),
-    assuranceLevel: assuranceData?.declared,
-    assuranceName: assuranceData?.declared !== undefined
-      ? ASSURANCE_NAMES[assuranceData.declared] ?? `L${assuranceData.declared}`
-      : undefined,
-    assurance: assuranceData ? {
-      declared: assuranceData.declared ?? 0,
-      verified: assuranceData.verified ?? false,
-      method: assuranceData.method ?? "self-assessed",
-      breakdown: assuranceData.breakdown ?? {},
-      excluded: assuranceData.excluded,
-    } : undefined,
     provenance: provenanceData ? {
       source: provenanceData.source ?? "self",
       sourceIdentity: provenanceData.sourceIdentity,
@@ -580,17 +449,9 @@ function extractCPOEFields(payload: {
       controlsFailed: summaryData.controlsFailed ?? 0,
       overallScore: summaryData.overallScore ?? 0,
     } : undefined,
-    dimensions: dimensionsData,
     evidenceTypes: evidenceTypesData,
     observationPeriod: observationPeriodData,
-    riskQuantification: riskQuantificationData,
     frameworks: cs.frameworks as MarqueVerificationResult["frameworks"],
-    ruleTrace: (cs.assurance as Record<string, unknown>)?.ruleTrace as string[] | undefined,
-    calculationVersion: (cs.assurance as Record<string, unknown>)?.calculationVersion as string | undefined,
-    controlClassifications: cs.controlClassifications as MarqueVerificationResult["controlClassifications"],
-    assessmentDepth: cs.assessmentDepth as MarqueVerificationResult["assessmentDepth"],
-    provenanceQuality: typeof cs.provenanceQuality === "number" ? cs.provenanceQuality : undefined,
-    doraMetrics: cs.doraMetrics as MarqueVerificationResult["doraMetrics"],
     processProvenance: cs.processProvenance as MarqueVerificationResult["processProvenance"],
   };
 }

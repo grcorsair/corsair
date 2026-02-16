@@ -11,15 +11,14 @@ FLAGSHIP is Corsair's real-time compliance notification system, implementing **O
 
 The pirate name: FLAGSHIP is the command ship that signals fleet-wide status changes. When the flagship raises new colors, the fleet responds.
 
-When a CPOE's compliance status changes — drift detected, trust tier upgraded, credential revoked — FLAGSHIP delivers a standardized event to all subscribers in real time.
+When a CPOE's compliance status changes — drift detected or credential revoked — FLAGSHIP delivers a standardized event to all subscribers in real time.
 
 ## CAEP Event Types
 
-FLAGSHIP maps four Corsair concepts to CAEP-compliant event URIs:
+FLAGSHIP maps three Corsair concepts to CAEP-compliant event URIs:
 
 | Pirate Name | CAEP Mapping | Event URI | When It Fires |
 |---|---|---|---|
-| COLORS_CHANGED | assurance-level-change | `grcorsair.com/events/assurance-level-change/v1` | Trust tier transition (e.g., self-assessed to ai-verified) |
 | FLEET_ALERT | compliance-change | `grcorsair.com/events/compliance-change/v1` | Continuous monitoring detects compliance drift |
 | PAPERS_CHANGED | credential-change | `grcorsair.com/events/credential-change/v1` | CPOE issued, renewed, revoked, or expired |
 | MARQUE_REVOKED | session-revoked | `grcorsair.com/events/session-revoked/v1` | Emergency CPOE revocation |
@@ -56,18 +55,6 @@ Events are encoded as Security Event Tokens (SET) — signed JWTs per RFC 8417. 
 The `events` object is keyed by the CAEP event URI. The value contains the subject (who/what the event is about) and event-specific data.
 
 ## Event Details
-
-### COLORS_CHANGED (Assurance Level Change)
-
-Fired when a CPOE's trust tier changes. Trust tiers are: self-assessed (below 70), ai-verified (70-89), and auditor-verified (90+).
-
-```json
-{
-  "previous_level": "self-assessed",
-  "current_level": "ai-verified",
-  "change_direction": "increase"
-}
-```
 
 ### FLEET_ALERT (Compliance Change)
 

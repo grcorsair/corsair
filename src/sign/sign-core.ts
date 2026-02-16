@@ -10,7 +10,7 @@
 import { readFileSync } from "fs";
 import type { IngestedDocument } from "../ingestion/types";
 import type { KeyManager } from "../parley/marque-key-manager";
-import { deriveProvenance } from "../ingestion/assurance-calculator";
+import { deriveProvenance } from "../ingestion/provenance-utils";
 import { computeSummaryFromControls, computeSeverityDistribution } from "../ingestion/summary";
 
 // =============================================================================
@@ -214,13 +214,13 @@ export async function signDocument(
     },
   });
 
-  // Receipt 1: CLASSIFY (deterministic)
+  // Receipt 1: SUMMARIZE (deterministic)
   await chain.captureStep({
-    step: "classify",
+    step: "summarize",
     inputData: { controlCount: doc.controls.length, source: doc.source },
-    outputData: { assurance: "calculated" },
+    outputData: { summary: "computed" },
     reproducible: true,
-    codeVersion: "assurance-calculator@2026-02-09",
+    codeVersion: "ingestion-summary@2026-02-16",
   });
 
   // Receipt 2: CHART (deterministic)
