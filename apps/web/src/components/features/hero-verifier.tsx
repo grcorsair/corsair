@@ -5,11 +5,6 @@ import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
 import { verifyViaAPI } from "@/lib/corsair-api";
-import {
-  SAMPLE_CPOE_JWT,
-  decodeJWTPayload,
-  mergeAPIResultWithDecoded,
-} from "@/lib/marque-web-verifier";
 import type { MarqueVerificationResult } from "@/lib/marque-web-verifier";
 
 type VerifierState = "idle" | "verifying" | "verified" | "failed";
@@ -26,6 +21,7 @@ export function HeroVerifier() {
     setResult(null);
     setErrorMsg("");
 
+    const { decodeJWTPayload, mergeAPIResultWithDecoded } = await import("@/lib/marque-web-verifier");
     const decoded = decodeJWTPayload(input.trim());
     const apiResult = await verifyViaAPI(input.trim());
 
@@ -59,7 +55,9 @@ export function HeroVerifier() {
 
   const handleVerify = () => verify(jwt);
 
-  const handleTrySample = () => {
+  const handleTrySample = async () => {
+    // Dynamic import to avoid btoa at module level during SSR
+    const { SAMPLE_CPOE_JWT } = await import("@/lib/marque-web-verifier");
     setJwt(SAMPLE_CPOE_JWT);
     verify(SAMPLE_CPOE_JWT);
   };
