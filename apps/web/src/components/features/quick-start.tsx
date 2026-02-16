@@ -4,41 +4,13 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CopyIcon, CheckIcon } from "lucide-react";
-
-const code = `# Install Bun (if you don't have it)
-curl -fsSL https://bun.sh/install | bash
-
-# Clone and install
-git clone https://github.com/Arudjreis/corsair.git
-cd corsair && bun install
-
-# Initialize a project (generates keys + example evidence)
-bun run corsair.ts init
-
-# Sign tool output into a CPOE (like git commit)
-# Keys are auto-generated on first use — no setup needed
-prowler scan --output-format json | bun run corsair.ts sign
-
-# Or sign a file directly
-bun run corsair.ts sign --file prowler-findings.json
-
-# Verify any CPOE (always free, no account needed)
-bun run corsair.ts verify --file prowler-findings.cpoe.jwt
-
-# Compare two CPOEs (like git diff)
-bun run corsair.ts diff --current new.jwt --previous old.jwt --verify
-
-# Query the SCITT transparency log (like git log)
-bun run corsair.ts log --last 10
-
-# View FLAGSHIP signal info (like git webhooks)
-bun run corsair.ts signal --help`;
+import { QUICK_START_SNIPPET } from "@/content/snippets";
 
 export function QuickStart() {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(code);
+    await navigator.clipboard.writeText(QUICK_START_SNIPPET);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -77,7 +49,7 @@ export function QuickStart() {
 
       <CardContent className="p-0">
         <pre className="overflow-x-auto p-5 font-mono text-[12px] leading-relaxed sm:text-[13px]">
-          {code.split("\n").map((line, i) => (
+          {QUICK_START_SNIPPET.split("\n").map((line, i) => (
             <div
               key={i}
               className={

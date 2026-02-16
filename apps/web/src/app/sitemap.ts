@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/anatomy`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${baseUrl}/docs`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     { url: `${baseUrl}/marque`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${baseUrl}/generate`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     { url: `${baseUrl}/community`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${baseUrl}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
 

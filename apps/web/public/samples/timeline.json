@@ -1,0 +1,58 @@
+[
+  {
+    "hash": "897e22",
+    "date": "2026-02-13",
+    "tool": "Prowler",
+    "scope": "AWS Production — Cloud Infrastructure Controls",
+    "score": 58,
+    "controls": {
+      "passed": 19,
+      "failed": 14,
+      "total": 33
+    },
+    "provenance": "tool",
+    "diff": {
+      "regressions": 2,
+      "improvements": 0,
+      "note": "2 regressions detected"
+    },
+    "signal": {
+      "type": "FLEET_ALERT",
+      "note": "Drift detected — review failed controls"
+    }
+  },
+  {
+    "hash": "09dc8b",
+    "date": "2026-02-13",
+    "tool": "InSpec",
+    "scope": "PCI DSS — Payment Infrastructure Hardening",
+    "score": 71,
+    "controls": {
+      "passed": 15,
+      "failed": 6,
+      "total": 21
+    },
+    "provenance": "tool",
+    "diff": {
+      "regressions": 0,
+      "improvements": 0,
+      "note": "No significant changes"
+    },
+    "signal": null
+  },
+  {
+    "hash": "48eabc",
+    "date": "2026-02-13",
+    "tool": "Acme Corp Security Team",
+    "scope": "Internal Security Assessment — Q1 2026",
+    "score": 68,
+    "controls": {
+      "passed": 13,
+      "failed": 6,
+      "total": 19
+    },
+    "provenance": "tool",
+    "diff": null,
+    "signal": null
+  }
+]

@@ -6,6 +6,7 @@ const productLinks = [
   { href: "/anatomy", label: "How It Works" },
   { href: "/docs", label: "Documentation" },
   { href: "/marque", label: "Verify CPOE" },
+  { href: "/generate", label: "Generate compliance.txt" },
   { href: "/blog", label: "Blog" },
   { href: "/faq", label: "FAQ" },
 ];

@@ -3,7 +3,7 @@
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { HeroTerminal } from "./hero-terminal";
+import { HeroProofSnippet } from "./hero-proof-snippet";
 
 export function HeroSection() {
   return (
@@ -36,10 +36,10 @@ export function HeroSection() {
                 Git for Compliance.
               </p>
               <p className="mt-1 text-lg font-medium text-corsair-gold sm:text-xl lg:text-2xl">
-                Sign. Verify. Diff. Log. Signal.
+                compliance.txt, 4-line verification, and compliance diffs.
               </p>
               <p className="mt-3 text-sm text-corsair-text-dim/80 leading-relaxed sm:text-base">
-                Your security tools already check compliance. Corsair makes it cryptographically verifiable and historically traceable.
+                Publish a discovery file, verify proofs in seconds, and diff drift over time. Cryptographic compliance, not PDFs.
               </p>
               <p className="mt-3 text-sm text-corsair-text-dim/60">
                 by{" "}
@@ -70,12 +70,8 @@ export function HeroSection() {
               transition={{ duration: 0.5, delay: 0.5 }}
               className="mt-8 flex flex-wrap gap-4 sm:mt-10"
             >
-              <Button
-                size="lg"
-                className="font-display text-base font-semibold"
-                asChild
-              >
-                <Link href="/marque">Verify a CPOE</Link>
+              <Button size="lg" className="font-display text-base font-semibold" asChild>
+                <Link href="/generate">Generate compliance.txt</Link>
               </Button>
               <Button
                 variant="outline"
@@ -83,72 +79,34 @@ export function HeroSection() {
                 className="font-display text-base font-semibold border-corsair-gold/30 text-corsair-text-dim hover:border-corsair-gold hover:text-corsair-gold"
                 asChild
               >
-                <Link href="/docs">
-                  corsair sign docs
-                  <span className="ml-1">&rarr;</span>
-                </Link>
+                <Link href="/marque">Verify a CPOE</Link>
               </Button>
+              <Button
+                variant="ghost"
+                size="lg"
+                className="font-display text-base font-semibold text-corsair-text-dim hover:text-corsair-gold"
+                asChild
+              >
+                <Link href="#diff-demo">See diff demo</Link>
+              </Button>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.65 }}
+              className="mt-6 text-xs text-corsair-text-dim/70"
+            >
+              Protocol depth below: sign, verify, diff, log, signal.
             </motion.div>
           </div>
 
-          {/* Right — Terminal */}
+          {/* Right — Proof Snippet */}
           <div className="max-lg:mt-4">
-            <HeroTerminal />
+            <HeroProofSnippet />
           </div>
         </div>
       </div>
-
-      {/* Feature strip at bottom */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.8 }}
-        className="absolute bottom-0 left-0 right-0 border-t border-corsair-border"
-      >
-        <div className="mx-auto grid max-w-6xl grid-cols-2 lg:grid-cols-5">
-          <FeatureItem
-            title="corsair sign"
-            description="Like git commit"
-          />
-          <FeatureItem
-            title="corsair verify"
-            description="Free, no account needed"
-            className="border-l border-corsair-border"
-          />
-          <FeatureItem
-            title="corsair diff"
-            description="Like git diff"
-            className="border-l border-corsair-border max-lg:border-l-0 max-lg:border-t"
-          />
-          <FeatureItem
-            title="corsair log"
-            description="Like git log (SCITT)"
-            className="border-l border-corsair-border max-lg:border-t"
-          />
-          <FeatureItem
-            title="corsair signal"
-            description="Like git webhooks (FLAGSHIP)"
-            className="border-l border-corsair-border max-lg:border-l-0 max-lg:border-t"
-          />
-        </div>
-      </motion.div>
     </section>
-  );
-}
-
-function FeatureItem({
-  title,
-  description,
-  className = "",
-}: {
-  title: string;
-  description: string;
-  className?: string;
-}) {
-  return (
-    <div className={`px-6 py-5 ${className}`}>
-      <p className="text-sm font-medium text-corsair-text">{title}</p>
-      <p className="mt-0.5 text-xs text-corsair-text-dim">{description}</p>
-    </div>
   );
 }

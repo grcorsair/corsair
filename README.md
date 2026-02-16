@@ -9,7 +9,7 @@
 <br/>
 
 ![Tests](https://img.shields.io/github/actions/workflow/status/arudjreis/corsair/test.yml?style=for-the-badge&label=TESTS&labelColor=0A0E17&color=2ECC71)
-![Version](https://img.shields.io/badge/v0.5.1-D4A853?style=for-the-badge&label=VERSION&labelColor=0A0E17)
+![Version](https://img.shields.io/badge/v0.6.0-D4A853?style=for-the-badge&label=VERSION&labelColor=0A0E17)
 ![License](https://img.shields.io/badge/Apache_2.0-D4A853?style=for-the-badge&label=LICENSE&labelColor=0A0E17)
 ![Runtime](https://img.shields.io/badge/Bun-E8E2D6?style=for-the-badge&label=RUNTIME&labelColor=0A0E17&logo=bun&logoColor=E8E2D6)
 ![Language](https://img.shields.io/badge/TypeScript-D4A853?style=for-the-badge&label=LANG&labelColor=0A0E17&logo=typescript&logoColor=D4A853)
@@ -24,7 +24,7 @@
 
 <br/>
 
-[Website](https://grcorsair.com) · [Documentation](https://grcorsair.com/docs) · [CPOE Spec](CPOE_SPEC.md) · [Verify a CPOE](https://grcorsair.com/marque)
+[Website](https://grcorsair.com) · [Documentation](https://grcorsair.com/docs) · [CPOE Spec](CPOE_SPEC.md) · [Verify a CPOE](https://grcorsair.com/marque) · [Generate compliance.txt](https://grcorsair.com/generate)
 
 </div>
 
@@ -67,7 +67,21 @@ bun run corsair.ts verify --file cpoe.jwt
 
 ---
 
-## Five Primitives
+## Three Production Pillars
+
+Corsair ships with a simple, shareable surface that maps directly to how people verify compliance in the real world.
+
+- **compliance.txt** — publish discoverable proofs at `/.well-known/compliance.txt`
+- **4-line verification** — verify any CPOE with standard JWT libs (see `CPOE_SPEC.md`)
+- **corsair diff** — drift detection that reads like `git diff`
+
+```bash
+corsair diff --current q2.jwt --previous q1.jwt
+```
+
+---
+
+## CLI Primitives (Full Surface)
 
 Corsair does five things. Like git.
 

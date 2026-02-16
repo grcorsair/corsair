@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Badge } from "@/components/ui/badge";
+import { DEMO_DIFF, DEMO_LOG_ENTRIES } from "@/content/demo-cpoes";
 
 // ─── Tab definitions — Five Primitives ───
 
@@ -308,14 +309,7 @@ function VerifyPanel() {
 // DIFF — side-by-side control comparison
 // ═══════════════════════════════════════════════
 
-const diffControls = [
-  { id: "CC6.1", name: "Access Control", before: "PASS", after: "PASS", change: "unchanged" as const },
-  { id: "CC6.6", name: "Network Segmentation", before: "PASS", after: "FAIL", change: "regression" as const },
-  { id: "CC7.1", name: "System Operations", before: "FAIL", after: "PASS", change: "fixed" as const },
-  { id: "CC7.2", name: "Audit Logging", before: "FAIL", after: "PASS", change: "fixed" as const },
-  { id: "CC8.1", name: "Change Management", before: "PASS", after: "PASS", change: "unchanged" as const },
-  { id: "CC9.1", name: "Risk Mitigation", before: "PASS", after: "PASS", change: "unchanged" as const },
-];
+const diffControls = DEMO_DIFF.controls;
 
 const changeStyles = {
   unchanged: { symbol: "=", color: "text-corsair-text-dim", bg: "" },
@@ -367,11 +361,17 @@ function DiffPanel() {
 
       {/* Summary */}
       <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-corsair-border/30 pt-3 font-mono text-[11px] sm:text-[12px]">
-        <span className="text-corsair-green">+2 fixed</span>
-        <span className="text-corsair-crimson">-1 regression</span>
-        <span className="text-corsair-text-dim">3 unchanged</span>
+        {DEMO_DIFF.summary.improvements > 0 && (
+          <span className="text-corsair-green">+{DEMO_DIFF.summary.improvements} fixed</span>
+        )}
+        {DEMO_DIFF.summary.regressions > 0 && (
+          <span className="text-corsair-crimson">-{DEMO_DIFF.summary.regressions} regression</span>
+        )}
+        <span className="text-corsair-text-dim">{DEMO_DIFF.summary.unchanged} unchanged</span>
         <span className="ml-auto text-corsair-text-dim">
-          Score: <span className="text-corsair-gold">86%</span> → <span className="text-corsair-green">91%</span>
+          Score: <span className="text-corsair-gold">{DEMO_DIFF.summary.scoreBefore}%</span>{" "}
+          {"→"}{" "}
+          <span className="text-corsair-green">{DEMO_DIFF.summary.scoreAfter}%</span>
         </span>
       </div>
     </div>
@@ -382,12 +382,7 @@ function DiffPanel() {
 // LOG — SCITT append-only transparency chain
 // ═══════════════════════════════════════════════
 
-const scittEntries = [
-  { id: 4, hash: "a7f3e2d1", date: "2026-02-12", cpoe: "cpoe-acme-v2.jwt", issuer: "did:web:grcorsair.com", type: "corsair" as const },
-  { id: 3, hash: "c4d1b8f3", date: "2026-01-15", cpoe: "cpoe-acme-v1.jwt", issuer: "did:web:grcorsair.com", type: "corsair" as const },
-  { id: 2, hash: "e9f2a1c7", date: "2025-12-01", cpoe: "cpoe-globex.jwt", issuer: "did:web:globex.com", type: "third-party" as const },
-  { id: 1, hash: "b3c7d5e9", date: "2025-10-15", cpoe: "cpoe-acme-v0.jwt", issuer: "did:web:acme.com", type: "self-signed" as const },
-];
+const scittEntries = DEMO_LOG_ENTRIES;
 
 function LogPanel() {
   return (
@@ -630,4 +625,3 @@ function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
-

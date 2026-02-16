@@ -92,7 +92,7 @@ All claims live under `vc.credentialSubject`. The provenance-first model (v0.5.0
 | `provenance.sourceDocument` | string | SHA-256 hash of the source document |
 | `provenance.sourceDate` | string | ISO 8601 date of the source assessment |
 | `assurance` | object | **Optional enrichment** (via `--enrich`). Assurance scoring with declared level, breakdown, and method. |
-| `assurance.declared` | 0-4 | Assurance level claimed for this CPOE (see section 5) |
+| `assurance.declared` | 0-4 | Assurance level claimed for this CPOE (see section 6) |
 | `assurance.verified` | boolean | Whether all in-scope controls meet the declared level |
 | `assurance.method` | string | One of: `"self-assessed"`, `"automated-config-check"`, `"ai-evidence-review"`, `"continuous-observation"`, `"third-party-attested"` |
 | `assurance.breakdown` | object | Count of controls at each level, keyed by level number: `{ "0": 2, "1": 18 }` |
@@ -150,7 +150,34 @@ The `iss` claim is a `did:web` DID. To resolve it to a URL:
 
 The DID document contains a `verificationMethod` array. Match the `kid` from the JWT header to find the correct public key (JWK format, `"crv": "Ed25519"`).
 
-## 5. Assurance Levels
+## 5. Discovery (compliance.txt)
+
+CPOEs are meant to be discoverable without a prior relationship. Organizations should publish
+`/.well-known/compliance.txt` (modeled after `security.txt`) to advertise their DID identity,
+active CPOEs, SCITT log endpoint, and FLAGSHIP stream.
+
+compliance.txt is a plain-text file with `KEY: value` pairs (keys are case-insensitive). The
+`CPOE` key is repeatable.
+
+Example:
+
+```
+# Corsair Compliance Discovery
+# Spec: https://grcorsair.com/spec/compliance-txt
+
+DID: did:web:acme.com
+
+CPOE: https://acme.com/compliance/soc2.jwt
+CPOE: https://acme.com/compliance/iso27001.jwt
+
+SCITT: https://scitt.acme.com
+FLAGSHIP: https://acme.com/.well-known/flagship
+Frameworks: SOC2, ISO27001
+Contact: security@acme.com
+Expires: 2026-06-01
+```
+
+## 6. Assurance Levels
 
 A CPOE's declared assurance level is the **minimum** level across all in-scope controls. Controls may be explicitly excluded with rationale.
 
@@ -164,7 +191,7 @@ A CPOE's declared assurance level is the **minimum** level across all in-scope c
 
 The `assurance.breakdown` field shows how many controls sit at each level, giving consumers granular visibility even when the declared level is the floor.
 
-## 6. Issuer Identity (DID:web)
+## 7. Issuer Identity (DID:web)
 
 CPOE issuers are identified by `did:web` DIDs, which map directly to HTTPS domains. The DID document hosted at the resolved URL contains the Ed25519 public key in JWK format. Example at `https://grcorsair.com/.well-known/did.json`:
 
@@ -183,7 +210,7 @@ CPOE issuers are identified by `did:web` DIDs, which map directly to HTTPS domai
 }
 ```
 
-## 7. Trust Tiers (Verification Display)
+## 8. Trust Tiers (Verification Display)
 
 When a verifier checks a CPOE, the result falls into one of four display tiers:
 
@@ -194,7 +221,7 @@ When a verifier checks a CPOE, the result falls into one of four display tiers:
 | **Unverifiable** | DID resolution failed (issuer unreachable, not invalid) |
 | **Invalid** | Signature verification failed, JWT malformed, or credential expired |
 
-## 8. Extensions (Optional)
+## 9. Extensions (Optional)
 
 These are not required for verification but enable advanced trust workflows.
 

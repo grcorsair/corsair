@@ -1,4 +1,5 @@
 import { HeroSection } from "@/components/features/hero-section";
+import { WeaponsSection } from "@/components/features/weapons-section";
 import { PipelineStages } from "@/components/features/pipeline-stages";
 import { PrimitivesInAction } from "@/components/features/primitives-in-action";
 import { FrameworkGrid } from "@/components/features/framework-grid";
@@ -17,63 +18,30 @@ export default function Home() {
       {/* Project Stats Strip */}
       <ProjectStats />
 
-      {/* Pipeline Visualization */}
-      <section className="px-6 py-20">
+      {/* Three Weapons */}
+      <section id="weapons" className="px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
             <p className="mb-3 text-center font-pixel text-[7px] tracking-wider text-corsair-gold/60">
-              THE PIPELINE
+              THE WEAPONS
             </p>
             <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
-              Five Primitives. Like Git.
+              The Three Weapons to Ship Corsair
             </h2>
-            <p className="mb-4 text-center text-corsair-text-dim">
-              Tool output goes in, signed proof comes out. Sign, verify, diff, log, signal.
+            <p className="mb-10 text-center text-corsair-text-dim">
+              compliance.txt for discovery, 4-line verification for instant trust, and diff for drift.
             </p>
-            <div className="mb-12 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 font-mono text-xs">
-              <span className="text-corsair-gold">SIGN</span>
-              <span className="text-corsair-border">&rarr;</span>
-              <span className="text-corsair-gold">LOG</span>
-              <span className="text-corsair-border">&rarr;</span>
-              <span className="text-corsair-gold">VERIFY</span>
-              <span className="text-corsair-border">&rarr;</span>
-              <span className="text-corsair-gold">DIFF</span>
-              <span className="text-corsair-border">&rarr;</span>
-              <span className="text-corsair-gold">SIGNAL</span>
-            </div>
           </FadeIn>
           <FadeIn delay={0.2}>
-            <PipelineStages />
+            <WeaponsSection />
           </FadeIn>
         </div>
       </section>
 
       <PixelDivider variant="swords" className="mx-auto max-w-5xl px-6" />
 
-      {/* Primitives in Action */}
-      <section className="px-6 py-20">
-        <div className="mx-auto max-w-5xl">
-          <FadeIn>
-            <p className="mb-3 text-center font-pixel text-[7px] tracking-wider text-corsair-cyan/60">
-              PRIMITIVES IN ACTION
-            </p>
-            <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
-              See What Each Primitive Does
-            </h2>
-            <p className="mb-8 text-center text-corsair-text-dim">
-              Prowler says PASS, Corsair signs &ldquo;Prowler said PASS.&rdquo; The tool&apos;s finding, signed, verifiable. Each primitive maps to a git command you already know.
-            </p>
-          </FadeIn>
-          <FadeIn delay={0.2}>
-            <PrimitivesInAction />
-          </FadeIn>
-        </div>
-      </section>
-
-      <PixelDivider variant="diamond" className="mx-auto max-w-5xl px-6" />
-
       {/* Compliance Timeline */}
-      <section className="px-6 py-20">
+      <section id="diff-demo" className="px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
             <p className="mb-3 text-center font-pixel text-[7px] tracking-wider text-corsair-green/60">
@@ -198,6 +166,33 @@ export default function Home() {
           <FadeIn delay={0.2}>
             <QuickStart />
           </FadeIn>
+        </div>
+      </section>
+
+      <PixelDivider variant="diamond" className="mx-auto max-w-5xl px-6" />
+
+      {/* Protocol Depth */}
+      <section id="protocol-depth" className="px-6 py-20">
+        <div className="mx-auto max-w-5xl">
+          <FadeIn>
+            <p className="mb-3 text-center font-pixel text-[7px] tracking-wider text-corsair-cyan/60">
+              PROTOCOL DEPTH
+            </p>
+            <h2 className="mb-4 text-center font-display text-3xl font-bold text-corsair-text">
+              Five Primitives Under the Hood
+            </h2>
+            <p className="mb-10 text-center text-corsair-text-dim">
+              Built on sign, verify, diff, log, and signal. The deep protocol layer powers the weapons.
+            </p>
+          </FadeIn>
+          <FadeIn delay={0.2}>
+            <PipelineStages />
+          </FadeIn>
+          <div className="mt-12">
+            <FadeIn delay={0.3}>
+              <PrimitivesInAction />
+            </FadeIn>
+          </div>
         </div>
       </section>
     </main>

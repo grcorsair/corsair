@@ -2,53 +2,7 @@
 
 import { motion } from "motion/react";
 import { Card } from "@/components/ui/card";
-
-const commits = [
-  {
-    hash: "a7f3e2",
-    date: "2026-02-12",
-    tool: "Prowler v3.1",
-    scope: "AWS Production",
-    score: 91,
-    controls: { passed: 20, failed: 2, total: 22 },
-    provenance: "tool",
-    diff: null,
-    signal: null,
-  },
-  {
-    hash: "c4d1b8",
-    date: "2026-01-15",
-    tool: "InSpec 5.22",
-    scope: "AWS Production",
-    score: 86,
-    controls: { passed: 19, failed: 3, total: 22 },
-    provenance: "tool",
-    diff: { regressions: 0, improvements: 1, note: "+1 control fixed (CC7.2)" },
-    signal: null,
-  },
-  {
-    hash: "e9f2a1",
-    date: "2025-12-01",
-    tool: "Prowler v3.0",
-    scope: "AWS Production",
-    score: 82,
-    controls: { passed: 18, failed: 4, total: 22 },
-    provenance: "tool",
-    diff: { regressions: 1, improvements: 0, note: "CC6.6 regressed (VPC change)" },
-    signal: { type: "FLEET_ALERT", note: "Drift detected — CC6.6 VPC config changed" },
-  },
-  {
-    hash: "b3c7d5",
-    date: "2025-10-15",
-    tool: "Self-assessment",
-    scope: "AWS Production",
-    score: 75,
-    controls: { passed: 15, failed: 5, total: 20 },
-    provenance: "self",
-    diff: null,
-    signal: null,
-  },
-];
+import { DEMO_TIMELINE } from "@/content/demo-cpoes";
 
 const containerVariants = {
   hidden: {},
@@ -114,7 +68,7 @@ export function ComplianceTimeline() {
       <div className="absolute left-[23px] top-4 bottom-4 w-px bg-corsair-border sm:left-[27px]" />
 
       <div className="space-y-4">
-        {commits.map((commit, i) => (
+        {DEMO_TIMELINE.map((commit, i) => (
           <motion.div key={commit.hash} variants={itemVariants}>
             <Card className="relative ml-12 bg-corsair-surface p-4 sm:ml-14 sm:p-5">
               {/* Commit dot */}

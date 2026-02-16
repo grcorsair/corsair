@@ -7,6 +7,7 @@
       "worker.ts",
       "functions/**",
       "src/**",
+      "apps/web/**",
       "package.json",
       "bun.lock"
     ],

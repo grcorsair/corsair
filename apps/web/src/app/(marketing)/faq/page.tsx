@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { FadeIn } from "@/components/motion/fade-in";
 import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 
@@ -185,12 +186,12 @@ export default function FAQPage() {
               Have a question not covered here? Check the documentation or open an issue.
             </p>
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-              <a
+              <Link
                 href="/docs"
                 className="inline-block rounded-lg border border-corsair-gold/30 bg-corsair-surface px-8 py-4 font-display text-sm font-semibold text-corsair-text transition-all hover:border-corsair-gold hover:text-corsair-gold hover:shadow-[0_0_20px_rgba(212,168,83,0.1)]"
               >
                 Read the Docs &rarr;
-              </a>
+              </Link>
               <a
                 href="https://github.com/Arudjreis/corsair/issues"
                 target="_blank"

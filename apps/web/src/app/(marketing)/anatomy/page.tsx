@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { FadeIn } from "@/components/motion/fade-in";
 import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 import {
@@ -330,18 +331,18 @@ export default function AnatomyPage() {
           </FadeIn>
           <FadeIn delay={0.2}>
             <div className="flex flex-wrap justify-center gap-4">
-              <a
+              <Link
                 href="/marque"
                 className="inline-flex h-10 items-center rounded-md bg-corsair-gold px-6 font-display text-sm font-semibold text-corsair-deep transition-colors hover:bg-corsair-gold/90"
               >
                 Verify a CPOE
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/docs"
                 className="inline-flex h-10 items-center rounded-md border border-corsair-gold/30 px-6 font-display text-sm font-semibold text-corsair-text-dim transition-colors hover:border-corsair-gold hover:text-corsair-gold"
               >
                 Read the Spec &rarr;
-              </a>
+              </Link>
             </div>
           </FadeIn>
         </div>

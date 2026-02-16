@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "hash": "897e22",
+    "date": "2026-02-13",
+    "cpoe": "cpoe-897e22.jwt",
+    "issuer": "did:web:cloudbank.io",
+    "type": "demo"
+  },
+  {
+    "id": 2,
+    "hash": "09dc8b",
+    "date": "2026-02-13",
+    "cpoe": "cpoe-09dc8b.jwt",
+    "issuer": "did:web:retailcorp.com",
+    "type": "demo"
+  },
+  {
+    "id": 3,
+    "hash": "48eabc",
+    "date": "2026-02-13",
+    "cpoe": "cpoe-48eabc.jwt",
+    "issuer": "did:web:acme-corp.com",
+    "type": "demo"
+  }
+]

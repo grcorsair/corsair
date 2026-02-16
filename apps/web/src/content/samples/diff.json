@@ -1,0 +1,39 @@
+{
+  "controls": [
+    {
+      "id": "CC6.6",
+      "name": "CC6.6",
+      "before": "PASS",
+      "after": "FAIL",
+      "change": "regression"
+    },
+    {
+      "id": "CC6.7",
+      "name": "CC6.7",
+      "before": "PASS",
+      "after": "FAIL",
+      "change": "regression"
+    },
+    {
+      "id": "CC7.2",
+      "name": "CC7.2",
+      "before": "PASS",
+      "after": "FAIL",
+      "change": "regression"
+    },
+    {
+      "id": "CC7.4",
+      "name": "CC7.4",
+      "before": "FAIL",
+      "after": "PASS",
+      "change": "fixed"
+    }
+  ],
+  "summary": {
+    "regressions": 3,
+    "improvements": 1,
+    "unchanged": 0,
+    "scoreBefore": 68,
+    "scoreAfter": 58
+  }
+}
