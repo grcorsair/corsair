@@ -147,7 +147,7 @@ export const ANATOMY_CONTROLS: AnatomyControl[] = [
     name: "CIS Benchmark: SSH Configuration",
     status: "effective",
     evidence:
-      "InSpec profile: cis-aws-foundations-baseline — 42/42 controls passed. SSH hardened per CIS L1.",
+      "InSpec profile: cis-aws-foundations-baseline — 42/42 controls passed. SSH hardened per CIS Level 1 baseline.",
     provenanceType: "tool",
     methodology: "compliance-benchmark-test",
   },

@@ -169,31 +169,23 @@ export function MarqueVerifier() {
   const handleLoadSample = async () => {
     setMarqueJson(SAMPLE_CPOE_JWT);
     setShowAdvanced(false);
-    setVerifyState("verifying");
+    setVerifyState("decoded");
 
-    // Verify via API
-    const apiResult = await verifyViaAPI(SAMPLE_CPOE_JWT);
     const decoded = decodeJWTPayload(SAMPLE_CPOE_JWT);
-
-    if (apiResult.ok) {
-      const merged = mergeAPIResultWithDecoded(apiResult.data, decoded);
-      setResult(merged);
-      setVerifyState(merged.valid ? "verified" : "failed");
+    if (decoded) {
+      const vc = decoded.vc as Record<string, unknown> | undefined;
+      const cs = vc?.credentialSubject as Record<string, unknown> | undefined;
+      setResult({
+        valid: false,
+        reason: SAMPLE_NOTE,
+        format: "jwt",
+        scope: typeof cs?.scope === "string" ? cs.scope : undefined,
+        provenance: cs?.provenance as MarqueVerificationResult["provenance"],
+        summary: cs?.summary as MarqueVerificationResult["summary"],
+      });
     } else {
-      // API unavailable — show decoded with note
-      if (decoded) {
-        const vc = decoded.vc as Record<string, unknown> | undefined;
-        const cs = vc?.credentialSubject as Record<string, unknown> | undefined;
-        setResult({
-          valid: false,
-          reason: `${SAMPLE_NOTE} (API unavailable: ${apiResult.error.message})`,
-          format: "jwt",
-          scope: typeof cs?.scope === "string" ? cs.scope : undefined,
-          provenance: cs?.provenance as MarqueVerificationResult["provenance"],
-          summary: cs?.summary as MarqueVerificationResult["summary"],
-        });
-        setVerifyState("api-error");
-      }
+      setResult({ valid: false, reason: "Sample payload is malformed" });
+      setVerifyState("failed");
     }
   };
 

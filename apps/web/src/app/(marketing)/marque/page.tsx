@@ -181,7 +181,7 @@ export default function MarquePage() {
                 Why this replaces questionnaires
               </h2>
               <p className="text-sm leading-relaxed text-corsair-text-dim">
-                Traditional TPRM relies on self-attested questionnaires — 300+
+                Traditional vendor risk reviews rely on self-attested questionnaires — 300+
                 questions answered by vendors who have every incentive to
                 overstate their security posture. Trust Centers store compliance
                 data but can&apos;t share it interoperably — Vanta&apos;s Trust

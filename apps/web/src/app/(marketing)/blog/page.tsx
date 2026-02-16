@@ -7,7 +7,7 @@ import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 export const metadata: Metadata = {
   title: "Blog",
   description:
-    "Thought leadership on compliance proof infrastructure, trust exchange protocols, and the future of TPRM.",
+    "Thought leadership on compliance proof infrastructure, trust exchange protocols, and the future of vendor verification.",
 };
 
 export default function BlogPage() {

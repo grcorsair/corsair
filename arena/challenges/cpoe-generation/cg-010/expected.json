@@ -1,15 +1,10 @@
 {
   "schema": {
     "type": "CorsairCPOE",
-    "requiredFields": ["scope", "provenance", "summary", "assurance", "frameworks"],
+    "requiredFields": ["scope", "provenance", "summary", "frameworks"],
     "provenance": {
       "source": "self",
       "requiredFields": ["source", "sourceIdentity"]
-    },
-    "assurance": {
-      "requiredFields": ["declared", "verified", "method", "breakdown"],
-      "declaredRange": [0, 1],
-      "method": "self-assessed"
     },
     "frameworks": {
       "requiredFrameworks": ["NIST-800-53"],

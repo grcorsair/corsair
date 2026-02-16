@@ -172,8 +172,6 @@ export interface IssuerProfile {
   totalCPOEs: number;
   frameworks: string[];
   averageScore: number;
-  /** Highest assurance level observed (0=self, 1=tool, 2=auditor) */
-  currentAssuranceLevel?: number;
   /** Provenance distribution across all CPOEs (primary signal) */
   provenanceSummary: ProvenanceSummary;
   lastCPOEDate: string;

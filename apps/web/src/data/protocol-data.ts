@@ -91,161 +91,6 @@ export const JWT_VC_LAYERS = [
   },
 ];
 
-/* ─── Seven-Dimension Assurance Model ────────────── */
-
-export interface DimensionData {
-  name: string;
-  key: string;
-  score: number;
-  maxScore: number;
-  source: string;
-  description: string;
-  thresholds: { L1: number; L2: number; L3: number };
-}
-
-export const ASSURANCE_DIMENSIONS: DimensionData[] = [
-  {
-    name: "Capability",
-    key: "capability",
-    score: 93,
-    maxScore: 100,
-    source: "COSO Design Effectiveness",
-    description: "Control strength as designed — does the control address the risk?",
-    thresholds: { L1: 40, L2: 60, L3: 80 },
-  },
-  {
-    name: "Coverage",
-    key: "coverage",
-    score: 100,
-    maxScore: 100,
-    source: "FAIR-CAM Coverage",
-    description: "Percentage of in-scope assets protected by the control",
-    thresholds: { L1: 30, L2: 50, L3: 80 },
-  },
-  {
-    name: "Reliability",
-    key: "reliability",
-    score: 56,
-    maxScore: 100,
-    source: "COSO Operating Effectiveness",
-    description: "Consistency of control operation over the observation period",
-    thresholds: { L1: 30, L2: 50, L3: 70 },
-  },
-  {
-    name: "Methodology",
-    key: "methodology",
-    score: 50,
-    maxScore: 100,
-    source: "GRADE Risk of Bias + NIST 800-53A",
-    description: "Assessment rigor — reperformance > CAAT > inspection > inquiry",
-    thresholds: { L1: 20, L2: 40, L3: 60 },
-  },
-  {
-    name: "Freshness",
-    key: "freshness",
-    score: 0,
-    maxScore: 100,
-    source: "ISO 27004 Timing",
-    description: "Recency of evidence — decays linearly from 100 to 0 over 365 days",
-    thresholds: { L1: 20, L2: 40, L3: 60 },
-  },
-  {
-    name: "Independence",
-    key: "independence",
-    score: 85,
-    maxScore: 100,
-    source: "Three Lines Model",
-    description: "Separation between assessor and assessed — 1st line (self) to 4th line (external)",
-    thresholds: { L1: 20, L2: 40, L3: 70 },
-  },
-  {
-    name: "Consistency",
-    key: "consistency",
-    score: 100,
-    maxScore: 100,
-    source: "GRADE Inconsistency",
-    description: "Do multiple evidence sources agree? Penalizes contradictory findings",
-    thresholds: { L1: 30, L2: 50, L3: 70 },
-  },
-];
-
-/* ─── Anti-Gaming Safeguards ─────────────────────── */
-
-export interface SafeguardData {
-  id: string;
-  name: string;
-  description: string;
-  trigger: string;
-  result: string;
-  triggered: boolean;
-}
-
-export const SAFEGUARDS: SafeguardData[] = [
-  {
-    id: "sampling-opacity",
-    name: "Sampling Opacity",
-    description: "Less than 50% of controls have substantive evidence",
-    trigger: "38 of 82 controls lack evidence",
-    result: "Capped at L0",
-    triggered: false,
-  },
-  {
-    id: "freshness-decay",
-    name: "Freshness Decay",
-    description: "Evidence older than 180 days triggers staleness penalty",
-    trigger: "Evidence is 468 days old",
-    result: "Capped at L1",
-    triggered: true,
-  },
-  {
-    id: "independence-check",
-    name: "Independence Check",
-    description: "Self-assessed evidence cannot claim L2+ assurance",
-    trigger: "provenance.source = 'self' with declared > L2",
-    result: "Capped at L1",
-    triggered: false,
-  },
-  {
-    id: "severity-asymmetry",
-    name: "Severity Asymmetry",
-    description: "HIGH-risk controls weaker than LOW-risk controls",
-    trigger: "Critical controls at L0 while minor controls at L2",
-    result: "Capped at min(critical controls)",
-    triggered: false,
-  },
-  {
-    id: "all-pass-bias",
-    name: "All-Pass Bias",
-    description: "100% pass rate with 10+ controls triggers GRADE skepticism flag",
-    trigger: "82 controls, 76 effective (93%) — below threshold",
-    result: "No cap — failure rate is realistic",
-    triggered: false,
-  },
-];
-
-/* ─── Rule Trace Example ─────────────────────────── */
-
-export interface RuleTraceEntry {
-  type: "RULE" | "OVERRIDE" | "SAFEGUARD" | "ENFORCED" | "RESULT";
-  text: string;
-  detail?: string;
-}
-
-export const RULE_TRACE_EXAMPLE: RuleTraceEntry[] = [
-  { type: "RULE", text: "82 controls checked across SOC 2 Type II scope" },
-  { type: "RULE", text: 'Source "prowler" ceiling = L1 (automated config scan)', detail: "Prowler outputs confirm settings are enabled, not test results" },
-  { type: "RULE", text: "3 controls have test evidence (pentest, InSpec profiles)", detail: "CC7.1, CC7.2, CC5.1 — these qualify for L2" },
-  { type: "OVERRIDE", text: "Test evidence elevates 3 controls: L1 → L2" },
-  { type: "RULE", text: 'Breakdown = { "L0": 6, "L1": 73, "L2": 3 }' },
-  { type: "RULE", text: "Minimum of in-scope controls = L0 (6 controls at Documented)" },
-  { type: "RULE", text: "Freshness checked — evidence is 468 days old (stale)" },
-  { type: "SAFEGUARD", text: "Freshness decay: evidence >180 days — dimension capped at 0/100" },
-  { type: "RULE", text: "Observation period: 365 days (sufficient for continuous scan)" },
-  { type: "RULE", text: "DORA band: methodology=low, specificity=medium — overall band: low" },
-  { type: "ENFORCED", text: "Declared L0 matches floor — no cap enforced" },
-  { type: "RESULT", text: "CPOE issued at L0 (Documented) — self-assessed, verified=true" },
-];
-
 /* ─── Binary Checks (CIS-Style) ──────────────────── */
 
 export interface BinaryCheck {
@@ -272,7 +117,6 @@ export const BINARY_CHECKS: BinaryCheck[] = [
   { id: "framework-mapped", name: "Framework Mapped", category: "scope", passed: true, detail: "7 frameworks mapped via CTID/SCF" },
   { id: "scope-non-empty", name: "Scope Defined", category: "scope", passed: true, detail: "Scope: 'SOC 2 Type II — Cloud Platform'" },
   { id: "exclusion-rationale", name: "Exclusion Rationale", category: "scope", passed: true, detail: "No excluded controls in this CPOE" },
-  { id: "assurance-verified", name: "Assurance Verified", category: "scope", passed: true, detail: "Declared L0 matches min of controls" },
 ];
 
 /* ─── SCITT / Merkle Tree ────────────────────────── */
@@ -325,25 +169,11 @@ export const FLAGSHIP_TIMELINE: FlagshipEvent[] = [
     severity: "info",
   },
   {
-    time: "2026-02-12T09:15:00Z",
-    pirateName: "COLORS_CHANGED",
-    caepType: "assurance-level-change",
-    description: "Provenance updated: self → tool after config evidence submitted",
-    severity: "info",
-  },
-  {
     time: "2026-03-01T16:42:00Z",
     pirateName: "FLEET_ALERT",
     caepType: "compliance-change",
     description: "Drift detected — MFA disabled on admin accounts (CC6.1)",
     severity: "warning",
-  },
-  {
-    time: "2026-03-01T17:10:00Z",
-    pirateName: "COLORS_CHANGED",
-    caepType: "assurance-level-change",
-    description: "Compliance score degraded due to drift — controls now ineffective",
-    severity: "critical",
   },
   {
     time: "2026-03-02T08:30:00Z",
@@ -353,10 +183,10 @@ export const FLAGSHIP_TIMELINE: FlagshipEvent[] = [
     severity: "info",
   },
   {
-    time: "2026-03-02T08:45:00Z",
-    pirateName: "COLORS_CHANGED",
-    caepType: "assurance-level-change",
-    description: "Compliance restored after drift resolution — controls effective",
+    time: "2026-03-05T10:05:00Z",
+    pirateName: "PAPERS_CHANGED",
+    caepType: "credential-change",
+    description: "CPOE renewed after drift resolution — updated evidence attached",
     severity: "info",
   },
 ];
@@ -393,7 +223,7 @@ export const PROTOCOL_STANDARDS = [
     fullName: "Shared Signals Framework / CAEP",
     role: "Real-time notifications",
     spec: "OpenID SSF 1.0 (Final, Sept 2025)",
-    what: "Push/poll delivery of compliance state changes — drift, revocation, level changes",
+    what: "Push/poll delivery of compliance state changes — drift, revocation, scope updates",
     why: "Compliance is continuous, not annual. FLAGSHIP makes that visible",
   },
   {
@@ -410,7 +240,7 @@ export const PROTOCOL_STANDARDS = [
     role: "Process provenance (advanced)",
     spec: "in-toto v1 + SLSA v1.0",
     what: "Optional COSE-signed receipts for each pipeline step — hash-linked chain proving how the CPOE was built",
-    why: "Advanced layer for high-assurance workflows. Proves the pipeline ran correctly, not just that the output looks right",
+    why: "Advanced layer for high-trust workflows. Proves the pipeline ran correctly, not just that the output looks right",
   },
 ];
 
@@ -442,13 +272,3 @@ export const VERIFICATION_STEPS = [
     code: "const { payload } = await jwtVerify(cpoeJwt, await importJWK(jwk, 'EdDSA'))",
   },
 ];
-
-/* ─── DORA Metrics ───────────────────────────────── */
-
-export const DORA_METRICS = {
-  freshness: { value: 0, pair: "reproducibility", pairValue: 45, divergence: 45, flagged: true },
-  specificity: { value: 62, pair: "independence", pairValue: 85, divergence: 23, flagged: false },
-  independence: { value: 85, pair: "specificity", pairValue: 62, divergence: 23, flagged: false },
-  reproducibility: { value: 45, pair: "freshness", pairValue: 0, divergence: 45, flagged: true },
-  band: "low" as const,
-};

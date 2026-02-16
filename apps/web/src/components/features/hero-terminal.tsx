@@ -28,7 +28,7 @@ const verifyLines = [
 
 const signalLines = [
   { label: "Stream", value: "acme-aws-prod", color: "text-corsair-text" },
-  { label: "Events", value: "FLEET_ALERT, COLORS_CHANGED", color: "text-corsair-text" },
+  { label: "Events", value: "FLEET_ALERT, PAPERS_CHANGED", color: "text-corsair-text" },
   { label: "Delivery", value: "push → https://buyer.com/webhook", color: "text-corsair-cyan" },
 ];
 

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   COMPLIANCE_TXT_SNIPPET,
@@ -15,7 +14,6 @@ const weapons = [
     id: "compliance",
     title: "compliance.txt",
     subtitle: "Discovery layer for compliance proofs.",
-    badge: "WEAPON #1",
     accent: "border-corsair-gold/40",
     snippet: COMPLIANCE_TXT_SNIPPET,
     cta: { label: "Generate yours", href: "/generate" },
@@ -24,7 +22,6 @@ const weapons = [
     id: "verify",
     title: "Verify in 4 lines",
     subtitle: "No account. Any JWT library.",
-    badge: "WEAPON #2",
     accent: "border-corsair-green/40",
     snippet: VERIFY_4_LINES,
     cta: { label: "Verify a CPOE", href: "/marque" },
@@ -33,7 +30,6 @@ const weapons = [
     id: "diff",
     title: "Diff compliance",
     subtitle: "Git diff for posture changes.",
-    badge: "WEAPON #3",
     accent: "border-corsair-crimson/40",
     snippet: DIFF_SNIPPET_LINES,
     cta: { label: "See diff demo", href: "#diff-demo" },
@@ -49,13 +45,7 @@ export function WeaponsSection() {
           className={`border ${weapon.accent} bg-corsair-surface shadow-2xl shadow-black/40`}
         >
           <CardHeader>
-            <Badge
-              variant="outline"
-              className="w-fit border-transparent font-pixel text-[7px] tracking-wider text-corsair-gold"
-            >
-              {weapon.badge}
-            </Badge>
-            <CardTitle className="mt-3 font-display text-xl text-corsair-text">
+            <CardTitle className="font-display text-xl text-corsair-text">
               {weapon.title}
             </CardTitle>
             <p className="text-sm text-corsair-text-dim">{weapon.subtitle}</p>

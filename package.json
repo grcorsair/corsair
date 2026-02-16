@@ -17,7 +17,6 @@
     "test:parley": "bun test tests/parley/",
     "test:flagship": "bun test tests/flagship/",
     "test:ingestion": "bun test tests/ingestion/",
-    "test:quartermaster": "bun test tests/quartermaster/",
     "test:db": "bun test tests/db/",
     "test:chart": "bun test tests/chart/",
     "test:e2e": "bun test tests/integration/",

@@ -299,18 +299,12 @@ export class PgSCITTRegistry implements SCITTRegistry {
     const allFrameworks = new Set<string>();
     let totalScore = 0;
     const provenanceSummary = { self: 0, tool: 0, auditor: 0 };
-    let maxAssuranceLevel: number | undefined;
-    const assuranceBySource: Record<string, number> = { self: 0, tool: 1, auditor: 2 };
     for (const entry of issuerEntries) {
       totalScore += entry.score;
       // Aggregate provenance (primary signal)
       const src = entry.provenance.source;
       if (src === "self" || src === "tool" || src === "auditor") {
         provenanceSummary[src]++;
-        const level = assuranceBySource[src];
-        if (maxAssuranceLevel === undefined || level > maxAssuranceLevel) {
-          maxAssuranceLevel = level;
-        }
       }
       for (const fw of entry.frameworks) allFrameworks.add(fw);
     }
@@ -320,7 +314,6 @@ export class PgSCITTRegistry implements SCITTRegistry {
       totalCPOEs: issuerEntries.length,
       frameworks: Array.from(allFrameworks),
       averageScore: Math.round(totalScore / issuerEntries.length),
-      currentAssuranceLevel: maxAssuranceLevel,
       provenanceSummary,
       lastCPOEDate: issuerEntries[0].registrationTime,
       history: issuerEntries.slice(0, 20).map((e) => ({

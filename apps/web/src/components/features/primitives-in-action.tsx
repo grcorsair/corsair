@@ -491,17 +491,6 @@ const flagshipEvents = [
     deliveredTo: ["Buyer A (webhook)", "Buyer B (webhook)"],
   },
   {
-    type: "COLORS_CHANGED",
-    caep: "assurance-level-change",
-    trigger: "Prowler re-scan: compliance score improved 86% → 91%",
-    severity: "info",
-    color: "text-corsair-gold",
-    borderColor: "border-corsair-gold/20",
-    bgColor: "bg-corsair-gold/5",
-    dotColor: "bg-corsair-gold",
-    deliveredTo: ["All subscribers", "Dashboard update"],
-  },
-  {
     type: "PAPERS_CHANGED",
     caep: "credential-change",
     trigger: "New CPOE issued — cpoe-acme-v2.jwt replaces v1",

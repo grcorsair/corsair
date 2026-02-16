@@ -2,8 +2,7 @@
  * CorsairClient SDK Tests
  *
  * Tests the public API surface of @corsair/sdk.
- * L2/L3 methods (score, query) shelved — recover via:
- *   git show v0.5.1-with-layers:packages/sdk/tests/client.test.ts
+ * Historical scoring/query helpers were removed to keep the SDK focused.
  */
 
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";

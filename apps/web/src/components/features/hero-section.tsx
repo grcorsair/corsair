@@ -3,7 +3,7 @@
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { HeroProofSnippet } from "./hero-proof-snippet";
+import { HeroVerifier } from "./hero-verifier";
 
 export function HeroSection() {
   return (
@@ -81,29 +81,12 @@ export function HeroSection() {
               >
                 <Link href="/marque">Verify a CPOE</Link>
               </Button>
-              <Button
-                variant="ghost"
-                size="lg"
-                className="font-display text-base font-semibold text-corsair-text-dim hover:text-corsair-gold"
-                asChild
-              >
-                <Link href="#diff-demo">See diff demo</Link>
-              </Button>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.65 }}
-              className="mt-6 text-xs text-corsair-text-dim/70"
-            >
-              Protocol depth below: sign, verify, diff, log, signal.
             </motion.div>
           </div>
 
-          {/* Right — Proof Snippet */}
+          {/* Right — Live Verifier */}
           <div className="max-lg:mt-4">
-            <HeroProofSnippet />
+            <HeroVerifier />
           </div>
         </div>
       </div>

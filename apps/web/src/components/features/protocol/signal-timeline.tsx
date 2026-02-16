@@ -19,9 +19,8 @@ export function SignalTimeline() {
   return (
     <div className="space-y-6">
       {/* SSF/CAEP event mapping */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {[
-          { pirate: "COLORS_CHANGED", caep: "assurance-level-change", desc: "Trust tier changed", color: "corsair-gold" },
           { pirate: "FLEET_ALERT", caep: "compliance-change", desc: "Drift detected", color: "corsair-crimson" },
           { pirate: "PAPERS_CHANGED", caep: "credential-change", desc: "CPOE lifecycle event", color: "corsair-turquoise" },
           { pirate: "MARQUE_REVOKED", caep: "session-revoked", desc: "Emergency revocation", color: "corsair-crimson" },

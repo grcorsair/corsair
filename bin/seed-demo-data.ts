@@ -173,9 +173,6 @@ async function main() {
           source: vcProvenance?.source ?? "self",
           sourceIdentity: vcProvenance?.sourceIdentity ?? result.provenance.sourceIdentity,
         },
-        assuranceLevel: result.credentialSubject?.assurance
-          ? (result.credentialSubject.assurance as Record<string, unknown>).declared
-          : undefined,
         summary: result.summary,
       };
 

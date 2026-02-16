@@ -198,19 +198,8 @@ describe("generateCPOEBadge — tier badges", () => {
 // =============================================================================
 
 describe("generateCPOEBadge — options", () => {
-  test("verified badge includes level when provided", () => {
-    const svg = generateCPOEBadge("verified", { level: 1 });
-    expect(hasText(svg, "L1")).toBe(true);
-  });
-
   test("verified badge includes controls count when provided", () => {
     const svg = generateCPOEBadge("verified", { controls: 22 });
-    expect(hasText(svg, "22 controls")).toBe(true);
-  });
-
-  test("verified badge includes both level and controls", () => {
-    const svg = generateCPOEBadge("verified", { level: 1, controls: 22 });
-    expect(hasText(svg, "L1")).toBe(true);
     expect(hasText(svg, "22 controls")).toBe(true);
   });
 
@@ -219,30 +208,24 @@ describe("generateCPOEBadge — options", () => {
     expect(hasText(svg, "95%")).toBe(true);
   });
 
-  test("self-signed badge shows level when provided", () => {
-    const svg = generateCPOEBadge("self-signed", { level: 0 });
-    expect(hasText(svg, "L0")).toBe(true);
-  });
-
   test("expired badge ignores options (just shows Expired)", () => {
-    const svg = generateCPOEBadge("expired", { level: 2, controls: 10 });
+    const svg = generateCPOEBadge("expired", { controls: 10 });
     expect(hasText(svg, "Expired")).toBe(true);
   });
 
   test("invalid badge ignores options (just shows Invalid)", () => {
-    const svg = generateCPOEBadge("invalid", { level: 3, score: 80 });
+    const svg = generateCPOEBadge("invalid", { score: 80 });
     expect(hasText(svg, "Invalid")).toBe(true);
   });
 
   test("verified badge with all options", () => {
     const svg = generateCPOEBadge("verified", {
-      level: 2,
       controls: 46,
       score: 91,
     });
     expect(isSVG(svg)).toBe(true);
     expect(hasText(svg, "CPOE")).toBe(true);
-    expect(hasText(svg, "L2")).toBe(true);
+    expect(hasText(svg, "91%")).toBe(true);
   });
 });
 

@@ -24,7 +24,7 @@
  * Each maps a Corsair concept to a CAEP-compliant event URI.
  */
 export const FLAGSHIP_EVENTS = {
-  /** Assurance level changed (colors raised or lowered) */
+  /** Evidence signal changed (colors raised or lowered) */
   COLORS_CHANGED: "https://grcorsair.com/events/colors-changed/v1",
 
   /** Drift detected, controls degraded */
@@ -81,8 +81,8 @@ export interface FleetAlertData extends CAEPEventData {
 }
 
 /**
- * COLORS_CHANGED: Assurance level changed (colors raised/lowered).
- * Fired when evidence quality or verification strength changes.
+ * COLORS_CHANGED: Evidence signal changed (colors raised/lowered).
+ * Fired when evidence quality or provenance strength changes.
  */
 export interface ColorsChangedData extends CAEPEventData {
   previous_level: string;

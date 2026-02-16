@@ -77,7 +77,7 @@ export function generateBadgeSVG(params: BadgeParams): string {
  */
 export function generateCPOEBadge(
   tier: BadgeTier,
-  options?: { level?: number; controls?: number; score?: number },
+  options?: { controls?: number; score?: number },
 ): string {
   const color = TIER_COLORS[tier];
   const value = buildCPOEValue(tier, options);
@@ -95,7 +95,7 @@ export function generateCPOEBadge(
 
 function buildCPOEValue(
   tier: BadgeTier,
-  options?: { level?: number; controls?: number; score?: number },
+  options?: { controls?: number; score?: number },
 ): string {
   if (tier === "expired") return "Expired";
   if (tier === "invalid") return "Invalid";
@@ -104,10 +104,6 @@ function buildCPOEValue(
 
   const tierLabel = tier === "verified" ? "Verified" : "Self-Signed";
   parts.push(tierLabel);
-
-  if (options?.level !== undefined) {
-    parts.push(`L${options.level}`);
-  }
 
   if (options?.score !== undefined) {
     parts.push(`${options.score}%`);

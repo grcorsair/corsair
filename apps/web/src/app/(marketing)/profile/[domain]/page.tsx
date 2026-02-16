@@ -9,7 +9,7 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
   const { domain } = await params;
   return {
     title: `${domain} — Compliance Profile`,
-    description: `Public compliance portfolio for ${domain}. View CPOE history, assurance levels, and framework coverage.`,
+    description: `Public compliance portfolio for ${domain}. View CPOE history, provenance, and framework coverage.`,
   };
 }
 

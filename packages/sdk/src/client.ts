@@ -7,8 +7,7 @@
  * All operations delegate to the root package's engines.
  * This class adds no logic — it is a thin, typed facade.
  *
- * L2/L3 methods (score, query) shelved — recover via:
- *   git show v0.5.1-with-layers:packages/sdk/src/client.ts
+ * Historical score/query helpers were removed to keep the SDK focused.
  */
 
 import { createKeyManager } from "../../../src/parley/marque-key-manager";

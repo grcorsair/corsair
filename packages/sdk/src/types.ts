@@ -3,8 +3,7 @@
  *
  * Re-exports core types and defines SDK-specific types.
  *
- * L2/L3 types (scoring, query, normalize) shelved — recover via:
- *   git show v0.5.1-with-layers:packages/sdk/src/types.ts
+ * Historical scoring/query types were removed to keep the SDK focused.
  */
 
 // Re-export from sign engine

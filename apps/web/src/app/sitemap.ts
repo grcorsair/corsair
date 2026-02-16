@@ -19,7 +19,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/blog/introducing-marque`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${baseUrl}/blog/cpoe-pieces-of-eight`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${baseUrl}/blog/parley-v2-standards`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${baseUrl}/blog/why-we-dropped-assurance-levels`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
 
     // Docs — Getting Started
     { url: `${baseUrl}/docs/getting-started/quick-start`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },

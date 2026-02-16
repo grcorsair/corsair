@@ -20,15 +20,22 @@ cd corsair
 bun install
 ```
 
-## Verify an Existing CPOE (No API Key Needed)
+## Verify a CPOE (No API Key Needed)
 
-The fastest way to see Corsair in action — verify the example CPOE:
+Generate a keypair, sign sample evidence, then verify:
 
 ```bash
-bun run bin/corsair-verify.ts examples/example-cpoe.jwt
+# Generate a signing keypair
+corsair keygen --output ./keys
+
+# Sign sample tool output into a CPOE
+corsair sign --file examples/prowler-findings.json --output cpoe.jwt
+
+# Verify the CPOE
+corsair verify --file cpoe.jwt --pubkey ./keys/corsair-signing.pub
 ```
 
-This verifies the Ed25519 signature, checks expiry, and displays the provenance and control results.
+This verifies the Ed25519 signature, checks expiry, and displays provenance and control results.
 
 ## Sign Tool Output into a CPOE
 

@@ -8,14 +8,14 @@ Corsair (https://grcorsair.com).
 
 Licensing Architecture:
 
-  Layer 0 — Specifications (CPOE_SPEC.md, L0-L4_ISSUANCE_SPEC.md)
+  Layer 0 — Specifications (CPOE_SPEC.md)
   Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0)
   https://creativecommons.org/licenses/by/4.0/
 
   Layer 1 — Protocol Core (src/parley/ types, verification, DID, COSE, CBOR, Merkle)
   Licensed under the Apache License, Version 2.0
 
-  Layer 2 — Issuance Engine (src/ingestion/, src/quartermaster/)
+  Layer 2 — Issuance Engine (src/ingestion/)
   Licensed under the Apache License, Version 2.0
   (Future: may transition to AGPL v3 for cloud-provider protection)
 

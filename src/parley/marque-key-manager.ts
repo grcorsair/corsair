@@ -36,7 +36,7 @@ export interface KeyManager {
  *
  * Currently returns MarqueKeyManager (file-based) or PgKeyManager (Postgres-backed).
  * Cloud HSM integration (Vault Transit, CloudHSM) deferred to Year 2
- * when paid L1+ issuance requires FIPS 140-2 key custody.
+ * when paid issuance requires FIPS 140-2 key custody.
  */
 export function createKeyManager(keyDir?: string): KeyManager {
   return new MarqueKeyManager(keyDir);

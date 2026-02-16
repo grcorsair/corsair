@@ -9,7 +9,7 @@ Connect FLAGSHIP compliance events to any tool with a webhook URL.
 | `cpoe.signed` | New CPOE signed | `credential-change` |
 | `cpoe.verified` | CPOE verified by third party | `credential-change` |
 | `drift.detected` | Compliance drift detected | `compliance-change` |
-| `score.degraded` | Evidence quality score dropped | `assurance-level-change` |
+| `score.degraded` | Evidence quality score dropped | `compliance-change` |
 | `cert.expiring` | Certification expiring soon | `credential-change` |
 | `cert.renewed` | Certification renewed | `credential-change` |
 | `cpoe.revoked` | CPOE emergency revocation | `session-revoked` |
