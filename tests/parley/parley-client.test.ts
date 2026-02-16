@@ -14,8 +14,8 @@ import type { ParleyEndpoint } from "../../src/parley/parley-types";
 import { mkdirSync, rmSync, existsSync } from "fs";
 
 const TEST_DIR = "/tmp/parley-client-test";
-let mockServer: ReturnType<typeof Bun.serve> | null = null;
 let serverPort: number;
+let originalFetch: typeof fetch | undefined;
 
 // Mock MARQUE for testing
 async function createTestMarque(): Promise<{ marque: MarqueDocument; publicKey: Buffer }> {
@@ -41,54 +41,58 @@ async function createTestMarque(): Promise<{ marque: MarqueDocument; publicKey: 
 beforeAll(() => {
   if (!existsSync(TEST_DIR)) mkdirSync(TEST_DIR, { recursive: true });
 
-  // Start a mock Parley server
-  mockServer = Bun.serve({
-    port: 0,
-    fetch(req) {
-      const url = new URL(req.url);
-      const auth = req.headers.get("Authorization");
+  const handler = (req: Request): Response => {
+    const url = new URL(req.url);
+    const auth = req.headers.get("Authorization");
 
-      // Check auth
-      if (auth === "Bearer invalid-key") {
-        return new Response("Unauthorized", { status: 401 });
+    // Check auth
+    if (auth === "Bearer invalid-key") {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
+    if (auth === "Bearer rate-limited") {
+      return new Response("Too Many Requests", { status: 429 });
+    }
+
+    // POST /marque — publish
+    if (url.pathname === "/marque" && req.method === "POST") {
+      return Response.json({ id: "marque-published-123" });
+    }
+
+    // GET /marque/latest — get latest
+    if (url.pathname === "/marque/latest" && req.method === "GET") {
+      const issuer = url.searchParams.get("issuer");
+      if (issuer === "nonexistent") {
+        return new Response("Not Found", { status: 404 });
       }
+      return Response.json({
+        parley: "1.0",
+        marque: { id: "latest-marque", issuer: { id: issuer, name: "Test" } },
+        signature: "mock",
+      });
+    }
 
-      if (auth === "Bearer rate-limited") {
-        return new Response("Too Many Requests", { status: 429 });
-      }
+    // POST /subscriptions — subscribe
+    if (url.pathname === "/subscriptions" && req.method === "POST") {
+      return Response.json({ subscribed: true });
+    }
 
-      // POST /marque — publish
-      if (url.pathname === "/marque" && req.method === "POST") {
-        return Response.json({ id: "marque-published-123" });
-      }
+    return new Response("Not Found", { status: 404 });
+  };
 
-      // GET /marque/latest — get latest
-      if (url.pathname === "/marque/latest" && req.method === "GET") {
-        const issuer = url.searchParams.get("issuer");
-        if (issuer === "nonexistent") {
-          return new Response("Not Found", { status: 404 });
-        }
-        return Response.json({
-          parley: "1.0",
-          marque: { id: "latest-marque", issuer: { id: issuer, name: "Test" } },
-          signature: "mock",
-        });
-      }
+  originalFetch = globalThis.fetch;
+  globalThis.fetch = (input: Request | URL | string, init?: RequestInit) => {
+    const req = input instanceof Request ? input : new Request(input, init);
+    return Promise.resolve(handler(req));
+  };
 
-      // POST /subscriptions — subscribe
-      if (url.pathname === "/subscriptions" && req.method === "POST") {
-        return Response.json({ subscribed: true });
-      }
-
-      return new Response("Not Found", { status: 404 });
-    },
-  });
-
-  serverPort = mockServer.port;
+  serverPort = 12345;
 });
 
 afterAll(() => {
-  mockServer?.stop();
+  if (originalFetch) {
+    globalThis.fetch = originalFetch;
+  }
   if (existsSync(TEST_DIR)) {
     rmSync(TEST_DIR, { recursive: true, force: true });
   }

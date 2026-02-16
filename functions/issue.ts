@@ -11,16 +11,14 @@
  *   L0 (Documented) — free, self-reported controls
  *   L1+ (Configured, Demonstrated, etc.) — requires API key (future)
  *
- * The endpoint runs the full ingestion pipeline:
- *   evidence → IngestedDocument → mapToMarqueInput → generateVCJWT → signed CPOE
+ * The endpoint runs the full issuance pipeline:
+ *   evidence → IngestedDocument → signDocument → signed CPOE
  */
 
 import type { KeyManager } from "../src/parley/marque-key-manager";
 import type { IngestedDocument, IngestedControl, DocumentSource, DocumentMetadata } from "../src/ingestion/types";
-import { mapToMarqueInput } from "../src/ingestion/mapper";
-import { MarqueGenerator } from "../src/parley/marque-generator";
-import { ReceiptChain } from "../src/parley/receipt-chain";
-import { hashData } from "../src/parley/process-receipt";
+import { inferToolAssuranceLevel } from "../src/ingestion/assurance-calculator";
+import { signDocument } from "../src/sign/sign-core";
 
 export interface IssueRouterDeps {
   keyManager: KeyManager;
@@ -163,61 +161,15 @@ export function createIssueRouter(
         source: body.source,
         metadata,
         controls,
+        toolAssuranceLevel: inferToolAssuranceLevel(body.source, controls),
       };
 
-      // Map to MarqueGeneratorInput
       const did = body.did || `did:web:${domain}`;
-      const input = mapToMarqueInput(doc, { did });
-
-      // Build process receipt chain
-      const keypair = await keyManager.loadKeypair();
-      if (keypair) {
-        const chain = new ReceiptChain(keypair.privateKey.toString());
-
-        // Receipt 0: EVIDENCE (captures tool/platform provenance)
-        await chain.captureStep({
-          step: "evidence",
-          inputData: { source: body.source, controlCount: controls.length },
-          outputData: { controlHashes: controls.map(c => hashData(c)) },
-          reproducible: body.source !== "manual",
-          codeVersion: `corsair-issue@2026-02-12`,
-          toolAttestation: {
-            toolName: body.source,
-            toolVersion: body.metadata?.rawTextHash ? "hashed" : "unknown",
-            scanTimestamp: body.metadata?.date || new Date().toISOString(),
-            scanTarget: body.metadata?.scope || "unknown",
-            outputFormat: body.source,
-          },
-        });
-
-        // Receipt 1: CLASSIFY (deterministic — evidence mapping)
-        await chain.captureStep({
-          step: "classify",
-          inputData: { controlCount: controls.length, source: body.source },
-          outputData: { assurance: "calculated" },
-          reproducible: true,
-          codeVersion: "assurance-calculator@2026-02-09",
-        });
-
-        // Receipt 2: CHART (deterministic — framework mapping)
-        await chain.captureStep({
-          step: "chart",
-          inputData: controls.map(c => c.frameworkRefs),
-          outputData: input.chartResults,
-          reproducible: true,
-          codeVersion: "chart-engine@1.0",
-        });
-
-        input.processReceipts = chain.getReceipts();
-      }
-
-      // Generate signed CPOE
-      const generator = new MarqueGenerator(keyManager, {
+      const output = await signDocument({
+        document: doc,
+        did,
         expiryDays: body.expiryDays || 90,
-        format: "vc",
-      });
-
-      const output = await generator.generateOutput(input);
+      }, keyManager);
 
       if (!output.jwt) {
         return jsonError(500, "CPOE generation failed: no JWT produced");

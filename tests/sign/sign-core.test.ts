@@ -133,7 +133,7 @@ describe("signEvidence — all formats", () => {
     expect(result.summary.controlsTested).toBe(3);
     expect(result.summary.controlsPassed).toBe(2);
     expect(result.summary.controlsFailed).toBe(1);
-    expect(result.provenance.source).toBe("json");
+    expect(result.provenance.source).toBe("tool");
     expect(result.warnings).toHaveLength(0);
   });
 
@@ -171,13 +171,13 @@ describe("signEvidence — all formats", () => {
   test("signs CISO Assistant API response", async () => {
     const result = await signEvidence({ evidence: cisoAssistantAPI }, keyManager);
     expect(result.jwt).toMatch(/^eyJ/);
-    expect(result.detectedFormat).toBe("ciso-assistant");
+    expect(result.detectedFormat).toBe("ciso-assistant-api");
   });
 
   test("signs CISO Assistant domain export", async () => {
     const result = await signEvidence({ evidence: cisoAssistantExport }, keyManager);
     expect(result.jwt).toMatch(/^eyJ/);
-    expect(result.detectedFormat).toBe("ciso-assistant");
+    expect(result.detectedFormat).toBe("ciso-assistant-api");
   });
 
   test("accepts JSON string input", async () => {
@@ -277,6 +277,26 @@ describe("signEvidence — options", () => {
     const issuedMs = payload.iat * 1000;
     const daysDiff = Math.round((expiryMs - issuedMs) / (24 * 60 * 60 * 1000));
     expect(daysDiff).toBe(30);
+  });
+});
+
+// =============================================================================
+// SUMMARY CONSISTENCY
+// =============================================================================
+
+describe("signEvidence — summary consistency", () => {
+  test("output summary matches VC credentialSubject summary", async () => {
+    const result = await signEvidence({ evidence: genericEvidence }, keyManager);
+    const parts = result.jwt.split(".");
+    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+    const summary = payload.vc?.credentialSubject?.summary;
+
+    expect(summary).toEqual({
+      controlsTested: result.summary.controlsTested,
+      controlsPassed: result.summary.controlsPassed,
+      controlsFailed: result.summary.controlsFailed,
+      overallScore: result.summary.overallScore,
+    });
   });
 });
 

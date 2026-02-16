@@ -210,3 +210,34 @@ export function deriveEvidenceTypeDistribution(
 
   return distribution;
 }
+
+// =============================================================================
+// TOOL ASSURANCE INFERENCE (for pre-parsed documents)
+// =============================================================================
+
+/**
+ * Infer tool assurance level when a document is already parsed.
+ * This mirrors the JSON parser defaults for known source types.
+ */
+export function inferToolAssuranceLevel(
+  source: DocumentSource,
+  controls: IngestedControl[],
+): AssuranceLevel {
+  switch (source) {
+    case "prowler":
+    case "securityhub":
+      return 1;
+    case "pentest":
+      return 2;
+    case "ciso-assistant": {
+      const hasEvidence = controls.some((c) => c.evidence && c.evidence.trim().length > 0);
+      return hasEvidence ? 2 : 1;
+    }
+    case "soc2":
+    case "iso27001":
+    case "json":
+    case "manual":
+    default:
+      return 0;
+  }
+}

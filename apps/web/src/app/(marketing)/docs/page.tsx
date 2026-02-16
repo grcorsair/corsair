@@ -90,7 +90,7 @@ export default function DocsPage() {
                     # Diff two CPOEs — see what changed
                   </span>
                   <div className="text-corsair-turquoise">
-                    corsair diff --current new-cpoe.jwt --previous old-cpoe.jwt
+                    corsair diff --current new-cpoe.jwt --previous old-cpoe.jwt --verify
                   </div>
                 </div>
                 <div>

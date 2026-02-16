@@ -25,6 +25,7 @@ import {
   deriveProvenance,
   deriveEvidenceTypeDistribution,
 } from "../ingestion/assurance-calculator";
+import { computeSummaryFromControls } from "../ingestion/summary";
 import { EvidenceEngine } from "../evidence";
 import { hashReceipt } from "./process-receipt";
 import type { ProcessReceipt } from "./process-receipt";
@@ -124,14 +125,10 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
     }
   }
 
-  // Build summary
-  let totalTested = 0, totalPassed = 0, totalFailed = 0;
-  for (const fw of Object.values(frameworks)) {
-    totalTested += fw.controlsMapped;
-    totalPassed += fw.passed;
-    totalFailed += fw.failed;
-  }
-  const overallScore = totalTested > 0 ? Math.round((totalPassed / totalTested) * 100) : 0;
+  // Build summary (prefer document controls when present)
+  let summary = input.document
+    ? computeSummaryFromControls(input.document.controls)
+    : computeSummaryFromFrameworks(frameworks);
 
   // Build provenance (always — provenance-first model)
   const provenance = buildProvenance(input);
@@ -147,12 +144,7 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
     scope,
     assurance,
     provenance,
-    summary: {
-      controlsTested: totalTested,
-      controlsPassed: totalPassed,
-      controlsFailed: totalFailed,
-      overallScore,
-    },
+    summary,
   };
 
   // Evidence chain — only include if there are evidence paths with data
@@ -257,6 +249,29 @@ function buildToolAssurance(input: MarqueGeneratorInput): CPOEAssurance {
     verified: true,
     method: methodMap[level] ?? "self-assessed",
     breakdown,
+  };
+}
+
+function computeSummaryFromFrameworks(
+  frameworks: NonNullable<CPOECredentialSubject["frameworks"]>,
+): { controlsTested: number; controlsPassed: number; controlsFailed: number; overallScore: number } {
+  let totalTested = 0;
+  let totalPassed = 0;
+  let totalFailed = 0;
+
+  for (const fw of Object.values(frameworks)) {
+    totalTested += fw.controlsMapped;
+    totalPassed += fw.passed;
+    totalFailed += fw.failed;
+  }
+
+  const overallScore = totalTested > 0 ? Math.round((totalPassed / totalTested) * 100) : 0;
+
+  return {
+    controlsTested: totalTested,
+    controlsPassed: totalPassed,
+    controlsFailed: totalFailed,
+    overallScore,
   };
 }
 

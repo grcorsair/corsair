@@ -9,8 +9,9 @@
 
 import { readFileSync } from "fs";
 import type { IngestedDocument } from "../ingestion/types";
-import type { MarqueGeneratorInput } from "../parley/marque-generator";
 import type { KeyManager } from "../parley/marque-key-manager";
+import { deriveProvenance } from "../ingestion/assurance-calculator";
+import { computeSummaryFromControls, computeSeverityDistribution } from "../ingestion/summary";
 
 // =============================================================================
 // TYPES
@@ -32,6 +33,32 @@ export interface SignInput {
   evidence: string | object;
 
   /** Force a specific format (bypasses auto-detection) */
+  format?: EvidenceFormat;
+
+  /** Issuer DID (e.g., "did:web:acme.com") */
+  did?: string;
+
+  /** Override scope string */
+  scope?: string;
+
+  /** CPOE validity in days (default: 90) */
+  expiryDays?: number;
+
+  /** Parse + classify but don't sign. Returns would-be credentialSubject */
+  dryRun?: boolean;
+
+  /** Enable SD-JWT selective disclosure */
+  sdJwt?: boolean;
+
+  /** Fields in credentialSubject to make disclosable (default: summary, frameworks) */
+  sdFields?: string[];
+}
+
+export interface SignDocumentInput {
+  /** Pre-parsed document (ingestion pipeline output) */
+  document: IngestedDocument;
+
+  /** Optional format hint (used for reporting) */
   format?: EvidenceFormat;
 
   /** Issuer DID (e.g., "did:web:acme.com") */
@@ -114,6 +141,28 @@ export async function signEvidence(
     format: input.format,
   });
 
+  return signDocument(
+    {
+      document: doc,
+      format: input.format,
+      did: input.did,
+      scope: input.scope,
+      expiryDays: input.expiryDays,
+      dryRun: input.dryRun,
+      sdJwt: input.sdJwt,
+      sdFields: input.sdFields,
+    },
+    keyManager,
+  );
+}
+
+export async function signDocument(
+  input: SignDocumentInput,
+  keyManager: KeyManager,
+): Promise<SignOutput> {
+  const warnings: string[] = [];
+  const doc = input.document;
+
   // Detect format name for output
   const detectedFormat = detectFormatName(doc, input.format);
 
@@ -127,8 +176,13 @@ export async function signEvidence(
     warnings.push("No controls found in evidence. CPOE will have empty summary.");
   }
 
-  // Compute severity distribution
-  const severityDistribution = computeSeverityDistribution(doc);
+  // Compute summary + severity distribution
+  const baseSummary = computeSummaryFromControls(doc.controls);
+  const severityDistribution = computeSeverityDistribution(doc.controls);
+  const summary = {
+    ...baseSummary,
+    ...(severityDistribution ? { severityDistribution } : {}),
+  };
 
   // 2. Map to MarqueGeneratorInput
   const { mapToMarqueInput } = await import("../ingestion/mapper");
@@ -180,14 +234,12 @@ export async function signEvidence(
 
   marqueInput.processReceipts = chain.getReceipts();
 
-  // Build summary from the marque input
-  const summary = buildSummary(marqueInput, severityDistribution);
-
   // Build provenance
+  const prov = deriveProvenance(doc.source, doc.metadata);
   const provenance = {
-    source: doc.source,
-    sourceIdentity: doc.metadata.issuer,
-    sourceDate: doc.metadata.date,
+    source: prov.source,
+    sourceIdentity: prov.sourceIdentity,
+    sourceDate: prov.sourceDate,
   };
 
   // Generate marqueId
@@ -279,53 +331,8 @@ function detectFormatName(doc: IngestedDocument, forced?: EvidenceFormat): strin
   if (reportType === "InSpec") return "inspec";
   if (reportType === "Trivy") return "trivy";
   if (reportType.startsWith("GitLab")) return "gitlab";
-  if (source === "ciso-assistant" || reportType === "CISO Assistant") return "ciso-assistant";
+  if (source === "ciso-assistant" || reportType === "CISO Assistant") return "ciso-assistant-api";
   return "generic";
-}
-
-/** Compute severity distribution from controls */
-function computeSeverityDistribution(doc: IngestedDocument): Record<string, number> | undefined {
-  const dist: Record<string, number> = {};
-  let hasSeverity = false;
-
-  for (const ctrl of doc.controls) {
-    if (ctrl.severity) {
-      hasSeverity = true;
-      dist[ctrl.severity] = (dist[ctrl.severity] || 0) + 1;
-    }
-  }
-
-  return hasSeverity ? dist : undefined;
-}
-
-/** Build summary from document controls (source of truth) */
-function buildSummary(
-  input: MarqueGeneratorInput,
-  severityDistribution?: Record<string, number>,
-): SignOutput["summary"] {
-  let totalTested = 0;
-  let totalPassed = 0;
-  let totalFailed = 0;
-
-  // Always count from document controls — they're the source of truth
-  if (input.document) {
-    for (const ctrl of input.document.controls) {
-      totalTested++;
-      if (ctrl.status === "effective") totalPassed++;
-      else if (ctrl.status === "ineffective") totalFailed++;
-      // "not-tested" counts as tested but neither passed nor failed
-    }
-  }
-
-  const overallScore = totalTested > 0 ? Math.round((totalPassed / totalTested) * 100) : 0;
-
-  return {
-    controlsTested: totalTested,
-    controlsPassed: totalPassed,
-    controlsFailed: totalFailed,
-    overallScore,
-    ...(severityDistribution ? { severityDistribution } : {}),
-  };
 }
 
 /** Get version from package.json */

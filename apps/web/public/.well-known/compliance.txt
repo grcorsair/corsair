@@ -1,0 +1,14 @@
+# Corsair Compliance Discovery
+# Spec: https://grcorsair.com/spec/compliance-txt
+#
+# Corsair eats its own dogfood. This is the first compliance.txt in production.
+# We pilot the format ourselves before recommending it to others.
+
+DID: did:web:grcorsair.com
+
+SCITT: https://grcorsair.com/api/scitt
+
+Frameworks: SOC2, ISO27001, NIST-800-53
+
+Contact: compliance@grcorsair.com
+Expires: 2027-02-15T23:59:59Z

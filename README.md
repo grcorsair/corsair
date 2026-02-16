@@ -92,6 +92,26 @@ corsair sign --file evidence.json --sd-jwt --sd-fields scope  # Disclose only sc
 corsair sign --file - < data.json              # Sign from stdin
 ```
 
+### Diff Options
+
+```bash
+corsair diff --current new.jwt --previous old.jwt
+corsair diff --current new.jwt --previous old.jwt --verify
+corsair diff --current new.jwt --previous old.jwt --json
+```
+
+### Compliance Discovery (compliance.txt)
+
+Corsair supports a discovery layer modeled after `security.txt`. Organizations publish
+`/.well-known/compliance.txt` so verifiers can discover DID identity, current CPOEs,
+SCITT endpoints, and FLAGSHIP streams.
+
+```bash
+corsair compliance-txt generate --did did:web:acme.com --cpoe-url https://acme.com/soc2.jwt
+corsair compliance-txt generate --did did:web:acme.com --cpoes ./cpoes/ --base-url https://acme.com/compliance/
+corsair compliance-txt discover acme.com --verify
+```
+
 ---
 
 ## Supported Formats

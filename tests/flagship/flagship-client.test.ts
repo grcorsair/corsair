@@ -8,8 +8,8 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { FlagshipClient } from "../../src/flagship/flagship-client";
 
-let mockServer: ReturnType<typeof Bun.serve> | null = null;
 let serverPort: number;
+let originalFetch: typeof fetch | undefined;
 
 // Pending events for the poll endpoint
 const pendingEvents = new Map<string, string[]>();
@@ -18,58 +18,63 @@ beforeAll(() => {
   // Seed some pending events
   pendingEvents.set("stream-001", ["set-jwt-token-1", "set-jwt-token-2"]);
 
-  mockServer = Bun.serve({
-    port: 0,
-    fetch(req) {
-      const url = new URL(req.url);
-      const auth = req.headers.get("Authorization");
+  const handler = (req: Request): Response => {
+    const url = new URL(req.url);
+    const auth = req.headers.get("Authorization");
 
-      // 401 Unauthorized
-      if (auth === "Bearer invalid-key") {
-        return new Response("Unauthorized", { status: 401 });
+    // 401 Unauthorized
+    if (auth === "Bearer invalid-key") {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
+    // 429 Rate Limited
+    if (auth === "Bearer rate-limited") {
+      return new Response("Too Many Requests", { status: 429 });
+    }
+
+    // POST to any endpoint (push delivery)
+    if (req.method === "POST" && url.pathname.startsWith("/events")) {
+      const contentType = req.headers.get("Content-Type");
+      if (contentType !== "application/secevent+jwt") {
+        return new Response("Bad Content-Type", { status: 400 });
       }
+      return new Response("", { status: 202 });
+    }
 
-      // 429 Rate Limited
-      if (auth === "Bearer rate-limited") {
-        return new Response("Too Many Requests", { status: 429 });
-      }
+    // GET /streams/:streamId/events (poll delivery)
+    if (req.method === "GET" && url.pathname.match(/\/streams\/[^/]+\/events/)) {
+      const parts = url.pathname.split("/");
+      const streamId = parts[2];
+      const sets = pendingEvents.get(streamId) || [];
+      return Response.json({ sets });
+    }
 
-      // POST to any endpoint (push delivery)
-      if (req.method === "POST" && url.pathname.startsWith("/events")) {
-        const contentType = req.headers.get("Content-Type");
-        if (contentType !== "application/secevent+jwt") {
-          return new Response("Bad Content-Type", { status: 400 });
-        }
-        return new Response("", { status: 202 });
-      }
+    // POST /streams/:streamId/acknowledge (ack)
+    if (req.method === "POST" && url.pathname.match(/\/streams\/[^/]+\/acknowledge/)) {
+      return new Response("", { status: 202 });
+    }
 
-      // GET /streams/:streamId/events (poll delivery)
-      if (req.method === "GET" && url.pathname.match(/\/streams\/[^/]+\/events/)) {
-        const parts = url.pathname.split("/");
-        const streamId = parts[2];
-        const sets = pendingEvents.get(streamId) || [];
-        return Response.json({ sets });
-      }
+    // 500 Internal Server Error endpoint for error handling tests
+    if (url.pathname === "/error-500") {
+      return new Response("Internal Server Error", { status: 500 });
+    }
 
-      // POST /streams/:streamId/acknowledge (ack)
-      if (req.method === "POST" && url.pathname.match(/\/streams\/[^/]+\/acknowledge/)) {
-        return new Response("", { status: 202 });
-      }
+    return new Response("Not Found", { status: 404 });
+  };
 
-      // 500 Internal Server Error endpoint for error handling tests
-      if (url.pathname === "/error-500") {
-        return new Response("Internal Server Error", { status: 500 });
-      }
+  originalFetch = globalThis.fetch;
+  globalThis.fetch = (input: Request | URL | string, init?: RequestInit) => {
+    const req = input instanceof Request ? input : new Request(input, init);
+    return Promise.resolve(handler(req));
+  };
 
-      return new Response("Not Found", { status: 404 });
-    },
-  });
-
-  serverPort = mockServer.port;
+  serverPort = 12345;
 });
 
 afterAll(() => {
-  mockServer?.stop();
+  if (originalFetch) {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 describe("FlagshipClient", () => {

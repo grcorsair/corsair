@@ -178,6 +178,22 @@ describe("corsair diff — primary command", () => {
     expect(code).toBe(1);
   });
 
+  test("diff --json outputs structured report", async () => {
+    const proc = Bun.spawn([
+      "bun", "run", "corsair.ts", "diff",
+      "--current", join(tmpDir, "cpoe-v2.jwt"),
+      "--previous", join(tmpDir, "cpoe-v1.jwt"),
+      "--json",
+    ], { cwd, stdout: "pipe" });
+    const stdout = await new Response(proc.stdout).text();
+    const code = await proc.exited;
+
+    const report = JSON.parse(stdout);
+    expect(report.result).toBe("regression");
+    expect(report.regressions).toContain("CC6.6");
+    expect(code).toBe(1);
+  });
+
   test("diff exits 0 when no regression", async () => {
     const proc = Bun.spawn([
       "bun", "run", "corsair.ts", "diff",

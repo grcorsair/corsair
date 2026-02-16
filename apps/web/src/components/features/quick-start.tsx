@@ -26,7 +26,7 @@ bun run corsair.ts sign --file prowler-findings.json
 bun run corsair.ts verify --file prowler-findings.cpoe.jwt
 
 # Compare two CPOEs (like git diff)
-bun run corsair.ts diff --current new.jwt --previous old.jwt
+bun run corsair.ts diff --current new.jwt --previous old.jwt --verify
 
 # Query the SCITT transparency log (like git log)
 bun run corsair.ts log --last 10

@@ -520,7 +520,7 @@ describe("corsair sign — invisible UX", () => {
     mkdirSync(initDir, { recursive: true });
 
     const proc = Bun.spawn(
-      ["bun", "run", "corsair.ts", "init", "--key-dir", join(initDir, "keys")],
+      ["bun", "run", join(cwd, "corsair.ts"), "init", "--key-dir", join(initDir, "keys")],
       { cwd: initDir, stdout: "pipe" },
     );
     const stdout = await new Response(proc.stdout).text();

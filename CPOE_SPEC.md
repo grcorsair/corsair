@@ -82,6 +82,8 @@ All claims live under `vc.credentialSubject`. The provenance-first model (v0.5.0
 | `summary.controlsFailed` | number | Controls that failed |
 | `summary.overallScore` | number | Pass rate as percentage (0-100) |
 
+**Summary derivation:** When control-level results are present, `summary.*` MUST be derived from the control statuses (effective/ineffective/not-tested). Framework mappings are optional and must not override control-derived summary totals.
+
 ### Optional Claims
 
 | Claim | Type | Description |

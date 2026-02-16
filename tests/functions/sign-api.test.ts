@@ -153,14 +153,14 @@ describe("POST /sign — all formats", () => {
     const res = await router(makeRequest({ evidence: cisoAssistantAPI }));
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data.detectedFormat).toBe("ciso-assistant");
+    expect(data.detectedFormat).toBe("ciso-assistant-api");
   });
 
   test("signs CISO Assistant export", async () => {
     const res = await router(makeRequest({ evidence: cisoAssistantExport }));
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data.detectedFormat).toBe("ciso-assistant");
+    expect(data.detectedFormat).toBe("ciso-assistant-api");
   });
 });
 

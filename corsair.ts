@@ -398,6 +398,8 @@ async function handleDiff(): Promise<void> {
   let currentPath: string | undefined;
   let previousPath: string | undefined;
   let showHelp = false;
+  let jsonOutput = false;
+  let verify = false;
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -408,6 +410,12 @@ async function handleDiff(): Promise<void> {
       case "--previous":
       case "-p":
         previousPath = args[++i];
+        break;
+      case "--json":
+        jsonOutput = true;
+        break;
+      case "--verify":
+        verify = true;
         break;
       case "--help":
       case "-h":
@@ -426,6 +434,8 @@ USAGE:
 OPTIONS:
   -c, --current <PATH>      Path to the current (new) CPOE
   -p, --previous <PATH>     Path to the previous (baseline) CPOE
+      --verify              Verify signatures via DID:web before diffing
+      --json                Output structured JSON
   -h, --help                Show this help
 
 EXIT CODES:
@@ -468,6 +478,20 @@ EXAMPLES:
   // Decode both JWTs (just base64url decode, no signature verification needed)
   const currentJwt = readFileSync(currentPath, "utf-8").trim();
   const previousJwt = readFileSync(previousPath, "utf-8").trim();
+
+  if (verify) {
+    const { verifyVCJWTViaDID } = await import("./src/parley/vc-verifier");
+    const currentVerification = await verifyVCJWTViaDID(currentJwt);
+    if (!currentVerification.valid) {
+      console.error(`Error: current CPOE verification failed (${currentVerification.reason || "invalid"})`);
+      process.exit(2);
+    }
+    const previousVerification = await verifyVCJWTViaDID(previousJwt);
+    if (!previousVerification.valid) {
+      console.error(`Error: previous CPOE verification failed (${previousVerification.reason || "invalid"})`);
+      process.exit(2);
+    }
+  }
 
   const currentPayload = decodeJwtPayload(currentJwt);
   const previousPayload = decodeJwtPayload(previousJwt);
@@ -531,6 +555,28 @@ EXAMPLES:
 
   // Output results
   const hasRegression = newFailures.length > 0 || assuranceChange < 0;
+
+  if (jsonOutput) {
+    const report = {
+      assurance: {
+        previous: previousAssurance,
+        current: currentAssurance,
+        change: assuranceChange,
+      },
+      score: {
+        previous: previousScore,
+        current: currentScore,
+        change: scoreChange,
+      },
+      regressions: newFailures,
+      improvements,
+      added: addedControls,
+      removed: removedControls,
+      result: hasRegression ? "regression" : "ok",
+    };
+    process.stdout.write(JSON.stringify(report, null, 2));
+    process.exit(hasRegression ? 1 : 0);
+  }
 
   console.log("CORSAIR DIFF REPORT");
   console.log("===================");
@@ -1199,6 +1245,7 @@ EXAMPLES:
   corsair compliance-txt generate --did did:web:acme.com --cpoes ./cpoes/ --output compliance.txt
   corsair compliance-txt validate acme.com
   corsair compliance-txt discover acme.com
+  corsair compliance-txt discover acme.com --verify
 
 OPTIONS:
   -h, --help    Show this help
@@ -1219,6 +1266,7 @@ async function handleComplianceTxtGenerate(args: string[]): Promise<void> {
   let contact: string | undefined;
   let expiryDays = 365;
   let outputPath: string | undefined;
+  let baseUrl: string | undefined;
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -1250,6 +1298,9 @@ async function handleComplianceTxtGenerate(args: string[]): Promise<void> {
       case "-o":
         outputPath = args[++i];
         break;
+      case "--base-url":
+        baseUrl = args[++i];
+        break;
       case "--help":
       case "-h":
         console.log(`
@@ -1262,6 +1313,7 @@ OPTIONS:
   --did <DID>              DID:web identity (required)
   --cpoes <DIR>            Directory to scan for .jwt CPOE files
   --cpoe-url <URL>         Add a CPOE URL (repeatable)
+  --base-url <URL>         Base URL to prefix scanned CPOE filenames
   --scitt <URL>            SCITT transparency log endpoint
   --flagship <URL>         FLAGSHIP signal stream endpoint
   --frameworks <LIST>      Comma-separated framework names
@@ -1292,13 +1344,25 @@ EXAMPLES:
       const files = readdirSync(cpoeDir);
       for (const file of files) {
         if (file.endsWith(".jwt")) {
-          // Use the file path as a URL placeholder — user should replace with actual URLs
-          cpoeUrls.push(join(cpoeDir, file));
+          if (baseUrl) {
+            const normalizedBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+            try {
+              cpoeUrls.push(new URL(file, normalizedBase).toString());
+            } catch {
+              cpoeUrls.push(join(cpoeDir, file));
+            }
+          } else {
+            // Use the file path as a URL placeholder — user should replace with actual URLs
+            cpoeUrls.push(join(cpoeDir, file));
+          }
         }
       }
     } catch {
       console.error(`Error: Cannot read directory: ${cpoeDir}`);
       process.exit(2);
+    }
+    if (!baseUrl) {
+      console.error("Note: --cpoes without --base-url uses local file paths. Replace with public URLs before publishing.");
     }
   }
 
@@ -1394,6 +1458,7 @@ async function handleComplianceTxtValidate(args: string[]): Promise<void> {
 async function handleComplianceTxtDiscover(args: string[]): Promise<void> {
   const domain = args.find(a => !a.startsWith("--"));
   let jsonOutput = args.includes("--json");
+  let verify = args.includes("--verify");
 
   if (!domain) {
     console.error("Error: domain is required");
@@ -1415,6 +1480,45 @@ async function handleComplianceTxtDiscover(args: string[]): Promise<void> {
 
   const ct = resolution.complianceTxt;
   const validation = validateComplianceTxt(ct);
+  let verificationResults: Array<{ url: string; valid: boolean; reason?: string; issuer?: string; trustTier?: string }> = [];
+
+  if (verify && ct.cpoes.length > 0) {
+    const { verifyVCJWTViaDID } = await import("./src/parley/vc-verifier");
+    for (const url of ct.cpoes) {
+      try {
+        const res = await fetch(url, { signal: AbortSignal.timeout(5000), redirect: "error" });
+        if (!res.ok) {
+          verificationResults.push({ url, valid: false, reason: `HTTP ${res.status}` });
+          continue;
+        }
+        const text = (await res.text()).trim();
+        let jwt = text;
+        if (text.startsWith("{")) {
+          try {
+            const parsed = JSON.parse(text);
+            jwt = parsed.cpoe || parsed.jwt || "";
+          } catch {
+            jwt = "";
+          }
+        }
+        if (!jwt) {
+          verificationResults.push({ url, valid: false, reason: "No JWT found" });
+          continue;
+        }
+        const result = await verifyVCJWTViaDID(jwt);
+        verificationResults.push({
+          url,
+          valid: result.valid,
+          reason: result.valid ? undefined : result.reason,
+          issuer: result.signedBy,
+          trustTier: result.issuerTier,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        verificationResults.push({ url, valid: false, reason: message });
+      }
+    }
+  }
 
   if (jsonOutput) {
     process.stdout.write(JSON.stringify({
@@ -1422,6 +1526,7 @@ async function handleComplianceTxtDiscover(args: string[]): Promise<void> {
       complianceTxt: ct,
       validation,
       cpoeCount: ct.cpoes.length,
+      verification: verify ? verificationResults : undefined,
     }, null, 2));
     return;
   }
@@ -1465,6 +1570,18 @@ async function handleComplianceTxtDiscover(args: string[]): Promise<void> {
   }
 
   console.log("");
+
+  if (verify && verificationResults.length > 0) {
+    console.log("  VERIFICATION:");
+    for (const v of verificationResults) {
+      if (v.valid) {
+        console.log(`    ✓ ${v.url} (${v.trustTier || "unknown"})`);
+      } else {
+        console.log(`    ✗ ${v.url} — ${v.reason || "invalid"}`);
+      }
+    }
+    console.log("");
+  }
 
   if (!validation.valid) {
     console.log("  VALIDATION ERRORS:");
