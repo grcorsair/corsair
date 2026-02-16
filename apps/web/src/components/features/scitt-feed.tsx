@@ -183,7 +183,7 @@ export function SCITTFeed({ className }: SCITTFeedProps) {
             No SCITT entries found. Sign your first CPOE to see it here.
           </p>
           <Button variant="outline" size="sm" className="mt-3" asChild>
-            <a href="/playground">Go to Playground</a>
+            <a href="/sign">Sign your first CPOE</a>
           </Button>
         </div>
       )}

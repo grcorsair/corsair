@@ -60,7 +60,7 @@ export function VendorProfileView({ domain }: VendorProfileViewProps) {
           <div className="mx-auto max-w-md rounded-lg border border-corsair-border bg-corsair-surface p-8">
             <p className="text-corsair-text-dim">{error}</p>
             <Button variant="outline" size="sm" className="mt-4" asChild>
-              <a href="/playground">Sign your first CPOE</a>
+              <a href="/sign">Sign your first CPOE</a>
             </Button>
           </div>
         </div>

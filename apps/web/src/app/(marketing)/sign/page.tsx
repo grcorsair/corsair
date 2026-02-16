@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
 import { SignWizard } from "@/components/features/sign-wizard";
+import { PlaygroundEditor } from "@/components/features/playground-editor";
+import { PlaygroundRecording } from "@/components/features/playground-recording";
 import { FadeIn } from "@/components/motion/fade-in";
 import { PixelDivider } from "@/components/pixel-art/pixel-divider";
+import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
   title: "Sign Evidence",
   description:
-    "Sign security tool output as a CPOE (Certificate of Proof of Operational Effectiveness). Upload evidence, configure signing options, and get a cryptographically signed JWT-VC.",
+    "Sign security tool output as a CPOE (Certificate of Proof of Operational Effectiveness). Try the signing flow, then sign with an API key for production use.",
 };
 
 export default function SignPage() {
   return (
     <main className="px-6 py-16">
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-4xl">
         {/* Header */}
         <FadeIn>
           <div className="mb-12 text-center">
@@ -23,18 +26,75 @@ export default function SignPage() {
               sign
             </h1>
             <p className="mx-auto max-w-xl text-corsair-text-dim">
-              Sign security tool output as a{" "}
-              <span className="font-semibold text-corsair-gold">CPOE</span>.
-              Upload or paste evidence from any of 8 supported formats, configure your signing
-              options, and get a cryptographically signed JWT-VC.
-            </p>
-            <p className="mx-auto mt-3 max-w-md text-sm text-corsair-text-dim/60">
-              Requires an API key. Evidence is signed server-side with Ed25519.
+              Turn security tool output into a{" "}
+              <span className="font-semibold text-corsair-gold">CPOE</span>. Try the signing flow
+              below, then sign with an API key when you&apos;re ready for production.
             </p>
           </div>
         </FadeIn>
 
+        {/* Playground */}
+        <FadeIn>
+          <div className="mb-6 text-center">
+            <p className="mb-3 font-pixel text-[7px] tracking-wider text-corsair-cyan/60">
+              TRY IT FIRST
+            </p>
+            <h2 className="mb-3 font-display text-2xl font-bold text-corsair-text">
+              See signing in action
+            </h2>
+            <p className="mx-auto max-w-xl text-sm text-corsair-text-dim">
+              Paste or select real evidence formats and preview the signed CPOE.
+              No API key required.
+            </p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              {[
+                "Generic",
+                "Prowler",
+                "SecurityHub",
+                "InSpec",
+                "Trivy",
+                "GitLab",
+                "CISO Assistant",
+              ].map((fmt) => (
+                <Badge
+                  key={fmt}
+                  variant="outline"
+                  className="border-corsair-border font-mono text-[10px] text-corsair-text-dim"
+                >
+                  {fmt}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </FadeIn>
+
+        <FadeIn delay={0.1}>
+          <PlaygroundRecording castFile="/recordings/sign.cast" className="mb-8" />
+        </FadeIn>
+
         <FadeIn delay={0.2}>
+          <PlaygroundEditor />
+        </FadeIn>
+
+        <PixelDivider variant="swords" className="my-16" />
+
+        {/* Production signing */}
+        <FadeIn>
+          <div className="mb-10 text-center">
+            <p className="mb-3 font-pixel text-[7px] tracking-wider text-corsair-gold/60">
+              PRODUCTION
+            </p>
+            <h2 className="mb-3 font-display text-2xl font-bold text-corsair-text">
+              Sign with an API key
+            </h2>
+            <p className="mx-auto max-w-xl text-sm text-corsair-text-dim">
+              Use the signing API to generate verifiable CPOEs for your organization.
+              Evidence is signed server-side with Ed25519.
+            </p>
+          </div>
+        </FadeIn>
+
+        <FadeIn delay={0.1}>
           <SignWizard />
         </FadeIn>
 

@@ -209,7 +209,7 @@ export default function GeneratePage() {
                 </p>
               </a>
               <a
-                href="/playground"
+                href="/sign"
                 className="group rounded-xl border border-corsair-border bg-corsair-surface p-4 transition-colors hover:border-corsair-gold/40"
               >
                 <p className="font-mono text-sm font-bold text-corsair-gold group-hover:text-corsair-gold">

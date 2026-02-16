@@ -2,23 +2,21 @@ import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 
 const productLinks = [
-  { href: "/vision", label: "Vision" },
-  { href: "/anatomy", label: "How It Works" },
-  { href: "/docs", label: "Documentation" },
-  { href: "/marque", label: "Verify CPOE" },
+  { href: "/how-it-works", label: "How It Works" },
+  { href: "/marque", label: "Verify" },
   { href: "/generate", label: "Generate compliance.txt" },
+  { href: "/sign", label: "Sign evidence" },
+  { href: "/log", label: "Transparency Log" },
+  { href: "/docs", label: "Documentation" },
   { href: "/blog", label: "Blog" },
-  { href: "/faq", label: "FAQ" },
 ];
 
 const resourceLinks = [
   { href: "/docs/getting-started/quick-start", label: "Quick Start" },
   { href: "/docs/concepts/pipeline", label: "CPOE Lifecycle" },
-  { href: "/docs/concepts/parley-protocol", label: "Parley Protocol" },
-  { href: "/protocol", label: "Protocol Deep Dive" },
-  { href: "/docs/integrations/ci-cd", label: "CI/CD Integration" },
-  { href: "/docs/integrations/jwt-vc", label: "JWT-VC Integration" },
-  { href: "/faq#selective-disclosure", label: "Selective Disclosure" },
+  { href: "/docs/integrations/api", label: "REST API" },
+  { href: "/docs/integrations/sdk", label: "TypeScript SDK" },
+  { href: "/docs#integrations", label: "Integrations" },
 ];
 
 const communityLinks = [

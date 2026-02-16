@@ -1,0 +1,53 @@
+[
+  {
+    "entryId": "scitt-marque-bc32da55-1bea-4f3f-bc4b-72141863ce1d",
+    "registrationTime": "2026-02-12T17:21:14.180Z",
+    "issuer": "did:web:cloudbank.io",
+    "scope": "AWS Production - Cloud Infrastructure Controls",
+    "provenance": {
+      "source": "tool",
+      "sourceIdentity": "Prowler"
+    },
+    "assuranceLevel": 1,
+    "summary": {
+      "controlsTested": 15,
+      "controlsPassed": 10,
+      "controlsFailed": 5,
+      "overallScore": 67
+    }
+  },
+  {
+    "entryId": "scitt-marque-5bbc5251-f468-4c79-9009-56d7cb47892f",
+    "registrationTime": "2026-02-11T17:21:14.183Z",
+    "issuer": "did:web:retailcorp.com",
+    "scope": "PCI DSS - Payment Infrastructure Hardening",
+    "provenance": {
+      "source": "tool",
+      "sourceIdentity": "InSpec"
+    },
+    "assuranceLevel": 1,
+    "summary": {
+      "controlsTested": 10,
+      "controlsPassed": 7,
+      "controlsFailed": 3,
+      "overallScore": 70
+    }
+  },
+  {
+    "entryId": "scitt-marque-77c3a653-13ba-423a-a1fe-5d9cd60feb75",
+    "registrationTime": "2026-02-10T17:21:14.185Z",
+    "issuer": "did:web:devshipco.dev",
+    "scope": "Container Security - Production Images",
+    "provenance": {
+      "source": "tool",
+      "sourceIdentity": "Trivy"
+    },
+    "assuranceLevel": 1,
+    "summary": {
+      "controlsTested": 12,
+      "controlsPassed": 3,
+      "controlsFailed": 9,
+      "overallScore": 25
+    }
+  }
+]

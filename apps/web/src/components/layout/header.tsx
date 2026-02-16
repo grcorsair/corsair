@@ -14,19 +14,12 @@ import { Separator } from "@/components/ui/separator";
 import { MenuIcon } from "lucide-react";
 
 const navLinks = [
-  { href: "/vision", label: "Vision" },
-  { href: "/anatomy", label: "How It Works" },
-  { href: "/protocol", label: "Protocol" },
-  { href: "/integrations", label: "Integrations" },
+  { href: "/how-it-works", label: "How It Works" },
   { href: "/docs", label: "Docs" },
-  { href: "/playground", label: "Playground" },
-  { href: "/sign", label: "Sign" },
   { href: "/marque", label: "Verify" },
   { href: "/generate", label: "Generate" },
+  { href: "/sign", label: "Sign" },
   { href: "/log", label: "Log" },
-  { href: "/blog", label: "Blog" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/glossary", label: "Glossary" },
 ];
 
 export function Header() {

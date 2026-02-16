@@ -254,10 +254,10 @@ export default function MarquePage() {
               </div>
               <p className="mt-4 text-center">
                 <a
-                  href="/protocol"
+                  href="/how-it-works"
                   className="font-mono text-xs text-corsair-gold transition-colors hover:text-corsair-gold/80"
                 >
-                  See how the five primitives map to the protocol stack &rarr;
+                  See how it works &rarr;
                 </a>
               </p>
             </div>

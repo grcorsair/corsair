@@ -103,45 +103,10 @@ export default function DocsPage() {
                 </div>
                 <div>
                   <span className="text-corsair-text-dim">
-                    # Sign with evidence quality score
+                    # Publish compliance discovery
                   </span>
                   <div className="text-corsair-gold">
-                    corsair sign --file evidence.json --score
-                  </div>
-                </div>
-                <div>
-                  <span className="text-corsair-text-dim">
-                    # Run a full compliance audit
-                  </span>
-                  <div className="text-corsair-green">
-                    corsair audit --files prowler.json inspec.json --scope
-                    &quot;AWS Production&quot;
-                  </div>
-                </div>
-                <div>
-                  <span className="text-corsair-text-dim">
-                    # Manage continuous certifications
-                  </span>
-                  <div className="text-corsair-turquoise">
-                    corsair cert create --scope &quot;AWS Prod&quot;
-                    --frameworks SOC2 --files evidence/*.json
-                  </div>
-                </div>
-                <div>
-                  <span className="text-corsair-text-dim">
-                    # Third-party risk management
-                  </span>
-                  <div className="text-corsair-cyan">
-                    corsair tprm assess --vendor &lt;id&gt; --frameworks
-                    SOC2 --cpoes vendor-cpoe.jwt
-                  </div>
-                </div>
-                <div>
-                  <span className="text-corsair-text-dim">
-                    # FLAGSHIP real-time compliance signals
-                  </span>
-                  <div className="text-corsair-crimson">
-                    corsair signal
+                    corsair compliance-txt generate --did did:web:acme.com
                   </div>
                 </div>
                 <div>
@@ -163,7 +128,7 @@ export default function DocsPage() {
         <div className="space-y-12">
           {groupedDocs.map((section) => (
             <FadeIn key={section.id}>
-              <div>
+              <div id={section.id}>
                 <p className={`mb-2 font-pixel text-[7px] tracking-wider ${section.labelColor}/60`}>
                   {section.label}
                 </p>
