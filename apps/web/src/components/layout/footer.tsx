@@ -2,11 +2,13 @@ import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 
 const productLinks = [
+  { href: "/sign", label: "Sign" },
+  { href: "/log", label: "Log" },
+  { href: "/publish", label: "Publish" },
+  { href: "/verify", label: "Verify" },
+  { href: "/diff", label: "Diff" },
+  { href: "/signal", label: "Signal" },
   { href: "/how-it-works", label: "How It Works" },
-  { href: "/marque", label: "Verify" },
-  { href: "/generate", label: "Generate compliance.txt" },
-  { href: "/sign", label: "Sign evidence" },
-  { href: "/log", label: "Transparency Log" },
   { href: "/docs", label: "Documentation" },
   { href: "/blog", label: "Blog" },
 ];

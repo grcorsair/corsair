@@ -144,7 +144,7 @@ export function SCITTEntryCard({ entry }: SCITTEntryCardProps) {
             {/* Actions */}
             <div className="flex gap-2">
               <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
-                <a href={`/marque?entryId=${entry.entryId}`}>
+                <a href={`/verify?entryId=${entry.entryId}`}>
                   Verify
                 </a>
               </Button>

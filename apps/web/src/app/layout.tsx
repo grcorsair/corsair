@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, JetBrains_Mono, Press_Start_2P, Pixelify_Sans } from "next/font/google";
+import { Rajdhani, Manrope, JetBrains_Mono, Press_Start_2P, Pixelify_Sans } from "next/font/google";
 
 import "./globals.css";
 
-const inter = Inter({
+const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
 });
 
-const spaceGrotesk = Space_Grotesk({
+const rajdhani = Rajdhani({
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
@@ -93,9 +94,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} ${pressStart2P.variable} ${pixelifySans.variable}`}
+      className={`${manrope.variable} ${rajdhani.variable} ${jetbrainsMono.variable} ${pressStart2P.variable} ${pixelifySans.variable}`}
     >
-      <body className="min-h-screen bg-corsair-deep text-corsair-text antialiased">
+      <body className="bg-noise min-h-screen bg-corsair-deep text-corsair-text antialiased">
         {children}
       </body>
     </html>

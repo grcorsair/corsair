@@ -275,8 +275,8 @@ export function PlaygroundEditor() {
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
                 This command signs the evidence and outputs a JWT-VC CPOE. Verify at{" "}
-                <a href="/marque" className="text-corsair-gold hover:underline">
-                  /marque
+                <a href="/verify" className="text-corsair-gold hover:underline">
+                  /verify
                 </a>
                 .
               </p>

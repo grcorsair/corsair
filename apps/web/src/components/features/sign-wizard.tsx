@@ -457,7 +457,7 @@ export function SignWizard() {
                   asChild
                   className="font-display font-semibold hover:border-corsair-green hover:text-corsair-green"
                 >
-                  <a href="/marque">Verify at /marque</a>
+                  <a href="/verify">Verify at /verify</a>
                 </Button>
               </div>
 

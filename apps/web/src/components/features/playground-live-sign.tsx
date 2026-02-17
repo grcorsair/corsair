@@ -208,7 +208,7 @@ export function PlaygroundLiveSign({
             {/* Next steps */}
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" asChild>
-                <a href={`/marque?cpoe=${encodeURIComponent(result.jwt)}`}>
+                <a href={`/verify?cpoe=${encodeURIComponent(result.jwt)}`}>
                   Verify this CPOE
                 </a>
               </Button>

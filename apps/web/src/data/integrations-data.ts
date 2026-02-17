@@ -237,8 +237,8 @@ export const INTEGRATIONS: Integration[] = [
     name: "Web UI (Verify)",
     category: "sign-verify",
     status: "available",
-    description: "Verify any CPOE at grcorsair.com/marque — no account needed",
-    docsUrl: "/marque",
+    description: "Verify any CPOE at grcorsair.com/verify — no account needed",
+    docsUrl: "/verify",
   },
   {
     id: "hosted-api",

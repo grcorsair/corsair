@@ -9,10 +9,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: baseUrl, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${baseUrl}/how-it-works`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
     { url: `${baseUrl}/docs`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${baseUrl}/marque`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
-    { url: `${baseUrl}/generate`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${baseUrl}/verify`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${baseUrl}/publish`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     { url: `${baseUrl}/sign`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${baseUrl}/log`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${baseUrl}/diff`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${baseUrl}/signal`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
 
     // Blog posts

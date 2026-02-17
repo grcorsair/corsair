@@ -15,7 +15,7 @@ const BADGE_BASE = "https://grcorsair.com/badge";
 
 function getSnippet(marqueId: string, format: EmbedFormat): string {
   const url = `${BADGE_BASE}/${marqueId}.svg`;
-  const link = `https://grcorsair.com/marque?cpoe=${marqueId}`;
+  const link = `https://grcorsair.com/verify?cpoe=${marqueId}`;
 
   switch (format) {
     case "markdown":

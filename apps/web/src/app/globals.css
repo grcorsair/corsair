@@ -12,7 +12,7 @@
 @theme {
   /* ── Primary brand colors ────────────────────────────── */
   --color-corsair-navy: #1A1610;
-  --color-corsair-cyan: #D4A853;
+  --color-corsair-cyan: #00CFFF;
   --color-corsair-gold: #D4A853;
 
   /* ── Semantic colors ─────────────────────────────────── */
@@ -34,8 +34,8 @@
   --color-corsair-red-dark: #8B2232;
 
   /* ── Typography ──────────────────────────────────────── */
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Rajdhani", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Geist Mono", ui-monospace, monospace;
   --font-pixel: "Press Start 2P", monospace;
   --font-pixel-display: "Pixelify Sans", "Press Start 2P", monospace;
@@ -365,4 +365,43 @@ body {
   * {
     @apply border-border outline-ring/50;
   }
+}
+
+/* ── Noise texture overlay ───────────────────────────────── */
+.bg-noise::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.025;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  mix-blend-mode: overlay;
+}
+
+/* ── Nav link animated underline ─────────────────────────── */
+.nav-link {
+  position: relative;
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--color-corsair-gold);
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+/* ── Button glow on hover ────────────────────────────────── */
+.btn-glow:hover {
+  box-shadow: 0 0 20px rgba(212, 168, 83, 0.25);
 }

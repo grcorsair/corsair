@@ -14,8 +14,8 @@ import { Separator } from "@/components/ui/separator";
 import { MenuIcon } from "lucide-react";
 
 const navLinks = [
-  { href: "/marque", label: "Verify" },
-  { href: "/generate", label: "Generate" },
+  { href: "/verify", label: "Verify" },
+  { href: "/publish", label: "Publish" },
   { href: "/docs", label: "Docs" },
 ];
 
@@ -43,7 +43,7 @@ export function Header() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm text-corsair-text-dim transition-colors hover:text-corsair-gold"
+              className="nav-link text-sm text-corsair-text-dim transition-colors hover:text-corsair-gold"
             >
               {link.label}
             </Link>

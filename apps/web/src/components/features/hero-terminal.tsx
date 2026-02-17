@@ -20,6 +20,12 @@ const logLines = [
   { text: "  #2  2026-01-15  cpoe-globex.jwt     self   did:web:globex.com", color: "text-corsair-text-dim" },
 ];
 
+const publishLines = [
+  { label: "DID", value: "did:web:grcorsair.com", color: "text-corsair-text" },
+  { label: "CPOEs", value: "3 found, published", color: "text-corsair-green" },
+  { label: "Output", value: "/.well-known/compliance.txt", color: "text-corsair-gold" },
+];
+
 const verifyLines = [
   { label: "Signature", value: "Ed25519 valid", color: "text-corsair-green" },
   { label: "Issuer", value: "did:web:grcorsair.com", color: "text-corsair-text" },
@@ -45,7 +51,11 @@ export function HeroTerminal() {
   const logStagger = 0.12;
   const logEnd = logStart + logLines.length * logStagger + 0.2;
 
-  const verifyStart = logEnd + 0.4;
+  const publishStart = logEnd + 0.4;
+  const publishStagger = 0.13;
+  const publishEnd = publishStart + publishLines.length * publishStagger + 0.2;
+
+  const verifyStart = publishEnd + 0.4;
   const verifyStagger = 0.13;
   const verifyEnd = verifyStart + verifyLines.length * verifyStagger + 0.2;
 
@@ -68,7 +78,7 @@ export function HeroTerminal() {
           <div className="h-2.5 w-2.5 rounded-full bg-[#28C840]" />
         </div>
         <span className="ml-2 font-mono text-[11px] text-corsair-text-dim">
-          corsair — sign / diff / log / verify / signal
+          corsair — sign / diff / log / publish / verify / signal
         </span>
       </div>
 
@@ -158,7 +168,35 @@ export function HeroTerminal() {
 
         <div className="h-4" />
 
-        {/* Step 4: corsair verify */}
+        {/* Step 4: corsair publish */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: publishStart - 0.2 }}
+        >
+          <span className="text-corsair-gold">$</span>{" "}
+          <span className="text-corsair-text">corsair publish</span>
+        </motion.div>
+
+        <div className="h-2" />
+
+        {publishLines.map((line, i) => (
+          <motion.div
+            key={line.label}
+            initial={{ opacity: 0, x: -4 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.2, delay: publishStart + i * publishStagger }}
+            className="flex"
+          >
+            <span className="text-corsair-green">{"  \u2713 "}</span>
+            <span className="w-[100px] shrink-0 text-corsair-text-dim">{line.label}</span>
+            <span className={line.color}>{line.value}</span>
+          </motion.div>
+        ))}
+
+        <div className="h-4" />
+
+        {/* Step 5: corsair verify */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -187,7 +225,7 @@ export function HeroTerminal() {
 
         <div className="h-4" />
 
-        {/* Step 5: corsair signal */}
+        {/* Step 6: corsair signal */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

@@ -155,7 +155,7 @@ export function MarqueAssembly() {
         {/* CTAs */}
         <div className="mt-6 flex flex-wrap gap-3 border-t border-corsair-border pt-4">
           <Button size="sm" className="font-display font-semibold" asChild>
-            <Link href="/marque">
+            <Link href="/verify">
               Verify this CPOE
               <span className="ml-1">&rarr;</span>
             </Link>

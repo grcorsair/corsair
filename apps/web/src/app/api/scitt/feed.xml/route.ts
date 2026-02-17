@@ -28,7 +28,7 @@ function buildRss(entries: FeedEntry[]): string {
 
       return `    <item>
       <title>${escapeXml(domain)} — ${escapeXml(entry.scope)} (${sourceLabel}, Score: ${score})</title>
-      <link>https://grcorsair.com/marque?entryId=${escapeXml(entry.entryId)}</link>
+      <link>https://grcorsair.com/verify?entryId=${escapeXml(entry.entryId)}</link>
       <guid isPermaLink="false">${escapeXml(entry.entryId)}</guid>
       <pubDate>${new Date(entry.registrationTime).toUTCString()}</pubDate>
       <description>CPOE registered by ${escapeXml(domain)} via ${sourceLabel.toLowerCase()}. Scope: ${escapeXml(entry.scope)}. Score: ${score}/100.</description>

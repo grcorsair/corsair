@@ -16,7 +16,7 @@ const weapons = [
     subtitle: "Discovery layer for compliance proofs.",
     accent: "border-corsair-gold/40",
     snippet: COMPLIANCE_TXT_SNIPPET,
-    cta: { label: "Generate yours", href: "/generate" },
+    cta: { label: "Generate yours", href: "/publish" },
   },
   {
     id: "verify",
@@ -24,7 +24,7 @@ const weapons = [
     subtitle: "No account. Any JWT library.",
     accent: "border-corsair-green/40",
     snippet: VERIFY_4_LINES,
-    cta: { label: "Verify a CPOE", href: "/marque" },
+    cta: { label: "Verify a CPOE", href: "/verify" },
   },
   {
     id: "diff",
@@ -32,7 +32,7 @@ const weapons = [
     subtitle: "Git diff for posture changes.",
     accent: "border-corsair-crimson/40",
     snippet: DIFF_SNIPPET_LINES,
-    cta: { label: "See diff demo", href: "#diff-demo" },
+    cta: { label: "See diff demo", href: "/diff" },
   },
 ];
 

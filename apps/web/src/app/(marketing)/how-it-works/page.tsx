@@ -49,10 +49,10 @@ export default function HowItWorksPage() {
         <FadeIn delay={0.3}>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Button asChild size="sm">
-              <Link href="/marque">Verify a CPOE</Link>
+              <Link href="/verify">Verify a CPOE</Link>
             </Button>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/generate">Generate compliance.txt</Link>
+              <Link href="/publish">Publish compliance.txt</Link>
             </Button>
           </div>
         </FadeIn>
@@ -159,8 +159,8 @@ export default function HowItWorksPage() {
                 <p className="text-sm text-corsair-text-dim">
                   A public discovery file for compliance proof. Like security.txt, but for CPOEs.
                 </p>
-                <Link href="/generate" className="mt-3 inline-block font-mono text-xs text-corsair-gold">
-                  Generate &rarr;
+                <Link href="/publish" className="mt-3 inline-block font-mono text-xs text-corsair-gold">
+                  Publish &rarr;
                 </Link>
               </div>
             </FadeIn>
@@ -172,7 +172,7 @@ export default function HowItWorksPage() {
                 <p className="text-sm text-corsair-text-dim">
                   Verify any CPOE with standard JWT libraries. No account required.
                 </p>
-                <Link href="/marque" className="mt-3 inline-block font-mono text-xs text-corsair-gold">
+                <Link href="/verify" className="mt-3 inline-block font-mono text-xs text-corsair-gold">
                   Verify &rarr;
                 </Link>
               </div>
@@ -239,10 +239,10 @@ export default function HowItWorksPage() {
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Button asChild>
-                <Link href="/marque">Verify</Link>
+                <Link href="/verify">Verify</Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link href="/generate">Generate</Link>
+                <Link href="/publish">Publish</Link>
               </Button>
               <Button variant="outline" asChild>
                 <Link href="/sign">Sign</Link>

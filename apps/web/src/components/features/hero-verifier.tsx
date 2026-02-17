@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, RotateCcw, Share2 } from "lucide-react";
 import { verifyViaAPI } from "@/lib/corsair-api";
 import type { MarqueVerificationResult } from "@/lib/marque-web-verifier";
 
@@ -70,7 +70,7 @@ export function HeroVerifier() {
   };
 
   const borderClass = {
-    idle: "border-corsair-border",
+    idle: "border-corsair-gold/20 shadow-[0_0_15px_rgba(212,168,83,0.05)]",
     verifying: "border-corsair-gold/60 animate-pulse",
     verified: "border-corsair-green/60 shadow-[0_0_30px_rgba(34,197,94,0.15)]",
     failed: "border-corsair-crimson/60 shadow-[0_0_30px_rgba(239,68,68,0.15)]",
@@ -80,7 +80,7 @@ export function HeroVerifier() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.4 }}
+      transition={{ duration: 0.5, delay: 0.1 }}
       className={`relative rounded-xl border ${borderClass} bg-corsair-surface p-5 transition-all duration-500`}
     >
       <AnimatePresence mode="wait">
@@ -93,22 +93,29 @@ export function HeroVerifier() {
             transition={{ duration: 0.2 }}
           >
             <label className="mb-2 block font-display text-xs font-medium tracking-wide text-corsair-text-dim">
-              VERIFY A CPOE
+              VERIFY A COMPLIANCE PROOF
             </label>
             <textarea
               value={jwt}
               onChange={(e) => setJwt(e.target.value)}
-              placeholder="Paste a CPOE (JWT) to verify..."
-              rows={4}
+              placeholder="Paste a signed compliance proof (JWT) to verify..."
+              rows={3}
               disabled={state === "verifying"}
               className="w-full resize-none rounded-lg border border-corsair-border/60 bg-[#0A0A0A] p-3 font-mono text-[11px] leading-relaxed text-corsair-text-dim placeholder:text-corsair-text-dim/40 focus:border-corsair-gold/50 focus:outline-none focus:ring-1 focus:ring-corsair-gold/20 disabled:opacity-50"
             />
             <div className="mt-3 flex gap-3">
               <Button
-                size="sm"
+                onClick={handleTrySample}
+                disabled={state === "verifying"}
+                className="btn-glow font-display text-sm font-semibold"
+              >
+                Try it now
+              </Button>
+              <Button
+                variant="outline"
                 onClick={handleVerify}
                 disabled={!jwt.trim() || state === "verifying"}
-                className="font-display text-xs font-semibold"
+                className="font-display text-sm font-semibold border-corsair-gold/30 text-corsair-text-dim hover:border-corsair-gold hover:text-corsair-gold"
               >
                 {state === "verifying" ? (
                   <>
@@ -116,17 +123,8 @@ export function HeroVerifier() {
                     Verifying...
                   </>
                 ) : (
-                  "Verify"
+                  "Verify CPOE"
                 )}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleTrySample}
-                disabled={state === "verifying"}
-                className="font-display text-xs font-semibold text-corsair-text-dim hover:text-corsair-gold"
-              >
-                Try Sample
               </Button>
             </div>
           </motion.div>
@@ -175,15 +173,29 @@ export function HeroVerifier() {
               )}
             </div>
 
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleReset}
-              className="mt-1 font-display text-xs text-corsair-text-dim hover:text-corsair-gold"
-            >
-              <RotateCcw className="mr-1.5 h-3 w-3" />
-              Verify another
-            </Button>
+            <div className="mt-1 flex gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleReset}
+                className="font-display text-xs text-corsair-text-dim hover:text-corsair-gold"
+              >
+                <RotateCcw className="mr-1.5 h-3 w-3" />
+                Verify another
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  const url = `${window.location.origin}/verify?cpoe=${encodeURIComponent(jwt)}`;
+                  navigator.clipboard.writeText(url);
+                }}
+                className="font-display text-xs text-corsair-text-dim hover:text-corsair-gold"
+              >
+                <Share2 className="mr-1.5 h-3 w-3" />
+                Share link
+              </Button>
+            </div>
           </motion.div>
         )}
 
