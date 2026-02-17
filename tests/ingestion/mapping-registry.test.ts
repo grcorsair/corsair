@@ -65,6 +65,9 @@ beforeEach(() => {
         scope: "Test",
         reportType: "Priority Test",
       },
+      passthrough: {
+        paths: { note: "$.priority" },
+      },
     },
     {
       id: "high-priority",
@@ -76,6 +79,9 @@ beforeEach(() => {
         date: "2026-01-01",
         scope: "Test",
         reportType: "Priority Test",
+      },
+      passthrough: {
+        paths: { note: "$.priority" },
       },
     },
   ];
@@ -133,4 +139,111 @@ describe("mapping registry", () => {
     expect((doc.extensions?.mapping as { id?: string })?.id).toBe("high-priority");
     expect(doc.metadata.title).toBe("High Priority");
   });
+
+  test("rejects invalid mappings and surfaces diagnostics", async () => {
+    const { getMappingsWithDiagnostics, resetMappingRegistry } = await import("../../src/ingestion/mapping-registry");
+    const invalidMapping = {
+      id: "invalid-mapping",
+      match: { },
+      controls: { },
+    };
+    writeFileSync(join(tmpDir, "invalid.json"), JSON.stringify(invalidMapping, null, 2));
+
+    resetMappingRegistry();
+    const result = getMappingsWithDiagnostics();
+
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.mappings.some((m) => m.id === "invalid-mapping")).toBe(false);
+  });
+
+  test("loads signed mapping pack when signature is valid", async () => {
+    const { generateKeyPairSync, sign } = await import("crypto");
+    const { publicKey, privateKey } = generateKeyPairSync("ed25519", {
+      publicKeyEncoding: { type: "spki", format: "pem" },
+      privateKeyEncoding: { type: "pkcs8", format: "pem" },
+    });
+
+    const pack = {
+      pack: {
+        id: "test-pack",
+        version: "1",
+        issuedAt: "2026-02-10T12:00:00Z",
+      },
+      mappings: [
+        {
+          id: "pack-mapping",
+          match: { allOf: ["$.pack"] },
+          passthrough: { paths: { note: "$.note" } },
+        },
+      ],
+    };
+
+    const canonical = JSON.stringify(sortKeysDeep(pack));
+    const signature = sign(null, Buffer.from(canonical), privateKey).toString("base64");
+    const signedPack = { ...pack, signature };
+
+    writeFileSync(join(tmpDir, "pack.json"), JSON.stringify(signedPack, null, 2));
+
+    process.env.CORSAIR_MAPPING_PACK_PUBKEY = publicKey;
+    const { getMappingsWithDiagnostics, resetMappingRegistry } = await import("../../src/ingestion/mapping-registry");
+    resetMappingRegistry();
+
+    const result = getMappingsWithDiagnostics();
+    expect(result.errors.length).toBe(0);
+    expect(result.mappings.some((m) => m.id === "pack-mapping")).toBe(true);
+
+    delete process.env.CORSAIR_MAPPING_PACK_PUBKEY;
+  });
+
+  test("rejects mapping pack with invalid signature", async () => {
+    const { generateKeyPairSync, sign } = await import("crypto");
+    const { publicKey, privateKey } = generateKeyPairSync("ed25519", {
+      publicKeyEncoding: { type: "spki", format: "pem" },
+      privateKeyEncoding: { type: "pkcs8", format: "pem" },
+    });
+
+    const pack = {
+      pack: {
+        id: "test-pack",
+        version: "1",
+        issuedAt: "2026-02-10T12:00:00Z",
+      },
+      mappings: [
+        {
+          id: "pack-mapping",
+          match: { allOf: ["$.pack"] },
+          passthrough: { paths: { note: "$.note" } },
+        },
+      ],
+    };
+
+    const canonical = JSON.stringify(sortKeysDeep(pack));
+    const signature = sign(null, Buffer.from(canonical), privateKey).toString("base64");
+    const signedPack = { ...pack, signature: signature.slice(2) + "aa" };
+
+    writeFileSync(join(tmpDir, "pack-bad.json"), JSON.stringify(signedPack, null, 2));
+
+    process.env.CORSAIR_MAPPING_PACK_PUBKEY = publicKey;
+    const { getMappingsWithDiagnostics, resetMappingRegistry } = await import("../../src/ingestion/mapping-registry");
+    resetMappingRegistry();
+
+    const result = getMappingsWithDiagnostics();
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.mappings.some((m) => m.id === "pack-mapping")).toBe(false);
+
+    delete process.env.CORSAIR_MAPPING_PACK_PUBKEY;
+  });
 });
+
+function sortKeysDeep(value: unknown): unknown {
+  if (value === null || value === undefined) return value;
+  if (Array.isArray(value)) return value.map(sortKeysDeep);
+  if (typeof value === "object") {
+    const sorted: Record<string, unknown> = {};
+    for (const key of Object.keys(value as Record<string, unknown>).sort()) {
+      sorted[key] = sortKeysDeep((value as Record<string, unknown>)[key]);
+    }
+    return sorted;
+  }
+  return value;
+}

@@ -93,11 +93,11 @@ Corsair does six things. Like git.
 | Primitive | Command | What It Does | Analogy |
 |:----------|:--------|:-------------|:--------|
 | **SIGN** | `corsair sign --file <path>` | Parse tool output, record provenance, sign JWT-VC | `git commit` |
-| **LOG** | `corsair log` | Query SCITT transparency log | `git log` |
+| **LOG** | `corsair log` | List CPOEs from local files or a SCITT log | `git log` |
 | **PUBLISH** | `corsair compliance-txt generate` | Generate compliance.txt for proof discovery | `git push` |
-| **VERIFY** | `corsair verify --file <cpoe.jwt>` | Verify Ed25519 signature via DID:web | `git verify-commit` |
+| **VERIFY** | `corsair verify --file <cpoe.jwt>` | Verify Ed25519 signature, apply policy checks | `git verify-commit` |
 | **DIFF** | `corsair diff --current <new> --previous <old>` | Compare two CPOEs, detect regressions | `git diff` |
-| **SIGNAL** | `corsair signal` | Real-time compliance change notifications | `git webhooks` |
+| **SIGNAL** | `corsair signal generate` | Generate FLAGSHIP SETs for real-time notifications | `git webhooks` |
 
 ### Sign Options
 
@@ -110,6 +110,7 @@ corsair sign --file evidence.json --sd-jwt     # SD-JWT selective disclosure
 corsair sign --file evidence.json --sd-jwt --sd-fields scope  # Disclose only scope
 corsair sign --file evidence.json --mapping ./mappings/toolx.json  # Apply mapping file
 corsair sign --file evidence.json --mapping ./mappings/            # Apply mapping directory
+corsair sign --file evidence.json --source tool  # Override provenance source
 corsair sign --file evidence.json --baseline baseline.cpoe.jwt --gate  # Fail on regression vs baseline
 corsair sign --file - < data.json              # Sign from stdin
 ```
@@ -120,12 +121,21 @@ corsair sign --file - < data.json              # Sign from stdin
 corsair mappings list                          # Show loaded mappings
 corsair mappings list --json                   # Machine-readable output
 corsair mappings validate --json               # Validate mappings
+corsair mappings add https://example.com/pack.json  # Add a mapping pack
 ```
+
+Mapping packs can be signed. If a pack includes a `signature`, set
+`CORSAIR_MAPPING_PACK_PUBKEY` to the Ed25519 public key PEM to enforce verification.
 
 ### Verify Options
 
 ```bash
 corsair verify --file cpoe.jwt --json          # Structured JSON output
+corsair verify --file cpoe.jwt --did           # Verify via DID:web
+corsair verify --file cpoe.jwt --require-issuer did:web:acme.com
+corsair verify --file cpoe.jwt --require-framework SOC2,ISO27001
+corsair verify --file cpoe.jwt --max-age 30 --min-score 90
+corsair verify --file cpoe.jwt --receipts receipts.json
 ```
 
 ### Diff Options
@@ -140,11 +150,13 @@ corsair diff --current new.jwt --previous old.jwt --json
 
 Corsair supports a discovery layer modeled after `security.txt`. Organizations publish
 `/.well-known/compliance.txt` so verifiers can discover DID identity, current CPOEs,
-SCITT endpoints, and FLAGSHIP streams.
+SCITT log endpoints, optional catalog snapshots, and FLAGSHIP streams.
+For large numbers of proofs, keep compliance.txt tiny and point to SCITT + catalog.
 
 ```bash
+corsair compliance-txt generate --did did:web:acme.com --scitt https://log.acme.com/v1/entries?issuer=did:web:acme.com
+corsair compliance-txt generate --did did:web:acme.com --catalog https://acme.com/compliance/catalog.json
 corsair compliance-txt generate --did did:web:acme.com --cpoe-url https://acme.com/soc2.jwt
-corsair compliance-txt generate --did did:web:acme.com --cpoes ./cpoes/ --base-url https://acme.com/compliance/
 corsair compliance-txt discover acme.com --verify
 ```
 

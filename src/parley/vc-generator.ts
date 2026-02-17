@@ -19,7 +19,7 @@ import { MarqueKeyManager } from "./marque-key-manager";
 import { sanitize } from "./marque-generator";
 import type { MarqueGeneratorInput } from "./marque-generator";
 import type { CPOECredentialSubject, CPOEProvenance } from "./vc-types";
-import { VC_CONTEXT, CORSAIR_CONTEXT, CPOE_TYPE } from "./vc-types";
+import { VC_CONTEXT, CORSAIR_CONTEXT, CPOE_TYPE, CPOE_SCHEMA_VERSION } from "./vc-types";
 import {
   deriveProvenance,
   deriveEvidenceTypeDistribution,
@@ -136,6 +136,7 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
 
   const subject: CPOECredentialSubject = {
     type: "CorsairCPOE",
+    schemaVersion: CPOE_SCHEMA_VERSION,
     scope,
     provenance,
     summary,

@@ -249,7 +249,7 @@ export default function VerifyPage() {
                   </p>
                 </div>
                 <div className="rounded-lg border border-corsair-border bg-corsair-surface p-3">
-                  <p className="font-mono text-sm font-bold text-corsair-crimson">corsair signal</p>
+                  <p className="font-mono text-sm font-bold text-corsair-crimson">corsair signal generate</p>
                   <p className="mt-1 text-xs text-corsair-text-dim">
                     Subscribe to FLAGSHIP real-time compliance change notifications
                   </p>

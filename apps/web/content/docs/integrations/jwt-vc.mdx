@@ -101,6 +101,7 @@ The generated JWT contains three parts:
     "validUntil": "2026-02-14T00:00:00Z",
     "credentialSubject": {
       "type": "CorsairCPOE",
+      "schemaVersion": "1.0",
       "scope": "SOC 2 Type II — Cloud Infrastructure Controls",
       "provenance": {
         "source": "tool",
@@ -124,6 +125,8 @@ The generated JWT contains three parts:
 ```
 
 **Signature:** Ed25519 signature over `base64url(header).base64url(payload)`
+
+**Extensions namespace:** `extensions` keys must be `mapping`, `passthrough`, or namespaced with `x-` / `ext.`.
 
 ## Verifying CPOEs
 

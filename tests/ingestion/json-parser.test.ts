@@ -200,6 +200,22 @@ describe("parseJSON — generic format", () => {
     expect(result.metadata.rawTextHash).toBeDefined();
     expect(result.metadata.rawTextHash!.length).toBe(64); // SHA-256 hex
   });
+
+  test("computes deterministic rawTextHash regardless of key order", () => {
+    const inputA = {
+      metadata: { title: "T", issuer: "I", date: "2026-01-01", scope: "S" },
+      controls: [{ id: "C1", description: "D", status: "pass" }],
+    };
+    const inputB = {
+      controls: [{ status: "pass", description: "D", id: "C1" }],
+      metadata: { scope: "S", date: "2026-01-01", issuer: "I", title: "T" },
+    };
+
+    const resultA = parseJSON(inputA);
+    const resultB = parseJSON(inputB);
+
+    expect(resultA.metadata.rawTextHash).toBe(resultB.metadata.rawTextHash);
+  });
 });
 
 // =============================================================================
@@ -235,6 +251,29 @@ describe("parseJSON — source override", () => {
 
     const result = parseJSON(input, { source: "pentest" });
     expect(result.source).toBe("pentest");
+  });
+});
+
+// =============================================================================
+// MAPPING REGISTRY (BUILT-IN)
+// =============================================================================
+
+describe("parseJSON — built-in mapping registry", () => {
+  test("maps Semgrep JSON findings via mapping registry", () => {
+    const input = {
+      results: [
+        {
+          check_id: "semgrep.security.injection.sql",
+          path: "app/db.ts",
+          extra: { message: "Possible SQL injection", severity: "HIGH" },
+        },
+      ],
+    };
+
+    const result = parseJSON(input);
+    expect(result.controls).toHaveLength(1);
+    expect(result.controls[0].id).toBe("semgrep.security.injection.sql");
+    expect(result.controls[0].status).toBe("ineffective");
   });
 });
 

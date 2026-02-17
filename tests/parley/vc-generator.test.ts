@@ -208,6 +208,7 @@ describe("VC Generator - JWT-VC Generation", () => {
     const subject = vc.credentialSubject as Record<string, unknown>;
 
     expect(subject.type).toBe("CorsairCPOE");
+    expect(subject.schemaVersion).toBe("1.0");
     expect(subject.scope).toBeDefined();
     expect(subject.summary).toBeDefined();
     expect(subject.provenance).toBeDefined();

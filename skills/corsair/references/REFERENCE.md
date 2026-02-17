@@ -30,6 +30,8 @@ corsair sign [options]
 | `--scope <TEXT>` | Override scope string | From evidence |
 | `--expiry-days <N>` | CPOE validity in days | 90 |
 | `--key-dir <DIR>` | Ed25519 key directory | ./keys |
+| `--source <SOURCE>` | Override provenance source | derived from evidence |
+| `--mapping <PATH>` | Mapping file or directory (repeatable) | none |
 | `--dry-run` | Parse + classify without signing | false |
 | `--json` | Output structured JSON | false |
 | `--baseline <PATH>` | Compare against baseline CPOE | none |
@@ -91,6 +93,12 @@ corsair verify [options]
 |------|-------------|---------|
 | `-f, --file <PATH>` | CPOE file path (JWT or JSON) | Required |
 | `-k, --pubkey <PATH>` | Ed25519 public key PEM | ./keys/corsair-signing.pub |
+| `--did` | Verify via DID:web resolution | false |
+| `--require-issuer <DID>` | Require issuer DID | - |
+| `--require-framework <LIST>` | Comma-separated required frameworks | - |
+| `--max-age <DAYS>` | Max evidence age (provenance.sourceDate) | - |
+| `--min-score <N>` | Minimum overallScore | - |
+| `--receipts <PATH>` | Verify process receipts (JSON array) | - |
 | `--json` | Output structured JSON | false |
 
 **Exit codes:** 0 = VERIFIED, 1 = FAILED
@@ -117,6 +125,8 @@ corsair verify [options]
     "issuedAt": "2026-02-17T12:00:00.000Z",
     "expiresAt": "2026-05-18T12:00:00.000Z"
   },
+  "policy": { "ok": true, "errors": [] },
+  "process": { "chainValid": true, "receiptsVerified": 2, "receiptsTotal": 2 },
   "reason": null,
   "format": "JWT-VC"
 }
@@ -154,7 +164,7 @@ corsair drift [options]   # alias
 
 ### corsair log
 
-List signed CPOEs in a directory.
+List signed CPOEs from local files or a SCITT log.
 
 ```
 corsair log [options]
@@ -164,6 +174,11 @@ corsair log [options]
 |------|-------------|---------|
 | `-n, --last <N>` | Show last N entries | 10 |
 | `-d, --dir <DIR>` | Directory to scan | . |
+| `--scitt <URL>` | SCITT log endpoint to query | - |
+| `--domain <DOMAIN>` | Resolve compliance.txt and use its SCITT endpoint | - |
+| `--issuer <DID>` | Filter SCITT entries by issuer | - |
+| `--framework <NAME>` | Filter SCITT entries by framework | - |
+| `--json` | Output structured JSON | false |
 
 ### corsair compliance-txt
 
@@ -183,6 +198,7 @@ corsair compliance-txt generate [options]
 | `--cpoe-url <URL>` | Add CPOE URL (repeatable) | - |
 | `--base-url <URL>` | Base URL prefix for scanned CPOEs | - |
 | `--scitt <URL>` | SCITT log endpoint | - |
+| `--catalog <URL>` | Catalog snapshot with per-CPOE metadata | - |
 | `--flagship <URL>` | FLAGSHIP signal stream | - |
 | `--frameworks <LIST>` | Comma-separated framework names | - |
 | `--contact <EMAIL>` | Compliance contact | - |
@@ -198,25 +214,42 @@ Exit codes: 0 = valid, 1 = invalid
 
 #### discover
 ```
-corsair compliance-txt discover <DOMAIN> [--json] [--verify]
+corsair compliance-txt discover <DOMAIN> [--json] [--verify] [--scitt-limit <N>]
 ```
 
 Exit codes: 0 = found, 1 = not found or failed
 
-### corsair signal
+### corsair mappings
 
-View FLAGSHIP real-time compliance change notification info.
+List, validate, and add evidence mappings.
 
 ```
-corsair signal
+corsair mappings list [--mapping <PATH>] [--json]
+corsair mappings validate [--mapping <PATH>] [--sample <PATH>] [--strict] [--json]
+corsair mappings add --url <URL> [--dir <DIR>]
+corsair mappings add --file <PATH> [--dir <DIR>]
+```
+
+Signed packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set.
+
+### corsair signal
+
+Generate and verify FLAGSHIP real-time compliance change notifications (SETs).
+
+#### generate
+```
+corsair signal generate --event <PATH> --issuer <DID> --audience <DID> [--key-dir <DIR>] [--output <PATH>] [--json]
+```
+
+#### verify
+```
+corsair signal verify --file <PATH> [--key-dir <DIR>] [--json]
 ```
 
 FLAGSHIP delivers SSF/CAEP events as Ed25519-signed SETs:
 - `FLEET_ALERT` (compliance-change) — Drift detected
 - `PAPERS_CHANGED` (credential-change) — CPOE issued/renewed/revoked
 - `MARQUE_REVOKED` (session-revoked) — Emergency revocation
-
-Signal streams are managed via the API layer. The CLI command is informational.
 
 ### corsair keygen
 
@@ -274,9 +307,8 @@ Corsair auto-detects evidence format from JSON structure:
 ```
 # Corsair Compliance Discovery
 DID: did:web:example.com
-CPOE: https://example.com/soc2-2025.jwt
-CPOE: https://example.com/iso27001-2025.jwt
-SCITT: https://example.com/api/scitt
+SCITT: https://example.com/scitt/entries?issuer=did:web:example.com
+CATALOG: https://example.com/compliance/catalog.json
 FLAGSHIP: https://example.com/api/ssf/stream
 Frameworks: SOC2, ISO27001
 Contact: compliance@example.com

@@ -8,6 +8,7 @@
 
 // Re-export from sign engine
 export type { EvidenceFormat, SignInput, SignOutput } from "../../../src/sign/sign-core";
+import type { DocumentSource } from "../../../src/ingestion/types";
 
 // Re-export from verifier
 export type { MarqueVerificationResult } from "../../../src/parley/marque-verifier";
@@ -30,6 +31,9 @@ export interface SignOptions {
   /** Force a specific evidence format (bypasses auto-detection) */
   format?: EvidenceFormat;
 
+  /** Override document source (affects provenance) */
+  source?: DocumentSource;
+
   /** Override issuer DID for this operation */
   did?: string;
 
@@ -41,6 +45,12 @@ export interface SignOptions {
 
   /** Parse + classify but don't sign */
   dryRun?: boolean;
+
+  /** Enable SD-JWT selective disclosure */
+  sdJwt?: boolean;
+
+  /** Fields in credentialSubject to make disclosable */
+  sdFields?: string[];
 }
 
 /** Result of a sign operation */
@@ -75,6 +85,9 @@ export interface SignResult {
 
   /** Optional passthrough fields and mapping metadata */
   extensions?: Record<string, unknown>;
+
+  /** SD-JWT disclosures (only present when sdJwt=true) */
+  disclosures?: Array<{ claim: string; disclosure: string; digest: string }>;
 }
 
 /** Result of a verify operation */

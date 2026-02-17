@@ -519,7 +519,7 @@ function SignalPanel() {
     <div className="bg-[#0A0A0A] p-5">
       <div className="font-mono text-[11px] sm:text-[12px]">
         <span className="text-corsair-gold">$</span>{" "}
-        <span className="text-corsair-text">corsair signal</span>
+        <span className="text-corsair-text">corsair signal generate</span>
       </div>
 
       {/* Column headers */}

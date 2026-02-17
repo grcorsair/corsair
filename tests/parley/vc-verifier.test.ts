@@ -212,6 +212,70 @@ describe("VC Verifier - JWT-VC Verification", () => {
     // Issuer tier
     expect(result.issuerTier).toBe("corsair-verified");
   });
+
+  test("verifyVCJWT returns schema_invalid for unsupported schemaVersion", async () => {
+    const { keyManager, input, publicKey } = await setup();
+    const jwt = await generateVCJWT(input, keyManager);
+
+    const payload = jose.decodeJwt(jwt) as Record<string, unknown>;
+    const vc = payload.vc as Record<string, unknown>;
+    const subject = vc.credentialSubject as Record<string, unknown>;
+    subject.schemaVersion = "0.9";
+
+    const header = jose.decodeProtectedHeader(jwt);
+    const keypair = (await keyManager.loadKeypair())!;
+    const privateKey = await jose.importPKCS8(keypair.privateKey.toString(), "EdDSA");
+
+    const badJwt = await new jose.SignJWT({ vc, parley: payload.parley })
+      .setProtectedHeader({
+        alg: "EdDSA",
+        typ: "vc+jwt",
+        kid: header.kid as string,
+      })
+      .setIssuedAt(payload.iat as number)
+      .setIssuer(payload.iss as string)
+      .setSubject(payload.sub as string)
+      .setJti(payload.jti as string)
+      .setExpirationTime(payload.exp as number)
+      .sign(privateKey);
+
+    const result = await verifyVCJWT(badJwt, [publicKey]);
+
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBe("schema_invalid");
+  });
+
+  test("verifyVCJWT returns schema_invalid for invalid extensions namespace", async () => {
+    const { keyManager, input, publicKey } = await setup();
+    const jwt = await generateVCJWT(input, keyManager);
+
+    const payload = jose.decodeJwt(jwt) as Record<string, unknown>;
+    const vc = payload.vc as Record<string, unknown>;
+    const subject = vc.credentialSubject as Record<string, unknown>;
+    subject.extensions = { badKey: true };
+
+    const header = jose.decodeProtectedHeader(jwt);
+    const keypair = (await keyManager.loadKeypair())!;
+    const privateKey = await jose.importPKCS8(keypair.privateKey.toString(), "EdDSA");
+
+    const badJwt = await new jose.SignJWT({ vc, parley: payload.parley })
+      .setProtectedHeader({
+        alg: "EdDSA",
+        typ: "vc+jwt",
+        kid: header.kid as string,
+      })
+      .setIssuedAt(payload.iat as number)
+      .setIssuer(payload.iss as string)
+      .setSubject(payload.sub as string)
+      .setJti(payload.jti as string)
+      .setExpirationTime(payload.exp as number)
+      .sign(privateKey);
+
+    const result = await verifyVCJWT(badJwt, [publicKey]);
+
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBe("schema_invalid");
+  });
 });
 
 describe("VC Verifier - verifyVCJWTViaDID", () => {

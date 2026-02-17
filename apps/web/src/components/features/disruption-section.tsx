@@ -121,7 +121,7 @@ export function DisruptionSection() {
                   <li className="flex items-start gap-2">
                     <span className="mt-0.5 text-corsair-green">&#x2713;</span>
                     <span>
-                      <code className="text-corsair-cyan">corsair signal</code> &mdash; FLAGSHIP real-time notifications for drift, tier changes, and revocations. Like webhooks.
+                      <code className="text-corsair-cyan">corsair signal generate</code> &mdash; FLAGSHIP real-time notifications for drift, tier changes, and revocations. Like webhooks.
                     </span>
                   </li>
                 </ul>

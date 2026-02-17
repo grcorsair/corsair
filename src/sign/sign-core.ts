@@ -8,7 +8,7 @@
  */
 
 import { readFileSync } from "fs";
-import type { IngestedDocument } from "../ingestion/types";
+import type { IngestedDocument, DocumentSource } from "../ingestion/types";
 import type { KeyManager } from "../parley/marque-key-manager";
 import { sanitize } from "../parley/marque-generator";
 import { deriveProvenance } from "../ingestion/provenance-utils";
@@ -35,6 +35,9 @@ export interface SignInput {
 
   /** Force a specific format (bypasses auto-detection) */
   format?: EvidenceFormat;
+
+  /** Override document source (affects provenance) */
+  source?: DocumentSource;
 
   /** Issuer DID (e.g., "did:web:acme.com") */
   did?: string;
@@ -142,7 +145,7 @@ export async function signEvidence(
   // 1. Parse evidence JSON
   const { parseJSON } = await import("../ingestion/json-parser");
   const doc = parseJSON(input.evidence, {
-    source: undefined,
+    source: input.source,
     format: input.format,
   });
 
@@ -183,6 +186,11 @@ export async function signDocument(
   // Warn on zero controls
   if (doc.controls.length === 0) {
     warnings.push("No controls found in evidence. CPOE will have empty summary.");
+  }
+
+  const evidenceOnly = (doc.extensions as { mapping?: { evidenceOnly?: boolean } } | undefined)?.mapping?.evidenceOnly;
+  if (evidenceOnly) {
+    warnings.push("Evidence-only mapping used; no control-level results were extracted.");
   }
 
   // Warn on weak metadata (provenance + scope signals)

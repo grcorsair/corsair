@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 export const metadata: Metadata = {
   title: "Publish compliance.txt",
   description:
-    "Generate a compliance.txt file for your domain. Like security.txt for compliance proofs — let anyone discover your CPOEs, SCITT log, and FLAGSHIP signals.",
+    "Generate a compliance.txt file for your domain. Like security.txt for compliance proofs — let anyone discover your CPOEs, SCITT log, catalog snapshot, and FLAGSHIP signals.",
 };
 
 export default function PublishPage() {
@@ -33,7 +33,7 @@ export default function PublishPage() {
               so anyone can discover and verify your compliance posture.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {["DID:web", "CPOE", "SCITT", "FLAGSHIP", "Frameworks"].map(
+              {["DID:web", "CPOE", "SCITT", "CATALOG", "FLAGSHIP", "Frameworks"].map(
                 (tag) => (
                   <Badge
                     key={tag}
@@ -72,7 +72,9 @@ export default function PublishPage() {
                 <code className="text-corsair-gold">compliance.txt</code> does
                 the same for compliance proofs &mdash; a machine-readable
                 discovery endpoint that lets buyers, auditors, and AI agents
-                find your CPOEs without asking you for a PDF.
+                find your CPOEs without asking you for a PDF. For large proof
+                sets, keep compliance.txt minimal and point to a SCITT log and
+                catalog snapshot.
               </p>
             </div>
           </FadeIn>
@@ -96,7 +98,7 @@ export default function PublishPage() {
                   <li className="flex gap-3">
                     <span className="text-corsair-gold">1.</span>
                     Fill in the form above with your DID:web, CPOE URLs, and
-                    frameworks.
+                    optional SCITT/catalog/FLAGSHIP endpoints.
                   </li>
                   <li className="flex gap-3">
                     <span className="text-corsair-gold">2.</span>
@@ -143,6 +145,11 @@ export default function PublishPage() {
                   {
                     name: "SCITT",
                     desc: "SCITT transparency log endpoint for audit trail",
+                    required: false,
+                  },
+                  {
+                    name: "CATALOG",
+                    desc: "Human-friendly catalog snapshot with per-CPOE metadata",
                     required: false,
                   },
                   {

@@ -61,7 +61,7 @@ Error responses use the same envelope:
 ## POST /v1/sign
 
 Sign evidence into a CPOE (JWT-VC). Accepts raw tool output from any supported format. Requires authentication.
-To support additional tools without code changes, configure the mapping registry on the API server via `CORSAIR_MAPPING_DIR` or `CORSAIR_MAPPING_FILE`. Mappings are evaluated by priority (higher wins), then filename order.
+To support additional tools without code changes, configure the mapping registry on the API server via `CORSAIR_MAPPING_DIR`, `CORSAIR_MAPPING_FILE`, or `corsair mappings add`. Mappings are evaluated by priority (higher wins), then filename order. Signed packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set.
 
 ```bash
 curl -X POST https://api.grcorsair.com/v1/sign \
@@ -122,12 +122,20 @@ curl -X POST https://api.grcorsair.com/v1/sign \
 ## POST /v1/verify
 
 Verify a CPOE signature and extract attestation details. No authentication required.
+Optional policy checks and process receipt verification are supported.
 
 ```bash
 curl -X POST https://api.grcorsair.com/v1/verify \
   -H "Content-Type: application/json" \
   -d '{
-    "cpoe": "eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCIs..."
+    "cpoe": "eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCIs...",
+    "policy": {
+      "requireIssuer": "did:web:grcorsair.com",
+      "requireFramework": ["SOC2"],
+      "maxAgeDays": 30,
+      "minScore": 90
+    },
+    "receipts": []
   }'
 ```
 
@@ -159,7 +167,9 @@ curl -X POST https://api.grcorsair.com/v1/verify \
     "timestamps": {
       "issuedAt": "2026-02-13T00:00:00.000Z",
       "expiresAt": "2026-05-14T00:00:00.000Z"
-    }
+    },
+    "policy": { "ok": true, "errors": [] },
+    "process": { "chainValid": true, "receiptsVerified": 2, "receiptsTotal": 2 }
   }
 }
 ```

@@ -28,6 +28,7 @@ DID: did:web:acme.com
 CPOE: https://acme.com/compliance/soc2-2026-q1.jwt
 CPOE: https://acme.com/compliance/iso27001-2026.jwt
 SCITT: https://log.grcorsair.com/v1/entries?issuer=did:web:acme.com
+CATALOG: https://acme.com/compliance/catalog.json
 FLAGSHIP: https://signals.grcorsair.com/v1/streams/acme-prod
 Frameworks: SOC2, ISO27001, NIST-800-53
 Contact: compliance@acme.com
@@ -41,6 +42,7 @@ Expires: 2026-12-31T23:59:59Z
       "https://acme.com/compliance/iso27001-2026.jwt",
     ]);
     expect(result.scitt).toBe("https://log.grcorsair.com/v1/entries?issuer=did:web:acme.com");
+    expect(result.catalog).toBe("https://acme.com/compliance/catalog.json");
     expect(result.flagship).toBe("https://signals.grcorsair.com/v1/streams/acme-prod");
     expect(result.frameworks).toEqual(["SOC2", "ISO27001", "NIST-800-53"]);
     expect(result.contact).toBe("compliance@acme.com");
@@ -124,6 +126,7 @@ Frameworks: SOC2,ISO27001, NIST-800-53 , PCI-DSS
     const input = `did: did:web:acme.com
 cpoe: https://acme.com/cpoe.jwt
 scitt: https://log.grcorsair.com/v1/entries
+catalog: https://acme.com/compliance/catalog.json
 flagship: https://signals.grcorsair.com/v1/streams/acme
 frameworks: SOC2
 contact: compliance@acme.com
@@ -134,6 +137,7 @@ expires: 2026-12-31T23:59:59Z
     expect(result.did).toBe("did:web:acme.com");
     expect(result.cpoes).toEqual(["https://acme.com/cpoe.jwt"]);
     expect(result.scitt).toBe("https://log.grcorsair.com/v1/entries");
+    expect(result.catalog).toBe("https://acme.com/compliance/catalog.json");
     expect(result.flagship).toBe("https://signals.grcorsair.com/v1/streams/acme");
     expect(result.frameworks).toEqual(["SOC2"]);
     expect(result.contact).toBe("compliance@acme.com");
@@ -186,6 +190,7 @@ describe("compliance.txt - generateComplianceTxt", () => {
         "https://acme.com/compliance/iso27001.jwt",
       ],
       scitt: "https://log.grcorsair.com/v1/entries?issuer=did:web:acme.com",
+      catalog: "https://acme.com/compliance/catalog.json",
       flagship: "https://signals.grcorsair.com/v1/streams/acme-prod",
       frameworks: ["SOC2", "ISO27001", "NIST-800-53"],
       contact: "compliance@acme.com",
@@ -197,6 +202,7 @@ describe("compliance.txt - generateComplianceTxt", () => {
     expect(output).toContain("CPOE: https://acme.com/compliance/soc2.jwt");
     expect(output).toContain("CPOE: https://acme.com/compliance/iso27001.jwt");
     expect(output).toContain("SCITT: https://log.grcorsair.com/v1/entries?issuer=did:web:acme.com");
+    expect(output).toContain("CATALOG: https://acme.com/compliance/catalog.json");
     expect(output).toContain("FLAGSHIP: https://signals.grcorsair.com/v1/streams/acme-prod");
     expect(output).toContain("Frameworks: SOC2, ISO27001, NIST-800-53");
     expect(output).toContain("Contact: compliance@acme.com");
@@ -256,6 +262,7 @@ describe("compliance.txt - round-trip", () => {
         "https://acme.com/compliance/iso27001.jwt",
       ],
       scitt: "https://log.grcorsair.com/v1/entries?issuer=did:web:acme.com",
+      catalog: "https://acme.com/compliance/catalog.json",
       flagship: "https://signals.grcorsair.com/v1/streams/acme-prod",
       frameworks: ["SOC2", "ISO27001"],
       contact: "compliance@acme.com",
@@ -268,6 +275,7 @@ describe("compliance.txt - round-trip", () => {
     expect(parsed.did).toBe(original.did);
     expect(parsed.cpoes).toEqual(original.cpoes);
     expect(parsed.scitt).toBe(original.scitt);
+    expect(parsed.catalog).toBe(original.catalog);
     expect(parsed.flagship).toBe(original.flagship);
     expect(parsed.frameworks).toEqual(original.frameworks);
     expect(parsed.contact).toBe(original.contact);
@@ -420,6 +428,19 @@ describe("compliance.txt - validateComplianceTxt", () => {
     const result = validateComplianceTxt(input);
     expect(result.valid).toBe(false);
     expect(result.errors.some(e => e.includes("FLAGSHIP"))).toBe(true);
+  });
+
+  test("non-HTTPS CATALOG URL fails validation", () => {
+    const input: ComplianceTxt = {
+      did: "did:web:acme.com",
+      cpoes: [],
+      frameworks: [],
+      catalog: "http://acme.com/compliance/catalog.json",
+    };
+
+    const result = validateComplianceTxt(input);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes("CATALOG"))).toBe(true);
   });
 
   test("private/reserved CPOE URL fails validation", () => {

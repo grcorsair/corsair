@@ -15,7 +15,7 @@
  */
 
 import type { KeyManager } from "../parley/marque-key-manager";
-import type { APIEnvelope, APIErrorCode, V1VerifyResponse, V1HealthResponse } from "./types";
+import type { APIEnvelope, APIErrorCode, V1VerifyResponse, V1HealthResponse, V1VerifyRequest } from "./types";
 
 // =============================================================================
 // TYPES
@@ -96,10 +96,12 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
 
     // Extract JWT from request body
     let jwt: string;
+    let policy: V1VerifyRequest["policy"] | undefined;
+    let receipts: V1VerifyRequest["receipts"] | undefined;
     const contentType = req.headers.get("content-type") || "";
 
     if (contentType.includes("application/json")) {
-      let body: Record<string, unknown>;
+      let body: V1VerifyRequest;
       try {
         body = await req.json();
       } catch {
@@ -110,6 +112,30 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
         return envelopeError("validation_error", 'Missing required field: "cpoe" (JWT-VC string)', requestId, 400);
       }
       jwt = (body.cpoe as string).trim();
+      policy = body.policy;
+      receipts = body.receipts;
+
+      if (policy) {
+        if (policy.requireIssuer && typeof policy.requireIssuer !== "string") {
+          return envelopeError("validation_error", "policy.requireIssuer must be a string", requestId, 400);
+        }
+        if (policy.requireFramework && !Array.isArray(policy.requireFramework)) {
+          return envelopeError("validation_error", "policy.requireFramework must be an array of strings", requestId, 400);
+        }
+        if (Array.isArray(policy.requireFramework) && policy.requireFramework.some(f => typeof f !== "string")) {
+          return envelopeError("validation_error", "policy.requireFramework must be an array of strings", requestId, 400);
+        }
+        if (policy.maxAgeDays !== undefined && typeof policy.maxAgeDays !== "number") {
+          return envelopeError("validation_error", "policy.maxAgeDays must be a number", requestId, 400);
+        }
+        if (policy.minScore !== undefined && typeof policy.minScore !== "number") {
+          return envelopeError("validation_error", "policy.minScore must be a number", requestId, 400);
+        }
+      }
+
+      if (receipts !== undefined && !Array.isArray(receipts)) {
+        return envelopeError("validation_error", "receipts must be an array", requestId, 400);
+      }
     } else {
       // Accept raw JWT string
       jwt = (await req.text()).trim();
@@ -148,11 +174,12 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
     }
 
     // Extract processProvenance + extensions from JWT payload
+    let payload: Record<string, unknown> | null = null;
     let processProvenance: V1VerifyResponse["processProvenance"] = null;
     let extensions: V1VerifyResponse["extensions"] = null;
     try {
       const { decodeJwt } = await import("jose");
-      const payload = decodeJwt(jwt) as Record<string, unknown>;
+      payload = decodeJwt(jwt) as Record<string, unknown>;
       const vc = payload.vc as Record<string, unknown> | undefined;
       const cs = vc?.credentialSubject as Record<string, unknown> | undefined;
       const ext = cs?.extensions as Record<string, unknown> | undefined;
@@ -174,6 +201,42 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
       }
     } catch { /* decode-only, non-critical */ }
 
+    let policyResult: V1VerifyResponse["policy"] = null;
+    if (policy) {
+      if (!payload) {
+        policyResult = { ok: false, errors: ["Policy checks require JWT-VC input"] };
+      } else {
+        const { evaluateVerificationPolicy } = await import("../parley/verification-policy");
+        policyResult = evaluateVerificationPolicy(payload, policy);
+      }
+    }
+
+    let processResult: V1VerifyResponse["process"] = null;
+    if (receipts) {
+      const { verifyProcessChain } = await import("../parley/receipt-verifier");
+      const { resolveReceiptPublicKeyPem } = await import("../parley/receipt-key");
+      const publicKeyPem = await resolveReceiptPublicKeyPem(jwt, keyManager);
+      if (!publicKeyPem) {
+        return envelopeError("validation_error", "Unable to verify receipts: no public key available", requestId, 400);
+      }
+      const fullResult = verifyProcessChain(
+        receipts as Array<import("../parley/process-receipt").ProcessReceipt>,
+        publicKeyPem,
+      );
+      if (payload) {
+        const cs = (payload.vc as Record<string, unknown> | undefined)?.credentialSubject as Record<string, unknown> | undefined;
+        const chainDigest = cs?.processProvenance && (cs.processProvenance as { chainDigest?: string }).chainDigest;
+        if (chainDigest && fullResult.chainDigest !== chainDigest) {
+          fullResult.chainValid = false;
+        }
+      }
+      processResult = {
+        chainValid: fullResult.chainValid,
+        receiptsVerified: fullResult.receiptsVerified,
+        receiptsTotal: fullResult.receiptsTotal,
+      };
+    }
+
     // Build response
     const data: V1VerifyResponse = {
       valid: result.valid,
@@ -187,6 +250,8 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
         expiresAt: result.expiresAt || null,
       },
       processProvenance,
+      policy: policyResult,
+      process: processResult,
       extensions,
     };
 

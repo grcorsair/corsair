@@ -60,7 +60,7 @@ const props = [
   {
     title: "Signal (like git webhooks)",
     description:
-      "corsair signal — real-time compliance change notifications via FLAGSHIP. Drift detected, tier changed, credential revoked — subscribers know instantly via SSF/CAEP signed events.",
+      "corsair signal generate — real-time compliance change notifications via FLAGSHIP. Drift detected, tier changed, credential revoked — subscribers know instantly via SSF/CAEP signed events.",
     accent: "border-t-corsair-cyan",
     glowColor: "rgba(0,207,255,0.15)",
     icon: <SpyglassIcon size={36} />,

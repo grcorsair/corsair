@@ -9,13 +9,14 @@
  *   corsair verify --file <cpoe.jwt> [--pubkey <path>]
  *   corsair diff --current <new.jwt> --previous <old.jwt>
  *   corsair log [--last <N>] [--dir <DIR>]
- *   corsair signal [--help]
+ *   corsair signal generate --event <event.json> --issuer <did> --audience <did>
  *   corsair keygen [--output <dir>]
  *   corsair help
  */
 
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import { VERSION } from "./src/version";
+import type { DocumentSource } from "./src/ingestion/types";
 
 // =============================================================================
 // SUBCOMMAND ROUTING
@@ -86,6 +87,7 @@ async function handleSign(): Promise<void> {
   let expiryDays = 90;
   let showHelp = false;
   let format: string | undefined;
+  let source: string | undefined;
   let verbose = false;
   let dryRun = false;
   let jsonOutput = false;
@@ -125,6 +127,9 @@ async function handleSign(): Promise<void> {
       case "--format":
       case "-F":
         format = args[++i];
+        break;
+      case "--source":
+        source = args[++i];
         break;
       case "--verbose":
       case "-v":
@@ -195,6 +200,7 @@ OPTIONS:
       --json                Output structured JSON (jwt + metadata) to stdout
       --baseline <PATH>     Compare against a baseline CPOE for regression detection
       --gate                Exit 1 if regression detected (requires --baseline)
+      --source <SOURCE>     Override document source (affects provenance)
       --sd-jwt              Enable SD-JWT selective disclosure
       --sd-fields <FIELDS>  Comma-separated fields to make disclosable (default: summary,frameworks)
       --mapping <PATH>      Mapping file or directory (repeatable; JSON maps tool output)
@@ -324,6 +330,7 @@ EXAMPLES:
     const result = await signEvidence({
       evidence: rawJson,
       format: format as EvidenceFormat | undefined,
+      source: source as DocumentSource | undefined,
       did,
       scope,
       expiryDays,
@@ -817,6 +824,9 @@ async function handleMappings(): Promise<void> {
   let mappingFiles: string[] = [];
   let mappingDirs: string[] = [];
   let samplePath: string | undefined;
+  let addFile: string | undefined;
+  let addUrl: string | undefined;
+  let addDir: string | undefined;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--mapping") {
@@ -831,21 +841,37 @@ async function handleMappings(): Promise<void> {
       samplePath = args[i + 1];
       i++;
     }
+    if (args[i] === "--file") {
+      addFile = args[i + 1];
+      i++;
+    }
+    if (args[i] === "--url") {
+      addUrl = args[i + 1];
+      i++;
+    }
+    if (args[i] === "--dir") {
+      addDir = args[i + 1];
+      i++;
+    }
   }
 
-  if (showHelp || (sub !== "list" && sub !== "validate")) {
+  if (showHelp || (sub !== "list" && sub !== "validate" && sub !== "add")) {
     console.log(`
 CORSAIR MAPPINGS — List and validate evidence mappings
 
 USAGE:
   corsair mappings list [options]
   corsair mappings validate [options]
+  corsair mappings add <url> [options]
 
 OPTIONS:
       --mapping <PATH>      Mapping file or directory (repeatable)
       --sample <PATH>       Evidence JSON to test mapping (validate only)
       --strict              Require controls mapping (no evidence-only)
       --json                Output structured JSON
+      --file <PATH>         Local mapping file or pack to add (add only)
+      --url <URL>           Remote mapping file or pack URL (add only)
+      --dir <DIR>           Destination directory (add only)
   -h, --help                Show this help
 
 EXAMPLES:
@@ -854,6 +880,8 @@ EXAMPLES:
   corsair mappings list --json
   corsair mappings validate --mapping ./mappings/toolx.json --sample ./evidence.json
   corsair mappings validate --strict --json
+  corsair mappings add https://example.com/mappings/pack.json
+  corsair mappings add --file ./mappings/toolx.json --dir ~/.corsair/mappings
 `);
     return;
   }
@@ -871,6 +899,86 @@ EXAMPLES:
 
   const { getMappings, getMappingsWithDiagnostics, mapEvidenceWithMapping, resetMappingRegistry } = await import("./src/ingestion/mapping-registry");
   resetMappingRegistry();
+
+  if (sub === "add") {
+    const { mkdirSync, existsSync, copyFileSync, writeFileSync } = await import("fs");
+    const { basename, join } = await import("path");
+    const { homedir } = await import("os");
+
+    const destinationDir = addDir || join(homedir(), ".corsair", "mappings");
+    if (!existsSync(destinationDir)) {
+      mkdirSync(destinationDir, { recursive: true });
+    }
+
+    let sourceType: "file" | "url" | null = null;
+    let sourceValue: string | undefined;
+
+    if (addFile) {
+      sourceType = "file";
+      sourceValue = addFile;
+    } else if (addUrl) {
+      sourceType = "url";
+      sourceValue = addUrl;
+    } else {
+      const arg = args.slice(1).find((a) => a && !a.startsWith("--"));
+      if (arg) {
+        if (arg.startsWith("http://") || arg.startsWith("https://")) {
+          sourceType = "url";
+          sourceValue = arg;
+        } else {
+          sourceType = "file";
+          sourceValue = arg;
+        }
+      }
+    }
+
+    if (!sourceType || !sourceValue) {
+      console.error("Error: provide a URL or file path for mappings add");
+      console.error('Usage: corsair mappings add <url> [--dir <dir>] or --file <path>');
+      process.exit(2);
+    }
+
+    if (sourceType === "file") {
+      const filePath = sourceValue;
+      if (!existsSync(filePath)) {
+        console.error(`Error: file not found: ${filePath}`);
+        process.exit(2);
+      }
+      const destPath = join(destinationDir, basename(filePath));
+      copyFileSync(filePath, destPath);
+      console.log(`Mapping added: ${destPath}`);
+      console.log(`Load with: CORSAIR_MAPPING_DIR=${destinationDir}`);
+      return;
+    }
+
+    // URL download
+    const url = sourceValue;
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(10_000), redirect: "error" });
+      if (!res.ok) {
+        console.error(`Error: failed to download mapping (${res.status})`);
+        process.exit(1);
+      }
+      const content = await res.text();
+      let filename = "mapping-pack.json";
+      try {
+        const parsedUrl = new URL(url);
+        const base = basename(parsedUrl.pathname);
+        if (base && base !== "/") filename = base;
+      } catch {
+        // ignore
+      }
+      const destPath = join(destinationDir, filename);
+      writeFileSync(destPath, content);
+      console.log(`Mapping added: ${destPath}`);
+      console.log(`Load with: CORSAIR_MAPPING_DIR=${destinationDir}`);
+      return;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`Error: failed to download mapping: ${message}`);
+      process.exit(1);
+    }
+  }
 
   if (sub === "list") {
     const mappings = getMappings();
@@ -916,7 +1024,7 @@ EXAMPLES:
   // validate
   const { mappings, errors: loadErrors } = getMappingsWithDiagnostics();
   const validationErrors: Array<{ type: string; message: string; mappingId?: string; path?: string }> = [
-    ...loadErrors.map((e) => ({ type: "load", message: e.error, path: e.path })),
+    ...loadErrors.map((e) => ({ type: "load", message: e.error, path: e.path, mappingId: e.mappingId })),
   ];
 
   for (const mapping of mappings) {
@@ -1058,7 +1166,13 @@ async function handleLog(): Promise<void> {
   const args = process.argv.slice(3);
   let showHelp = false;
   let last = 10;
+  let lastProvided = false;
   let dir = ".";
+  let scittUrl: string | undefined;
+  let domain: string | undefined;
+  let issuer: string | undefined;
+  let framework: string | undefined;
+  let jsonOutput = false;
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -1069,10 +1183,26 @@ async function handleLog(): Promise<void> {
       case "--last":
       case "-n":
         last = parseInt(args[++i], 10) || 10;
+        lastProvided = true;
         break;
       case "--dir":
       case "-d":
         dir = args[++i];
+        break;
+      case "--scitt":
+        scittUrl = args[++i];
+        break;
+      case "--domain":
+        domain = args[++i];
+        break;
+      case "--issuer":
+        issuer = args[++i];
+        break;
+      case "--framework":
+        framework = args[++i];
+        break;
+      case "--json":
+        jsonOutput = true;
         break;
     }
   }
@@ -1087,17 +1217,78 @@ USAGE:
 OPTIONS:
   -n, --last <N>            Show last N entries (default: 10)
   -d, --dir <DIR>           Directory to scan for .jwt files (default: .)
+      --scitt <URL>         SCITT log endpoint to query
+      --domain <DOMAIN>     Resolve compliance.txt and use its SCITT endpoint
+      --issuer <DID>        Filter SCITT log by issuer DID
+      --framework <NAME>    Filter SCITT log by framework name
+      --json                Output structured JSON
   -h, --help                Show this help
 
 EXAMPLES:
   corsair log                         List recent CPOEs in current directory
   corsair log --last 5                Show last 5 CPOEs
   corsair log --dir ./cpoes           Scan specific directory
+  corsair log --scitt https://log.example.com/v1/entries --issuer did:web:acme.com
+  corsair log --domain acme.com --framework SOC2
 
 NOTE:
-  Local mode scans .jwt files on disk. For remote SCITT log queries,
-  use the API: POST /scitt/register (see docs).
+  Local mode scans .jwt files on disk. Remote mode queries SCITT logs.
 `);
+    return;
+  }
+
+  if (domain) {
+    const { resolveComplianceTxt } = await import("./src/parley/compliance-txt");
+    const resolution = await resolveComplianceTxt(domain);
+    if (!resolution.complianceTxt) {
+      console.error(`Error: ${resolution.error || "Failed to resolve compliance.txt"}`);
+      process.exit(1);
+    }
+    if (!resolution.complianceTxt.scitt) {
+      console.error("Error: compliance.txt does not publish a SCITT endpoint");
+      process.exit(1);
+    }
+    scittUrl = resolution.complianceTxt.scitt;
+  }
+
+  if (scittUrl) {
+    const { resolveScittEntries } = await import("./src/parley/scitt-client");
+    const resolvedUrl = appendScittQuery(scittUrl, {
+      issuer,
+      framework,
+      limit: lastProvided ? String(last) : undefined,
+    });
+    const resolution = await resolveScittEntries(resolvedUrl);
+    if (resolution.error) {
+      console.error(`Error: ${resolution.error}`);
+      process.exit(1);
+    }
+
+    if (jsonOutput) {
+      process.stdout.write(JSON.stringify({
+        scitt: resolvedUrl,
+        entries: resolution.entries,
+        pagination: resolution.pagination,
+      }, null, 2));
+      return;
+    }
+
+    console.log("CORSAIR LOG (SCITT)");
+    console.log("===================");
+    console.log(`  Endpoint: ${resolvedUrl}`);
+    console.log(`  Entries:  ${resolution.entries.length}`);
+    console.log("");
+
+    for (const entry of resolution.entries) {
+      const score = entry.summary?.overallScore ?? "?";
+      const source = entry.provenance?.source ?? "unknown";
+      const date = entry.registrationTime.split("T")[0];
+      console.log(`  ${entry.entryId}  ${entry.scope}  ${score}%  ${source}  ${date}`);
+    }
+
+    if (resolution.entries.length === 0) {
+      console.log("  No entries found.");
+    }
     return;
   }
 
@@ -1133,6 +1324,40 @@ NOTE:
     return;
   }
 
+  if (jsonOutput) {
+    const entries: Array<{
+      path: string;
+      issuer: string;
+      scope: string;
+      score: number | string;
+      updatedAt: string;
+      size: number;
+    }> = [];
+
+    for (const entry of jwtFiles) {
+      const jwt = readFileSync(entry.path, "utf-8").trim();
+      const payload = decodeJwtPayload(jwt);
+      const subject = payload?.vc as Record<string, unknown> | undefined;
+      const credSubject = subject?.credentialSubject as Record<string, unknown> | undefined;
+      const summary = credSubject?.summary as Record<string, unknown> | undefined;
+      const score = summary?.overallScore ?? "?";
+      entries.push({
+        path: entry.path,
+        issuer: (payload?.iss as string) || "unknown",
+        scope: (credSubject?.scope as string) || "unknown",
+        score,
+        updatedAt: entry.mtime.toISOString(),
+        size: entry.size,
+      });
+    }
+
+    process.stdout.write(JSON.stringify({
+      directory: targetDir,
+      entries,
+    }, null, 2));
+    return;
+  }
+
   console.log("CORSAIR LOG");
   console.log("===========");
   console.log(`  Directory: ${targetDir}`);
@@ -1160,61 +1385,202 @@ NOTE:
   console.log("");
 }
 
+function appendScittQuery(
+  url: string,
+  params: { issuer?: string; framework?: string; limit?: string },
+): string {
+  try {
+    const parsed = new URL(url);
+    if (params.issuer) parsed.searchParams.set("issuer", params.issuer);
+    if (params.framework) parsed.searchParams.set("framework", params.framework);
+    if (params.limit) parsed.searchParams.set("limit", params.limit);
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
 // =============================================================================
 // SIGNAL
 // =============================================================================
 
 async function handleSignal(): Promise<void> {
   const args = process.argv.slice(3);
-  let showHelp = false;
+  const sub = args[0] && !args[0].startsWith("-") ? args[0] : "";
+  const showHelp = args.includes("--help") || args.includes("-h") || !sub;
 
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === "--help" || args[i] === "-h") {
-      showHelp = true;
-    }
-  }
-
-  if (showHelp || args.length === 0) {
+  if (showHelp) {
     console.log(`
 CORSAIR SIGNAL — FLAGSHIP real-time compliance change notifications
 
 USAGE:
-  corsair signal [options]
+  corsair signal <command> [options]
+
+COMMANDS:
+  generate   Generate a signed SET from a FLAGSHIP event
+  verify     Verify a SET signature
+
+GENERATE OPTIONS:
+  --event <PATH>       Path to FLAGSHIP event JSON (required)
+  --issuer <DID>       Issuer DID (required)
+  --audience <DID>     Audience DID (required)
+  --key-dir <DIR>      Key directory (default: ./keys)
+  --output <PATH>      Write SET to file instead of stdout
+  --json               Output structured JSON
+
+VERIFY OPTIONS:
+  --file <PATH>        Path to SET JWT file (required)
+  --key-dir <DIR>      Key directory (default: ./keys)
+  --json               Output structured JSON
 
 ABOUT:
   FLAGSHIP delivers compliance change notifications via the OpenID Shared
   Signals Framework (SSF) and Continuous Access Evaluation Protocol (CAEP).
   Events are Ed25519-signed Security Event Tokens (SETs).
-
-EVENT TYPES:
-  FLEET_ALERT       compliance-change        Control drift detected
-  PAPERS_CHANGED    credential-change        CPOE issued/renewed/revoked
-  MARQUE_REVOKED    session-revoked          Emergency revocation
-
-DELIVERY:
-  Push (webhook) and poll modes with retry and circuit breaker.
-
-API ENDPOINTS:
-  GET  /.well-known/ssf-configuration    SSF discovery
-  POST /ssf/stream                       Create/manage streams
-  POST /scitt/register                   Register CPOE + trigger signals
-
-NOTE:
-  FLAGSHIP operates via the API layer (SSF/CAEP over HTTP).
-  See https://grcorsair.com/docs for stream configuration.
 `);
     return;
   }
 
-  // For now, signal is informational — show what's available
-  console.error("CORSAIR SIGNAL — FLAGSHIP SSF/CAEP");
-  console.error("");
-  console.error("  FLAGSHIP streams are managed via the API layer.");
-  console.error("  Available endpoints:");
-  console.error("    GET  /.well-known/ssf-configuration");
-  console.error("    POST /ssf/stream (create, read, update, delete)");
-  console.error("");
-  console.error('  Run "corsair signal --help" for details.');
+  if (sub === "generate") {
+    let eventPath: string | undefined;
+    let issuer: string | undefined;
+    let audience: string | undefined;
+    let keyDir = "./keys";
+    let outputPath: string | undefined;
+    let jsonOutput = false;
+
+    for (let i = 1; i < args.length; i++) {
+      switch (args[i]) {
+        case "--event":
+          eventPath = args[++i];
+          break;
+        case "--issuer":
+          issuer = args[++i];
+          break;
+        case "--audience":
+          audience = args[++i];
+          break;
+        case "--key-dir":
+          keyDir = args[++i];
+          break;
+        case "--output":
+          outputPath = args[++i];
+          break;
+        case "--json":
+          jsonOutput = true;
+          break;
+      }
+    }
+
+    if (!eventPath || !issuer || !audience) {
+      console.error("Error: --event, --issuer, and --audience are required");
+      console.error('Run "corsair signal --help" for usage');
+      process.exit(2);
+    }
+
+    if (!existsSync(eventPath)) {
+      console.error(`Error: Event file not found: ${eventPath}`);
+      process.exit(2);
+    }
+
+    let event: import("./src/flagship/flagship-types").FlagshipEvent;
+    try {
+      event = JSON.parse(readFileSync(eventPath, "utf-8"));
+    } catch {
+      console.error("Error: Event file is not valid JSON");
+      process.exit(2);
+    }
+
+    const { FLAGSHIP_EVENTS } = await import("./src/flagship/flagship-types");
+    const allowed = new Set(Object.values(FLAGSHIP_EVENTS));
+    if (!event || !event.type || !allowed.has(event.type)) {
+      console.error("Error: Invalid FLAGSHIP event type");
+      process.exit(2);
+    }
+
+    const { MarqueKeyManager } = await import("./src/parley/marque-key-manager");
+    const { generateSET, generateFlagshipDescription } = await import("./src/flagship/set-generator");
+
+    const keyManager = new MarqueKeyManager(keyDir);
+    const set = await generateSET(event, issuer, audience, keyManager);
+    const description = generateFlagshipDescription(event);
+
+    if (jsonOutput) {
+      process.stdout.write(JSON.stringify({
+        set,
+        issuer,
+        audience,
+        eventType: event.type,
+        description,
+      }, null, 2));
+      return;
+    }
+
+    if (outputPath) {
+      writeFileSync(outputPath, set);
+      console.error("SET generated successfully.");
+      console.error(`  Output: ${outputPath}`);
+      return;
+    }
+
+    process.stdout.write(set);
+    return;
+  }
+
+  if (sub === "verify") {
+    let filePath: string | undefined;
+    let keyDir = "./keys";
+    let jsonOutput = false;
+
+    for (let i = 1; i < args.length; i++) {
+      switch (args[i]) {
+        case "--file":
+        case "-f":
+          filePath = args[++i];
+          break;
+        case "--key-dir":
+          keyDir = args[++i];
+          break;
+        case "--json":
+          jsonOutput = true;
+          break;
+      }
+    }
+
+    if (!filePath) {
+      console.error("Error: --file is required");
+      console.error('Run "corsair signal --help" for usage');
+      process.exit(2);
+    }
+
+    if (!existsSync(filePath)) {
+      console.error(`Error: File not found: ${filePath}`);
+      process.exit(2);
+    }
+
+    const token = readFileSync(filePath, "utf-8").trim();
+    const { MarqueKeyManager } = await import("./src/parley/marque-key-manager");
+    const { verifySET } = await import("./src/flagship/set-generator");
+    const keyManager = new MarqueKeyManager(keyDir);
+    const result = await verifySET(token, keyManager);
+
+    if (jsonOutput) {
+      process.stdout.write(JSON.stringify(result, null, 2));
+      process.exit(result.valid ? 0 : 1);
+    }
+
+    if (result.valid) {
+      console.log("SET VERIFIED");
+      process.exit(0);
+    } else {
+      console.error("SET VERIFICATION FAILED");
+      process.exit(1);
+    }
+  }
+
+  console.error(`Unknown signal command: ${sub}`);
+  console.error('Run "corsair signal --help" for usage');
+  process.exit(1);
 }
 
 // =============================================================================
@@ -1227,6 +1593,12 @@ async function handleVerify(): Promise<void> {
   let pubkeyPath: string | undefined;
   let showHelp = false;
   let jsonOutput = false;
+  let useDid = false;
+  let requireIssuer: string | undefined;
+  let requireFrameworks: string[] = [];
+  let maxAgeDays: number | undefined;
+  let minScore: number | undefined;
+  let receiptsPath: string | undefined;
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -1238,8 +1610,26 @@ async function handleVerify(): Promise<void> {
       case "-k":
         pubkeyPath = args[++i];
         break;
+      case "--did":
+        useDid = true;
+        break;
       case "--json":
         jsonOutput = true;
+        break;
+      case "--require-issuer":
+        requireIssuer = args[++i];
+        break;
+      case "--require-framework":
+        requireFrameworks = (args[++i] || "").split(",").filter(Boolean);
+        break;
+      case "--max-age":
+        maxAgeDays = parseInt(args[++i], 10);
+        break;
+      case "--min-score":
+        minScore = parseInt(args[++i], 10);
+        break;
+      case "--receipts":
+        receiptsPath = args[++i];
         break;
       case "--help":
       case "-h":
@@ -1258,6 +1648,12 @@ USAGE:
 OPTIONS:
   -f, --file <PATH>     Path to the CPOE file (JWT or JSON)
   -k, --pubkey <PATH>   Path to Ed25519 public key PEM (default: ./keys/corsair-signing.pub)
+      --did             Verify via DID:web resolution (no local key needed)
+      --require-issuer <DID>      Require a specific issuer DID
+      --require-framework <LIST>  Comma-separated frameworks that must be present
+      --max-age <DAYS>            Maximum allowed age based on provenance.sourceDate
+      --min-score <N>             Minimum overallScore required
+      --receipts <PATH>           Verify process receipts (JSON array)
       --json            Output structured JSON
   -h, --help            Show this help
 `);
@@ -1275,28 +1671,85 @@ OPTIONS:
     process.exit(2);
   }
 
-  // Load public key
-  const keyPath = pubkeyPath || "./keys/corsair-signing.pub";
-  if (!existsSync(keyPath)) {
-    console.error(`Error: Public key not found: ${keyPath}`);
-    console.error("Generate keys with: corsair keygen");
-    process.exit(2);
+  const content = readFileSync(filePath, "utf-8").trim();
+  const format = content.startsWith("eyJ") ? "JWT-VC" : "JSON Envelope";
+
+  let publicKey: Buffer | undefined;
+  if (!useDid || receiptsPath) {
+    const keyPath = pubkeyPath || "./keys/corsair-signing.pub";
+    if (!existsSync(keyPath)) {
+      console.error(`Error: Public key not found: ${keyPath}`);
+      console.error("Generate keys with: corsair keygen");
+      process.exit(2);
+    }
+    publicKey = readFileSync(keyPath);
   }
 
   const { MarqueVerifier } = await import("./src/parley/marque-verifier");
-  const publicKey = readFileSync(keyPath);
-
-  const verifier = new MarqueVerifier([publicKey]);
-  const content = readFileSync(filePath, "utf-8").trim();
-  const format = content.startsWith("eyJ") ? "JWT-VC" : "JSON Envelope";
+  const verifier = publicKey ? new MarqueVerifier([publicKey]) : new MarqueVerifier([]);
 
   // Auto-detect format (JWT starts with eyJ, JSON starts with {)
   let result;
   if (content.startsWith("eyJ")) {
-    result = await verifier.verify(content);
+    if (useDid) {
+      const { verifyVCJWTViaDID } = await import("./src/parley/vc-verifier");
+      result = await verifyVCJWTViaDID(content);
+    } else {
+      result = await verifier.verify(content);
+    }
   } else {
     const doc = JSON.parse(content);
+    if (useDid) {
+      console.error("Error: --did is only supported for JWT-VC verification");
+      process.exit(2);
+    }
     result = await verifier.verify(doc);
+  }
+
+  const policyRequested = Boolean(requireIssuer || requireFrameworks.length > 0 || maxAgeDays !== undefined || minScore !== undefined);
+  let policyResult: { ok: boolean; errors: string[] } | undefined;
+  let processResult: import("./src/parley/receipt-verifier").ProcessVerificationResult | undefined;
+
+  let payload: Record<string, unknown> | null = null;
+  if (format === "JWT-VC") {
+    payload = decodeJwtPayload(content);
+  }
+
+  if (policyRequested) {
+    if (!payload) {
+      policyResult = { ok: false, errors: ["Policy checks require JWT-VC input"] };
+    } else {
+      const { evaluateVerificationPolicy } = await import("./src/parley/verification-policy");
+      policyResult = evaluateVerificationPolicy(payload, {
+        requireIssuer,
+        requireFramework: requireFrameworks,
+        maxAgeDays,
+        minScore,
+      });
+    }
+  }
+
+  if (receiptsPath) {
+    if (!publicKey) {
+      console.error("Error: receipts verification requires a public key");
+      process.exit(2);
+    }
+    try {
+      const raw = readFileSync(receiptsPath, "utf-8");
+      const receipts = JSON.parse(raw) as Array<import("./src/parley/process-receipt").ProcessReceipt>;
+      const { verifyProcessChain } = await import("./src/parley/receipt-verifier");
+      processResult = verifyProcessChain(receipts, publicKey.toString());
+      if (payload) {
+        const cs = (payload.vc as any)?.credentialSubject as Record<string, unknown> | undefined;
+        const chainDigest = cs?.processProvenance && (cs.processProvenance as any).chainDigest;
+        if (chainDigest && processResult.chainDigest !== chainDigest) {
+          processResult = { ...processResult, chainValid: false };
+        }
+      }
+    } catch (err) {
+      console.error(`Error: failed to verify receipts: ${err instanceof Error ? err.message : String(err)}`);
+      process.exit(2);
+    }
   }
 
   if (jsonOutput) {
@@ -1314,9 +1767,12 @@ OPTIONS:
       },
       reason: result.reason,
       format,
+      policy: policyResult ?? null,
+      process: processResult ?? null,
     };
     process.stdout.write(JSON.stringify(response, null, 2));
-    process.exit(result.valid ? 0 : 1);
+    const ok = result.valid && (!policyResult || policyResult.ok) && (!processResult || processResult.chainValid);
+    process.exit(ok ? 0 : 1);
   }
 
   if (result.valid) {
@@ -1336,7 +1792,21 @@ OPTIONS:
     } else {
       console.log("  Provenance: unknown");
     }
-    process.exit(0);
+    if (policyResult) {
+      if (policyResult.ok) {
+        console.log("  Policy:    PASS");
+      } else {
+        console.log("  Policy:    FAIL");
+        for (const err of policyResult.errors) {
+          console.log(`    - ${err}`);
+        }
+      }
+    }
+    if (processResult) {
+      console.log(`  Process:   ${processResult.chainValid ? "VERIFIED" : "FAILED"} (${processResult.receiptsVerified}/${processResult.receiptsTotal})`);
+    }
+    const ok = (!policyResult || policyResult.ok) && (!processResult || processResult.chainValid);
+    process.exit(ok ? 0 : 1);
   } else {
     console.error("VERIFICATION FAILED");
     console.error(`  Reason: ${result.reason}`);
@@ -1679,7 +2149,8 @@ SUBCOMMANDS:
 ABOUT:
   compliance.txt is a discovery layer for compliance proofs, modeled after
   security.txt (RFC 9116). Organizations publish /.well-known/compliance.txt
-  to advertise their DID identity, CPOE proofs, SCITT log, and signal endpoints.
+  to advertise their DID identity, CPOE proofs, SCITT log, optional catalog snapshot,
+  and signal endpoints.
 
   Standard           | Discovery for...
   ------------------- | ----------------
@@ -1698,7 +2169,10 @@ EXAMPLES:
   corsair compliance-txt discover acme.com --verify
 
 OPTIONS:
-  -h, --help    Show this help
+  --json            Output structured JSON (validate/discover)
+  --verify          Verify CPOEs when discovering/validating
+  --scitt-limit <N> Limit SCITT entries returned in discover (default: 5)
+  -h, --help        Show this help
 `);
 }
 
@@ -1711,6 +2185,7 @@ async function handleComplianceTxtGenerate(args: string[]): Promise<void> {
   let cpoeDir: string | undefined;
   let cpoeUrls: string[] = [];
   let scitt: string | undefined;
+  let catalog: string | undefined;
   let flagship: string | undefined;
   let frameworks: string[] = [];
   let contact: string | undefined;
@@ -1731,6 +2206,9 @@ async function handleComplianceTxtGenerate(args: string[]): Promise<void> {
         break;
       case "--scitt":
         scitt = args[++i];
+        break;
+      case "--catalog":
+        catalog = args[++i];
         break;
       case "--flagship":
         flagship = args[++i];
@@ -1765,6 +2243,7 @@ OPTIONS:
   --cpoe-url <URL>         Add a CPOE URL (repeatable)
   --base-url <URL>         Base URL to prefix scanned CPOE filenames
   --scitt <URL>            SCITT transparency log endpoint
+  --catalog <URL>          Catalog snapshot with per-CPOE metadata
   --flagship <URL>         FLAGSHIP signal stream endpoint
   --frameworks <LIST>      Comma-separated framework names
   --contact <EMAIL>        Compliance contact email
@@ -1811,9 +2290,14 @@ EXAMPLES:
       console.error(`Error: Cannot read directory: ${cpoeDir}`);
       process.exit(2);
     }
-    if (!baseUrl) {
+  if (!baseUrl) {
       console.error("Note: --cpoes without --base-url uses local file paths. Replace with public URLs before publishing.");
     }
+  }
+
+  const catalogWarningThreshold = 10;
+  if (!catalog && cpoeUrls.length > catalogWarningThreshold) {
+    console.error(`Warning: ${cpoeUrls.length} CPOEs listed. Consider hosting a catalog snapshot and referencing it via CATALOG: <url>.`);
   }
 
   // Calculate expiry
@@ -1825,6 +2309,7 @@ EXAMPLES:
     did,
     cpoes: cpoeUrls,
     scitt,
+    catalog,
     flagship,
     frameworks,
     contact,
@@ -1849,6 +2334,10 @@ EXAMPLES:
 async function handleComplianceTxtValidate(args: string[]): Promise<void> {
   const domain = args.find(a => !a.startsWith("--"));
   const jsonOutput = args.includes("--json");
+  const verify = args.includes("--verify");
+  const catalogAll = args.includes("--catalog-all");
+  const sampleIndex = args.findIndex(a => a === "--catalog-sample");
+  const catalogSample = sampleIndex >= 0 ? parseInt(args[sampleIndex + 1], 10) || 0 : undefined;
 
   if (!domain) {
     console.error("Error: domain is required");
@@ -1857,6 +2346,9 @@ async function handleComplianceTxtValidate(args: string[]): Promise<void> {
   }
 
   const { resolveComplianceTxt, validateComplianceTxt } = await import("./src/parley/compliance-txt");
+  const { resolveComplianceCatalog, validateComplianceCatalog } = await import("./src/parley/compliance-catalog");
+  const { verifyVCJWTViaDID } = await import("./src/parley/vc-verifier");
+  const { createHash } = await import("crypto");
 
   console.error(`Fetching https://${domain}/.well-known/compliance.txt ...`);
 
@@ -1868,12 +2360,142 @@ async function handleComplianceTxtValidate(args: string[]): Promise<void> {
   }
 
   const validation = validateComplianceTxt(resolution.complianceTxt);
+  const ct = resolution.complianceTxt;
+
+  let verificationResults: Array<{ url: string; valid: boolean; reason?: string; issuer?: string; trustTier?: string }> = [];
+  if (verify && ct.cpoes.length > 0) {
+    for (const url of ct.cpoes) {
+      try {
+        const res = await fetch(url, { signal: AbortSignal.timeout(5000), redirect: "error" });
+        if (!res.ok) {
+          verificationResults.push({ url, valid: false, reason: `HTTP ${res.status}` });
+          continue;
+        }
+        const text = (await res.text()).trim();
+        let jwt = text;
+        if (text.startsWith("{")) {
+          try {
+            const parsed = JSON.parse(text);
+            jwt = parsed.cpoe || parsed.jwt || "";
+          } catch {
+            jwt = "";
+          }
+        }
+        if (!jwt) {
+          verificationResults.push({ url, valid: false, reason: "No JWT found" });
+          continue;
+        }
+        const result = await verifyVCJWTViaDID(jwt);
+        verificationResults.push({
+          url,
+          valid: result.valid,
+          reason: result.valid ? undefined : result.reason,
+          issuer: result.signedBy,
+          trustTier: result.issuerTier,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        verificationResults.push({ url, valid: false, reason: message });
+      }
+    }
+  }
+
+  let catalogSummary:
+    | {
+        url: string;
+        validation?: { valid: boolean; errors: string[] };
+        entryCount?: number;
+        verification?: Array<{ url: string; valid: boolean; reason?: string; issuer?: string; trustTier?: string; hashMatch?: boolean }>;
+        error?: string;
+      }
+    | undefined;
+
+  if (ct.catalog) {
+    const catalogResolution = await resolveComplianceCatalog(ct.catalog);
+    if (!catalogResolution.catalog) {
+      catalogSummary = {
+        url: ct.catalog,
+        error: catalogResolution.error || "Catalog resolution failed",
+      };
+    } else {
+      const catalogValidation = validateComplianceCatalog(catalogResolution.catalog);
+      const entries = catalogResolution.catalog.cpoes || [];
+
+      let catalogVerification:
+        Array<{ url: string; valid: boolean; reason?: string; issuer?: string; trustTier?: string; hashMatch?: boolean }>
+        = [];
+
+      if (verify && entries.length > 0) {
+        let sampleSize = catalogSample;
+        if (sampleSize === undefined) {
+          sampleSize = catalogAll ? entries.length : Math.min(5, entries.length);
+        }
+        if (catalogAll) {
+          sampleSize = entries.length;
+        }
+
+        if (sampleSize > 0) {
+          const sampleEntries = entries.slice(0, sampleSize);
+          for (const entry of sampleEntries) {
+            const url = entry.url;
+            try {
+              const res = await fetch(url, { signal: AbortSignal.timeout(5000), redirect: "error" });
+              if (!res.ok) {
+                catalogVerification.push({ url, valid: false, reason: `HTTP ${res.status}` });
+                continue;
+              }
+              const text = (await res.text()).trim();
+              let jwt = text;
+              if (text.startsWith("{")) {
+                try {
+                  const parsed = JSON.parse(text);
+                  jwt = parsed.cpoe || parsed.jwt || "";
+                } catch {
+                  jwt = "";
+                }
+              }
+              if (!jwt) {
+                catalogVerification.push({ url, valid: false, reason: "No JWT found" });
+                continue;
+              }
+              const result = await verifyVCJWTViaDID(jwt);
+              let hashMatch: boolean | undefined;
+              if (entry.hash && entry.hash.startsWith("sha256:")) {
+                const computed = createHash("sha256").update(jwt).digest("hex");
+                hashMatch = entry.hash.toLowerCase() === `sha256:${computed}`;
+              }
+              catalogVerification.push({
+                url,
+                valid: result.valid,
+                reason: result.valid ? undefined : result.reason,
+                issuer: result.signedBy,
+                trustTier: result.issuerTier,
+                ...(hashMatch === undefined ? {} : { hashMatch }),
+              });
+            } catch (err) {
+              const message = err instanceof Error ? err.message : String(err);
+              catalogVerification.push({ url, valid: false, reason: message });
+            }
+          }
+        }
+      }
+
+      catalogSummary = {
+        url: ct.catalog,
+        validation: catalogValidation,
+        entryCount: entries.length,
+        ...(catalogVerification.length > 0 ? { verification: catalogVerification } : {}),
+      };
+    }
+  }
 
   if (jsonOutput) {
     process.stdout.write(JSON.stringify({
       domain,
-      complianceTxt: resolution.complianceTxt,
+      complianceTxt: ct,
       validation,
+      catalog: catalogSummary,
+      verification: verify ? verificationResults : undefined,
     }, null, 2));
     return;
   }
@@ -1887,8 +2509,39 @@ async function handleComplianceTxtValidate(args: string[]): Promise<void> {
   console.log(`  Contact:    ${resolution.complianceTxt.contact || "(none)"}`);
   console.log(`  Expires:    ${resolution.complianceTxt.expires || "(none)"}`);
   console.log(`  SCITT:      ${resolution.complianceTxt.scitt || "(none)"}`);
+  console.log(`  CATALOG:    ${resolution.complianceTxt.catalog || "(none)"}`);
   console.log(`  FLAGSHIP:   ${resolution.complianceTxt.flagship || "(none)"}`);
   console.log("");
+
+  if (catalogSummary) {
+    console.log("  CATALOG SNAPSHOT:");
+    console.log(`    URL:     ${catalogSummary.url}`);
+    if (catalogSummary.error) {
+      console.log(`    ERROR:   ${catalogSummary.error}`);
+    } else {
+      console.log(`    ENTRIES: ${catalogSummary.entryCount ?? 0}`);
+      if (catalogSummary.validation && !catalogSummary.validation.valid) {
+        console.log("    VALIDATION ERRORS:");
+        for (const error of catalogSummary.validation.errors) {
+          console.log(`      - ${error}`);
+        }
+      } else if (catalogSummary.validation) {
+        console.log("    VALIDATION: OK");
+      }
+      if (catalogSummary.verification && catalogSummary.verification.length > 0) {
+        console.log("    VERIFICATION:");
+        for (const v of catalogSummary.verification) {
+          const hashNote = v.hashMatch === undefined ? "" : v.hashMatch ? " (hash ok)" : " (hash mismatch)";
+          if (v.valid) {
+            console.log(`      ✓ ${v.url} (${v.trustTier || "unknown"})${hashNote}`);
+          } else {
+            console.log(`      ✗ ${v.url} — ${v.reason || "invalid"}${hashNote}`);
+          }
+        }
+      }
+    }
+    console.log("");
+  }
 
   if (validation.valid) {
     console.log("  RESULT: VALID");
@@ -1909,6 +2562,8 @@ async function handleComplianceTxtDiscover(args: string[]): Promise<void> {
   const domain = args.find(a => !a.startsWith("--"));
   const jsonOutput = args.includes("--json");
   const verify = args.includes("--verify");
+  const scittLimitIndex = args.findIndex(a => a === "--scitt-limit");
+  const scittLimit = scittLimitIndex >= 0 ? parseInt(args[scittLimitIndex + 1], 10) || 5 : 5;
 
   if (!domain) {
     console.error("Error: domain is required");
@@ -1931,6 +2586,12 @@ async function handleComplianceTxtDiscover(args: string[]): Promise<void> {
   const ct = resolution.complianceTxt;
   const validation = validateComplianceTxt(ct);
   let verificationResults: Array<{ url: string; valid: boolean; reason?: string; issuer?: string; trustTier?: string }> = [];
+  let scittSummary:
+    | { url: string; entries: Array<import("./src/parley/scitt-types").SCITTListEntry>; error?: string }
+    | undefined;
+  let catalogSummary:
+    | { url: string; entryCount?: number; error?: string }
+    | undefined;
 
   if (verify && ct.cpoes.length > 0) {
     const { verifyVCJWTViaDID } = await import("./src/parley/vc-verifier");
@@ -1970,12 +2631,38 @@ async function handleComplianceTxtDiscover(args: string[]): Promise<void> {
     }
   }
 
+  if (ct.scitt) {
+    const { resolveScittEntries } = await import("./src/parley/scitt-client");
+    const scittUrl = appendScittQuery(ct.scitt, { limit: String(scittLimit) });
+    const result = await resolveScittEntries(scittUrl);
+    scittSummary = {
+      url: scittUrl,
+      entries: result.entries,
+      ...(result.error ? { error: result.error } : {}),
+    };
+  }
+
+  if (ct.catalog) {
+    const { resolveComplianceCatalog } = await import("./src/parley/compliance-catalog");
+    const catalogResolution = await resolveComplianceCatalog(ct.catalog);
+    if (!catalogResolution.catalog) {
+      catalogSummary = { url: ct.catalog, error: catalogResolution.error || "Catalog resolution failed" };
+    } else {
+      catalogSummary = {
+        url: ct.catalog,
+        entryCount: catalogResolution.catalog.cpoes.length,
+      };
+    }
+  }
+
   if (jsonOutput) {
     process.stdout.write(JSON.stringify({
       domain,
       complianceTxt: ct,
       validation,
       cpoeCount: ct.cpoes.length,
+      scitt: scittSummary,
+      catalog: catalogSummary,
       verification: verify ? verificationResults : undefined,
     }, null, 2));
     return;
@@ -2007,6 +2694,10 @@ async function handleComplianceTxtDiscover(args: string[]): Promise<void> {
     console.log(`  SCITT LOG:  ${ct.scitt}`);
   }
 
+  if (ct.catalog) {
+    console.log(`  CATALOG:    ${ct.catalog}`);
+  }
+
   if (ct.flagship) {
     console.log(`  FLAGSHIP:   ${ct.flagship}`);
   }
@@ -2020,6 +2711,30 @@ async function handleComplianceTxtDiscover(args: string[]): Promise<void> {
   }
 
   console.log("");
+
+  if (scittSummary) {
+    if (scittSummary.error) {
+      console.log("  SCITT ENTRIES: ERROR");
+      console.log(`    ${scittSummary.error}`);
+    } else {
+      console.log(`  SCITT ENTRIES (${scittSummary.entries.length}):`);
+      for (const entry of scittSummary.entries) {
+        const score = entry.summary?.overallScore ?? "?";
+        console.log(`    ${entry.entryId}  ${entry.scope}  ${score}%`);
+      }
+    }
+    console.log("");
+  }
+
+  if (catalogSummary) {
+    if (catalogSummary.error) {
+      console.log("  CATALOG SNAPSHOT: ERROR");
+      console.log(`    ${catalogSummary.error}`);
+    } else {
+      console.log(`  CATALOG SNAPSHOT: ${catalogSummary.entryCount ?? 0} entries`);
+    }
+    console.log("");
+  }
 
   if (verify && verificationResults.length > 0) {
     console.log("  VERIFICATION:");
@@ -2159,11 +2874,11 @@ COMMANDS:
   sign            Sign evidence as a CPOE (JWT-VC)        like git commit
   verify          Verify a CPOE signature and integrity
   diff            Detect compliance regressions            like git diff
-  log             List signed CPOEs (SCITT log)            like git log
+  log             List signed CPOEs (local/SCITT log)      like git log
   compliance-txt  Discovery layer (generate/validate/discover)
   mappings        List loaded evidence mappings
   renew           Re-sign a CPOE with fresh dates          like git commit --amend
-  signal          FLAGSHIP real-time notifications         like git webhooks
+  signal          FLAGSHIP SET generation/verification     like git webhooks
   keygen          Generate Ed25519 signing keypair
   demo-keygen     Generate demo signing keys (local dev)
   help            Show this help message

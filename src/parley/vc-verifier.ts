@@ -9,7 +9,7 @@
 
 import { jwtVerify, importSPKI, decodeJwt, decodeProtectedHeader } from "jose";
 import type { MarqueVerificationResult } from "./marque-verifier";
-import { VC_CONTEXT } from "./vc-types";
+import { VC_CONTEXT, CPOE_SCHEMA_VERSION } from "./vc-types";
 
 /**
  * Verify a JWT-VC against trusted public keys.
@@ -94,6 +94,16 @@ export async function verifyVCJWT(
 
       // Extract CPOE-specific fields from verified payload
       const cs = verifiedVc.credentialSubject as Record<string, unknown>;
+      const schemaVersion = typeof cs.schemaVersion === "string" ? cs.schemaVersion : undefined;
+      if (schemaVersion && schemaVersion !== CPOE_SCHEMA_VERSION) {
+        return { valid: false, reason: "schema_invalid", signedBy, generatedAt, expiresAt };
+      }
+
+      const ext = cs?.extensions as Record<string, unknown> | undefined;
+      if (ext && !extensionsValid(ext)) {
+        return { valid: false, reason: "schema_invalid", signedBy, generatedAt, expiresAt };
+      }
+
       return {
         valid: true,
         signedBy,
@@ -102,7 +112,7 @@ export async function verifyVCJWT(
         provenance: cs?.provenance as MarqueVerificationResult["provenance"],
         scope: typeof cs?.scope === "string" ? cs.scope : undefined,
         summary: cs?.summary as MarqueVerificationResult["summary"],
-        extensions: cs?.extensions as Record<string, unknown> | undefined,
+        extensions: ext,
         issuerTier: determineIssuerTier(payload),
       };
     } catch {
@@ -124,6 +134,17 @@ function determineIssuerTier(payload: Record<string, unknown>): MarqueVerificati
   if (iss.startsWith("did:web:grcorsair.com")) return "corsair-verified";
   if (iss.startsWith("did:web:")) return "self-signed";
   return "unverifiable";
+}
+
+function extensionsValid(extensions: Record<string, unknown>): boolean {
+  const allowed = new Set(["passthrough", "mapping"]);
+  for (const key of Object.keys(extensions)) {
+    if (allowed.has(key)) continue;
+    if (key.startsWith("x-")) continue;
+    if (key.startsWith("ext.")) continue;
+    return false;
+  }
+  return true;
 }
 
 // =============================================================================
@@ -231,6 +252,15 @@ export async function verifyVCJWTViaDID(
 
     // Extract CPOE fields
     const cs = vc.credentialSubject as Record<string, unknown>;
+    const schemaVersion = typeof cs.schemaVersion === "string" ? cs.schemaVersion : undefined;
+    if (schemaVersion && schemaVersion !== CPOE_SCHEMA_VERSION) {
+      return { valid: false, reason: "schema_invalid", signedBy, issuerTier: "invalid" };
+    }
+
+    const ext = cs?.extensions as Record<string, unknown> | undefined;
+    if (ext && !extensionsValid(ext)) {
+      return { valid: false, reason: "schema_invalid", signedBy, issuerTier: "invalid" };
+    }
     return {
       valid: true,
       signedBy,
@@ -239,7 +269,7 @@ export async function verifyVCJWTViaDID(
       provenance: cs?.provenance as MarqueVerificationResult["provenance"],
       scope: typeof cs?.scope === "string" ? cs.scope : undefined,
       summary: cs?.summary as MarqueVerificationResult["summary"],
-      extensions: cs?.extensions as Record<string, unknown> | undefined,
+      extensions: ext,
       issuerTier: determineIssuerTier(payload),
     };
   } catch {

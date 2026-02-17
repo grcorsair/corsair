@@ -6,10 +6,11 @@
  */
 
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
-import { existsSync, mkdirSync, rmSync } from "fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { signEvidence, SignError } from "../../src/sign/sign-core";
 import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
+import { resetMappingRegistry } from "../../src/ingestion/mapping-registry";
 
 const tmpDir = join(import.meta.dir, ".tmp-sign-core");
 let keyManager: MarqueKeyManager;
@@ -183,6 +184,47 @@ describe("signEvidence — all formats", () => {
   test("accepts JSON string input", async () => {
     const result = await signEvidence({ evidence: JSON.stringify(genericEvidence) }, keyManager);
     expect(result.jwt).toMatch(/^eyJ/);
+  });
+
+  test("respects source override for provenance", async () => {
+    const result = await signEvidence({ evidence: genericEvidence, source: "manual" }, keyManager);
+    expect(result.provenance.source).toBe("self");
+  });
+
+  test("warns when evidence-only mapping is used", async () => {
+    const mappingDir = join(tmpDir, "mappings");
+    mkdirSync(mappingDir, { recursive: true });
+    const mapping = {
+      id: "evidence-only",
+      match: { allOf: ["$.evidenceOnly"] },
+      metadata: {
+        titlePath: "$.meta.title",
+        issuer: "Tool X",
+        datePath: "$.meta.date",
+        scopePath: "$.meta.scope",
+        reportType: "Tool X Evidence",
+      },
+      passthrough: {
+        paths: {
+          summary: "$.summary",
+        },
+      },
+    };
+    writeFileSync(join(mappingDir, "evidence-only.json"), JSON.stringify(mapping, null, 2));
+    process.env.CORSAIR_MAPPING_DIR = mappingDir;
+    resetMappingRegistry();
+
+    const input = {
+      evidenceOnly: true,
+      meta: { title: "Tool X Export", date: "2026-01-10", scope: "Prod" },
+      summary: { passed: 12, failed: 2 },
+    };
+
+    const result = await signEvidence({ evidence: input }, keyManager);
+    expect(result.warnings.some((w) => w.includes("Evidence-only mapping"))).toBe(true);
+
+    delete process.env.CORSAIR_MAPPING_DIR;
+    resetMappingRegistry();
   });
 });
 

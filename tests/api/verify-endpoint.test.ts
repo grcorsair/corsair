@@ -13,6 +13,7 @@ import { importPKCS8, SignJWT } from "jose";
 import { createV1VerifyHandler } from "../../src/api/router";
 import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
 import type { APIEnvelope, V1VerifyResponse } from "../../src/api/types";
+import { ReceiptChain } from "../../src/parley/receipt-chain";
 
 // =============================================================================
 // SETUP
@@ -23,6 +24,8 @@ let keyManager: MarqueKeyManager;
 let handler: (req: Request) => Promise<Response>;
 let testJWT: string;
 let expiredJWT: string;
+let receiptsJWT: string;
+let processReceipts: Array<import("../../src/parley/process-receipt").ProcessReceipt>;
 
 const TEST_DOMAIN = "test.grcorsair.com";
 
@@ -49,6 +52,7 @@ beforeAll(async () => {
         scope: "SOC 2 Type II - Test Infrastructure",
         provenance: { source: "tool", sourceIdentity: "Prowler v3.1", sourceDate: "2026-02-10" },
         summary: { controlsTested: 5, controlsPassed: 5, controlsFailed: 0, overallScore: 100 },
+        frameworks: { SOC2: { controls: [] } },
         processProvenance: {
           chainDigest: "abc123",
           receiptCount: 3,
@@ -88,6 +92,53 @@ beforeAll(async () => {
     .setSubject("marque-expired")
     .setJti("marque-expired")
     .setExpirationTime(Math.floor(Date.now() / 1000) - 3600)
+    .sign(privateKey);
+
+  const chain = new ReceiptChain(keypair.privateKey.toString());
+  await chain.captureStep({
+    step: "evidence",
+    inputData: { a: 1 },
+    outputData: { a: 1 },
+    reproducible: true,
+  });
+  await chain.captureStep({
+    step: "classify",
+    inputData: { b: 2 },
+    outputData: { b: 2 },
+    reproducible: true,
+  });
+  processReceipts = chain.getReceipts();
+  const chainDigest = chain.getChainDigest();
+
+  receiptsJWT = await new SignJWT({
+    vc: {
+      "@context": ["https://www.w3.org/ns/credentials/v2", "https://grcorsair.com/credentials/cpoe/v1"],
+      type: ["VerifiableCredential", "CorsairCPOE"],
+      issuer: { id: `did:web:${TEST_DOMAIN}`, name: "Test Issuer" },
+      validFrom: new Date().toISOString(),
+      validUntil: new Date(Date.now() + 7 * 86400000).toISOString(),
+      credentialSubject: {
+        type: "CorsairCPOE",
+        scope: "SOC 2 Type II - Receipts Test",
+        provenance: { source: "tool", sourceIdentity: "Prowler v3.1", sourceDate: "2026-02-10" },
+        summary: { controlsTested: 2, controlsPassed: 2, controlsFailed: 0, overallScore: 100 },
+        processProvenance: {
+          chainDigest,
+          receiptCount: processReceipts.length,
+          chainVerified: true,
+          reproducibleSteps: 2,
+          attestedSteps: 0,
+        },
+      },
+    },
+    parley: "2.0",
+  })
+    .setProtectedHeader({ alg: "EdDSA", typ: "vc+jwt", kid: `did:web:${TEST_DOMAIN}#key-1` })
+    .setIssuedAt()
+    .setIssuer(`did:web:${TEST_DOMAIN}`)
+    .setSubject("marque-test-receipts")
+    .setJti("marque-test-receipts")
+    .setExpirationTime(new Date(Date.now() + 7 * 86400000))
     .sign(privateKey);
 });
 
@@ -172,6 +223,38 @@ describe("V1 Verify — Valid CPOE", () => {
     expect(body.data?.processProvenance?.chainDigest).toBe("abc123");
     expect(body.data?.processProvenance?.receiptCount).toBe(3);
     expect(body.data?.processProvenance?.chainVerified).toBe(true);
+  });
+
+  test("evaluates verification policy when provided", async () => {
+    const res = await handler(postVerify({
+      cpoe: testJWT,
+      policy: { requireFramework: ["SOC2"], minScore: 90 },
+    }));
+    const body: APIEnvelope<V1VerifyResponse> = await res.json();
+    expect(body.data?.policy).toBeTruthy();
+    expect(body.data?.policy?.ok).toBe(true);
+  });
+
+  test("returns policy errors when checks fail", async () => {
+    const res = await handler(postVerify({
+      cpoe: testJWT,
+      policy: { requireFramework: ["ISO27001"], minScore: 101 },
+    }));
+    const body: APIEnvelope<V1VerifyResponse> = await res.json();
+    expect(body.data?.policy).toBeTruthy();
+    expect(body.data?.policy?.ok).toBe(false);
+    expect(body.data?.policy?.errors.length).toBeGreaterThan(0);
+  });
+
+  test("verifies process receipts when provided", async () => {
+    const res = await handler(postVerify({
+      cpoe: receiptsJWT,
+      receipts: processReceipts,
+    }));
+    const body: APIEnvelope<V1VerifyResponse> = await res.json();
+    expect(body.data?.process).toBeTruthy();
+    expect(body.data?.process?.chainValid).toBe(true);
+    expect(body.data?.process?.receiptsTotal).toBe(processReceipts.length);
   });
 });
 

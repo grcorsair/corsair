@@ -12,6 +12,7 @@
  */
 
 import { existsSync, readdirSync, readFileSync } from "fs";
+import * as crypto from "crypto";
 import { resolve } from "path";
 import { fileURLToPath } from "url";
 import type { IngestedControl, IngestedDocument } from "./types";
@@ -64,6 +65,16 @@ export interface EvidenceMapping {
   };
 }
 
+interface MappingPack {
+  pack: {
+    id: string;
+    version: string;
+    issuedAt?: string;
+  };
+  mappings: EvidenceMapping[];
+  signature?: string;
+}
+
 // =============================================================================
 // REGISTRY (CACHED)
 // =============================================================================
@@ -77,6 +88,7 @@ type MappingWithOrder = EvidenceMapping & { [mappingOrderSymbol]?: number };
 export interface MappingLoadError {
   path: string;
   error: string;
+  mappingId?: string;
 }
 
 export function resetMappingRegistry(): void {
@@ -150,10 +162,32 @@ function loadMappingFromFile(
   if (!filePath || !existsSync(filePath)) return;
   try {
     const raw = readFileSync(filePath, "utf-8");
-    const parsed = JSON.parse(raw) as EvidenceMapping | EvidenceMapping[];
+    const parsed = JSON.parse(raw) as EvidenceMapping | EvidenceMapping[] | MappingPack;
+
+    if (isMappingPack(parsed)) {
+      loadMappingPack(parsed, filePath, target, errors);
+      return;
+    }
+
     if (Array.isArray(parsed)) {
-      for (const m of parsed) pushMapping(m, target);
+      for (const m of parsed) {
+        const schemaErrors = validateMappingSchema(m);
+        if (schemaErrors.length > 0) {
+          for (const err of schemaErrors) {
+            errors.push({ path: filePath, error: err, mappingId: m?.id });
+          }
+          continue;
+        }
+        pushMapping(m, target);
+      }
     } else {
+      const schemaErrors = validateMappingSchema(parsed);
+      if (schemaErrors.length > 0) {
+        for (const err of schemaErrors) {
+          errors.push({ path: filePath, error: err, mappingId: parsed?.id });
+        }
+        return;
+      }
       pushMapping(parsed, target);
     }
   } catch {
@@ -179,6 +213,127 @@ function sortMappings(mappings: EvidenceMapping[]): EvidenceMapping[] {
     const ob = (b as MappingWithOrder)[mappingOrderSymbol] ?? 0;
     return oa - ob;
   });
+}
+
+function isMappingPack(value: unknown): value is MappingPack {
+  if (!value || typeof value !== "object") return false;
+  const pack = value as MappingPack;
+  return Boolean(pack.pack && typeof pack.pack === "object" && Array.isArray(pack.mappings));
+}
+
+function loadMappingPack(
+  pack: MappingPack,
+  filePath: string,
+  target: EvidenceMapping[],
+  errors: MappingLoadError[],
+): void {
+  if (!pack.pack?.id || !pack.pack?.version) {
+    errors.push({ path: filePath, error: "Mapping pack missing pack.id or pack.version" });
+    return;
+  }
+
+  if (pack.signature) {
+    const publicKey = process.env.CORSAIR_MAPPING_PACK_PUBKEY;
+    if (!publicKey) {
+      errors.push({ path: filePath, error: "Signed mapping pack requires CORSAIR_MAPPING_PACK_PUBKEY" });
+      return;
+    }
+    const canonical = JSON.stringify(sortKeysDeep({ pack: pack.pack, mappings: pack.mappings }));
+    const ok = crypto.verify(
+      null,
+      Buffer.from(canonical),
+      { key: publicKey, format: "pem", type: "spki" },
+      Buffer.from(pack.signature, "base64"),
+    );
+    if (!ok) {
+      errors.push({ path: filePath, error: "Mapping pack signature invalid", mappingId: pack.pack.id });
+      return;
+    }
+  }
+
+  for (const m of pack.mappings) {
+    const schemaErrors = validateMappingSchema(m);
+    if (schemaErrors.length > 0) {
+      for (const err of schemaErrors) {
+        errors.push({ path: filePath, error: err, mappingId: m?.id });
+      }
+      continue;
+    }
+    pushMapping(m, target);
+  }
+}
+
+function validateMappingSchema(mapping: EvidenceMapping): string[] {
+  const errors: string[] = [];
+
+  if (!mapping || typeof mapping !== "object") {
+    errors.push("Mapping must be an object");
+    return errors;
+  }
+
+  if (!mapping.id || typeof mapping.id !== "string") {
+    errors.push("Missing required mapping id");
+  }
+
+  const hasMatch = Boolean((mapping.match?.allOf && mapping.match.allOf.length > 0)
+    || (mapping.match?.anyOf && mapping.match.anyOf.length > 0));
+  if (!hasMatch) {
+    errors.push("Missing match rules (allOf/anyOf)");
+  }
+
+  if (mapping.controls && !mapping.controls.path) {
+    errors.push("controls.path is required when controls is present");
+  }
+
+  const hasControls = Boolean(mapping.controls?.path);
+  const hasPassthrough = Boolean(mapping.passthrough?.paths && Object.keys(mapping.passthrough.paths).length > 0);
+  if (!hasControls && !hasPassthrough) {
+    errors.push("Mapping has neither controls nor passthrough paths");
+  }
+
+  if (mapping.passthrough?.paths) {
+    for (const [key, value] of Object.entries(mapping.passthrough.paths)) {
+      if (!key || typeof value !== "string") {
+        errors.push("passthrough.paths must be a map of string keys to string paths");
+        break;
+      }
+    }
+  }
+
+  if (mapping.controls?.statusMap) {
+    const allowed = new Set(["effective", "ineffective", "not-tested"]);
+    for (const value of Object.values(mapping.controls.statusMap)) {
+      if (!allowed.has(value)) {
+        errors.push("controls.statusMap values must be effective|ineffective|not-tested");
+        break;
+      }
+    }
+  }
+
+  if (mapping.controls?.severityMap) {
+    const allowed = new Set(["CRITICAL", "HIGH", "MEDIUM", "LOW"]);
+    for (const value of Object.values(mapping.controls.severityMap)) {
+      if (!allowed.has(value)) {
+        errors.push("controls.severityMap values must be CRITICAL|HIGH|MEDIUM|LOW");
+        break;
+      }
+    }
+  }
+
+  return errors;
+}
+
+function sortKeysDeep(value: unknown): unknown {
+  if (value === null || value === undefined) return value;
+  if (Array.isArray(value)) return value.map(sortKeysDeep);
+  if (typeof value === "object") {
+    const sorted: Record<string, unknown> = {};
+    for (const key of Object.keys(value as Record<string, unknown>).sort()) {
+      sorted[key] = sortKeysDeep((value as Record<string, unknown>)[key]);
+    }
+    return sorted;
+  }
+  return value;
 }
 
 // =============================================================================

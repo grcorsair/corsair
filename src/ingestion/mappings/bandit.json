@@ -1,0 +1,30 @@
+[
+  {
+    "id": "bandit",
+    "priority": 5,
+    "match": { "allOf": ["$.results", "$.results[*].test_id", "$.results[*].issue_severity"] },
+    "metadata": {
+      "title": "Bandit Report",
+      "issuer": "Bandit",
+      "reportType": "Bandit Findings"
+    },
+    "controls": {
+      "path": "$.results",
+      "idPath": "@.test_id",
+      "descriptionPath": "@.issue_text",
+      "statusPath": "@.issue_severity",
+      "statusMap": {
+        "high": "ineffective",
+        "medium": "ineffective",
+        "low": "ineffective"
+      },
+      "severityPath": "@.issue_severity",
+      "severityMap": {
+        "high": "HIGH",
+        "medium": "MEDIUM",
+        "low": "LOW"
+      },
+      "evidencePath": "@.filename"
+    }
+  }
+]

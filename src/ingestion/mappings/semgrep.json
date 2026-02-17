@@ -1,0 +1,37 @@
+[
+  {
+    "id": "semgrep",
+    "priority": 5,
+    "match": { "allOf": ["$.results", "$.results[*].check_id", "$.results[*].extra.message"] },
+    "metadata": {
+      "title": "Semgrep Scan",
+      "issuer": "Semgrep",
+      "reportType": "Semgrep Findings"
+    },
+    "controls": {
+      "path": "$.results",
+      "idPath": "@.check_id",
+      "descriptionPath": "@.extra.message",
+      "statusPath": "@.extra.severity",
+      "statusMap": {
+        "critical": "ineffective",
+        "high": "ineffective",
+        "medium": "ineffective",
+        "low": "ineffective",
+        "info": "ineffective",
+        "warning": "ineffective",
+        "error": "ineffective"
+      },
+      "severityPath": "@.extra.severity",
+      "severityMap": {
+        "critical": "CRITICAL",
+        "high": "HIGH",
+        "medium": "MEDIUM",
+        "low": "LOW",
+        "info": "LOW",
+        "warning": "LOW"
+      },
+      "evidencePath": "@.path"
+    }
+  }
+]

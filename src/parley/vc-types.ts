@@ -107,6 +107,9 @@ export interface CPOECredentialSubject extends CredentialSubject {
   /** Discriminator for CPOE credential subjects */
   type: "CorsairCPOE";
 
+  /** CPOE schema version (semver) */
+  schemaVersion: "1.0";
+
   /** Assessment scope (human-readable description) */
   scope: string;
 
@@ -236,3 +239,6 @@ export const CORSAIR_CONTEXT = "https://grcorsair.com/credentials/v1";
 
 /** CPOE credential type discriminator */
 export const CPOE_TYPE = "CorsairCPOE";
+
+/** CPOE schema version */
+export const CPOE_SCHEMA_VERSION = "1.0";

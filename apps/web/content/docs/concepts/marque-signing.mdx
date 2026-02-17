@@ -27,6 +27,7 @@ The CPOE credential subject maps directly to the assessment results:
 ```json
 {
   "type": "CorsairCPOE",
+  "schemaVersion": "1.0",
   "scope": "SOC 2 Type II — Cloud Infrastructure Controls",
   "provenance": {
     "source": "tool",
@@ -43,6 +44,7 @@ The CPOE credential subject maps directly to the assessment results:
 
 The `provenance` field records where the evidence came from.
 The `extensions` field is optional and is used for passthrough data or mapping metadata (evidence-only CPOEs).
+Extensions must be namespaced (`mapping`, `passthrough`, `x-`, or `ext.`).
 
 Any W3C VC 2.0 verifier can validate a Corsair credential — verification is not locked to Corsair tooling.
 

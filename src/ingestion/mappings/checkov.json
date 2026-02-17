@@ -1,0 +1,30 @@
+[
+  {
+    "id": "checkov",
+    "priority": 5,
+    "match": { "allOf": ["$.results.failed_checks"] },
+    "metadata": {
+      "title": "Checkov Report",
+      "issuer": "Checkov",
+      "reportType": "Checkov Findings"
+    },
+    "controls": {
+      "path": "$.results.failed_checks",
+      "idPath": "@.check_id",
+      "descriptionPath": "@.check_name",
+      "statusPath": "@.check_result.result",
+      "statusMap": {
+        "FAILED": "ineffective",
+        "PASSED": "effective"
+      },
+      "severityPath": "@.severity",
+      "severityMap": {
+        "CRITICAL": "CRITICAL",
+        "HIGH": "HIGH",
+        "MEDIUM": "MEDIUM",
+        "LOW": "LOW"
+      },
+      "evidencePath": "@.file_path"
+    }
+  }
+]

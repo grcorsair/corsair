@@ -45,6 +45,7 @@ A CPOE is a standard JWT with three base64url-encoded segments: `header.payload.
     "validUntil": "2026-02-16T00:00:00.000Z",
     "credentialSubject": {
       "type": "CorsairCPOE",
+      "schemaVersion": "1.0",
       "scope": "SOC 2 Type II - Cloud Infrastructure Controls",
       "provenance": {
         "source": "tool",
@@ -92,7 +93,11 @@ All claims live under `vc.credentialSubject`. The provenance-first model (v0.5.0
 | `evidenceChain` | object | Hash chain metadata: `{ hashChainRoot, recordCount, chainVerified }` |
 | `frameworks` | object | Per-framework results (keyed by framework name) |
 | `processProvenance` | object | Pipeline receipt chain: `{ chainDigest, receiptCount, chainVerified, format, reproducibleSteps, attestedSteps, scittEntryIds? }` — in-toto/SLSA provenance trail |
-| `extensions` | object | Optional passthrough fields and mapping metadata (evidence-only or partial mappings) |
+| `schemaVersion` | string | CPOE schema version (current: `"1.0"`) |
+| `extensions` | object | Optional passthrough fields and mapping metadata (namespaced keys only) |
+
+**Extensions namespace rules:** `extensions` keys must be `mapping`, `passthrough`, or namespaced with
+`x-` / `ext.`. Unknown un-namespaced keys are invalid.
 
 ## 4. Verification Flow
 
@@ -146,10 +151,12 @@ The DID document contains a `verificationMethod` array. Match the `kid` from the
 
 CPOEs are meant to be discoverable without a prior relationship. Organizations should publish
 `/.well-known/compliance.txt` (modeled after `security.txt`) to advertise their DID identity,
-active CPOEs, SCITT log endpoint, and FLAGSHIP stream.
+SCITT log endpoint, optional catalog snapshot, and FLAGSHIP stream. For scale, keep
+compliance.txt tiny and point to SCITT + catalog instead of listing many CPOEs.
 
 compliance.txt is a plain-text file with `KEY: value` pairs (keys are case-insensitive). The
 `CPOE` key is repeatable.
+For large sets of proofs, keep compliance.txt minimal and link to a catalog snapshot.
 
 Example:
 
@@ -162,7 +169,8 @@ DID: did:web:acme.com
 CPOE: https://acme.com/compliance/soc2.jwt
 CPOE: https://acme.com/compliance/iso27001.jwt
 
-SCITT: https://scitt.acme.com
+SCITT: https://scitt.acme.com/v1/entries?issuer=did:web:acme.com
+CATALOG: https://acme.com/compliance/catalog.json
 FLAGSHIP: https://acme.com/.well-known/flagship
 Frameworks: SOC2, ISO27001
 Contact: security@acme.com

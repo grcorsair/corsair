@@ -232,7 +232,8 @@ export function HeroTerminal() {
           transition={{ duration: 0.3, delay: signalStart - 0.2 }}
         >
           <span className="text-corsair-gold">$</span>{" "}
-          <span className="text-corsair-text">corsair signal</span>
+          <span className="text-corsair-text">corsair signal generate</span>{" "}
+          <span className="text-corsair-text-dim">--event flagship.json</span>
         </motion.div>
 
         <div className="h-2" />

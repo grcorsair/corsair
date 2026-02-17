@@ -119,6 +119,7 @@ describe("VC Types - W3C Verifiable Credential 2.0", () => {
   test("CPOECredentialSubject has complete assessment data", () => {
     const subject: CPOECredentialSubject = {
       type: "CorsairCPOE",
+      schemaVersion: "1.0",
       scope: "aws-cognito, aws-s3 — 12 resources, SOC2 + NIST-800-53",
       provenance: {
         source: "tool",
@@ -161,6 +162,7 @@ describe("VC Types - W3C Verifiable Credential 2.0", () => {
   test("CPOECredentialSubject supports optional threatModel", () => {
     const subject: CPOECredentialSubject = {
       type: "CorsairCPOE",
+      schemaVersion: "1.0",
       scope: "aws-cognito — 1 resource, SOC2",
       provenance: { source: "tool", sourceIdentity: "Corsair Test" },
       summary: { controlsTested: 5, controlsPassed: 5, controlsFailed: 0, overallScore: 100 },
@@ -206,6 +208,7 @@ describe("VC Types - W3C Verifiable Credential 2.0", () => {
         validFrom: new Date(now * 1000).toISOString(),
         credentialSubject: {
           type: "CorsairCPOE",
+          schemaVersion: "1.0",
           scope: "test scope",
           provenance: { source: "self" },
           summary: { controlsTested: 0, controlsPassed: 0, controlsFailed: 0, overallScore: 0 },
@@ -231,6 +234,7 @@ describe("VC Types - W3C Verifiable Credential 2.0", () => {
       validUntil: new Date(Date.now() + 7 * 86400000).toISOString(),
       credentialSubject: {
         type: "CorsairCPOE",
+        schemaVersion: "1.0",
         scope: "aws-cognito — 3 resources, SOC2",
         provenance: { source: "tool", sourceIdentity: "Corsair Engine" },
         summary: { controlsTested: 10, controlsPassed: 8, controlsFailed: 2, overallScore: 80 },
@@ -261,6 +265,7 @@ describe("VC Types - W3C Verifiable Credential 2.0", () => {
   test("CPOECredentialSubject allows optional evidenceChain and frameworks", () => {
     const subject: CPOECredentialSubject = {
       type: "CorsairCPOE",
+      schemaVersion: "1.0",
       scope: "Document ingestion scope",
       provenance: { source: "self" },
       summary: { controlsTested: 5, controlsPassed: 3, controlsFailed: 2, overallScore: 60 },

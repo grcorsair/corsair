@@ -153,6 +153,25 @@ describe("POST /verify", () => {
     expect(body.verified).toBe(true);
   });
 
+  test("evaluates verification policy when provided", async () => {
+    const router = createVerifyRouter({ keyManager });
+    const req = new Request("http://localhost/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cpoe: testJWT,
+        policy: { requireIssuer: `did:web:${TEST_DOMAIN}`, minScore: 90 },
+      }),
+    });
+
+    const res = await router(req);
+    expect(res.status).toBe(200);
+
+    const body: VerifyResponse = await res.json();
+    expect(body.policy).toBeTruthy();
+    expect(body.policy?.ok).toBe(true);
+  });
+
   test("rejects malformed JWT (not 3 segments)", async () => {
     const router = createVerifyRouter({ keyManager });
     const req = new Request("http://localhost/verify", {

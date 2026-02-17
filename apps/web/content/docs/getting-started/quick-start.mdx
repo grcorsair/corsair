@@ -43,6 +43,9 @@ corsair sign --file examples/prowler-findings.json --output cpoe.jwt
 
 # Verify the CPOE
 corsair verify --file cpoe.jwt --pubkey ./keys/corsair-signing.pub
+
+# Or verify via DID:web
+corsair verify --file cpoe.jwt --did
 ```
 
 This verifies the Ed25519 signature, checks expiry, and displays provenance and control results.
@@ -98,9 +101,9 @@ corsair renew --file cpoe.jwt --evidence new-findings.json --output renewed.jwt
 | `corsair sign` | Sign security tool output into a verifiable CPOE |
 | `corsair verify` | Verify a CPOE's Ed25519 signature and check validity |
 | `corsair diff` | Compare two CPOEs and show control-level changes |
-| `corsair log` | List signed CPOEs (local SCITT log) |
+| `corsair log` | List signed CPOEs (local or SCITT log) |
 | `corsair renew` | Re-sign a CPOE with fresh dates or new evidence |
-| `corsair signal` | FLAGSHIP real-time compliance notifications |
+| `corsair signal generate` | Generate/verify FLAGSHIP notifications |
 | `corsair keygen` | Generate Ed25519 signing keypair |
 | `corsair help` | Show available commands |
 

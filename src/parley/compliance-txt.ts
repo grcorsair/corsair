@@ -3,7 +3,8 @@
  *
  * A discovery layer for compliance proofs, modeled after security.txt (RFC 9116).
  * Organizations publish /.well-known/compliance.txt to advertise their
- * DID identity, CPOE proofs, SCITT log, and FLAGSHIP signal endpoints.
+ * DID identity, CPOE proofs, SCITT log, optional catalog snapshot,
+ * and FLAGSHIP signal endpoints.
  *
  * Any agent or human can crawl acme.com/.well-known/compliance.txt and
  * discover everything that org can prove.
@@ -34,6 +35,9 @@ export interface ComplianceTxt {
 
   /** SCITT transparency log endpoint for this issuer */
   scitt?: string;
+
+  /** Optional catalog snapshot with per-CPOE metadata */
+  catalog?: string;
 
   /** FLAGSHIP real-time signal stream endpoint */
   flagship?: string;
@@ -100,6 +104,9 @@ export function parseComplianceTxt(input: string): ComplianceTxt {
       case "scitt":
         result.scitt = value;
         break;
+      case "catalog":
+        result.catalog = value;
+        break;
       case "flagship":
         result.flagship = value;
         break;
@@ -156,6 +163,12 @@ export function generateComplianceTxt(input: ComplianceTxt): string {
   if (input.scitt) {
     lines.push("");
     lines.push(`SCITT: ${input.scitt}`);
+  }
+
+  // Catalog snapshot (human-friendly index)
+  if (input.catalog) {
+    lines.push("");
+    lines.push(`CATALOG: ${input.catalog}`);
   }
 
   // Real-time signals
@@ -218,6 +231,12 @@ export function validateComplianceTxt(input: ComplianceTxt): ComplianceTxtValida
   // Validate SCITT URL
   if (input.scitt) {
     const urlError = validateHttpsUrl(input.scitt, "SCITT");
+    if (urlError) errors.push(urlError);
+  }
+
+  // Validate CATALOG URL
+  if (input.catalog) {
+    const urlError = validateHttpsUrl(input.catalog, "CATALOG");
     if (urlError) errors.push(urlError);
   }
 

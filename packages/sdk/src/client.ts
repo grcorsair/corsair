@@ -101,10 +101,13 @@ export class CorsairClient {
       {
         evidence: input as string | object,
         format: options?.format,
+        source: options?.source,
         did: options?.did ?? this.defaultDid,
         scope: options?.scope,
         expiryDays: options?.expiryDays,
         dryRun: options?.dryRun,
+        sdJwt: options?.sdJwt,
+        sdFields: options?.sdFields,
       },
       this.keyManager,
     );
@@ -117,6 +120,7 @@ export class CorsairClient {
       provenance: output.provenance,
       warnings: output.warnings,
       extensions: output.extensions,
+      disclosures: output.disclosures,
     };
   }
 

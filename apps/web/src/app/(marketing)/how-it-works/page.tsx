@@ -157,7 +157,7 @@ export default function HowItWorksPage() {
                   compliance.txt
                 </h3>
                 <p className="text-sm text-corsair-text-dim">
-                  A public discovery file for compliance proof. Like security.txt, but for CPOEs.
+                  A public discovery file that points to SCITT and a catalog. Like security.txt, but for CPOEs.
                 </p>
                 <Link href="/publish" className="mt-3 inline-block font-mono text-xs text-corsair-gold">
                   Publish &rarr;

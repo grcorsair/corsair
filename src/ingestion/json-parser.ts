@@ -185,8 +185,21 @@ function resolveInput(input: string | object): unknown {
 }
 
 function computeHash(parsed: unknown): string {
-  const canonical = JSON.stringify(parsed);
+  const canonical = JSON.stringify(sortKeysDeep(parsed));
   return createHash("sha256").update(canonical).digest("hex");
+}
+
+function sortKeysDeep(value: unknown): unknown {
+  if (value === null || value === undefined) return value;
+  if (Array.isArray(value)) return value.map(sortKeysDeep);
+  if (typeof value === "object") {
+    const sorted: Record<string, unknown> = {};
+    for (const key of Object.keys(value as Record<string, unknown>).sort()) {
+      sorted[key] = sortKeysDeep((value as Record<string, unknown>)[key]);
+    }
+    return sorted;
+  }
+  return value;
 }
 
 // =============================================================================

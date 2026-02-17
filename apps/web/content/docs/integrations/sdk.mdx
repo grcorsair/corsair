@@ -61,9 +61,12 @@ const evidence = JSON.parse(readFileSync("prowler-findings.json", "utf-8"));
 const result = await corsair.sign(evidence, {
   format: "prowler",           // Optional: force format (auto-detected by default)
   did: "did:web:acme.com",    // Override issuer DID
+  source: "tool",             // Override provenance source
   scope: "AWS Production",    // Assessment scope
   expiryDays: 90,             // CPOE validity (default: 90)
   dryRun: false,              // Set true to preview without signing
+  sdJwt: false,               // Enable SD-JWT selective disclosure
+  sdFields: ["summary"],      // Fields to disclose when sdJwt=true
 });
 
 console.log(result.jwt);              // Signed JWT-VC string
@@ -81,9 +84,12 @@ console.log(result.extensions);       // Optional passthrough fields + mapping m
 |--------|------|---------|-------------|
 | `format` | `EvidenceFormat` | auto-detect | Force evidence format |
 | `did` | `string` | config default | Override issuer DID |
+| `source` | `DocumentSource` | from evidence | Override provenance source |
 | `scope` | `string` | from evidence | Override scope string |
 | `expiryDays` | `number` | `90` | CPOE validity in days |
 | `dryRun` | `boolean` | `false` | Parse without signing |
+| `sdJwt` | `boolean` | `false` | Enable SD-JWT selective disclosure |
+| `sdFields` | `string[]` | `["summary","frameworks"]` | Disclosable credentialSubject fields |
 
 ### Supported Formats
 
@@ -94,7 +100,7 @@ const formats = corsair.formats();
 // ["generic", "prowler", "securityhub", "inspec", "trivy", "gitlab", "ciso-assistant-api", "ciso-assistant-export"]
 ```
 
-For tool outputs not on the built-in list, use the mapping registry on the signing host (see `CORSAIR_MAPPING_DIR` / `CORSAIR_MAPPING_FILE`). Evidence-only mappings still produce a valid CPOE and surface passthrough fields under `extensions`. Mappings are evaluated by priority (higher wins), then filename order.
+For tool outputs not on the built-in list, use the mapping registry on the signing host (see `CORSAIR_MAPPING_DIR` / `CORSAIR_MAPPING_FILE` or `corsair mappings add`). Evidence-only mappings still produce a valid CPOE and surface passthrough fields under `extensions`. Mappings are evaluated by priority (higher wins), then filename order. Signed packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set.
 
 ## Verify CPOEs
 

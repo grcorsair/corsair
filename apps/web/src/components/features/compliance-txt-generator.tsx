@@ -23,6 +23,7 @@ interface FormState {
   did: string;
   cpoes: string[];
   scitt: string;
+  catalog: string;
   flagship: string;
   frameworks: string[];
   contact: string;
@@ -33,6 +34,7 @@ const INITIAL_STATE: FormState = {
   did: "",
   cpoes: [""],
   scitt: "",
+  catalog: "",
   flagship: "",
   frameworks: [],
   contact: "",
@@ -106,6 +108,10 @@ export function ComplianceTxtGenerator() {
       lines.push(`SCITT: ${form.scitt.trim()}`);
     }
 
+    if (form.catalog.trim()) {
+      lines.push(`CATALOG: ${form.catalog.trim()}`);
+    }
+
     if (form.flagship.trim()) {
       lines.push(`FLAGSHIP: ${form.flagship.trim()}`);
     }
@@ -158,6 +164,7 @@ export function ComplianceTxtGenerator() {
         "https://acme.com/compliance/iso27001-2026.jwt",
       ],
       scitt: "https://log.grcorsair.com/v1/entries?issuer=did:web:acme.com",
+      catalog: "https://acme.com/compliance/catalog.json",
       flagship: "https://signals.grcorsair.com/v1/streams/acme",
       frameworks: ["SOC2", "ISO27001", "NIST-800-53"],
       contact: "compliance@acme.com",
@@ -259,7 +266,7 @@ export function ComplianceTxtGenerator() {
 
         <Separator className="bg-corsair-border/50" />
 
-        {/* SCITT + FLAGSHIP */}
+        {/* SCITT + CATALOG + FLAGSHIP */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block font-mono text-xs uppercase tracking-wider text-muted-foreground">
@@ -270,6 +277,18 @@ export function ComplianceTxtGenerator() {
               value={form.scitt}
               onChange={(e) => updateField("scitt", e.target.value)}
               placeholder="https://log.example.com/v1/entries"
+              className="w-full rounded-lg border border-input bg-card px-3 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground/40 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/30"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-xs uppercase tracking-wider text-muted-foreground">
+              Catalog Snapshot
+            </label>
+            <input
+              type="url"
+              value={form.catalog}
+              onChange={(e) => updateField("catalog", e.target.value)}
+              placeholder="https://your-domain.com/compliance/catalog.json"
               className="w-full rounded-lg border border-input bg-card px-3 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground/40 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/30"
             />
           </div>
@@ -403,6 +422,8 @@ export function ComplianceTxtGenerator() {
               <code className="font-mono text-[11px] text-corsair-text-dim">
                 corsair compliance-txt generate --did {form.did || "did:web:your-domain.com"}
                 {form.frameworks.length > 0 && ` \\\n  --frameworks ${form.frameworks.join(",")}`}
+                {form.scitt && ` \\\n  --scitt ${form.scitt}`}
+                {form.catalog && ` \\\n  --catalog ${form.catalog}`}
                 {form.contact && ` \\\n  --contact ${form.contact}`}
                 {" \\\n  --base-url https://your-domain.com/compliance/"}
               </code>

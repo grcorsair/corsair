@@ -10,8 +10,8 @@ export const VERIFY_4_LINES = [
 export const COMPLIANCE_TXT_SNIPPET = [
   "# /.well-known/compliance.txt",
   "DID: did:web:acme.com",
-  "CPOE: https://acme.com/compliance/q1.jwt",
-  "SCITT: https://acme.com/scitt",
+  "SCITT: https://acme.com/scitt/entries?issuer=did:web:acme.com",
+  "CATALOG: https://acme.com/compliance/catalog.json",
 ];
 
 export const DIFF_SNIPPET_LINES = [

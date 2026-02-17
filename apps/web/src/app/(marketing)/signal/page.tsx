@@ -39,23 +39,24 @@ export default function SignalPage() {
             <div className="space-y-1 p-5 font-mono text-[12px] leading-relaxed text-corsair-text-dim sm:text-[13px]">
               <div>
                 <span className="text-corsair-gold">$</span>{" "}
-                <span className="text-corsair-text">corsair signal</span>
+                <span className="text-corsair-text">corsair signal generate</span>{" "}
+                <span className="text-corsair-text-dim">--event flagship.json</span>
               </div>
               <div className="h-2" />
               <div className="flex">
                 <span className="text-corsair-green">{"  \u2713 "}</span>
-                <span className="w-[100px] shrink-0 text-corsair-text-dim">Stream</span>
-                <span className="text-corsair-text">acme-aws-prod</span>
+                <span className="w-[100px] shrink-0 text-corsair-text-dim">SET</span>
+                <span className="text-corsair-text">secevent+jwt issued</span>
               </div>
               <div className="flex">
                 <span className="text-corsair-green">{"  \u2713 "}</span>
-                <span className="w-[100px] shrink-0 text-corsair-text-dim">Events</span>
-                <span className="text-corsair-text">FLEET_ALERT, PAPERS_CHANGED</span>
+                <span className="w-[100px] shrink-0 text-corsair-text-dim">Event</span>
+                <span className="text-corsair-text">PAPERS_CHANGED</span>
               </div>
               <div className="flex">
                 <span className="text-corsair-green">{"  \u2713 "}</span>
-                <span className="w-[100px] shrink-0 text-corsair-text-dim">Delivery</span>
-                <span className="text-corsair-cyan">push → https://buyer.com/webhook</span>
+                <span className="w-[100px] shrink-0 text-corsair-text-dim">Audience</span>
+                <span className="text-corsair-cyan">did:web:buyer.com</span>
               </div>
             </div>
           </div>

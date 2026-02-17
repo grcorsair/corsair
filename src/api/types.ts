@@ -42,6 +42,15 @@ export type APIErrorCode =
 export interface V1VerifyRequest {
   /** JWT-VC CPOE string */
   cpoe: string;
+  /** Optional verification policy */
+  policy?: {
+    requireIssuer?: string;
+    requireFramework?: string[];
+    maxAgeDays?: number;
+    minScore?: number;
+  };
+  /** Optional process receipts for chain verification */
+  receipts?: unknown[];
 }
 
 export interface V1VerifyResponse {
@@ -71,6 +80,8 @@ export interface V1VerifyResponse {
     reproducibleSteps: number;
     attestedSteps: number;
   } | null;
+  policy?: { ok: boolean; errors: string[] } | null;
+  process?: { chainValid: boolean; receiptsVerified: number; receiptsTotal: number } | null;
   extensions?: Record<string, unknown> | null;
   reason?: string;
 }
