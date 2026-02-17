@@ -55,6 +55,9 @@ Anyone can verify a CPOE. Free to check. No account required. Four steps with an
 # Install
 git clone https://github.com/Arudjreis/corsair.git && cd corsair && bun install
 
+# Or add as an AI agent skill (Claude Code, Cursor, Copilot, 25+ agents)
+npx skills add grcorsair/corsair
+
 # Initialize a project (generates keys + example evidence)
 bun run corsair.ts init
 
@@ -303,6 +306,14 @@ Real-time compliance signals via OpenID SSF/CAEP:
 ---
 
 ## Integrations
+
+### Agent Skill (Recommended for AI Agents)
+
+```bash
+npx skills add grcorsair/corsair
+```
+
+Works with Claude Code, Cursor, GitHub Copilot, and [25+ AI agents](https://skills.sh). Your agent can then sign evidence, verify CPOEs, detect compliance drift, and autonomously assess vendor compliance via `compliance.txt`.
 
 ### MCP Server
 

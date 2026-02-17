@@ -294,6 +294,15 @@ export const INTEGRATIONS: Integration[] = [
 
   // ── AI Assistants ────────────────────────────────────────────────────
   {
+    id: "agent-skill",
+    name: "Agent Skill (skills.sh)",
+    category: "ai-assistants",
+    status: "available",
+    description: "One-line install for Claude Code, Cursor, Copilot, and 25+ AI agents — sign, verify, diff, discover, audit",
+    docsUrl: "/docs/integrations/sdk",
+    snippet: "npx skills add grcorsair/corsair",
+  },
+  {
     id: "claude-mcp",
     name: "Claude Code (MCP)",
     category: "ai-assistants",
