@@ -22,14 +22,15 @@ export function HeroSection() {
       />
 
       <div className="relative mx-auto w-full max-w-3xl text-center">
-        {/* "Git for Compliance." — blur reveal */}
+        {/* One-liner — blur reveal */}
         <motion.h1
           initial={{ opacity: 0, filter: "blur(8px)" }}
           animate={{ opacity: 1, filter: "blur(0px)" }}
           transition={{ duration: 0.6, delay: 0, ease: "easeOut" }}
-          className="font-display text-5xl font-bold leading-tight text-corsair-text md:text-7xl"
+          className="font-display text-4xl font-bold leading-tight text-corsair-text sm:text-5xl md:text-6xl"
         >
-          Git for Compliance.
+          HTTPS proved websites are real.{" "}
+          <span className="text-corsair-gold">Corsair proves compliance is real.</span>
         </motion.h1>
 
         {/* Subtitle */}
@@ -37,9 +38,9 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="mx-auto mt-4 max-w-xl text-lg text-corsair-text-dim sm:text-xl"
+          className="mx-auto mt-4 max-w-2xl text-lg text-corsair-text-dim sm:text-xl"
         >
-          Cryptographic proof anyone can verify. No PDFs. No portals. No trust required.
+          Your security tools already know if controls work. Corsair signs that into a cryptographic proof anyone can verify.
         </motion.p>
 
         {/* Verifier — scales in */}
