@@ -223,6 +223,20 @@ export function PlaygroundEditor() {
               </CardContent>
             </Card>
 
+            {/* Extensions */}
+            {result.extensions && Object.keys(result.extensions).length > 0 && (
+              <Card className="bg-corsair-surface">
+                <CardContent className="p-4">
+                  <span className="mb-2 block font-mono text-xs uppercase text-muted-foreground">
+                    Extensions
+                  </span>
+                  <pre className="max-h-48 overflow-auto rounded-md bg-corsair-deep p-3 font-mono text-xs text-corsair-cyan/80">
+                    {JSON.stringify(result.extensions, null, 2)}
+                  </pre>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Provenance + Format */}
             <div className="grid gap-4 sm:grid-cols-2">
               <Card className="bg-corsair-surface">

@@ -120,13 +120,15 @@ export function createVerifyRouter(
       }
     }
 
-    // Extract processProvenance from JWT payload
+    // Extract processProvenance + extensions from JWT payload
     let processProvenance: VerifyResponse["processProvenance"] = null;
+    let extensions: VerifyResponse["extensions"] = null;
     try {
       const { decodeJwt } = await import("jose");
       const payload = decodeJwt(jwt) as Record<string, unknown>;
       const vc = payload.vc as Record<string, unknown> | undefined;
       const cs = vc?.credentialSubject as Record<string, unknown> | undefined;
+      const ext = cs?.extensions as Record<string, unknown> | undefined;
       const pp = cs?.processProvenance as {
         chainDigest: string; receiptCount: number; chainVerified: boolean;
         reproducibleSteps: number; attestedSteps: number;
@@ -139,6 +141,9 @@ export function createVerifyRouter(
           reproducibleSteps: pp.reproducibleSteps,
           attestedSteps: pp.attestedSteps,
         };
+      }
+      if (ext) {
+        extensions = ext;
       }
     } catch { /* decode-only, non-critical */ }
 
@@ -155,6 +160,7 @@ export function createVerifyRouter(
         expiresAt: result.expiresAt || null,
       },
       processProvenance,
+      extensions,
     };
 
     if (!result.valid) {
@@ -212,4 +218,5 @@ export interface VerifyResponse {
     reproducibleSteps: number;
     attestedSteps: number;
   } | null;
+  extensions?: Record<string, unknown> | null;
 }

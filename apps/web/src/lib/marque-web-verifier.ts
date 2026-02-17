@@ -100,6 +100,8 @@ export interface MarqueVerificationResult {
     attestedSteps: number;
     scittEntryIds?: string[];
   };
+  /** Optional passthrough fields and mapping metadata */
+  extensions?: Record<string, unknown>;
 }
 
 /**
@@ -147,6 +149,7 @@ export function mergeAPIResultWithDecoded(
     observationPeriod: cpoeFields.observationPeriod,
     frameworks: cpoeFields.frameworks,
     processProvenance: apiData.processProvenance ?? cpoeFields.processProvenance ?? undefined,
+    extensions: apiData.extensions ?? cpoeFields.extensions,
     vcMetadata: vcMetadata ? {
       ...vcMetadata,
       generatedAt: apiData.timestamps.issuedAt ?? vcMetadata.generatedAt,
@@ -438,6 +441,7 @@ function extractCPOEFields(payload: {
   } | undefined;
 
   const evidenceTypesData = cs.evidenceTypes as string[] | undefined;
+  const extensionsData = cs.extensions as Record<string, unknown> | undefined;
 
   const observationPeriodData = cs.observationPeriod as {
     startDate: string; endDate: string; durationDays: number;
@@ -462,6 +466,7 @@ function extractCPOEFields(payload: {
     observationPeriod: observationPeriodData,
     frameworks: cs.frameworks as MarqueVerificationResult["frameworks"],
     processProvenance: cs.processProvenance as MarqueVerificationResult["processProvenance"],
+    extensions: extensionsData,
   };
 }
 

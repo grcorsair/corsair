@@ -141,6 +141,11 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
     summary,
   };
 
+  // Optional passthrough fields + mapping metadata
+  if (input.document?.extensions) {
+    subject.extensions = input.document.extensions;
+  }
+
   // Evidence chain — only include if there are evidence paths with data
   const evidencePaths = input.evidencePaths || [];
   if (evidencePaths.length > 0) {

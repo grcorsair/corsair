@@ -72,6 +72,9 @@ export interface SignResult {
 
   /** Warnings generated during signing */
   warnings: string[];
+
+  /** Optional passthrough fields and mapping metadata */
+  extensions?: Record<string, unknown>;
 }
 
 /** Result of a verify operation */
@@ -90,4 +93,5 @@ export interface VerifyResult {
     overallScore: number;
   };
   issuerTier?: "corsair-verified" | "self-signed" | "unverifiable" | "invalid";
+  extensions?: Record<string, unknown>;
 }

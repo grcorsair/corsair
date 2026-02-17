@@ -26,6 +26,7 @@ export interface DemoSignResponse {
   summary: SignOutput["summary"];
   provenance: SignOutput["provenance"];
   warnings: string[];
+  extensions?: Record<string, unknown>;
   expiresAt?: string;
   demo: true;
 }
@@ -138,6 +139,7 @@ export function createDemoSignRouter(
         summary: result.summary,
         provenance: result.provenance,
         warnings,
+        extensions: result.extensions,
         ...(expiresAt ? { expiresAt } : {}),
         demo: true,
       };

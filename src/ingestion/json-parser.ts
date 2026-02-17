@@ -24,6 +24,7 @@ import type {
   AssessmentContext,
 } from "./types";
 import type { Severity } from "../types";
+import { tryMapEvidence } from "./mapping-registry";
 
 // =============================================================================
 // PUBLIC API
@@ -67,6 +68,12 @@ export function parseJSON(
   // Format override — bypass auto-detection when explicitly set
   if (options?.format) {
     return parseByFormat(parsed, rawHash, options.format, options.source);
+  }
+
+  // Mapping registry — config-driven ingestion (tool-agnostic)
+  const mapped = tryMapEvidence(parsed, rawHash, options?.source);
+  if (mapped) {
+    return mapped;
   }
 
   // Auto-detect format (order matters — most specific first)

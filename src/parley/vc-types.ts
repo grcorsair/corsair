@@ -172,6 +172,9 @@ export interface CPOECredentialSubject extends CredentialSubject {
     /** SCITT entry IDs for each receipt (enables independent verification) */
     scittEntryIds?: string[];
   };
+
+  /** Optional passthrough fields and mapping metadata */
+  extensions?: Record<string, unknown>;
 }
 
 // =============================================================================

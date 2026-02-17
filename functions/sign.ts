@@ -50,6 +50,7 @@ export interface SignResponse {
   summary: SignOutput["summary"];
   provenance: SignOutput["provenance"];
   warnings: string[];
+  extensions?: Record<string, unknown>;
   expiresAt?: string;
   demo?: boolean;
 }
@@ -240,6 +241,7 @@ export function createSignRouter(
         summary: result.summary,
         provenance: result.provenance,
         warnings: result.warnings,
+        extensions: result.extensions,
         ...(expiresAt ? { expiresAt } : {}),
       };
 

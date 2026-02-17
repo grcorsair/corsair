@@ -95,6 +95,7 @@ export async function verifyVCJWT(
         provenance: cs?.provenance as MarqueVerificationResult["provenance"],
         scope: typeof cs?.scope === "string" ? cs.scope : undefined,
         summary: cs?.summary as MarqueVerificationResult["summary"],
+        extensions: cs?.extensions as Record<string, unknown> | undefined,
         issuerTier: determineIssuerTier(payload),
       };
     } catch {
@@ -224,6 +225,7 @@ export async function verifyVCJWTViaDID(
       provenance: cs?.provenance as MarqueVerificationResult["provenance"],
       scope: typeof cs?.scope === "string" ? cs.scope : undefined,
       summary: cs?.summary as MarqueVerificationResult["summary"],
+      extensions: cs?.extensions as Record<string, unknown> | undefined,
       issuerTier: determineIssuerTier(payload),
     };
   } catch {

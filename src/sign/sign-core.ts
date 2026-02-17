@@ -109,6 +109,9 @@ export interface SignOutput {
   /** Warnings generated during signing */
   warnings: string[];
 
+  /** Optional passthrough fields and mapping metadata */
+  extensions?: Record<string, unknown>;
+
   /** The parsed document (for dry-run inspection) */
   document: IngestedDocument;
 
@@ -255,6 +258,7 @@ export async function signDocument(
       summary,
       provenance,
       warnings,
+      extensions: doc.extensions,
       document: doc,
     };
   }
@@ -297,6 +301,7 @@ export async function signDocument(
       summary,
       provenance,
       warnings,
+      extensions: doc.extensions,
       document: doc,
       credentialSubject,
       disclosures: sdResult.disclosures,
@@ -310,6 +315,7 @@ export async function signDocument(
     summary,
     provenance,
     warnings,
+    extensions: doc.extensions,
     document: doc,
     credentialSubject,
   };

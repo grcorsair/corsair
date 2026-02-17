@@ -71,6 +71,7 @@ export interface V1VerifyResponse {
     reproducibleSteps: number;
     attestedSteps: number;
   } | null;
+  extensions?: Record<string, unknown> | null;
   reason?: string;
 }
 
@@ -104,6 +105,7 @@ export interface V1SignResponse {
     sourceDate?: string;
   };
   warnings: string[];
+  extensions?: Record<string, unknown>;
   expiresAt?: string;
 }
 

@@ -94,6 +94,7 @@ export function MarqueVerifier() {
         scope: typeof cs?.scope === "string" ? cs.scope : undefined,
         provenance: cs?.provenance as MarqueVerificationResult["provenance"],
         summary: cs?.summary as MarqueVerificationResult["summary"],
+        extensions: cs?.extensions as Record<string, unknown> | undefined,
         vcMetadata: {
           context: (vc?.["@context"] as string[]) ?? [],
           credentialType: (vc?.type as string[]) ?? [],
@@ -143,6 +144,7 @@ export function MarqueVerifier() {
           provenance: cs?.provenance as MarqueVerificationResult["provenance"],
           summary: cs?.summary as MarqueVerificationResult["summary"],
           processProvenance: cs?.processProvenance as MarqueVerificationResult["processProvenance"],
+          extensions: cs?.extensions as Record<string, unknown> | undefined,
         });
         setVerifyState("api-error");
         return;
@@ -182,6 +184,7 @@ export function MarqueVerifier() {
         scope: typeof cs?.scope === "string" ? cs.scope : undefined,
         provenance: cs?.provenance as MarqueVerificationResult["provenance"],
         summary: cs?.summary as MarqueVerificationResult["summary"],
+        extensions: cs?.extensions as Record<string, unknown> | undefined,
       });
     } else {
       setResult({ valid: false, reason: "Sample payload is malformed" });
@@ -618,6 +621,20 @@ export function MarqueVerifier() {
                         )}
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Extensions (Passthrough) */}
+              {result.extensions && Object.keys(result.extensions).length > 0 && (
+                <Card className="bg-corsair-surface">
+                  <CardContent className="p-4">
+                    <span className="mb-2 block font-mono text-xs uppercase text-muted-foreground">
+                      Extensions
+                    </span>
+                    <pre className="max-h-64 overflow-auto rounded-md bg-corsair-deep p-3 font-mono text-xs text-corsair-cyan/80">
+                      {JSON.stringify(result.extensions, null, 2)}
+                    </pre>
                   </CardContent>
                 </Card>
               )}

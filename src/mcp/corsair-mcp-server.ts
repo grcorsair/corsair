@@ -164,6 +164,7 @@ async function handleSign(
       summary: result.summary,
       provenance: result.provenance,
       warnings: result.warnings,
+      extensions: result.extensions,
     };
 
     return {

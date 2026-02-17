@@ -147,13 +147,15 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
       }
     }
 
-    // Extract processProvenance from JWT payload
+    // Extract processProvenance + extensions from JWT payload
     let processProvenance: V1VerifyResponse["processProvenance"] = null;
+    let extensions: V1VerifyResponse["extensions"] = null;
     try {
       const { decodeJwt } = await import("jose");
       const payload = decodeJwt(jwt) as Record<string, unknown>;
       const vc = payload.vc as Record<string, unknown> | undefined;
       const cs = vc?.credentialSubject as Record<string, unknown> | undefined;
+      const ext = cs?.extensions as Record<string, unknown> | undefined;
       const pp = cs?.processProvenance as {
         chainDigest: string; receiptCount: number; chainVerified: boolean;
         reproducibleSteps: number; attestedSteps: number;
@@ -166,6 +168,9 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
           reproducibleSteps: pp.reproducibleSteps,
           attestedSteps: pp.attestedSteps,
         };
+      }
+      if (ext) {
+        extensions = ext;
       }
     } catch { /* decode-only, non-critical */ }
 
@@ -182,6 +187,7 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
         expiresAt: result.expiresAt || null,
       },
       processProvenance,
+      extensions,
     };
 
     if (!result.valid) {
@@ -279,6 +285,7 @@ function createV1SignHandler(deps: V1RouterDeps): (req: Request) => Promise<Resp
         summary: result.summary,
         provenance: result.provenance,
         warnings: result.warnings,
+        extensions: result.extensions,
         ...(expiresAt ? { expiresAt } : {}),
       };
 

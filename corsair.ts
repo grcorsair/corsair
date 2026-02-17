@@ -89,6 +89,8 @@ async function handleSign(): Promise<void> {
   let showVersion = false;
   let sdJwt = false;
   let sdFields: string[] | undefined;
+  let mappingFiles: string[] = [];
+  let mappingDirs: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -139,6 +141,15 @@ async function handleSign(): Promise<void> {
       case "--sd-fields":
         sdFields = (args[++i] || "").split(",").filter(Boolean);
         break;
+      case "--mapping":
+        {
+          const value = args[++i];
+          if (value) {
+            if (value.endsWith(".json")) mappingFiles.push(value);
+            else mappingDirs.push(value);
+          }
+        }
+        break;
       case "--help":
       case "-h":
         showHelp = true;
@@ -173,6 +184,7 @@ OPTIONS:
       --json                Output structured JSON (jwt + metadata) to stdout
       --sd-jwt              Enable SD-JWT selective disclosure
       --sd-fields <FIELDS>  Comma-separated fields to make disclosable (default: summary,frameworks)
+      --mapping <PATH>      Mapping file or directory (repeatable; JSON maps tool output)
   -v, --verbose             Print step-by-step progress to stderr
   -q, --quiet               Suppress all stderr output
       --version             Print version
@@ -236,6 +248,22 @@ EXAMPLES:
     process.exit(2);
   }
 
+  // Apply mapping registry overrides (CLI only)
+  if (mappingFiles.length > 0) {
+    const existing = process.env.CORSAIR_MAPPING_FILE;
+    const merged = existing ? `${existing},${mappingFiles.join(",")}` : mappingFiles.join(",");
+    process.env.CORSAIR_MAPPING_FILE = merged;
+  }
+  if (mappingDirs.length > 0) {
+    const existing = process.env.CORSAIR_MAPPING_DIR;
+    const merged = existing ? `${existing},${mappingDirs.join(",")}` : mappingDirs.join(",");
+    process.env.CORSAIR_MAPPING_DIR = merged;
+  }
+  if (mappingFiles.length > 0 || mappingDirs.length > 0) {
+    const { resetMappingRegistry } = await import("./src/ingestion/mapping-registry");
+    resetMappingRegistry();
+  }
+
   // Load key manager — auto-generate keys on first use
   const { MarqueKeyManager } = await import("./src/parley/marque-key-manager");
   const keyManager = new MarqueKeyManager(keyDir);
@@ -295,6 +323,7 @@ EXAMPLES:
         provenance: result.provenance,
         controlCount: result.document.controls.length,
         warnings: result.warnings,
+        extensions: result.extensions,
       };
       if (sdJwt) {
         dryOutput.sdJwt = true;
@@ -313,6 +342,7 @@ EXAMPLES:
         summary: result.summary,
         provenance: result.provenance,
         warnings: result.warnings,
+        extensions: result.extensions,
       };
       if (result.disclosures) {
         structuredOutput.disclosures = result.disclosures;

@@ -45,6 +45,9 @@ export interface IngestedDocument {
   /** Extracted controls with their assessment status */
   controls: IngestedControl[];
 
+  /** Optional passthrough or mapping metadata (for evidence-only CPOEs) */
+  extensions?: Record<string, unknown>;
+
   /**
    * Layer 2: Structured Assessment Context (optional).
    * Captures the subjective decisions that make GRC harder than TLS:

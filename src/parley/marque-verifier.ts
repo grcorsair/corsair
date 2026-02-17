@@ -28,6 +28,7 @@ export interface MarqueVerificationResult {
   provenance?: { source: string; sourceIdentity?: string; sourceDate?: string };
   scope?: string;
   summary?: { controlsTested: number; controlsPassed: number; controlsFailed: number; overallScore: number };
+  extensions?: Record<string, unknown>;
   issuerTier?: "corsair-verified" | "self-signed" | "unverifiable" | "invalid";
 }
 

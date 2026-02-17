@@ -116,6 +116,7 @@ export class CorsairClient {
       summary: output.summary,
       provenance: output.provenance,
       warnings: output.warnings,
+      extensions: output.extensions,
     };
   }
 

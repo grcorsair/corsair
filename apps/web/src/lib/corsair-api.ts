@@ -23,6 +23,7 @@ export interface APIVerifyResponse {
     attestedSteps: number;
     scittEntryIds?: string[];
   } | null;
+  extensions?: Record<string, unknown> | null;
 }
 
 export type APIVerifyResult =
@@ -99,6 +100,7 @@ export interface APISignResponse {
     sourceDate?: string;
   };
   warnings: string[];
+  extensions?: Record<string, unknown>;
   expiresAt?: string;
   demo?: boolean;
 }
