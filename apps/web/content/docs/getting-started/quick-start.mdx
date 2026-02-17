@@ -60,6 +60,9 @@ corsair sign --file inspec-results.json --format inspec
 
 # Sign Trivy vulnerability scan
 corsair sign --file trivy-report.json --format trivy
+
+# Sign a tool with a custom mapping
+corsair sign --file toolx-output.json --mapping ./mappings/toolx.json
 ```
 
 ## Compare CPOEs Over Time

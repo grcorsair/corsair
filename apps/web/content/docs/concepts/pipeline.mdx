@@ -31,6 +31,8 @@ Accepts structured output from security scanning tools and compliance platforms,
 - `ciso-assistant-export` — CISO Assistant export (Django JSON)
 - `generic` — Pre-structured control data from any source `{ metadata, controls[] }`
 
+**Mapping registry (tool-agnostic):** For tools not on the list, mappings can extract controls or passthrough fields without code changes. Load mappings via `CORSAIR_MAPPING_DIR`, `CORSAIR_MAPPING_FILE`, or the CLI `--mapping` flag. Evidence-only mappings still produce valid CPOEs and store passthrough data under `credentialSubject.extensions`.
+
 **Output:** Structured controls with evidence references, provenance metadata, and pass/fail status.
 
 ```bash

@@ -72,6 +72,7 @@ console.log(result.detectedFormat);   // "prowler"
 console.log(result.summary);          // { controlsTested, controlsPassed, controlsFailed, overallScore }
 console.log(result.provenance);       // { source: "tool", sourceIdentity: "prowler" }
 console.log(result.warnings);         // Any warnings from parsing
+console.log(result.extensions);       // Optional passthrough fields + mapping metadata
 ```
 
 ### SignOptions
@@ -92,6 +93,8 @@ Call `corsair.formats()` to get the full list:
 const formats = corsair.formats();
 // ["generic", "prowler", "securityhub", "inspec", "trivy", "gitlab", "ciso-assistant-api", "ciso-assistant-export"]
 ```
+
+For tool outputs not on the built-in list, use the mapping registry on the signing host (see `CORSAIR_MAPPING_DIR` / `CORSAIR_MAPPING_FILE`). Evidence-only mappings still produce a valid CPOE and surface passthrough fields under `extensions`.
 
 ## Verify CPOEs
 
@@ -126,6 +129,7 @@ if (result.valid) {
 | `provenance` | `object` | Source, identity, and date |
 | `generatedAt` | `string` | Issuance timestamp |
 | `expiresAt` | `string` | Expiry timestamp |
+| `extensions` | `object` | Optional passthrough fields and mapping metadata |
 
 ## TypeScript Types
 

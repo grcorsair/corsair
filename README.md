@@ -108,6 +108,8 @@ corsair sign --file evidence.json --json       # Structured JSON output
 corsair sign --file evidence.json --dry-run    # Preview without signing
 corsair sign --file evidence.json --sd-jwt     # SD-JWT selective disclosure
 corsair sign --file evidence.json --sd-jwt --sd-fields scope  # Disclose only scope
+corsair sign --file evidence.json --mapping ./mappings/toolx.json  # Apply mapping file
+corsair sign --file evidence.json --mapping ./mappings/            # Apply mapping directory
 corsair sign --file - < data.json              # Sign from stdin
 ```
 
@@ -136,6 +138,8 @@ corsair compliance-txt discover acme.com --verify
 ## Supported Formats
 
 Corsair auto-detects evidence format from JSON structure. Override with `--format <name>`.
+For tools not on this list, use the mapping registry to extract controls or passthrough
+fields without code changes (see `--mapping` and `CORSAIR_MAPPING_DIR`).
 
 | Format | Tool | Detection |
 |:-------|:-----|:----------|
@@ -184,6 +188,10 @@ The credential subject records **provenance and summary** — who produced the e
   "frameworks": {
     "SOC2": { "controlsMapped": 24, "passed": 22, "failed": 2 },
     "NIST-800-53": { "controlsMapped": 22, "passed": 20, "failed": 2 }
+  },
+  "extensions": {
+    "mapping": { "id": "toolx-evidence-only", "evidenceOnly": true },
+    "passthrough": { "summary": { "passed": 12, "failed": 2 } }
   },
   "processProvenance": {
     "chainDigest": "a7f3e2...",

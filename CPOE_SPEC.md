@@ -56,6 +56,10 @@ A CPOE is a standard JWT with three base64url-encoded segments: `header.payload.
         "controlsPassed": 20,
         "controlsFailed": 2,
         "overallScore": 91
+      },
+      "extensions": {
+        "mapping": { "id": "toolx-evidence-only", "evidenceOnly": true },
+        "passthrough": { "summary": { "passed": 12, "failed": 2 } }
       }
     }
   }
@@ -88,6 +92,7 @@ All claims live under `vc.credentialSubject`. The provenance-first model (v0.5.0
 | `evidenceChain` | object | Hash chain metadata: `{ hashChainRoot, recordCount, chainVerified }` |
 | `frameworks` | object | Per-framework results (keyed by framework name) |
 | `processProvenance` | object | Pipeline receipt chain: `{ chainDigest, receiptCount, chainVerified, format, reproducibleSteps, attestedSteps, scittEntryIds? }` — in-toto/SLSA provenance trail |
+| `extensions` | object | Optional passthrough fields and mapping metadata (evidence-only or partial mappings) |
 
 ## 4. Verification Flow
 

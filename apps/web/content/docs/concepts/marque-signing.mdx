@@ -33,11 +33,16 @@ The CPOE credential subject maps directly to the assessment results:
     "sourceIdentity": "Prowler v3.1",
     "sourceDate": "2026-01-15T00:00:00Z"
   },
-  "summary": { "controlsTested": 24, "controlsPassed": 22, "overallScore": 92 }
+  "summary": { "controlsTested": 24, "controlsPassed": 22, "overallScore": 92 },
+  "extensions": {
+    "mapping": { "id": "toolx-evidence-only", "evidenceOnly": true },
+    "passthrough": { "summary": { "passed": 12, "failed": 2 } }
+  }
 }
 ```
 
 The `provenance` field records where the evidence came from.
+The `extensions` field is optional and is used for passthrough data or mapping metadata (evidence-only CPOEs).
 
 Any W3C VC 2.0 verifier can validate a Corsair credential — verification is not locked to Corsair tooling.
 

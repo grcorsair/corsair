@@ -61,6 +61,7 @@ Error responses use the same envelope:
 ## POST /v1/sign
 
 Sign evidence into a CPOE (JWT-VC). Accepts raw tool output from any supported format. Requires authentication.
+To support additional tools without code changes, configure the mapping registry on the API server via `CORSAIR_MAPPING_DIR` or `CORSAIR_MAPPING_FILE`.
 
 ```bash
 curl -X POST https://api.grcorsair.com/v1/sign \
@@ -108,6 +109,10 @@ curl -X POST https://api.grcorsair.com/v1/sign \
       "sourceIdentity": "Prowler v3.1",
       "sourceDate": "2026-02-13T00:00:00Z"
     },
+    "extensions": {
+      "mapping": { "id": "toolx-evidence-only", "evidenceOnly": true },
+      "passthrough": { "summary": { "passed": 12, "failed": 2 } }
+    },
     "warnings": [],
     "expiresAt": "2026-05-14T00:00:00.000Z"
   }
@@ -146,6 +151,10 @@ curl -X POST https://api.grcorsair.com/v1/verify \
       "source": "tool",
       "sourceIdentity": "Prowler v3.1",
       "sourceDate": "2026-01-15"
+    },
+    "extensions": {
+      "mapping": { "id": "toolx-evidence-only", "evidenceOnly": true },
+      "passthrough": { "summary": { "passed": 12, "failed": 2 } }
     },
     "timestamps": {
       "issuedAt": "2026-02-13T00:00:00.000Z",

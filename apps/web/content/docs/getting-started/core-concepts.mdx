@@ -39,6 +39,8 @@ Every `corsair sign` invocation flows through the core primitives. No flags requ
 
 Corsair accepts structured output from security scanning tools and compliance platforms. Each adapter translates tool-native formats into the canonical evidence format for signing. Override auto-detection with `--format <name>`.
 
+For tools not on the built-in list, use the **mapping registry** to extract controls or passthrough fields without code changes. Mappings are JSON files loaded via `CORSAIR_MAPPING_DIR`, `CORSAIR_MAPPING_FILE`, or the CLI `--mapping` flag. Evidence-only mappings still produce a valid CPOE and surface data in `credentialSubject.extensions`.
+
 | Format | Tool | Detection |
 |--------|------|-----------|
 | `generic` | Any JSON with `{ metadata, controls[] }` | Default fallback |
