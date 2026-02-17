@@ -13,6 +13,7 @@ beforeEach(() => {
   const mapping = [
     {
       id: "toolx-evidence-only",
+      priority: 5,
       match: { allOf: ["$.evidenceOnly"] },
       metadata: {
         titlePath: "$.meta.title",
@@ -30,6 +31,7 @@ beforeEach(() => {
     },
     {
       id: "toolx-controls",
+      priority: 5,
       match: { allOf: ["$.findings"] },
       metadata: {
         titlePath: "$.meta.title",
@@ -50,6 +52,35 @@ beforeEach(() => {
   ];
 
   writeFileSync(join(tmpDir, "toolx.json"), JSON.stringify(mapping, null, 2));
+
+  const priorityMapping = [
+    {
+      id: "low-priority",
+      priority: 1,
+      match: { allOf: ["$.priority"] },
+      metadata: {
+        title: "Low Priority",
+        issuer: "Tool X",
+        date: "2026-01-01",
+        scope: "Test",
+        reportType: "Priority Test",
+      },
+    },
+    {
+      id: "high-priority",
+      priority: 10,
+      match: { allOf: ["$.priority"] },
+      metadata: {
+        title: "High Priority",
+        issuer: "Tool X",
+        date: "2026-01-01",
+        scope: "Test",
+        reportType: "Priority Test",
+      },
+    },
+  ];
+
+  writeFileSync(join(tmpDir, "priority.json"), JSON.stringify(priorityMapping, null, 2));
   process.env.CORSAIR_MAPPING_DIR = tmpDir;
   resetMappingRegistry();
 });
@@ -91,5 +122,15 @@ describe("mapping registry", () => {
     expect(doc.controls[0].status).toBe("effective");
     expect(doc.controls[0].severity).toBe("HIGH");
     expect(doc.controls[1].status).toBe("ineffective");
+  });
+
+  test("uses higher priority mapping when multiple match", () => {
+    const input = {
+      priority: true,
+    };
+
+    const doc = parseJSON(input);
+    expect((doc.extensions?.mapping as { id?: string })?.id).toBe("high-priority");
+    expect(doc.metadata.title).toBe("High Priority");
   });
 });

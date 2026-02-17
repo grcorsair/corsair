@@ -32,12 +32,14 @@ corsair sign [options]
 | `--key-dir <DIR>` | Ed25519 key directory | ./keys |
 | `--dry-run` | Parse + classify without signing | false |
 | `--json` | Output structured JSON | false |
+| `--baseline <PATH>` | Compare against baseline CPOE | none |
+| `--gate` | Exit 1 if baseline shows regression | false |
 | `--sd-jwt` | Enable SD-JWT selective disclosure | false |
 | `--sd-fields <FIELDS>` | Comma-separated fields to disclose | summary,frameworks |
 | `-v, --verbose` | Step-by-step progress to stderr | false |
 | `-q, --quiet` | Suppress all stderr | false |
 
-**JSON output structure:**
+**JSON output structure:** (includes `baselineDiff` only when `--baseline` is used)
 ```json
 {
   "cpoe": "<JWT string>",
@@ -53,7 +55,15 @@ corsair sign [options]
     "source": "prowler",
     "sourceIdentity": "unknown"
   },
-  "warnings": []
+  "warnings": [],
+  "baselineDiff": {
+    "score": { "previous": 85, "current": 92, "change": 7 },
+    "regressions": ["CTRL-003"],
+    "improvements": ["CTRL-007"],
+    "added": ["CTRL-015"],
+    "removed": [],
+    "result": "ok"
+  }
 }
 ```
 
@@ -81,8 +91,36 @@ corsair verify [options]
 |------|-------------|---------|
 | `-f, --file <PATH>` | CPOE file path (JWT or JSON) | Required |
 | `-k, --pubkey <PATH>` | Ed25519 public key PEM | ./keys/corsair-signing.pub |
+| `--json` | Output structured JSON | false |
 
 **Exit codes:** 0 = VERIFIED, 1 = FAILED
+
+**JSON output structure:**
+```json
+{
+  "valid": true,
+  "issuer": "did:web:acme.com",
+  "trustTier": "self-signed",
+  "scope": "AWS Production",
+  "summary": {
+    "controlsTested": 42,
+    "controlsPassed": 38,
+    "controlsFailed": 4,
+    "overallScore": 90
+  },
+  "provenance": {
+    "source": "tool",
+    "sourceIdentity": "Acme Corp",
+    "sourceDate": "2026-01-15"
+  },
+  "timestamps": {
+    "issuedAt": "2026-02-17T12:00:00.000Z",
+    "expiresAt": "2026-05-18T12:00:00.000Z"
+  },
+  "reason": null,
+  "format": "JWT-VC"
+}
+```
 
 ### corsair diff
 

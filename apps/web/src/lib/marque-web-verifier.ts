@@ -110,7 +110,8 @@ export interface MarqueVerificationResult {
  */
 export function decodeJWTPayload(jwt: string): Record<string, unknown> | null {
   const trimmed = jwt.trim();
-  const parts = trimmed.split(".");
+  const jwtPart = trimmed.includes("~") ? trimmed.split("~")[0] : trimmed;
+  const parts = jwtPart.split(".");
   if (parts.length !== 3) return null;
 
   try {
@@ -202,7 +203,8 @@ function pemToBuffer(pem: string): ArrayBuffer {
  */
 export function detectFormat(input: string): MarqueFormat {
   const trimmed = input.trim();
-  const parts = trimmed.split(".");
+  const jwtPart = trimmed.includes("~") ? trimmed.split("~")[0] : trimmed;
+  const parts = jwtPart.split(".");
   if (parts.length === 3 && parts.every((p) => p.length > 0)) {
     try {
       JSON.parse(base64UrlDecode(parts[0]));
@@ -237,7 +239,8 @@ async function verifyJWTVC(
   publicKeyPem: string
 ): Promise<MarqueVerificationResult> {
   try {
-    const parts = jwt.split(".");
+    const jwtPart = jwt.includes("~") ? jwt.split("~")[0] : jwt;
+    const parts = jwtPart.split(".");
     if (parts.length !== 3) {
       return { valid: false, reason: "Invalid JWT format: expected 3 dot-separated parts", format: "jwt" };
     }

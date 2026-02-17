@@ -61,7 +61,7 @@ Error responses use the same envelope:
 ## POST /v1/sign
 
 Sign evidence into a CPOE (JWT-VC). Accepts raw tool output from any supported format. Requires authentication.
-To support additional tools without code changes, configure the mapping registry on the API server via `CORSAIR_MAPPING_DIR` or `CORSAIR_MAPPING_FILE`.
+To support additional tools without code changes, configure the mapping registry on the API server via `CORSAIR_MAPPING_DIR` or `CORSAIR_MAPPING_FILE`. Mappings are evaluated by priority (higher wins), then filename order.
 
 ```bash
 curl -X POST https://api.grcorsair.com/v1/sign \

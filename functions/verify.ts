@@ -24,6 +24,8 @@ export interface VerifyRouterDeps {
   extraTrustedKeys?: Buffer[];
 }
 
+const MAX_JWT_SIZE = 100_000; // 100KB
+
 function jsonError(status: number, message: string): Response {
   return Response.json(
     { error: message },
@@ -65,7 +67,7 @@ export function createVerifyRouter(
     }
 
     // Extract JWT from request body
-    let jwt: string;
+    let rawCpoe: string;
     const contentType = req.headers.get("content-type") || "";
 
     if (contentType.includes("application/json")) {
@@ -79,23 +81,31 @@ export function createVerifyRouter(
       if (!body.cpoe || typeof body.cpoe !== "string") {
         return jsonError(400, 'Missing required field: "cpoe" (JWT-VC string)');
       }
-      jwt = body.cpoe.trim();
+      rawCpoe = body.cpoe.trim();
     } else {
       // Accept raw JWT string
-      jwt = (await req.text()).trim();
+      rawCpoe = (await req.text()).trim();
     }
 
-    if (!jwt) {
+    if (!rawCpoe) {
       return jsonError(400, "Empty CPOE. Provide a JWT-VC string.");
     }
 
     // Reject oversized JWTs (typical CPOE is 2-5KB)
-    if (jwt.length > 20_000) {
-      return jsonError(400, "JWT exceeds maximum size (20KB)");
+    if (Buffer.byteLength(rawCpoe) > MAX_JWT_SIZE) {
+      return jsonError(400, `JWT exceeds maximum size (${MAX_JWT_SIZE} bytes)`);
+    }
+
+    // Support SD-JWT (JWT + disclosures)
+    let jwtToVerify = rawCpoe;
+    if (rawCpoe.includes("~")) {
+      const { parseSDJWT } = await import("../src/parley/sd-jwt");
+      const parsed = parseSDJWT(rawCpoe);
+      jwtToVerify = parsed.jwt;
     }
 
     // Basic format check
-    if (jwt.split(".").length !== 3) {
+    if (jwtToVerify.split(".").length !== 3) {
       return jsonError(400, "Invalid JWT format. Expected three base64url segments separated by dots.");
     }
 
@@ -104,16 +114,16 @@ export function createVerifyRouter(
     let result: MarqueVerificationResult;
 
     try {
-      result = await verifyVCJWTViaDID(jwt);
+      result = await verifyVCJWTViaDID(jwtToVerify);
     } catch {
       // DID resolution failed — fall back to trusted keys
-      result = await verifyWithTrustedKeys(jwt, keyManager, extraTrustedKeys);
+      result = await verifyWithTrustedKeys(jwtToVerify, keyManager, extraTrustedKeys);
     }
 
     // If DID verification failed, try trusted keys as fallback.
     // DID resolution may return wrong key (e.g., stale static DID doc) or fail entirely.
     if (!result.valid) {
-      const trustedResult = await verifyWithTrustedKeys(jwt, keyManager, extraTrustedKeys);
+      const trustedResult = await verifyWithTrustedKeys(jwtToVerify, keyManager, extraTrustedKeys);
       // Prefer the trusted-key result if it succeeds, or if it gives a more specific error
       if (trustedResult.valid || result.issuerTier === "unverifiable") {
         result = trustedResult;
@@ -125,7 +135,7 @@ export function createVerifyRouter(
     let extensions: VerifyResponse["extensions"] = null;
     try {
       const { decodeJwt } = await import("jose");
-      const payload = decodeJwt(jwt) as Record<string, unknown>;
+      const payload = decodeJwt(jwtToVerify) as Record<string, unknown>;
       const vc = payload.vc as Record<string, unknown> | undefined;
       const cs = vc?.credentialSubject as Record<string, unknown> | undefined;
       const ext = cs?.extensions as Record<string, unknown> | undefined;

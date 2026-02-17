@@ -31,6 +31,8 @@ export interface DemoSignResponse {
   demo: true;
 }
 
+const MAX_JWT_SIZE = 100_000; // 100KB
+
 function jsonError(status: number, message: string): Response {
   return Response.json(
     { error: message },
@@ -115,6 +117,10 @@ export function createDemoSignRouter(
         did: demoDid,
         expiryDays: 7,
       }, keyManager);
+
+      if (result.jwt && Buffer.byteLength(result.jwt) > MAX_JWT_SIZE) {
+        return jsonError(400, `CPOE exceeds maximum size (${MAX_JWT_SIZE} bytes). Reduce evidence or extensions.`);
+      }
 
       let expiresAt: string | undefined;
       if (result.jwt) {

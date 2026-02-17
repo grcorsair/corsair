@@ -25,6 +25,8 @@ export interface EvidenceMapping {
   id: string;
   name?: string;
   source?: string;
+  /** Higher priority mappings are evaluated first */
+  priority?: number;
   match?: {
     allOf?: string[];
     anyOf?: string[];
@@ -67,9 +69,14 @@ export interface EvidenceMapping {
 // =============================================================================
 
 let cachedMappings: EvidenceMapping[] | null = null;
+const mappingOrderSymbol = Symbol("mappingOrder");
+let mappingOrderCounter = 0;
+
+type MappingWithOrder = EvidenceMapping & { [mappingOrderSymbol]?: number };
 
 export function resetMappingRegistry(): void {
   cachedMappings = null;
+  mappingOrderCounter = 0;
 }
 
 export function getMappings(): EvidenceMapping[] {
@@ -98,18 +105,17 @@ export function getMappings(): EvidenceMapping[] {
     loadMappingFromFile(filePath, mappings);
   }
 
-  cachedMappings = mappings;
+  cachedMappings = sortMappings(mappings);
   return mappings;
 }
 
 function loadMappingsFromDir(dir: string, target: EvidenceMapping[]): void {
   if (!dir || !existsSync(dir)) return;
 
-  const entries = readdirSync(dir, { withFileTypes: true });
+  const entries = readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+    .sort((a, b) => a.name.localeCompare(b.name));
   for (const entry of entries) {
-    if (!entry.isFile()) continue;
-    if (!entry.name.endsWith(".json")) continue;
-
     const fullPath = resolve(dir, entry.name);
     loadMappingFromFile(fullPath, target);
   }
@@ -121,14 +127,32 @@ function loadMappingFromFile(filePath: string, target: EvidenceMapping[]): void 
     const raw = readFileSync(filePath, "utf-8");
     const parsed = JSON.parse(raw) as EvidenceMapping | EvidenceMapping[];
     if (Array.isArray(parsed)) {
-      for (const m of parsed) target.push(m);
+      for (const m of parsed) pushMapping(m, target);
     } else {
-      target.push(parsed);
+      pushMapping(parsed, target);
     }
   } catch {
-    // Ignore invalid mapping files (non-fatal)
+    // Non-fatal: log warning for visibility
+    console.warn(`Mapping registry: failed to load ${filePath} (invalid JSON)`);
     return;
   }
+}
+
+function pushMapping(mapping: EvidenceMapping, target: EvidenceMapping[]): void {
+  const withOrder = mapping as MappingWithOrder;
+  withOrder[mappingOrderSymbol] = mappingOrderCounter++;
+  target.push(mapping);
+}
+
+function sortMappings(mappings: EvidenceMapping[]): EvidenceMapping[] {
+  return mappings.sort((a, b) => {
+    const pa = a.priority ?? 0;
+    const pb = b.priority ?? 0;
+    if (pa !== pb) return pb - pa;
+    const oa = (a as MappingWithOrder)[mappingOrderSymbol] ?? 0;
+    const ob = (b as MappingWithOrder)[mappingOrderSymbol] ?? 0;
+    return oa - ob;
+  });
 }
 
 // =============================================================================

@@ -7,10 +7,14 @@ Each mapping file can define:
 - how to extract metadata (`metadata`)
 - how to map findings into `controls[]` (`controls`)
 - how to pass through small fields for evidence-only CPOEs (`passthrough`)
+- optional `priority` to control match precedence (higher wins)
 
 Mappings are loaded at runtime from:
 - this directory
 - `CORSAIR_MAPPING_DIR` (comma-separated list of directories)
 - `CORSAIR_MAPPING_FILE` (comma-separated list of JSON files)
+
+Mappings are evaluated in priority order (highest first). When priorities
+are equal, file order is deterministic by filename within each directory.
 
 See `src/ingestion/mapping-registry.ts` for the schema.

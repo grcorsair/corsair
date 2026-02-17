@@ -110,7 +110,14 @@ corsair sign --file evidence.json --sd-jwt     # SD-JWT selective disclosure
 corsair sign --file evidence.json --sd-jwt --sd-fields scope  # Disclose only scope
 corsair sign --file evidence.json --mapping ./mappings/toolx.json  # Apply mapping file
 corsair sign --file evidence.json --mapping ./mappings/            # Apply mapping directory
+corsair sign --file evidence.json --baseline baseline.cpoe.jwt --gate  # Fail on regression vs baseline
 corsair sign --file - < data.json              # Sign from stdin
+```
+
+### Verify Options
+
+```bash
+corsair verify --file cpoe.jwt --json          # Structured JSON output
 ```
 
 ### Diff Options
@@ -139,7 +146,8 @@ corsair compliance-txt discover acme.com --verify
 
 Corsair auto-detects evidence format from JSON structure. Override with `--format <name>`.
 For tools not on this list, use the mapping registry to extract controls or passthrough
-fields without code changes (see `--mapping` and `CORSAIR_MAPPING_DIR`).
+fields without code changes (see `--mapping` and `CORSAIR_MAPPING_DIR`). Mappings
+are evaluated by priority (higher wins), then filename order.
 
 | Format | Tool | Detection |
 |:-------|:-----|:----------|

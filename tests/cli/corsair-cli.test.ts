@@ -41,6 +41,7 @@ describe("Corsair CLI", () => {
     await proc.exited;
     expect(output).toContain("VERIFY");
     expect(output).toContain("--file");
+    expect(output).toContain("--json");
   });
 
   test("keygen --help shows keygen usage", async () => {

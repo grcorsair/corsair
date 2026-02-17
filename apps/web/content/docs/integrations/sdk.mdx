@@ -94,7 +94,7 @@ const formats = corsair.formats();
 // ["generic", "prowler", "securityhub", "inspec", "trivy", "gitlab", "ciso-assistant-api", "ciso-assistant-export"]
 ```
 
-For tool outputs not on the built-in list, use the mapping registry on the signing host (see `CORSAIR_MAPPING_DIR` / `CORSAIR_MAPPING_FILE`). Evidence-only mappings still produce a valid CPOE and surface passthrough fields under `extensions`.
+For tool outputs not on the built-in list, use the mapping registry on the signing host (see `CORSAIR_MAPPING_DIR` / `CORSAIR_MAPPING_FILE`). Evidence-only mappings still produce a valid CPOE and surface passthrough fields under `extensions`. Mappings are evaluated by priority (higher wins), then filename order.
 
 ## Verify CPOEs
 

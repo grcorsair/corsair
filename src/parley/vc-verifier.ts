@@ -26,15 +26,22 @@ export async function verifyVCJWT(
   jwt: string,
   trustedKeys: Buffer[],
 ): Promise<MarqueVerificationResult> {
+  // Support SD-JWT (JWT + disclosures)
+  let jwtToVerify = jwt;
+  if (jwt.includes("~")) {
+    const { parseSDJWT } = await import("./sd-jwt");
+    jwtToVerify = parseSDJWT(jwt).jwt;
+  }
+
   // Basic structure check
-  if (!jwt || jwt.split(".").length !== 3) {
+  if (!jwtToVerify || jwtToVerify.split(".").length !== 3) {
     return { valid: false, reason: "schema_invalid" };
   }
 
   // Decode payload to extract metadata (before signature check)
   let payload: Record<string, unknown>;
   try {
-    payload = decodeJwt(jwt) as Record<string, unknown>;
+    payload = decodeJwt(jwtToVerify) as Record<string, unknown>;
   } catch {
     return { valid: false, reason: "schema_invalid" };
   }
@@ -63,7 +70,7 @@ export async function verifyVCJWT(
   for (const publicKeyPem of trustedKeys) {
     try {
       const publicKey = await importSPKI(publicKeyPem.toString(), "EdDSA");
-      const { payload: verifiedPayload } = await jwtVerify(jwt, publicKey);
+      const { payload: verifiedPayload } = await jwtVerify(jwtToVerify, publicKey);
 
       // Validate required VC claims
       const verifiedVc = verifiedPayload.vc as Record<string, unknown> | undefined;
@@ -131,15 +138,22 @@ export async function verifyVCJWTViaDID(
   jwt: string,
   fetchFn?: typeof fetch,
 ): Promise<MarqueVerificationResult> {
+  // Support SD-JWT (JWT + disclosures)
+  let jwtToVerify = jwt;
+  if (jwt.includes("~")) {
+    const { parseSDJWT } = await import("./sd-jwt");
+    jwtToVerify = parseSDJWT(jwt).jwt;
+  }
+
   // 1. Basic structure check
-  if (!jwt || jwt.split(".").length !== 3) {
+  if (!jwtToVerify || jwtToVerify.split(".").length !== 3) {
     return { valid: false, reason: "schema_invalid", issuerTier: "unverifiable" };
   }
 
   // 2. Decode header to get kid
   let header;
   try {
-    header = decodeProtectedHeader(jwt);
+    header = decodeProtectedHeader(jwtToVerify);
   } catch {
     return { valid: false, reason: "schema_invalid", issuerTier: "unverifiable" };
   }
@@ -159,7 +173,7 @@ export async function verifyVCJWTViaDID(
   if (!resolution.didDocument) {
     // Decode payload for partial metadata even on failure
     let payload: Record<string, unknown> = {};
-    try { payload = decodeJwt(jwt) as Record<string, unknown>; } catch { /* ignore */ }
+    try { payload = decodeJwt(jwtToVerify) as Record<string, unknown>; } catch { /* ignore */ }
     return {
       valid: false,
       reason: "schema_invalid",
@@ -179,7 +193,7 @@ export async function verifyVCJWTViaDID(
 
   try {
     const publicKey = await importJWK(vm.publicKeyJwk, "EdDSA");
-    const { payload: verifiedPayload } = await jwtVerify(jwt, publicKey);
+    const { payload: verifiedPayload } = await jwtVerify(jwtToVerify, publicKey);
     const payload = verifiedPayload as Record<string, unknown>;
 
     // Extract metadata

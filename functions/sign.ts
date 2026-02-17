@@ -55,6 +55,8 @@ export interface SignResponse {
   demo?: boolean;
 }
 
+const MAX_JWT_SIZE = 100_000; // 100KB
+
 // =============================================================================
 // HELPERS
 // =============================================================================
@@ -221,6 +223,20 @@ export function createSignRouter(
         expiryDays: body.expiryDays,
         dryRun: body.dryRun,
       }, keyManager);
+
+      if (result.jwt && Buffer.byteLength(result.jwt) > MAX_JWT_SIZE) {
+        const message = `CPOE exceeds maximum size (${MAX_JWT_SIZE} bytes). Reduce evidence or extensions.`;
+        if (idempotencyKey && db && requestHash) {
+          try {
+            await db`
+              UPDATE idempotency_keys
+              SET status = ${400}, response = ${JSON.stringify({ error: message })}
+              WHERE key = ${idempotencyKey} AND request_hash = ${requestHash}
+            `;
+          } catch { /* ignore */ }
+        }
+        return jsonError(400, message);
+      }
 
       // Compute expiry from JWT
       let expiresAt: string | undefined;

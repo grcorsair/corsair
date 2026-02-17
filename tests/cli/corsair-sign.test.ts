@@ -162,6 +162,8 @@ describe("corsair sign — help", () => {
     expect(output).toContain("--file");
     expect(output).toContain("--did");
     expect(output).toContain("--output");
+    expect(output).toContain("--baseline");
+    expect(output).toContain("--gate");
     expect(output).toContain("FORMATS");
     expect(output).toContain("inspec");
     expect(output).toContain("trivy");
@@ -297,6 +299,45 @@ describe("corsair sign — generic JSON e2e", () => {
 
     expect(code).toBe(0);
     expect(verifyOutput).toContain("VERIFIED");
+    expect(verifyOutput).toContain("Summary:");
+    expect(verifyOutput).toContain("Provenance:");
+    expect(verifyOutput).toContain("Scope:");
+  });
+
+  test("verify --json outputs structured result", async () => {
+    const outputPath = join(tmpDir, "verifiable-json.jwt");
+
+    // Sign
+    const signProc = Bun.spawn(
+      [
+        "bun", "run", "corsair.ts", "sign",
+        "--file", join(tmpDir, "evidence.json"),
+        "--key-dir", join(tmpDir, "keys"),
+        "--output", outputPath,
+      ],
+      { cwd },
+    );
+    await signProc.exited;
+
+    // Verify (JSON)
+    const verifyProc = Bun.spawn(
+      [
+        "bun", "run", "corsair.ts", "verify",
+        "--file", outputPath,
+        "--pubkey", join(tmpDir, "keys", "corsair-signing.pub"),
+        "--json",
+      ],
+      { cwd, stdout: "pipe" },
+    );
+    const verifyOutput = await new Response(verifyProc.stdout).text();
+    const code = await verifyProc.exited;
+
+    expect(code).toBe(0);
+    const parsed = JSON.parse(verifyOutput);
+    expect(parsed.valid).toBe(true);
+    expect(parsed.summary).toBeDefined();
+    expect(parsed.provenance).toBeDefined();
+    expect(parsed.timestamps).toBeDefined();
   });
 
   test("accepts --did flag for custom issuer DID", async () => {
@@ -393,6 +434,50 @@ describe("corsair sign — new flags", () => {
     expect(parsed.detectedFormat).toBe("generic");
     expect(parsed.summary).toBeDefined();
     expect(parsed.provenance).toBeDefined();
+    expect(Array.isArray(parsed.warnings)).toBe(true);
+  });
+
+  test("--baseline with --gate exits 1 on regression", async () => {
+    const baselineEvidence = {
+      metadata: {
+        title: "Baseline Assessment",
+        issuer: "Acme Corp",
+        date: "2026-01-01",
+        scope: "AWS Production Environment",
+      },
+      controls: [
+        { id: "BASE-1", description: "All good", status: "pass" },
+        { id: "BASE-2", description: "All good", status: "pass" },
+      ],
+    };
+
+    const baselineJsonPath = join(tmpDir, "baseline-evidence.json");
+    const baselineJwtPath = join(tmpDir, "baseline.jwt");
+    writeFileSync(baselineJsonPath, JSON.stringify(baselineEvidence, null, 2));
+
+    const baselineSign = Bun.spawn(
+      [
+        "bun", "run", "corsair.ts", "sign",
+        "--file", baselineJsonPath,
+        "--key-dir", join(tmpDir, "keys"),
+        "--output", baselineJwtPath,
+      ],
+      { cwd },
+    );
+    await baselineSign.exited;
+
+    const proc = Bun.spawn(
+      [
+        "bun", "run", "corsair.ts", "sign",
+        "--file", join(tmpDir, "evidence.json"),
+        "--key-dir", join(tmpDir, "keys"),
+        "--baseline", baselineJwtPath,
+        "--gate",
+      ],
+      { cwd, stdout: "pipe", stderr: "pipe" },
+    );
+    const code = await proc.exited;
+    expect(code).toBe(1);
   });
 
   test("--format forces parser format", async () => {

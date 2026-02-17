@@ -76,6 +76,7 @@ async function handleSign(): Promise<void> {
   const args = process.argv.slice(3);
   let filePath: string | undefined;
   let outputPath: string | undefined;
+  let baselinePath: string | undefined;
   let keyDir = "./keys";
   let did: string | undefined;
   let scope: string | undefined;
@@ -91,6 +92,7 @@ async function handleSign(): Promise<void> {
   let sdFields: string[] | undefined;
   let mappingFiles: string[] = [];
   let mappingDirs: string[] = [];
+  let gate = false;
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -101,6 +103,9 @@ async function handleSign(): Promise<void> {
       case "--output":
       case "-o":
         outputPath = args[++i];
+        break;
+      case "--baseline":
+        baselinePath = args[++i];
         break;
       case "--key-dir":
         keyDir = args[++i];
@@ -140,6 +145,9 @@ async function handleSign(): Promise<void> {
         break;
       case "--sd-fields":
         sdFields = (args[++i] || "").split(",").filter(Boolean);
+        break;
+      case "--gate":
+        gate = true;
         break;
       case "--mapping":
         {
@@ -182,6 +190,8 @@ OPTIONS:
       --expiry-days <N>     CPOE validity in days (default: 90)
       --dry-run             Parse + classify but don't sign. Output would-be subject.
       --json                Output structured JSON (jwt + metadata) to stdout
+      --baseline <PATH>     Compare against a baseline CPOE for regression detection
+      --gate                Exit 1 if regression detected (requires --baseline)
       --sd-jwt              Enable SD-JWT selective disclosure
       --sd-fields <FIELDS>  Comma-separated fields to make disclosable (default: summary,frameworks)
       --mapping <PATH>      Mapping file or directory (repeatable; JSON maps tool output)
@@ -207,9 +217,20 @@ EXAMPLES:
   corsair sign --file evidence.json --dry-run
   corsair sign --file evidence.json --json | jq .summary
   corsair sign --file evidence.json --sd-jwt --sd-fields summary,provenance
+  corsair sign --file evidence.json --baseline baseline.cpoe.jwt --gate
   cat trivy-report.json | corsair sign --format trivy --output cpoe.jwt
 `);
     return;
+  }
+
+  if (gate && !baselinePath) {
+    console.error("Error: --gate requires --baseline <path>");
+    process.exit(2);
+  }
+
+  if (baselinePath && dryRun) {
+    console.error("Error: --baseline cannot be used with --dry-run");
+    process.exit(2);
   }
 
   // Determine input source: file, stdin flag, or piped stdin (auto-detect)
@@ -245,6 +266,11 @@ EXAMPLES:
     console.error("  Sign a file:  corsair sign --file evidence.json");
     console.error("  Pipe stdin:   cat evidence.json | corsair sign");
     console.error('  See options:  corsair sign --help');
+    process.exit(2);
+  }
+
+  if (baselinePath && !existsSync(baselinePath)) {
+    console.error(`Error: Baseline file not found: ${baselinePath}`);
     process.exit(2);
   }
 
@@ -314,6 +340,18 @@ EXAMPLES:
       if (!quiet) console.error(`Warning: ${w}`);
     }
 
+    // Optional baseline diff
+    let baselineReport: DiffReport | undefined;
+    if (baselinePath) {
+      const baselineJwt = readFileSync(baselinePath, "utf-8").trim();
+      const diffResult = computeDiffResult(result.jwt, baselineJwt);
+      if (!diffResult.ok) {
+        console.error(`Error: ${diffResult.error}`);
+        process.exit(2);
+      }
+      baselineReport = diffResult.report;
+    }
+
     // Dry-run output
     if (dryRun) {
       const dryOutput: Record<string, unknown> = {
@@ -344,10 +382,14 @@ EXAMPLES:
         warnings: result.warnings,
         extensions: result.extensions,
       };
+      if (baselineReport) {
+        structuredOutput.baselineDiff = baselineReport;
+      }
       if (result.disclosures) {
         structuredOutput.disclosures = result.disclosures;
       }
       process.stdout.write(JSON.stringify(structuredOutput, null, 2));
+      if (gate && baselineReport?.result === "regression") process.exit(1);
       return;
     }
 
@@ -391,14 +433,33 @@ EXAMPLES:
             }
           } catch { /* non-critical */ }
         }
+
+        if (baselineReport) {
+          const delta = baselineReport.score.change;
+          const arrow = delta > 0 ? "\u2191" : delta < 0 ? "\u2193" : "\u2192";
+          console.error(`  Baseline:   ${baselineReport.score.previous}% ${arrow} ${baselineReport.score.current}% (${delta > 0 ? "+" : ""}${delta}pp)`);
+          if (baselineReport.result === "regression") {
+            console.error("  Baseline:   regression detected");
+          }
+        }
       }
     } else {
       // Write JWT to stdout (for piping), info to stderr
       process.stdout.write(result.jwt);
       if (!quiet && isTTY) {
         console.error(`\n  Verify: corsair verify --file <saved.jwt>`);
+        if (baselineReport) {
+          const delta = baselineReport.score.change;
+          const arrow = delta > 0 ? "\u2191" : delta < 0 ? "\u2193" : "\u2192";
+          console.error(`  Baseline: ${baselineReport.score.previous}% ${arrow} ${baselineReport.score.current}% (${delta > 0 ? "+" : ""}${delta}pp)`);
+          if (baselineReport.result === "regression") {
+            console.error("  Baseline: regression detected");
+          }
+        }
       }
     }
+
+    if (gate && baselineReport?.result === "regression") process.exit(1);
   } catch (err) {
     if (err instanceof SignError) {
       console.error(`Error: ${err.message}`);
@@ -426,6 +487,23 @@ interface DriftControl {
   controlId: string;
   status: string;
 }
+
+interface DiffReport {
+  score: {
+    previous: number;
+    current: number;
+    change: number;
+  };
+  regressions: string[];
+  improvements: string[];
+  added: string[];
+  removed: string[];
+  result: "regression" | "ok";
+}
+
+type DiffResult =
+  | { ok: true; report: DiffReport; currentControls: Map<string, DriftControl> }
+  | { ok: false; error: string };
 
 async function handleDiff(): Promise<void> {
   const args = process.argv.slice(3);
@@ -527,20 +605,139 @@ EXAMPLES:
     }
   }
 
+  const diffResult = computeDiffResult(currentJwt, previousJwt);
+  if (!diffResult.ok) {
+    console.error(`Error: ${diffResult.error}`);
+    process.exit(2);
+  }
+
+  const { report, currentControls } = diffResult;
+  const { score, regressions, improvements, added, removed, result } = report;
+  const hasRegression = result === "regression";
+
+  if (jsonOutput) {
+    process.stdout.write(JSON.stringify(report, null, 2));
+    process.exit(hasRegression ? 1 : 0);
+  }
+
+  console.log("CORSAIR DIFF REPORT");
+  console.log("===================");
+  console.log("");
+
+  if (score.change !== 0) {
+    const arrow = score.change > 0 ? "↑" : "↓";
+    console.log(`  Score: ${score.previous}% → ${score.current}% (${arrow}${Math.abs(score.change)})`);
+  } else {
+    console.log(`  Score: ${score.current}% (unchanged)`);
+  }
+
+  console.log("");
+
+  if (regressions.length > 0) {
+    console.log(`  REGRESSIONS (${regressions.length}):`);
+    for (const id of regressions) {
+      const ctrl = currentControls.get(id);
+      console.log(`    ✗ ${id} — ${ctrl?.status || "failed"}`);
+    }
+    console.log("");
+  }
+
+  if (improvements.length > 0) {
+    console.log(`  IMPROVEMENTS (${improvements.length}):`);
+    for (const id of improvements) {
+      console.log(`    ✓ ${id} — now passing`);
+    }
+    console.log("");
+  }
+
+  if (added.length > 0) {
+    console.log(`  ADDED (${added.length}):`);
+    for (const id of added) {
+      const ctrl = currentControls.get(id);
+      console.log(`    + ${id} — ${ctrl?.status || "unknown"}`);
+    }
+    console.log("");
+  }
+
+  if (removed.length > 0) {
+    console.log(`  REMOVED (${removed.length}):`);
+    for (const id of removed) {
+      console.log(`    - ${id}`);
+    }
+    console.log("");
+  }
+
+  if (hasRegression) {
+    console.log("  RESULT: REGRESSION DETECTED");
+    process.exit(1);
+  } else {
+    console.log("  No regression detected.");
+    process.exit(0);
+  }
+}
+
+function stripSdJwt(jwt: string): string {
+  const tildeIndex = jwt.indexOf("~");
+  if (tildeIndex === -1) return jwt;
+  return jwt.slice(0, tildeIndex);
+}
+
+/** Decode JWT payload without verification (base64url decode) */
+function decodeJwtPayload(jwt: string): Record<string, unknown> | null {
+  try {
+    const baseJwt = stripSdJwt(jwt);
+    const parts = baseJwt.split(".");
+    if (parts.length !== 3) return null;
+    const payload = Buffer.from(parts[1], "base64url").toString();
+    return JSON.parse(payload);
+  } catch {
+    return null;
+  }
+}
+
+/** Extract control map from CPOE credentialSubject frameworks */
+function extractControls(subject: Record<string, unknown>): Map<string, DriftControl> {
+  const controls = new Map<string, DriftControl>();
+
+  // Extract from frameworks
+  const frameworks = subject.frameworks as Record<string, { controls?: Array<{ controlId: string; status: string }> }> | undefined;
+  if (frameworks) {
+    for (const [, fw] of Object.entries(frameworks)) {
+      if (!fw.controls) continue;
+      for (const ctrl of fw.controls) {
+        controls.set(ctrl.controlId, { controlId: ctrl.controlId, status: ctrl.status });
+      }
+    }
+  }
+
+  // Also extract from controlClassifications if present
+  const classifications = subject.controlClassifications as Array<{ controlId: string; level: number }> | undefined;
+  if (classifications && controls.size === 0) {
+    for (const cls of classifications) {
+      // level 0 = not meeting any standard = "failed" equivalent
+      controls.set(cls.controlId, {
+        controlId: cls.controlId,
+        status: cls.level > 0 ? "passed" : "failed",
+      });
+    }
+  }
+
+  return controls;
+}
+
+function computeDiffResult(currentJwt: string, previousJwt: string): DiffResult {
   const currentPayload = decodeJwtPayload(currentJwt);
   const previousPayload = decodeJwtPayload(previousJwt);
 
   if (!currentPayload || !previousPayload) {
-    console.error("Error: Could not decode one or both CPOE files");
-    process.exit(2);
+    return { ok: false, error: "Could not decode one or both CPOE files" };
   }
 
-  const currentSubject = currentPayload.vc?.credentialSubject;
-  const previousSubject = previousPayload.vc?.credentialSubject;
+  const currentSubject = (currentPayload.vc as any)?.credentialSubject;
+  const previousSubject = (previousPayload.vc as any)?.credentialSubject;
 
   if (!currentSubject || !previousSubject) {
-    console.error("Error: CPOE files do not contain valid credentialSubject");
-    process.exit(2);
+    return { ok: false, error: "CPOE files do not contain valid credentialSubject" };
   }
 
   // Build control maps from frameworks
@@ -582,11 +779,12 @@ EXAMPLES:
   const previousScore = previousSubject.summary?.overallScore ?? 0;
   const scoreChange = currentScore - previousScore;
 
-  // Output results
   const hasRegression = newFailures.length > 0 || scoreChange < 0;
 
-  if (jsonOutput) {
-    const report = {
+  return {
+    ok: true,
+    currentControls,
+    report: {
       score: {
         previous: previousScore,
         current: currentScore,
@@ -597,107 +795,8 @@ EXAMPLES:
       added: addedControls,
       removed: removedControls,
       result: hasRegression ? "regression" : "ok",
-    };
-    process.stdout.write(JSON.stringify(report, null, 2));
-    process.exit(hasRegression ? 1 : 0);
-  }
-
-  console.log("CORSAIR DIFF REPORT");
-  console.log("===================");
-  console.log("");
-
-  if (scoreChange !== 0) {
-    const arrow = scoreChange > 0 ? "↑" : "↓";
-    console.log(`  Score: ${previousScore}% → ${currentScore}% (${arrow}${Math.abs(scoreChange)})`);
-  } else {
-    console.log(`  Score: ${currentScore}% (unchanged)`);
-  }
-
-  console.log("");
-
-  if (newFailures.length > 0) {
-    console.log(`  REGRESSIONS (${newFailures.length}):`);
-    for (const id of newFailures) {
-      const ctrl = currentControls.get(id);
-      console.log(`    ✗ ${id} — ${ctrl?.status || "failed"}`);
-    }
-    console.log("");
-  }
-
-  if (improvements.length > 0) {
-    console.log(`  IMPROVEMENTS (${improvements.length}):`);
-    for (const id of improvements) {
-      console.log(`    ✓ ${id} — now passing`);
-    }
-    console.log("");
-  }
-
-  if (addedControls.length > 0) {
-    console.log(`  ADDED (${addedControls.length}):`);
-    for (const id of addedControls) {
-      const ctrl = currentControls.get(id);
-      console.log(`    + ${id} — ${ctrl?.status || "unknown"}`);
-    }
-    console.log("");
-  }
-
-  if (removedControls.length > 0) {
-    console.log(`  REMOVED (${removedControls.length}):`);
-    for (const id of removedControls) {
-      console.log(`    - ${id}`);
-    }
-    console.log("");
-  }
-
-  if (hasRegression) {
-    console.log("  RESULT: REGRESSION DETECTED");
-    process.exit(1);
-  } else {
-    console.log("  No regression detected.");
-    process.exit(0);
-  }
-}
-
-/** Decode JWT payload without verification (base64url decode) */
-function decodeJwtPayload(jwt: string): Record<string, unknown> | null {
-  try {
-    const parts = jwt.split(".");
-    if (parts.length !== 3) return null;
-    const payload = Buffer.from(parts[1], "base64url").toString();
-    return JSON.parse(payload);
-  } catch {
-    return null;
-  }
-}
-
-/** Extract control map from CPOE credentialSubject frameworks */
-function extractControls(subject: Record<string, unknown>): Map<string, DriftControl> {
-  const controls = new Map<string, DriftControl>();
-
-  // Extract from frameworks
-  const frameworks = subject.frameworks as Record<string, { controls?: Array<{ controlId: string; status: string }> }> | undefined;
-  if (frameworks) {
-    for (const [, fw] of Object.entries(frameworks)) {
-      if (!fw.controls) continue;
-      for (const ctrl of fw.controls) {
-        controls.set(ctrl.controlId, { controlId: ctrl.controlId, status: ctrl.status });
-      }
-    }
-  }
-
-  // Also extract from controlClassifications if present
-  const classifications = subject.controlClassifications as Array<{ controlId: string; level: number }> | undefined;
-  if (classifications && controls.size === 0) {
-    for (const cls of classifications) {
-      // level 0 = not meeting any standard = "failed" equivalent
-      controls.set(cls.controlId, {
-        controlId: cls.controlId,
-        status: cls.level > 0 ? "passed" : "failed",
-      });
-    }
-  }
-
-  return controls;
+    },
+  };
 }
 
 // =============================================================================
@@ -876,6 +975,7 @@ async function handleVerify(): Promise<void> {
   let filePath: string | undefined;
   let pubkeyPath: string | undefined;
   let showHelp = false;
+  let jsonOutput = false;
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -886,6 +986,9 @@ async function handleVerify(): Promise<void> {
       case "--pubkey":
       case "-k":
         pubkeyPath = args[++i];
+        break;
+      case "--json":
+        jsonOutput = true;
         break;
       case "--help":
       case "-h":
@@ -904,6 +1007,7 @@ USAGE:
 OPTIONS:
   -f, --file <PATH>     Path to the CPOE file (JWT or JSON)
   -k, --pubkey <PATH>   Path to Ed25519 public key PEM (default: ./keys/corsair-signing.pub)
+      --json            Output structured JSON
   -h, --help            Show this help
 `);
     return;
@@ -933,6 +1037,7 @@ OPTIONS:
 
   const verifier = new MarqueVerifier([publicKey]);
   const content = readFileSync(filePath, "utf-8").trim();
+  const format = content.startsWith("eyJ") ? "JWT-VC" : "JSON Envelope";
 
   // Auto-detect format (JWT starts with eyJ, JSON starts with {)
   let result;
@@ -943,10 +1048,43 @@ OPTIONS:
     result = await verifier.verify(doc);
   }
 
+  if (jsonOutput) {
+    const response = {
+      valid: result.valid,
+      issuer: result.signedBy ?? null,
+      trustTier: result.issuerTier ?? null,
+      scope: result.scope ?? null,
+      summary: result.summary ?? null,
+      provenance: result.provenance ?? null,
+      extensions: result.extensions ?? null,
+      timestamps: {
+        issuedAt: result.generatedAt ?? null,
+        expiresAt: result.expiresAt ?? null,
+      },
+      reason: result.reason,
+      format,
+    };
+    process.stdout.write(JSON.stringify(response, null, 2));
+    process.exit(result.valid ? 0 : 1);
+  }
+
   if (result.valid) {
     console.log("VERIFIED");
     console.log(`  Signed by: ${result.signedBy || "Unknown"}`);
-    console.log(`  Format:    ${content.startsWith("eyJ") ? "JWT-VC" : "JSON Envelope"}`);
+    console.log(`  Format:    ${format}`);
+    console.log(`  Scope:     ${result.scope || "Unknown"}`);
+    if (result.summary) {
+      console.log(`  Summary:   ${result.summary.controlsTested} tested, ${result.summary.controlsPassed} passed, ${result.summary.controlsFailed} failed (${result.summary.overallScore}%)`);
+    } else {
+      console.log("  Summary:   unavailable");
+    }
+    if (result.provenance) {
+      const identity = result.provenance.sourceIdentity || "unknown";
+      const date = result.provenance.sourceDate ? `, ${result.provenance.sourceDate}` : "";
+      console.log(`  Provenance: ${result.provenance.source} (${identity}${date})`);
+    } else {
+      console.log("  Provenance: unknown");
+    }
     process.exit(0);
   } else {
     console.error("VERIFICATION FAILED");

@@ -10,6 +10,7 @@
 import { readFileSync } from "fs";
 import type { IngestedDocument } from "../ingestion/types";
 import type { KeyManager } from "../parley/marque-key-manager";
+import { sanitize } from "../parley/marque-generator";
 import { deriveProvenance } from "../ingestion/provenance-utils";
 import { computeSummaryFromControls, computeSeverityDistribution } from "../ingestion/summary";
 
@@ -135,7 +136,8 @@ export async function signEvidence(
   input: SignInput,
   keyManager: KeyManager,
 ): Promise<SignOutput> {
-  const warnings: string[] = [];
+  // Detect missing metadata in generic evidence inputs
+  const metaWarnings = detectMetadataWarnings(input.evidence);
 
   // 1. Parse evidence JSON
   const { parseJSON } = await import("../ingestion/json-parser");
@@ -144,7 +146,7 @@ export async function signEvidence(
     format: input.format,
   });
 
-  return signDocument(
+  const result = await signDocument(
     {
       document: doc,
       format: input.format,
@@ -157,6 +159,10 @@ export async function signEvidence(
     },
     keyManager,
   );
+  if (metaWarnings.length > 0) {
+    result.warnings = [...metaWarnings, ...result.warnings];
+  }
+  return result;
 }
 
 export async function signDocument(
@@ -177,6 +183,23 @@ export async function signDocument(
   // Warn on zero controls
   if (doc.controls.length === 0) {
     warnings.push("No controls found in evidence. CPOE will have empty summary.");
+  }
+
+  // Warn on weak metadata (provenance + scope signals)
+  const issuer = doc.metadata.issuer?.trim();
+  if (!issuer || issuer === "Unknown") {
+    warnings.push("Missing issuer in evidence metadata; provenance identity will be weak.");
+  }
+
+  const scope = doc.metadata.scope?.trim();
+  if (!scope || scope === "Unknown") {
+    warnings.push("Missing scope in evidence metadata; subject scope will be weak.");
+  }
+
+  const assessmentDate = doc.metadata.date?.trim();
+  const parsedDate = assessmentDate ? new Date(assessmentDate) : null;
+  if (!assessmentDate || !parsedDate || isNaN(parsedDate.getTime())) {
+    warnings.push("Missing or invalid assessment date in metadata; freshness cannot be assessed.");
   }
 
   // Compute summary + severity distribution
@@ -248,6 +271,7 @@ export async function signDocument(
   // Generate marqueId
   const crypto = await import("crypto");
   const marqueId = `marque-${crypto.randomUUID()}`;
+  const sanitizedExtensions = doc.extensions ? sanitize(doc.extensions) as Record<string, unknown> : undefined;
 
   // 4. Dry-run: skip signing, return would-be subject
   if (input.dryRun) {
@@ -258,7 +282,7 @@ export async function signDocument(
       summary,
       provenance,
       warnings,
-      extensions: doc.extensions,
+      extensions: sanitizedExtensions,
       document: doc,
     };
   }
@@ -301,7 +325,7 @@ export async function signDocument(
       summary,
       provenance,
       warnings,
-      extensions: doc.extensions,
+      extensions: sanitizedExtensions,
       document: doc,
       credentialSubject,
       disclosures: sdResult.disclosures,
@@ -315,7 +339,7 @@ export async function signDocument(
     summary,
     provenance,
     warnings,
-    extensions: doc.extensions,
+    extensions: sanitizedExtensions,
     document: doc,
     credentialSubject,
   };
@@ -349,6 +373,43 @@ function getVersion(): string {
   } catch {
     return "0.5.0";
   }
+}
+
+function detectMetadataWarnings(evidence: string | object): string[] {
+  let parsed: unknown;
+  if (typeof evidence === "string") {
+    try {
+      parsed = JSON.parse(evidence);
+    } catch {
+      return [];
+    }
+  } else {
+    parsed = evidence;
+  }
+
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return [];
+  }
+
+  const meta = (parsed as Record<string, unknown>).metadata;
+  if (!meta || typeof meta !== "object") {
+    return [];
+  }
+
+  const metaObj = meta as Record<string, unknown>;
+  const warnings: string[] = [];
+
+  const issuer = typeof metaObj.issuer === "string" ? metaObj.issuer.trim() : "";
+  const scope = typeof metaObj.scope === "string" ? metaObj.scope.trim() : "";
+  const date = typeof metaObj.date === "string" ? metaObj.date.trim() : "";
+
+  if (!issuer) warnings.push("Missing issuer");
+  if (!scope) warnings.push("Missing scope");
+  if (!date || isNaN(new Date(date).getTime())) {
+    warnings.push("Missing or invalid assessment date");
+  }
+
+  return warnings;
 }
 
 // =============================================================================

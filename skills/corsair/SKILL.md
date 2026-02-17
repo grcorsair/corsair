@@ -75,6 +75,8 @@ Sign security tool output (Prowler, AWS SecurityHub, InSpec, Trivy, GitLab, CISO
 - `--did <DID>` — Set issuer DID (default: derived from key)
 - `--key-dir <DIR>` — Ed25519 key directory (default: ./keys)
 - `-o, --output <PATH>` — Output file path
+- `--baseline <PATH>` — Compare against a baseline CPOE for regression detection
+- `--gate` — Exit 1 if baseline shows regression (requires `--baseline`)
 
 **Example:**
 ```bash
@@ -86,6 +88,9 @@ prowler aws --output json | corsair sign --file - --format prowler
 
 # Dry run to preview
 corsair sign --file evidence.json --dry-run
+
+# Gate on regressions vs a baseline
+corsair sign --file evidence.json --baseline baseline.cpoe.jwt --gate
 ```
 
 ---
@@ -183,7 +188,11 @@ Verify a CPOE's cryptographic signature, expiration, and schema integrity.
    ```bash
    corsair verify --file <PATH> --pubkey <PATH_TO_PUB_KEY>
    ```
-4. Report: VERIFIED or FAILED, issuer DID, format, expiration status.
+4. Report: VERIFIED or FAILED, issuer DID, format, scope, summary, provenance.
+5. For machine-readable output:
+   ```bash
+   corsair verify --file <PATH> --json
+   ```
 
 **Exit codes:** 0 = verified, 1 = failed
 

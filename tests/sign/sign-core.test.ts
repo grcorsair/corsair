@@ -332,6 +332,17 @@ describe("signEvidence — warnings", () => {
     const empty = { metadata: { title: "Empty" }, controls: [] };
     const result = await signEvidence({ evidence: empty }, keyManager);
     expect(result.warnings).toContain("No controls found in evidence. CPOE will have empty summary.");
+    expect(result.warnings.join(" ")).toContain("Missing issuer");
+    expect(result.warnings.join(" ")).toContain("Missing scope");
+  });
+
+  test("warns on invalid assessment date", async () => {
+    const invalidDate = {
+      metadata: { title: "Bad Date", issuer: "Acme", date: "not-a-date", scope: "Test Scope" },
+      controls: [{ id: "c1", description: "test", status: "pass" }],
+    };
+    const result = await signEvidence({ evidence: invalidDate }, keyManager);
+    expect(result.warnings.join(" ")).toContain("Missing or invalid assessment date");
   });
 });
 

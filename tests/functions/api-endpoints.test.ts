@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeAll } from "bun:test";
 import * as crypto from "crypto";
-import { importPKCS8, SignJWT } from "jose";
+import { importPKCS8, SignJWT, decodeJwt } from "jose";
 
 import { createVerifyRouter, type VerifyResponse } from "../../functions/verify";
 import { createDIDJsonHandler } from "../../functions/did-json";
@@ -18,6 +18,7 @@ const TEST_DOMAIN = "test.grcorsair.com";
 
 let keyManager: MarqueKeyManager;
 let testJWT: string;
+let testSDJWT: string;
 
 beforeAll(async () => {
   keyManager = new MarqueKeyManager(TEST_KEY_DIR);
@@ -52,6 +53,14 @@ beforeAll(async () => {
     .setJti("marque-test-123")
     .setExpirationTime(new Date(Date.now() + 7 * 86400000))
     .sign(privateKey);
+
+  const { createSDJWT } = await import("../../src/parley/sd-jwt");
+  const payload = decodeJwt(testJWT) as Record<string, unknown>;
+  const issued = await createSDJWT(payload, ["summary"], {
+    privateKeyPem: keypair.privateKey.toString(),
+    issuerDid: payload.iss as string,
+  });
+  testSDJWT = issued.sdJwt;
 });
 
 // =============================================================================
@@ -120,6 +129,21 @@ describe("POST /verify", () => {
       method: "POST",
       headers: { "Content-Type": "text/plain" },
       body: testJWT,
+    });
+
+    const res = await router(req);
+    expect(res.status).toBe(200);
+
+    const body: VerifyResponse = await res.json();
+    expect(body.verified).toBe(true);
+  });
+
+  test("verifies SD-JWT with disclosures", async () => {
+    const router = createVerifyRouter({ keyManager });
+    const req = new Request("http://localhost/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cpoe: testSDJWT }),
     });
 
     const res = await router(req);

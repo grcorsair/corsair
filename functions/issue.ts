@@ -97,6 +97,8 @@ export interface IssueResponse {
   expiresAt: string;
 }
 
+const MAX_JWT_SIZE = 100_000; // 100KB
+
 type IssueIdempotencyDb = (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown[]>;
 
 const idempotencyCache = new Map<string, { response: IssueResponse; expiresAt: number }>();
@@ -233,6 +235,20 @@ export function createIssueRouter(
 
       if (!output.jwt) {
         return jsonError(500, "CPOE generation failed: no JWT produced");
+      }
+
+      if (Buffer.byteLength(output.jwt) > MAX_JWT_SIZE) {
+        const message = `CPOE exceeds maximum size (${MAX_JWT_SIZE} bytes). Reduce evidence or extensions.`;
+        if (idempotencyKey && db && requestHash) {
+          try {
+            await db`
+              UPDATE idempotency_keys
+              SET status = ${400}, response = ${JSON.stringify({ error: message })}
+              WHERE key = ${idempotencyKey} AND request_hash = ${requestHash}
+            `;
+          } catch { /* ignore */ }
+        }
+        return jsonError(400, message);
       }
 
       // Decode to extract metadata for response
