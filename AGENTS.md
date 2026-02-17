@@ -65,6 +65,7 @@ Scope is optional, e.g. `feat(web): add compliance.txt generator page`.
 ## Guardrails
 - Default to Bun; use Node/npm/yarn only if explicitly requested
 - Ask before adding new dependencies
+- **Always commit `bun.lock`** — Whenever a dependency changes (add/remove/update), run `bun install` and commit the updated `bun.lock` before pushing. Railway's Nixpacks build uses `--frozen-lockfile` and will reject any drift.
 - Use `import type` for type-only imports
 - Never commit secrets, `.env` files, or private keys
 - Avoid destructive git commands unless explicitly requested
