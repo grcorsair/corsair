@@ -30,7 +30,7 @@ export function HeroSection() {
           className="font-display text-4xl font-bold leading-tight text-corsair-text sm:text-5xl md:text-6xl"
         >
           HTTPS proved websites are real.{" "}
-          <span className="text-corsair-gold">Corsair proves compliance is real.</span>
+          <span className="text-corsair-gold"><span style={{ fontFamily: "var(--font-pixel-display)" }}>Corsair</span> proves compliance is real.</span>
         </motion.h1>
 
         {/* Subtitle */}
@@ -89,7 +89,7 @@ export function HeroSection() {
               rel="noopener noreferrer"
               className="transition-colors hover:text-corsair-gold"
             >
-              GRC Engineering
+              GRC Engineer
             </a>
           </p>
           <p className="mt-2">
