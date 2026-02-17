@@ -52,6 +52,9 @@ switch (subcommand) {
   case "compliance-txt":
     await handleComplianceTxt();
     break;
+  case "mappings":
+    await handleMappings();
+    break;
   case "init":
     await handleInit();
     break;
@@ -63,7 +66,7 @@ switch (subcommand) {
     break;
   default:
     console.error(`Unknown command: ${subcommand}`);
-    console.error("  Available: init, sign, verify, diff, log, keygen, compliance-txt, help");
+    console.error("  Available: init, sign, verify, diff, log, keygen, compliance-txt, mappings, help");
     console.error('  Run "corsair help" for details');
     process.exit(1);
 }
@@ -217,6 +220,7 @@ EXAMPLES:
   corsair sign --file evidence.json --dry-run
   corsair sign --file evidence.json --json | jq .summary
   corsair sign --file evidence.json --sd-jwt --sd-fields summary,provenance
+  corsair sign --file evidence.json --mapping ./mappings/toolx.json
   corsair sign --file evidence.json --baseline baseline.cpoe.jwt --gate
   cat trivy-report.json | corsair sign --format trivy --output cpoe.jwt
 `);
@@ -797,6 +801,102 @@ function computeDiffResult(currentJwt: string, previousJwt: string): DiffResult 
       result: hasRegression ? "regression" : "ok",
     },
   };
+}
+
+// =============================================================================
+// MAPPINGS
+// =============================================================================
+
+async function handleMappings(): Promise<void> {
+  const args = process.argv.slice(3);
+  const sub = args[0] && !args[0].startsWith("-") ? args[0] : "list";
+  const jsonOutput = args.includes("--json");
+  const showHelp = args.includes("--help") || args.includes("-h");
+
+  let mappingFiles: string[] = [];
+  let mappingDirs: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--mapping") {
+      const value = args[i + 1];
+      if (value) {
+        if (value.endsWith(".json")) mappingFiles.push(value);
+        else mappingDirs.push(value);
+        i++;
+      }
+    }
+  }
+
+  if (showHelp || sub !== "list") {
+    console.log(`
+CORSAIR MAPPINGS — List loaded evidence mappings
+
+USAGE:
+  corsair mappings list [options]
+
+OPTIONS:
+      --mapping <PATH>      Mapping file or directory (repeatable)
+      --json                Output structured JSON
+  -h, --help                Show this help
+
+EXAMPLES:
+  corsair mappings list
+  corsair mappings list --mapping ./mappings/toolx.json
+  corsair mappings list --json
+`);
+    return;
+  }
+
+  if (mappingFiles.length > 0) {
+    const existing = process.env.CORSAIR_MAPPING_FILE;
+    const merged = existing ? `${existing},${mappingFiles.join(",")}` : mappingFiles.join(",");
+    process.env.CORSAIR_MAPPING_FILE = merged;
+  }
+  if (mappingDirs.length > 0) {
+    const existing = process.env.CORSAIR_MAPPING_DIR;
+    const merged = existing ? `${existing},${mappingDirs.join(",")}` : mappingDirs.join(",");
+    process.env.CORSAIR_MAPPING_DIR = merged;
+  }
+
+  const { getMappings, resetMappingRegistry } = await import("./src/ingestion/mapping-registry");
+  resetMappingRegistry();
+  const mappings = getMappings();
+
+  if (jsonOutput) {
+    process.stdout.write(JSON.stringify(mappings, null, 2));
+    return;
+  }
+
+  if (mappings.length === 0) {
+    console.log("No mappings loaded.");
+    return;
+  }
+
+  console.log("ID\tMODE\tSOURCE\tMATCH\tCONTROLS/PASSTHROUGH");
+  for (const mapping of mappings) {
+    const hasControls = Boolean(mapping.controls?.path);
+    const mode = hasControls ? "controls" : "evidence-only";
+    const source = mapping.source ?? "-";
+
+    const matchParts: string[] = [];
+    if (mapping.match?.allOf && mapping.match.allOf.length > 0) {
+      matchParts.push(`allOf: ${mapping.match.allOf.join(", ")}`);
+    }
+    if (mapping.match?.anyOf && mapping.match.anyOf.length > 0) {
+      matchParts.push(`anyOf: ${mapping.match.anyOf.join(", ")}`);
+    }
+    const match = matchParts.length > 0 ? matchParts.join(" | ") : "-";
+
+    let detail = "-";
+    if (hasControls && mapping.controls?.path) {
+      detail = `controls: ${mapping.controls.path}`;
+    } else if (mapping.passthrough?.paths) {
+      const keys = Object.keys(mapping.passthrough.paths);
+      detail = keys.length > 0 ? `passthrough: ${keys.join(", ")}` : "-";
+    }
+
+    console.log(`${mapping.id}\t${mode}\t${source}\t${match}\t${detail}`);
+  }
 }
 
 // =============================================================================
@@ -1910,6 +2010,7 @@ COMMANDS:
   diff            Detect compliance regressions            like git diff
   log             List signed CPOEs (SCITT log)            like git log
   compliance-txt  Discovery layer (generate/validate/discover)
+  mappings        List loaded evidence mappings
   renew           Re-sign a CPOE with fresh dates          like git commit --amend
   signal          FLAGSHIP real-time notifications         like git webhooks
   keygen          Generate Ed25519 signing keypair

@@ -114,6 +114,13 @@ corsair sign --file evidence.json --baseline baseline.cpoe.jwt --gate  # Fail on
 corsair sign --file - < data.json              # Sign from stdin
 ```
 
+### Mapping Registry
+
+```bash
+corsair mappings list                          # Show loaded mappings
+corsair mappings list --json                   # Machine-readable output
+```
+
 ### Verify Options
 
 ```bash
