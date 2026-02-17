@@ -119,6 +119,7 @@ corsair sign --file - < data.json              # Sign from stdin
 ```bash
 corsair mappings list                          # Show loaded mappings
 corsair mappings list --json                   # Machine-readable output
+corsair mappings validate --json               # Validate mappings
 ```
 
 ### Verify Options

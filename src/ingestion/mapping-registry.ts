@@ -74,6 +74,11 @@ let mappingOrderCounter = 0;
 
 type MappingWithOrder = EvidenceMapping & { [mappingOrderSymbol]?: number };
 
+export interface MappingLoadError {
+  path: string;
+  error: string;
+}
+
 export function resetMappingRegistry(): void {
   cachedMappings = null;
   mappingOrderCounter = 0;
@@ -82,10 +87,23 @@ export function resetMappingRegistry(): void {
 export function getMappings(): EvidenceMapping[] {
   if (cachedMappings) return cachedMappings;
 
+  const result = loadAllMappings();
+  cachedMappings = sortMappings(result.mappings);
+  return result.mappings;
+}
+
+export function getMappingsWithDiagnostics(): { mappings: EvidenceMapping[]; errors: MappingLoadError[] } {
+  const result = loadAllMappings();
+  cachedMappings = sortMappings(result.mappings);
+  return result;
+}
+
+function loadAllMappings(): { mappings: EvidenceMapping[]; errors: MappingLoadError[] } {
   const mappings: EvidenceMapping[] = [];
+  const errors: MappingLoadError[] = [];
 
   const builtinDir = resolve(fileURLToPath(new URL("./mappings", import.meta.url)));
-  loadMappingsFromDir(builtinDir, mappings);
+  loadMappingsFromDir(builtinDir, mappings, errors);
 
   const extraDirs = (process.env.CORSAIR_MAPPING_DIR || "")
     .split(",")
@@ -93,7 +111,7 @@ export function getMappings(): EvidenceMapping[] {
     .filter(Boolean);
 
   for (const dir of extraDirs) {
-    loadMappingsFromDir(dir, mappings);
+    loadMappingsFromDir(dir, mappings, errors);
   }
 
   const extraFiles = (process.env.CORSAIR_MAPPING_FILE || "")
@@ -102,14 +120,17 @@ export function getMappings(): EvidenceMapping[] {
     .filter(Boolean);
 
   for (const filePath of extraFiles) {
-    loadMappingFromFile(filePath, mappings);
+    loadMappingFromFile(filePath, mappings, errors);
   }
 
-  cachedMappings = sortMappings(mappings);
-  return mappings;
+  return { mappings, errors };
 }
 
-function loadMappingsFromDir(dir: string, target: EvidenceMapping[]): void {
+function loadMappingsFromDir(
+  dir: string,
+  target: EvidenceMapping[],
+  errors: MappingLoadError[],
+): void {
   if (!dir || !existsSync(dir)) return;
 
   const entries = readdirSync(dir, { withFileTypes: true })
@@ -117,11 +138,15 @@ function loadMappingsFromDir(dir: string, target: EvidenceMapping[]): void {
     .sort((a, b) => a.name.localeCompare(b.name));
   for (const entry of entries) {
     const fullPath = resolve(dir, entry.name);
-    loadMappingFromFile(fullPath, target);
+    loadMappingFromFile(fullPath, target, errors);
   }
 }
 
-function loadMappingFromFile(filePath: string, target: EvidenceMapping[]): void {
+function loadMappingFromFile(
+  filePath: string,
+  target: EvidenceMapping[],
+  errors: MappingLoadError[],
+): void {
   if (!filePath || !existsSync(filePath)) return;
   try {
     const raw = readFileSync(filePath, "utf-8");
@@ -134,6 +159,7 @@ function loadMappingFromFile(filePath: string, target: EvidenceMapping[]): void 
   } catch {
     // Non-fatal: log warning for visibility
     console.warn(`Mapping registry: failed to load ${filePath} (invalid JSON)`);
+    errors.push({ path: filePath, error: "Invalid JSON or unreadable mapping file" });
     return;
   }
 }
@@ -171,6 +197,16 @@ export function tryMapEvidence(
     return applyMapping(input, mapping, rawHash, sourceOverride);
   }
   return null;
+}
+
+export function mapEvidenceWithMapping(
+  input: unknown,
+  mapping: EvidenceMapping,
+  rawHash: string,
+  sourceOverride?: string,
+): IngestedDocument | null {
+  if (!mapping || !matchesMapping(input, mapping)) return null;
+  return applyMapping(input, mapping, rawHash, sourceOverride);
 }
 
 function matchesMapping(input: unknown, mapping: EvidenceMapping): boolean {

@@ -106,4 +106,16 @@ describe("Corsair CLI", () => {
     expect(Array.isArray(parsed)).toBe(true);
     expect(parsed.some((m: { id?: string }) => m.id === "cli-test-mapping")).toBe(true);
   });
+
+  test("mappings validate reports ok in json mode", async () => {
+    const proc = Bun.spawn(
+      ["bun", "run", "corsair.ts", "mappings", "validate", "--json"],
+      { cwd, env: { ...process.env, CORSAIR_MAPPING_DIR: tmpDir } },
+    );
+    const output = await new Response(proc.stdout).text();
+    await proc.exited;
+    const parsed = JSON.parse(output);
+    expect(parsed.ok).toBe(true);
+    expect(Array.isArray(parsed.mappings)).toBe(true);
+  });
 });

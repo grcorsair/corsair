@@ -812,9 +812,11 @@ async function handleMappings(): Promise<void> {
   const sub = args[0] && !args[0].startsWith("-") ? args[0] : "list";
   const jsonOutput = args.includes("--json");
   const showHelp = args.includes("--help") || args.includes("-h");
+  const strict = args.includes("--strict");
 
   let mappingFiles: string[] = [];
   let mappingDirs: string[] = [];
+  let samplePath: string | undefined;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--mapping") {
@@ -825,17 +827,24 @@ async function handleMappings(): Promise<void> {
         i++;
       }
     }
+    if (args[i] === "--sample") {
+      samplePath = args[i + 1];
+      i++;
+    }
   }
 
-  if (showHelp || sub !== "list") {
+  if (showHelp || (sub !== "list" && sub !== "validate")) {
     console.log(`
-CORSAIR MAPPINGS — List loaded evidence mappings
+CORSAIR MAPPINGS — List and validate evidence mappings
 
 USAGE:
   corsair mappings list [options]
+  corsair mappings validate [options]
 
 OPTIONS:
       --mapping <PATH>      Mapping file or directory (repeatable)
+      --sample <PATH>       Evidence JSON to test mapping (validate only)
+      --strict              Require controls mapping (no evidence-only)
       --json                Output structured JSON
   -h, --help                Show this help
 
@@ -843,6 +852,8 @@ EXAMPLES:
   corsair mappings list
   corsair mappings list --mapping ./mappings/toolx.json
   corsair mappings list --json
+  corsair mappings validate --mapping ./mappings/toolx.json --sample ./evidence.json
+  corsair mappings validate --strict --json
 `);
     return;
   }
@@ -858,26 +869,105 @@ EXAMPLES:
     process.env.CORSAIR_MAPPING_DIR = merged;
   }
 
-  const { getMappings, resetMappingRegistry } = await import("./src/ingestion/mapping-registry");
+  const { getMappings, getMappingsWithDiagnostics, mapEvidenceWithMapping, resetMappingRegistry } = await import("./src/ingestion/mapping-registry");
   resetMappingRegistry();
-  const mappings = getMappings();
 
-  if (jsonOutput) {
-    process.stdout.write(JSON.stringify(mappings, null, 2));
+  if (sub === "list") {
+    const mappings = getMappings();
+
+    if (jsonOutput) {
+      process.stdout.write(JSON.stringify(mappings, null, 2));
+      return;
+    }
+
+    if (mappings.length === 0) {
+      console.log("No mappings loaded.");
+      return;
+    }
+
+    console.log("ID\tMODE\tSOURCE\tMATCH\tCONTROLS/PASSTHROUGH");
+    for (const mapping of mappings) {
+      const hasControls = Boolean(mapping.controls?.path);
+      const mode = hasControls ? "controls" : "evidence-only";
+      const source = mapping.source ?? "-";
+
+      const matchParts: string[] = [];
+      if (mapping.match?.allOf && mapping.match.allOf.length > 0) {
+        matchParts.push(`allOf: ${mapping.match.allOf.join(", ")}`);
+      }
+      if (mapping.match?.anyOf && mapping.match.anyOf.length > 0) {
+        matchParts.push(`anyOf: ${mapping.match.anyOf.join(", ")}`);
+      }
+      const match = matchParts.length > 0 ? matchParts.join(" | ") : "-";
+
+      let detail = "-";
+      if (hasControls && mapping.controls?.path) {
+        detail = `controls: ${mapping.controls.path}`;
+      } else if (mapping.passthrough?.paths) {
+        const keys = Object.keys(mapping.passthrough.paths);
+        detail = keys.length > 0 ? `passthrough: ${keys.join(", ")}` : "-";
+      }
+
+      console.log(`${mapping.id}\t${mode}\t${source}\t${match}\t${detail}`);
+    }
     return;
   }
 
-  if (mappings.length === 0) {
-    console.log("No mappings loaded.");
-    return;
-  }
+  // validate
+  const { mappings, errors: loadErrors } = getMappingsWithDiagnostics();
+  const validationErrors: Array<{ type: string; message: string; mappingId?: string; path?: string }> = [
+    ...loadErrors.map((e) => ({ type: "load", message: e.error, path: e.path })),
+  ];
 
-  console.log("ID\tMODE\tSOURCE\tMATCH\tCONTROLS/PASSTHROUGH");
   for (const mapping of mappings) {
+    if (!mapping.id || typeof mapping.id !== "string") {
+      validationErrors.push({ type: "schema", message: "Missing required mapping id", mappingId: "(unknown)" });
+      continue;
+    }
+
+    const hasMatch = Boolean((mapping.match?.allOf && mapping.match.allOf.length > 0)
+      || (mapping.match?.anyOf && mapping.match.anyOf.length > 0));
+    if (!hasMatch) {
+      validationErrors.push({ type: "schema", message: "Missing match rules (allOf/anyOf)", mappingId: mapping.id });
+    }
+
+    const hasControls = Boolean(mapping.controls?.path);
+    const hasPassthrough = Boolean(mapping.passthrough?.paths && Object.keys(mapping.passthrough.paths).length > 0);
+
+    if (mapping.controls && !mapping.controls.path) {
+      validationErrors.push({ type: "schema", message: "controls.path is required when controls is present", mappingId: mapping.id });
+    }
+
+    if (strict) {
+      if (!hasControls) {
+        validationErrors.push({ type: "schema", message: "Strict mode requires controls.path", mappingId: mapping.id });
+      }
+    } else {
+      if (!hasControls && !hasPassthrough) {
+        validationErrors.push({ type: "schema", message: "Mapping has neither controls nor passthrough paths", mappingId: mapping.id });
+      }
+    }
+  }
+
+  let sampleData: unknown | null = null;
+  if (samplePath) {
+    try {
+      const raw = readFileSync(samplePath, "utf-8");
+      sampleData = JSON.parse(raw);
+    } catch {
+      validationErrors.push({ type: "sample", message: `Unable to parse sample JSON: ${samplePath}` });
+    }
+  }
+
+  let sampleHash: string | null = null;
+  if (sampleData !== null) {
+    const crypto = await import("crypto");
+    sampleHash = crypto.createHash("sha256").update(JSON.stringify(sampleData)).digest("hex");
+  }
+
+  const mappingReports = mappings.map((mapping) => {
     const hasControls = Boolean(mapping.controls?.path);
     const mode = hasControls ? "controls" : "evidence-only";
-    const source = mapping.source ?? "-";
-
     const matchParts: string[] = [];
     if (mapping.match?.allOf && mapping.match.allOf.length > 0) {
       matchParts.push(`allOf: ${mapping.match.allOf.join(", ")}`);
@@ -887,16 +977,77 @@ EXAMPLES:
     }
     const match = matchParts.length > 0 ? matchParts.join(" | ") : "-";
 
-    let detail = "-";
-    if (hasControls && mapping.controls?.path) {
-      detail = `controls: ${mapping.controls.path}`;
-    } else if (mapping.passthrough?.paths) {
-      const keys = Object.keys(mapping.passthrough.paths);
-      detail = keys.length > 0 ? `passthrough: ${keys.join(", ")}` : "-";
+    let controlsCount: number | null = null;
+    let passthroughKeys: string[] = [];
+    let matched: boolean | null = null;
+
+    if (sampleData !== null && sampleHash) {
+      const mapped = mapEvidenceWithMapping(sampleData, mapping, sampleHash);
+      matched = Boolean(mapped);
+      if (mapped) {
+        controlsCount = mapped.controls.length;
+        const passthrough = (mapped.extensions?.passthrough as Record<string, unknown> | undefined) || {};
+        passthroughKeys = Object.keys(passthrough);
+        if (strict && controlsCount === 0) {
+          validationErrors.push({
+            type: "sample",
+            message: "Sample matched but produced zero controls (strict mode)",
+            mappingId: mapping.id,
+          });
+        }
+      }
     }
 
-    console.log(`${mapping.id}\t${mode}\t${source}\t${match}\t${detail}`);
+    return {
+      id: mapping.id,
+      mode,
+      source: mapping.source ?? "-",
+      match,
+      controlsPath: mapping.controls?.path ?? null,
+      passthroughKeys: mapping.passthrough?.paths ? Object.keys(mapping.passthrough.paths) : [],
+      matched,
+      controlsCount,
+      samplePassthroughKeys: passthroughKeys,
+    };
+  });
+
+  const ok = validationErrors.length === 0;
+
+  if (jsonOutput) {
+    process.stdout.write(JSON.stringify({ ok, errors: validationErrors, mappings: mappingReports }, null, 2));
+    if (!ok) process.exit(1);
+    return;
   }
+
+  if (!ok) {
+    console.error(`Validation failed (${validationErrors.length} issues):`);
+    for (const err of validationErrors) {
+      const id = err.mappingId ? ` [${err.mappingId}]` : "";
+      const path = err.path ? ` (${err.path})` : "";
+      console.error(`  - ${err.type}${id}: ${err.message}${path}`);
+    }
+  } else {
+    console.log(`Validation OK (${mappingReports.length} mappings).`);
+  }
+
+  if (mappingReports.length > 0) {
+    console.log("ID\tMODE\tSOURCE\tMATCH\tDETAIL");
+    for (const m of mappingReports) {
+      let detail = m.controlsPath ? `controls: ${m.controlsPath}` : `passthrough: ${m.passthroughKeys.join(", ") || "-"}`;
+      if (m.matched !== null) {
+        detail += ` | matched: ${m.matched ? "yes" : "no"}`;
+        if (m.controlsCount !== null) {
+          detail += ` | controls: ${m.controlsCount}`;
+        }
+        if (m.samplePassthroughKeys.length > 0) {
+          detail += ` | sample passthrough: ${m.samplePassthroughKeys.join(", ")}`;
+        }
+      }
+      console.log(`${m.id}\t${m.mode}\t${m.source}\t${m.match}\t${detail}`);
+    }
+  }
+
+  if (!ok) process.exit(1);
 }
 
 // =============================================================================
