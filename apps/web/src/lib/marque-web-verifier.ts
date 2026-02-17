@@ -177,7 +177,12 @@ function base64UrlDecode(base64url: string): string {
 }
 
 function base64UrlEncode(value: string): string {
-  return btoa(value).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 function pemToBuffer(pem: string): ArrayBuffer {
