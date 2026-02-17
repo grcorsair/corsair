@@ -9,7 +9,7 @@
 <br/>
 
 ![Tests](https://img.shields.io/github/actions/workflow/status/arudjreis/corsair/test.yml?style=for-the-badge&label=TESTS&labelColor=0A0E17&color=2ECC71)
-![Version](https://img.shields.io/badge/v0.6.0-D4A853?style=for-the-badge&label=VERSION&labelColor=0A0E17)
+![Version](https://img.shields.io/badge/v1.0.0-D4A853?style=for-the-badge&label=VERSION&labelColor=0A0E17)
 ![License](https://img.shields.io/badge/Apache_2.0-D4A853?style=for-the-badge&label=LICENSE&labelColor=0A0E17)
 ![Runtime](https://img.shields.io/badge/Bun-E8E2D6?style=for-the-badge&label=RUNTIME&labelColor=0A0E17&logo=bun&logoColor=E8E2D6)
 ![Language](https://img.shields.io/badge/TypeScript-D4A853?style=for-the-badge&label=LANG&labelColor=0A0E17&logo=typescript&logoColor=D4A853)
@@ -52,20 +52,22 @@ Anyone can verify a CPOE. Free to check. No account required. Four steps with an
 ## Quick Start
 
 ```bash
-# Install
-git clone https://github.com/Arudjreis/corsair.git && cd corsair && bun install
-
-# Or add as an AI agent skill (Claude Code, Cursor, Copilot, 25+ agents)
-npx skills add grcorsair/corsair
+# Install (pick one)
+npm install -g @grcorsair/cli                  # npm
+brew install grcorsair/corsair/corsair         # homebrew
+npx skills add grcorsair/corsair               # AI agent skill (Claude Code, Cursor, 25+ agents)
 
 # Initialize a project (generates keys + example evidence)
-bun run corsair.ts init
+corsair init
 
 # Sign your Prowler scan as a CPOE (keys auto-generate on first use)
-bun run corsair.ts sign --file prowler-findings.json
+corsair sign --file prowler-findings.json
 
-# Verify any CPOE (always free)
-bun run corsair.ts verify --file cpoe.jwt
+# Verify any CPOE (always free, no account needed)
+corsair verify --file cpoe.jwt
+
+# Compare two CPOEs over time (like git diff)
+corsair diff --current q2.jwt --previous q1.jwt
 ```
 
 ---
@@ -86,15 +88,16 @@ corsair diff --current q2.jwt --previous q1.jwt
 
 ## CLI Primitives (Full Surface)
 
-Corsair does five things. Like git.
+Corsair does six things. Like git.
 
 | Primitive | Command | What It Does | Analogy |
 |:----------|:--------|:-------------|:--------|
 | **SIGN** | `corsair sign --file <path>` | Parse tool output, record provenance, sign JWT-VC | `git commit` |
+| **LOG** | `corsair log` | Query SCITT transparency log | `git log` |
+| **PUBLISH** | `corsair compliance-txt generate` | Generate compliance.txt for proof discovery | `git push` |
 | **VERIFY** | `corsair verify --file <cpoe.jwt>` | Verify Ed25519 signature via DID:web | `git verify-commit` |
 | **DIFF** | `corsair diff --current <new> --previous <old>` | Compare two CPOEs, detect regressions | `git diff` |
-| **LOG** | `corsair log` | Query SCITT transparency log | `git log` |
-| **KEYGEN** | `corsair keygen --output <dir>` | Generate Ed25519 signing keypair | `ssh-keygen` |
+| **SIGNAL** | `corsair signal` | Real-time compliance change notifications | `git webhooks` |
 
 ### Sign Options
 
@@ -361,7 +364,7 @@ bun add @corsair/sdk
 ## Testing
 
 ```bash
-bun test   # 1920 tests, 76 files — all passing
+bun test   # 1184 tests, 64 files — all passing
 ```
 
 ---

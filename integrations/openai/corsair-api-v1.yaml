@@ -41,7 +41,7 @@ paths:
                     enum: [ready, starting]
                   version:
                     type: string
-                    example: "0.6.0"
+                    example: "1.0.0"
 
   /sign:
     post:

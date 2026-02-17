@@ -55,7 +55,7 @@ export function QuickStart() {
               className={
                 line.startsWith("#")
                   ? "text-corsair-text-dim"
-                  : line.startsWith("export")
+                  : line.startsWith("npm") || line.startsWith("brew") || line.startsWith("npx")
                     ? "text-corsair-gold"
                     : "text-corsair-cyan"
               }

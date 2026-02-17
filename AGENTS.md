@@ -69,8 +69,44 @@ Scope is optional, e.g. `feat(web): add compliance.txt generator page`.
 - Never commit secrets, `.env` files, or private keys
 - Avoid destructive git commands unless explicitly requested
 
+## Full-Codebase Sync Rule (MANDATORY)
+
+When ANY change is made to the codebase — new command, renamed primitive, new flag, changed behavior, updated terminology, modified format — you MUST ensure **every reference across the entire repo** is updated before declaring work complete.
+
+### Process (non-negotiable)
+
+1. **GREP FIRST.** Before closing any change, grep the entire repo for the old name/term/value:
+   ```bash
+   grep -r "OLD_TERM" --include="*.ts" --include="*.tsx" --include="*.md" --include="*.mdx" --include="*.json" . | grep -v node_modules | grep -v .next
+   ```
+2. **UPDATE EVERY HIT.** Every single file that references the changed thing must be updated. Zero exceptions.
+3. **VERIFY WITH GREP.** After updating, re-run the grep. The old term should return zero results (outside node_modules/.next).
+
+### Surface areas that MUST be checked
+
+| Area | Path | Examples of what lives here |
+|------|------|-----------------------------|
+| **SKILL.md** | `skills/corsair/SKILL.md` | Workflows, commands, options, examples, supported formats |
+| **README.md** | `README.md` | Quick Start, CLI table, feature descriptions, architecture |
+| **AGENTS.md** | `AGENTS.md` | Quick commands, repo notes, primitive names |
+| **Web docs (MDX)** | `apps/web/content/docs/**/*.mdx` | Getting started, concepts, integrations, API docs |
+| **Blog posts** | `apps/web/content/blog/**/*.mdx` | Any blog post referencing the changed term |
+| **Marketing pages** | `apps/web/src/app/(marketing)/**` | Every route: sign, verify, diff, log, signal, publish, how-it-works, etc. |
+| **Navbar** | `apps/web/src/components/layout/header.tsx` | Primitive names, labels, descriptions, dropdown items |
+| **Footer** | `apps/web/src/components/layout/footer.tsx` | Product links, resource links, primitive names |
+| **Shared components** | `apps/web/src/components/**` | Hero section, weapons section, quick start, any component with hardcoded text |
+| **Config/constants** | `apps/web/src/content/snippets.ts` and similar | Version numbers, shared strings, content config |
+| **CLI source** | `corsair.ts`, `src/**` | The implementation itself |
+| **Tests** | `tests/**` | Test descriptions, fixture data, CLI output assertions |
+| **Package metadata** | `package.json`, `skills/corsair/SKILL.md` frontmatter | Version, description, keywords |
+| **Spec docs** | `CPOE_SPEC.md`, `CONTRIBUTING.md`, `SECURITY.md` | Any spec that references primitives or behavior |
+
+### Why this matters
+
+This repo has pages and docs from different periods. Names drift (e.g. "Discovery" vs "Publish" vs "compliance.txt"). The only way to prevent this is: **grep the entire repo on every change, update every hit, verify with grep again.** No shortcuts.
+
 ## Repo Notes
-- Protocol primitives: SIGN, VERIFY, DIFF, LOG, SIGNAL (FLAGSHIP), DISCOVERY (compliance.txt)
+- Protocol primitives (6): SIGN, LOG, PUBLISH (compliance.txt), VERIFY, DIFF, SIGNAL (FLAGSHIP)
 - compliance.txt lives at `/.well-known/compliance.txt`
 
 ## Monorepo

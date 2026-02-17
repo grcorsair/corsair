@@ -1,6 +1,7 @@
 import { describe, test, expect } from "bun:test";
+import { VERSION } from "../../src/version";
 
-describe("Corsair CLI v0.6.0", () => {
+describe("Corsair CLI", () => {
   const cwd = "/Users/ayoubfandi/projects/corsair";
 
   test("help command shows usage", async () => {
@@ -58,11 +59,11 @@ describe("Corsair CLI v0.6.0", () => {
     expect(stderr).toContain("--file is required");
   });
 
-  test("version is 0.6.0", async () => {
+  test("version matches package.json", async () => {
     const proc = Bun.spawn(["bun", "run", "corsair.ts", "help"], { cwd });
     const output = await new Response(proc.stdout).text();
     await proc.exited;
-    expect(output).toContain("0.6.0");
+    expect(output).toContain(VERSION);
   });
 
   test("help shows diff command", async () => {

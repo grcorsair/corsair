@@ -4,6 +4,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
+import {
   Sheet,
   SheetTrigger,
   SheetContent,
@@ -11,15 +19,52 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { MenuIcon } from "lucide-react";
+import { MenuIcon, ChevronDownIcon } from "lucide-react";
+import { useState } from "react";
 
-const navLinks = [
-  { href: "/verify", label: "Verify" },
-  { href: "/publish", label: "Publish" },
+const primitives = [
+  {
+    href: "/sign",
+    label: "Sign",
+    description: "Sign tool output into a cryptographic CPOE",
+  },
+  {
+    href: "/verify",
+    label: "Verify",
+    description: "Verify a CPOE signature and validity",
+  },
+  {
+    href: "/diff",
+    label: "Diff",
+    description: "Compare CPOEs and detect regressions",
+  },
+  {
+    href: "/log",
+    label: "Log",
+    description: "Browse the local SCITT transparency log",
+  },
+  {
+    href: "/signal",
+    label: "Signal",
+    description: "Real-time compliance event stream",
+  },
+  {
+    href: "/publish",
+    label: "compliance.txt",
+    description: "Publish yours, discover theirs",
+  },
+];
+
+const topNavLinks = [
+  { href: "/how-it-works", label: "How It Works" },
   { href: "/docs", label: "Docs" },
+  { href: "/blog", label: "Blog" },
 ];
 
 export function Header() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [primitivesExpanded, setPrimitivesExpanded] = useState(false);
+
   return (
     <header className="sticky top-0 z-50 border-b border-corsair-border bg-corsair-deep/80 backdrop-blur-md">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -32,28 +77,62 @@ export function Header() {
             height={36}
             className="h-9 w-9"
           />
-          <span className="font-display text-xl font-bold tracking-tight text-corsair-text">
+          <span className="text-xl font-bold tracking-tight text-corsair-text" style={{ fontFamily: "var(--font-pixel-display)" }}>
             CORSAIR
           </span>
         </Link>
 
         {/* Desktop nav */}
-        <div className="hidden items-center gap-6 md:flex">
-          {navLinks.map((link) => (
+        <div className="hidden items-center gap-1 md:flex">
+          <NavigationMenu>
+            <NavigationMenuList>
+              {/* Primitives dropdown */}
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="bg-transparent text-sm text-corsair-text-dim hover:bg-corsair-surface hover:text-corsair-gold data-[state=open]:bg-corsair-surface">
+                  Primitives
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <ul className="grid w-[340px] gap-1 p-2">
+                    {primitives.map((item) => (
+                      <li key={item.href}>
+                        <NavigationMenuLink asChild>
+                          <Link
+                            href={item.href}
+                            className="flex flex-col gap-0.5 rounded-md px-3 py-2 text-sm transition-colors hover:bg-corsair-surface"
+                          >
+                            <span className="font-medium text-corsair-text">
+                              {item.label}
+                            </span>
+                            <span className="text-xs text-corsair-text-dim">
+                              {item.description}
+                            </span>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                    ))}
+                  </ul>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+
+          {/* Static links */}
+          {topNavLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="nav-link text-sm text-corsair-text-dim transition-colors hover:text-corsair-gold"
+              className="nav-link px-3 py-2 text-sm text-corsair-text-dim transition-colors hover:text-corsair-gold"
             >
               {link.label}
             </Link>
           ))}
+
           <Button variant="outline" size="sm" asChild>
             <a
               href="https://github.com/Arudjreis/corsair"
               target="_blank"
               rel="noopener noreferrer"
-              className="gap-2"
+              className="ml-2 gap-2"
             >
               <GitHubIcon />
               <span>GitHub</span>
@@ -62,7 +141,7 @@ export function Header() {
         </div>
 
         {/* Mobile nav — shadcn Sheet */}
-        <Sheet>
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
             <Button
               variant="outline"
@@ -82,21 +161,55 @@ export function Header() {
                   width={24}
                   height={24}
                 />
-                CORSAIR
+                <span style={{ fontFamily: "var(--font-pixel-display)" }}>
+                  CORSAIR
+                </span>
               </SheetTitle>
             </SheetHeader>
             <Separator className="bg-corsair-border" />
             <nav className="flex flex-col gap-1 px-4">
-              {navLinks.map((link) => (
+              {/* Primitives collapsible section */}
+              <button
+                type="button"
+                onClick={() => setPrimitivesExpanded(!primitivesExpanded)}
+                className="flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-corsair-text transition-colors hover:bg-corsair-surface"
+              >
+                Primitives
+                <ChevronDownIcon
+                  className={`h-4 w-4 text-corsair-text-dim transition-transform ${primitivesExpanded ? "rotate-180" : ""}`}
+                />
+              </button>
+              {primitivesExpanded && (
+                <div className="flex flex-col gap-0.5 pl-3">
+                  {primitives.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileOpen(false)}
+                      className="rounded-md px-3 py-1.5 text-sm text-corsair-text-dim transition-colors hover:bg-corsair-surface hover:text-corsair-gold"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              <Separator className="my-1 bg-corsair-border" />
+
+              {/* Static links */}
+              {topNavLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
+                  onClick={() => setMobileOpen(false)}
                   className="rounded-md px-3 py-2 text-sm text-corsair-text-dim transition-colors hover:bg-corsair-surface hover:text-corsair-gold"
                 >
                   {link.label}
                 </Link>
               ))}
-              <Separator className="my-2 bg-corsair-border" />
+
+              <Separator className="my-1 bg-corsair-border" />
+
               <a
                 href="https://github.com/Arudjreis/corsair"
                 target="_blank"

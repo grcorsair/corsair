@@ -8,6 +8,7 @@
  */
 
 import { describe, test, expect, beforeEach } from "bun:test";
+import { VERSION } from "../../src/version";
 import { handleHealth, createHealthHandler } from "../../functions/health";
 import { handleSSFConfiguration, createSSFConfigHandler } from "../../functions/ssf-configuration";
 import {
@@ -57,7 +58,7 @@ describe("Health Endpoint", () => {
     expect(res.status).toBe(200);
     const body = (await jsonResponse(res)) as Record<string, unknown>;
     expect(body.status).toBe("ok");
-    expect(body.version).toBe("0.6.0");
+    expect(body.version).toBe(VERSION);
     expect(typeof body.timestamp).toBe("string");
   });
 

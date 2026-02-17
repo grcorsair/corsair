@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Requires Bun runtime (bun.sh) and corsair CLI (npm install -g corsair)
 metadata:
   author: grcorsair
-  version: "0.6.0"
+  version: "1.0.0"
   website: https://grcorsair.com
 ---
 
@@ -13,15 +13,15 @@ metadata:
 
 Corsair is the open protocol for machine-readable, cryptographically verifiable compliance attestations. Think SMTP for compliance — tools already know if controls work, Corsair adds the crypto proof layer.
 
-**5 primitives:** Sign, Verify, Diff, Log, Signal
+**6 primitives:** Sign, Log, Publish, Verify, Diff, Signal
 
 ## Prerequisites
 
 ```bash
-# Install Corsair CLI
-npm install -g corsair
-# OR
-bun install -g corsair
+# Install Corsair CLI (pick one)
+npm install -g @grcorsair/cli                  # npm
+brew install grcorsair/corsair/corsair         # homebrew
+npx skills add grcorsair/corsair               # AI agent skill (Claude Code, Cursor, 25+ agents)
 
 # Initialize (generates Ed25519 keys + example evidence)
 corsair init
@@ -34,8 +34,11 @@ If Corsair is not installed, guide the user through installation first.
 | Trigger | Workflow | Description |
 |---------|----------|-------------|
 | "sign evidence", "create CPOE", "sign scan results" | **Sign** | Sign security tool output as a cryptographic proof |
+| "log CPOEs", "list proofs", "transparency log", "SCITT" | **Log** | List signed CPOEs in the local SCITT transparency log |
+| "publish compliance", "generate compliance.txt", "make discoverable" | **Publish** | Generate compliance.txt so auditors can discover your proofs |
 | "verify CPOE", "check proof", "verify compliance" | **Verify** | Verify a CPOE's Ed25519 signature and validity |
 | "compliance drift", "regression check", "compare CPOEs" | **Diff** | Compare two CPOEs to detect compliance regressions |
+| "signal compliance change", "FLAGSHIP", "notify" | **Signal** | Real-time compliance change notifications via FLAGSHIP |
 | "check vendor", "discover compliance", "compliance.txt" | **Discover** | Crawl a domain's compliance.txt and verify their proofs |
 | "audit vendor", "vendor assessment", "TPRM", "third-party risk" | **Audit** | Full autonomous vendor compliance assessment |
 | "set up corsair", "init compliance", "start signing" | **Init** | Initialize Corsair in a project |
@@ -83,6 +86,85 @@ prowler aws --output json | corsair sign --file - --format prowler
 
 # Dry run to preview
 corsair sign --file evidence.json --dry-run
+```
+
+---
+
+## Log Workflow
+
+List signed CPOEs from the local SCITT transparency log.
+
+**Steps:**
+1. List recent CPOEs:
+   ```bash
+   corsair log
+   ```
+2. To limit results:
+   ```bash
+   corsair log --last 5
+   ```
+3. To scan a specific directory:
+   ```bash
+   corsair log --dir ./cpoes/
+   ```
+4. Report: table of CPOEs with file path, date, issuer, score, source tool, and LATEST marker.
+
+**Example:**
+```bash
+corsair log
+corsair log --last 3 --dir ./evidence/
+```
+
+---
+
+## Publish Workflow
+
+Generate a `compliance.txt` file so auditors and agents can discover your published compliance proofs at `/.well-known/compliance.txt`.
+
+**Steps:**
+1. Generate compliance.txt from your signed CPOEs:
+   ```bash
+   corsair compliance-txt generate \
+     --did did:web:<DOMAIN> \
+     --cpoes <DIR> \
+     --frameworks <FRAMEWORKS> \
+     --contact <EMAIL> \
+     -o .well-known/compliance.txt
+   ```
+2. For specific CPOE URLs instead of directory scan:
+   ```bash
+   corsair compliance-txt generate \
+     --did did:web:<DOMAIN> \
+     --cpoe-url https://example.com/soc2.jwt \
+     --cpoe-url https://example.com/iso27001.jwt \
+     -o .well-known/compliance.txt
+   ```
+3. Add SCITT and FLAGSHIP endpoints if available:
+   ```bash
+   corsair compliance-txt generate \
+     --did did:web:<DOMAIN> \
+     --cpoes . \
+     --scitt https://example.com/api/scitt \
+     --flagship https://example.com/api/ssf/stream \
+     -o .well-known/compliance.txt
+   ```
+4. Report: Generated compliance.txt path. Remind user to host at `/.well-known/compliance.txt`.
+
+**Options:**
+- `--did <DID>` — DID:web identity (required)
+- `--cpoes <DIR>` — Directory to scan for .jwt files
+- `--cpoe-url <URL>` — Add CPOE URL (repeatable)
+- `--base-url <URL>` — Base URL prefix for scanned CPOEs
+- `--scitt <URL>` — SCITT transparency log endpoint
+- `--flagship <URL>` — FLAGSHIP signal stream endpoint
+- `--frameworks <LIST>` — Comma-separated framework names
+- `--contact <EMAIL>` — Compliance contact email
+- `--expiry-days <N>` — Validity in days (default: 365)
+- `-o, --output <PATH>` — Output file (default: stdout)
+
+**Example:**
+```bash
+corsair compliance-txt generate --did did:web:acme.com --cpoes ./proofs/ --frameworks SOC2,ISO27001 --contact compliance@acme.com -o .well-known/compliance.txt
 ```
 
 ---
@@ -139,6 +221,34 @@ Compare two CPOEs to detect compliance regressions (score drops, new failures, r
 ```bash
 corsair diff --current soc2-q1-2026.jwt --previous soc2-q4-2025.jwt
 corsair diff --current latest.jwt --previous baseline.jwt --json --verify
+```
+
+---
+
+## Signal Workflow
+
+FLAGSHIP delivers real-time compliance change notifications via SSF (Shared Signals Framework) and CAEP (Continuous Access Evaluation Protocol). Events are Ed25519-signed Security Event Tokens (SETs).
+
+**Event types:**
+- `FLEET_ALERT` (compliance-change) — Control drift detected
+- `PAPERS_CHANGED` (credential-change) — CPOE issued, renewed, or revoked
+- `MARQUE_REVOKED` (session-revoked) — Emergency revocation
+
+**Steps:**
+1. View signal information:
+   ```bash
+   corsair signal
+   ```
+2. Signals are primarily managed via the API layer:
+   - `GET /.well-known/ssf-configuration` — SSF discovery
+   - `POST /ssf/stream` — Create/manage streams
+   - `POST /scitt/register` — Register CPOE + trigger signals
+
+**Note:** The `corsair signal` command is currently informational. Signal streams are configured and delivered via the API. When setting up a full infrastructure deployment, configure FLAGSHIP endpoints in compliance.txt so subscribers can receive real-time compliance change notifications.
+
+**Example:**
+```bash
+corsair signal
 ```
 
 ---
@@ -269,15 +379,21 @@ corsair compliance-txt generate --did did:web:mycompany.com --cpoes . --framewor
 
 ## Quick Reference
 
+| Primitive | Command | What it does |
+|-----------|---------|-------------|
+| **SIGN** | `corsair sign --file <F>` | Sign evidence → CPOE |
+| **LOG** | `corsair log` | List signed CPOEs (SCITT transparency log) |
+| **PUBLISH** | `corsair compliance-txt generate --did <DID>` | Generate compliance.txt for discovery |
+| **VERIFY** | `corsair verify --file <F>` | Verify CPOE signature |
+| **DIFF** | `corsair diff --current <A> --previous <B>` | Detect compliance regressions |
+| **SIGNAL** | `corsair signal` | Real-time compliance change notifications |
+
+### Additional Commands
+
 | Command | What it does |
 |---------|-------------|
-| `corsair sign --file <F>` | Sign evidence → CPOE |
-| `corsair verify --file <F>` | Verify CPOE signature |
-| `corsair diff --current <A> --previous <B>` | Detect regressions |
-| `corsair log` | List local CPOEs |
 | `corsair compliance-txt discover <domain>` | Crawl vendor compliance.txt |
 | `corsair compliance-txt validate <domain>` | Validate compliance.txt format |
-| `corsair compliance-txt generate --did <DID>` | Generate compliance.txt |
 | `corsair keygen` | Generate Ed25519 signing keys |
 | `corsair init` | Set up Corsair in project |
 | `corsair renew --file <F>` | Re-sign CPOE with fresh dates |

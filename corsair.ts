@@ -15,6 +15,7 @@
  */
 
 import { existsSync, readFileSync } from "fs";
+import { VERSION } from "./src/version";
 
 // =============================================================================
 // SUBCOMMAND ROUTING
@@ -1727,11 +1728,7 @@ Or sign your own evidence:
 }
 
 function printHelp(): void {
-  let version = "0.6.0";
-  try {
-    const pkg = JSON.parse(readFileSync("package.json", "utf-8"));
-    version = pkg.version || version;
-  } catch {}
+  const version = VERSION;
   console.log(`
 CORSAIR — Git for Compliance
 

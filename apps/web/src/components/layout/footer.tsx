@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
+import { CORSAIR_VERSION } from "@/content/snippets";
 
 const productLinks = [
   { href: "/sign", label: "Sign" },
@@ -37,7 +38,7 @@ export function Footer() {
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
           <div>
-            <span className="font-display text-lg font-bold text-corsair-text">
+            <span className="text-lg font-bold text-corsair-text" style={{ fontFamily: "var(--font-pixel-display)" }}>
               CORSAIR
             </span>
             <p className="mt-2 text-sm leading-relaxed text-corsair-text-dim">
@@ -47,7 +48,7 @@ export function Footer() {
               Sign. Verify. Diff. Log. Signal.
             </p>
             <p className="mt-3 font-pixel text-[7px] tracking-wider text-corsair-text-dim/60">
-              v0.6.0 &middot; Apache-2.0
+              v{CORSAIR_VERSION} &middot; Apache-2.0
             </p>
           </div>
 

@@ -30,6 +30,7 @@
  * Reads DATABASE_URL, KEY_ENCRYPTION_SECRET, CORSAIR_DOMAIN from env.
  */
 
+import { VERSION } from "./src/version";
 import { createHealthHandler } from "./functions/health";
 import { createSSFConfigHandler } from "./functions/ssf-configuration";
 import { createSSFStreamRouter } from "./functions/ssf-stream";
@@ -121,7 +122,7 @@ const server = Bun.serve({
         return Response.json(
           {
             status: "starting",
-            version: "0.6.0",
+            version: VERSION,
             timestamp: new Date().toISOString(),
             checks: { database: "initializing" },
           },
@@ -132,7 +133,7 @@ const server = Bun.serve({
         return Response.json(
           {
             status: "error",
-            version: "0.6.0",
+            version: VERSION,
             timestamp: new Date().toISOString(),
             error: initError,
           },
