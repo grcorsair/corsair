@@ -14,15 +14,15 @@ Corsair asks: "Can you prove your controls are effective with a signed, verifiab
 
 The proof that emerges from tool-generated evidence and cryptographic signing is fundamentally different from self-reported questionnaires.
 
-## Five Primitives. One Protocol.
+## Six Primitives. One Protocol.
 
-Corsair operates like git for compliance. Five core primitives handle signing, verification, transparency, regression tracking, and real-time signals.
+Corsair operates like git for compliance. Six core primitives handle signing, transparency, discovery, verification, regression tracking, and real-time signals.
 
 ```
-SIGN → LOG → VERIFY → DIFF → SIGNAL
+SIGN → LOG → PUBLISH → VERIFY → DIFF → SIGNAL
 ```
 
-### The Five Primitives (Default Path)
+### The Six Primitives (Default Path)
 
 Every `corsair sign` invocation flows through the core primitives. No flags required.
 
@@ -30,6 +30,7 @@ Every `corsair sign` invocation flows through the core primitives. No flags requ
 |-----------|-------------|--------------|
 | **SIGN** | `git commit` | Parse tool output, record provenance, sign as JWT-VC (Ed25519) |
 | **LOG** | `git log` | Register in SCITT transparency log (append-only) |
+| **PUBLISH** | `git push` | Generate compliance.txt so auditors can discover your proofs |
 | **VERIFY** | `git verify-commit` | Verify Ed25519 signature via DID:web resolution |
 | **DIFF** | `git diff` | Compare two CPOEs, detect compliance regressions |
 | **SIGNAL** | `git webhooks` | Real-time compliance change notifications via FLAGSHIP (SSF/CAEP) |

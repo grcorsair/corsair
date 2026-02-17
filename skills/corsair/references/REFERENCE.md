@@ -165,6 +165,21 @@ corsair compliance-txt discover <DOMAIN> [--json] [--verify]
 
 Exit codes: 0 = found, 1 = not found or failed
 
+### corsair signal
+
+View FLAGSHIP real-time compliance change notification info.
+
+```
+corsair signal
+```
+
+FLAGSHIP delivers SSF/CAEP events as Ed25519-signed SETs:
+- `FLEET_ALERT` (compliance-change) — Drift detected
+- `PAPERS_CHANGED` (credential-change) — CPOE issued/renewed/revoked
+- `MARQUE_REVOKED` (session-revoked) — Emergency revocation
+
+Signal streams are managed via the API layer. The CLI command is informational.
+
 ### corsair keygen
 
 Generate Ed25519 signing keypair.

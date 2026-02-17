@@ -1,6 +1,6 @@
 # Corsair Terminal Recordings
 
-Terminal demos of Corsair's 5 protocol primitives, built with [VHS](https://github.com/charmbracelet/vhs).
+Terminal demos of Corsair's 6 protocol primitives, built with [VHS](https://github.com/charmbracelet/vhs).
 
 ## Recordings
 
