@@ -7,10 +7,33 @@ import { Loader2, CheckCircle2, XCircle, RotateCcw, Share2 } from "lucide-react"
 import { verifyViaAPI } from "@/lib/corsair-api";
 import type { MarqueVerificationResult } from "@/lib/marque-web-verifier";
 
-type VerifierState = "idle" | "verifying" | "verified" | "failed";
+type VerifierState = "demo" | "idle" | "verifying" | "verified" | "failed";
+
+/** Pre-loaded demo result — renders instantly on page load (no API call). */
+const DEMO_RESULT: MarqueVerificationResult = {
+  valid: true,
+  reason: "Signature verified via DID:web. Credential integrity confirmed.",
+  format: "jwt",
+  issuerTier: "corsair-verified",
+  provenance: { source: "tool", sourceIdentity: "Prowler" },
+  scope: "CIS AWS Foundations Benchmark v3.0",
+  summary: {
+    controlsTested: 51,
+    controlsPassed: 47,
+    controlsFailed: 4,
+    overallScore: 92,
+  },
+  vcMetadata: {
+    context: ["https://www.w3.org/ns/credentials/v2", "https://grcorsair.com/credentials/v1"],
+    credentialType: ["VerifiableCredential", "CorsairCPOE"],
+    issuerDID: "did:web:grcorsair.com",
+    parleyVersion: "2.1",
+    generatedAt: "2026-02-16T00:00:00Z",
+  },
+};
 
 export function HeroVerifier() {
-  const [state, setState] = useState<VerifierState>("idle");
+  const [state, setState] = useState<VerifierState>("demo");
   const [jwt, setJwt] = useState("");
   const [result, setResult] = useState<MarqueVerificationResult | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
@@ -69,7 +92,15 @@ export function HeroVerifier() {
     setErrorMsg("");
   };
 
+  const handleVerifyOwn = () => {
+    setState("idle");
+    setJwt("");
+    setResult(null);
+    setErrorMsg("");
+  };
+
   const borderClass = {
+    demo: "border-corsair-green/60 shadow-[0_0_30px_rgba(34,197,94,0.15)]",
     idle: "border-corsair-gold/20 shadow-[0_0_15px_rgba(212,168,83,0.05)]",
     verifying: "border-corsair-gold/60 animate-pulse",
     verified: "border-corsair-green/60 shadow-[0_0_30px_rgba(34,197,94,0.15)]",
@@ -84,6 +115,65 @@ export function HeroVerifier() {
       className={`relative rounded-xl border ${borderClass} bg-corsair-surface p-5 transition-all duration-500`}
     >
       <AnimatePresence mode="wait">
+        {state === "demo" && (
+          <motion.div
+            key="demo"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-3"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-corsair-green" />
+                <span className="font-display text-sm font-semibold text-corsair-green">
+                  Verified
+                </span>
+              </div>
+              <span className="rounded-full border border-corsair-gold/30 px-2.5 py-0.5 font-display text-[10px] font-medium tracking-widest text-corsair-gold">
+                EXAMPLE VERIFICATION
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+              <ResultRow label="Issuer" value={DEMO_RESULT.vcMetadata!.issuerDID} />
+              <ResultRow label="Provenance" value={`${DEMO_RESULT.provenance!.source} / ${DEMO_RESULT.provenance!.sourceIdentity}`} />
+              <ResultRow label="Framework" value={DEMO_RESULT.scope!} span />
+              <ResultRow
+                label="Controls"
+                value={`${DEMO_RESULT.summary!.controlsPassed}/${DEMO_RESULT.summary!.controlsTested} passed`}
+              />
+              <ResultRow
+                label="Score"
+                value={`${DEMO_RESULT.summary!.overallScore}%`}
+              />
+            </div>
+
+            <div className="mt-1 flex gap-2">
+              <Button
+                size="sm"
+                onClick={handleVerifyOwn}
+                className="btn-glow font-display text-xs font-semibold"
+              >
+                Verify your own
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  const url = `${window.location.origin}/demo`;
+                  navigator.clipboard.writeText(url);
+                }}
+                className="font-display text-xs text-corsair-text-dim hover:text-corsair-gold"
+              >
+                <Share2 className="mr-1.5 h-3 w-3" />
+                Share link
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
         {(state === "idle" || state === "verifying") && (
           <motion.div
             key="input"
