@@ -1602,7 +1602,15 @@ async function handleVerify(): Promise<void> {
   let requireFrameworks: string[] = [];
   let maxAgeDays: number | undefined;
   let minScore: number | undefined;
+  let requireSource: "self" | "tool" | "auditor" | undefined;
+  let requireSourceIdentities: string[] = [];
+  let requireToolAttestation = false;
+  let requireInputBinding = false;
+  let requireEvidenceChain = false;
+  let requireReceipts = false;
+  let requireScitt = false;
   let receiptsPath: string | undefined;
+  let sourceDocumentPath: string | undefined;
   const evidencePaths: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -1633,8 +1641,32 @@ async function handleVerify(): Promise<void> {
       case "--min-score":
         minScore = parseInt(args[++i], 10);
         break;
+      case "--require-source":
+        requireSource = args[++i] as "self" | "tool" | "auditor";
+        break;
+      case "--require-source-identity":
+        requireSourceIdentities = (args[++i] || "").split(",").map(s => s.trim()).filter(Boolean);
+        break;
+      case "--require-tool-attestation":
+        requireToolAttestation = true;
+        break;
+      case "--require-input-binding":
+        requireInputBinding = true;
+        break;
+      case "--require-evidence-chain":
+        requireEvidenceChain = true;
+        break;
+      case "--require-receipts":
+        requireReceipts = true;
+        break;
+      case "--require-scitt":
+        requireScitt = true;
+        break;
       case "--receipts":
         receiptsPath = args[++i];
+        break;
+      case "--source-document":
+        sourceDocumentPath = args[++i];
         break;
       case "--evidence":
         evidencePaths.push(args[++i]);
@@ -1661,8 +1693,16 @@ OPTIONS:
       --require-framework <LIST>  Comma-separated frameworks that must be present
       --max-age <DAYS>            Maximum allowed age based on provenance.sourceDate
       --min-score <N>             Minimum overallScore required
+      --require-source <TYPE>     Require provenance source: self|tool|auditor
+      --require-source-identity <LIST>  Comma-separated source identities allowed
+      --require-tool-attestation  Require toolAttestation in receipts
+      --require-input-binding     Require provenance.sourceDocument hash binding
+      --require-evidence-chain    Require evidenceChain + verification
+      --require-receipts          Require verified process receipts
+      --require-scitt             Require SCITT entry IDs for receipts
       --receipts <PATH>           Verify process receipts (JSON array)
       --evidence <PATH>           Verify evidence chain against JSONL (repeatable)
+      --source-document <PATH>    Verify provenance.sourceDocument against raw evidence JSON
       --json            Output structured JSON
   -h, --help            Show this help
 `);
@@ -1677,6 +1717,11 @@ OPTIONS:
 
   if (!existsSync(filePath)) {
     console.error(`Error: File not found: ${filePath}`);
+    process.exit(2);
+  }
+
+  if (requireSource && !["self", "tool", "auditor"].includes(requireSource)) {
+    console.error(`Error: invalid --require-source value: ${requireSource}`);
     process.exit(2);
   }
 
@@ -1716,28 +1761,27 @@ OPTIONS:
     result = await verifier.verify(doc);
   }
 
-  const policyRequested = Boolean(requireIssuer || requireFrameworks.length > 0 || maxAgeDays !== undefined || minScore !== undefined);
+  const policyRequested = Boolean(
+    requireIssuer
+    || requireFrameworks.length > 0
+    || maxAgeDays !== undefined
+    || minScore !== undefined
+    || requireSource
+    || requireSourceIdentities.length > 0
+    || requireToolAttestation
+    || requireInputBinding
+    || requireEvidenceChain
+    || requireReceipts
+    || requireScitt
+  );
   let policyResult: { ok: boolean; errors: string[] } | undefined;
   let processResult: import("./src/parley/receipt-verifier").ProcessVerificationResult | undefined;
   let evidenceResult: import("./src/evidence").EvidenceChainMatchResult | undefined;
+  let inputBindingResult: { ok: boolean; errors: string[]; expected?: string; actual?: string } | undefined;
 
   let payload: Record<string, unknown> | null = null;
   if (format === "JWT-VC") {
     payload = decodeJwtPayload(content);
-  }
-
-  if (policyRequested) {
-    if (!payload) {
-      policyResult = { ok: false, errors: ["Policy checks require JWT-VC input"] };
-    } else {
-      const { evaluateVerificationPolicy } = await import("./src/parley/verification-policy");
-      policyResult = evaluateVerificationPolicy(payload, {
-        requireIssuer,
-        requireFramework: requireFrameworks,
-        maxAgeDays,
-        minScore,
-      });
-    }
   }
 
   if (receiptsPath) {
@@ -1773,6 +1817,73 @@ OPTIONS:
     evidenceResult = compareEvidenceChain(expectedChain, summary);
   }
 
+  if (sourceDocumentPath) {
+    if (!existsSync(sourceDocumentPath)) {
+      console.error(`Error: Source document not found: ${sourceDocumentPath}`);
+      process.exit(2);
+    }
+    try {
+      const raw = readFileSync(sourceDocumentPath, "utf-8");
+      const parsed = JSON.parse(raw);
+      const { hashData } = await import("./src/parley/process-receipt");
+      const actualHash = hashData(parsed);
+      const expectedHash = (payload?.vc as any)?.credentialSubject?.provenance?.sourceDocument as string | undefined;
+      const errors: string[] = [];
+      if (!payload) {
+        errors.push("input binding requires JWT-VC input");
+      }
+      if (!expectedHash) {
+        errors.push("missing provenance.sourceDocument in CPOE");
+      } else if (expectedHash !== actualHash) {
+        errors.push("source document hash does not match provenance.sourceDocument");
+      }
+      inputBindingResult = {
+        ok: errors.length === 0,
+        errors,
+        expected: expectedHash,
+        actual: actualHash,
+      };
+    } catch (err) {
+      console.error(`Error: failed to compute source document hash: ${err instanceof Error ? err.message : String(err)}`);
+      process.exit(2);
+    }
+  }
+
+  if (policyRequested) {
+    if (!payload) {
+      policyResult = { ok: false, errors: ["Policy checks require JWT-VC input"] };
+    } else {
+      const { evaluateVerificationPolicy } = await import("./src/parley/verification-policy");
+      policyResult = evaluateVerificationPolicy(payload, {
+        requireIssuer,
+        requireFramework: requireFrameworks,
+        maxAgeDays,
+        minScore,
+        requireSource,
+        requireSourceIdentity: requireSourceIdentities,
+        requireToolAttestation,
+        requireInputBinding,
+        requireEvidenceChain,
+        requireReceipts,
+        requireScitt,
+      }, {
+        process: processResult
+          ? {
+            chainValid: processResult.chainValid,
+            receiptsTotal: processResult.receiptsTotal,
+            receiptsVerified: processResult.receiptsVerified,
+            toolAttestedVerified: processResult.toolAttestedVerified,
+            scittRegistered: processResult.scittRegistered,
+          }
+          : null,
+        evidence: evidenceResult ? { ok: evidenceResult.ok, errors: evidenceResult.errors } : null,
+        inputBinding: inputBindingResult
+          ? { ok: inputBindingResult.ok, errors: inputBindingResult.errors }
+          : null,
+      });
+    }
+  }
+
   if (jsonOutput) {
     const response = {
       valid: result.valid,
@@ -1791,12 +1902,14 @@ OPTIONS:
       policy: policyResult ?? null,
       process: processResult ?? null,
       evidence: evidenceResult ?? null,
+      inputBinding: inputBindingResult ?? null,
     };
     process.stdout.write(JSON.stringify(response, null, 2));
     const ok = result.valid
       && (!policyResult || policyResult.ok)
       && (!processResult || processResult.chainValid)
-      && (!evidenceResult || evidenceResult.ok);
+      && (!evidenceResult || evidenceResult.ok)
+      && (!inputBindingResult || inputBindingResult.ok);
     process.exit(ok ? 0 : 1);
   }
 
@@ -1838,9 +1951,18 @@ OPTIONS:
         }
       }
     }
+    if (inputBindingResult) {
+      console.log(`  Input:     ${inputBindingResult.ok ? "VERIFIED" : "FAILED"}`);
+      if (!inputBindingResult.ok) {
+        for (const err of inputBindingResult.errors) {
+          console.log(`    - ${err}`);
+        }
+      }
+    }
     const ok = (!policyResult || policyResult.ok)
       && (!processResult || processResult.chainValid)
-      && (!evidenceResult || evidenceResult.ok);
+      && (!evidenceResult || evidenceResult.ok)
+      && (!inputBindingResult || inputBindingResult.ok);
     process.exit(ok ? 0 : 1);
   } else {
     console.error("VERIFICATION FAILED");

@@ -22,6 +22,7 @@ export interface StepVerificationResult {
   hashLinkValid: boolean;
   temporalValid: boolean;
   reproducible: boolean;
+  toolAttested: boolean;
   scittRegistered: boolean;
 }
 
@@ -31,6 +32,8 @@ export interface ProcessVerificationResult {
   receiptsTotal: number;
   reproducibleVerified: number;
   attestedVerified: number;
+  toolAttestedVerified: number;
+  scittRegistered: number;
   chainDigest: string;
   steps: StepVerificationResult[];
 }
@@ -66,6 +69,8 @@ export function verifyProcessChain(
   let allValid = true;
   let reproducibleCount = 0;
   let attestedCount = 0;
+  let toolAttestedCount = 0;
+  let scittCount = 0;
 
   for (let i = 0; i < receipts.length; i++) {
     const receipt = receipts[i]!;
@@ -97,6 +102,8 @@ export function verifyProcessChain(
 
     if (receipt.predicate.reproducible && sigResult.verified) reproducibleCount++;
     if (receipt.predicate.llmAttestation && sigResult.verified) attestedCount++;
+    if (receipt.predicate.toolAttestation && sigResult.verified) toolAttestedCount++;
+    if (receipt.scittEntryId) scittCount++;
 
     steps.push({
       step: receipt.predicate.step,
@@ -104,6 +111,7 @@ export function verifyProcessChain(
       hashLinkValid,
       temporalValid,
       reproducible: receipt.predicate.reproducible,
+      toolAttested: !!receipt.predicate.toolAttestation,
       scittRegistered: !!receipt.scittEntryId,
     });
   }
@@ -117,6 +125,8 @@ export function verifyProcessChain(
     receiptsTotal: receipts.length,
     reproducibleVerified: reproducibleCount,
     attestedVerified: attestedCount,
+    toolAttestedVerified: toolAttestedCount,
+    scittRegistered: scittCount,
     chainDigest,
     steps,
   };

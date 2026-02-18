@@ -48,9 +48,18 @@ export interface V1VerifyRequest {
     requireFramework?: string[];
     maxAgeDays?: number;
     minScore?: number;
+    requireSource?: "self" | "tool" | "auditor";
+    requireSourceIdentity?: string[];
+    requireToolAttestation?: boolean;
+    requireInputBinding?: boolean;
+    requireEvidenceChain?: boolean;
+    requireReceipts?: boolean;
+    requireScitt?: boolean;
   };
   /** Optional process receipts for chain verification */
   receipts?: unknown[];
+  /** Optional hash of raw evidence JSON (canonical) for input binding */
+  sourceDocumentHash?: string;
 }
 
 export interface V1VerifyResponse {
@@ -79,9 +88,18 @@ export interface V1VerifyResponse {
     chainVerified: boolean;
     reproducibleSteps: number;
     attestedSteps: number;
+    toolAttestedSteps?: number;
+    scittEntryIds?: string[];
   } | null;
   policy?: { ok: boolean; errors: string[] } | null;
-  process?: { chainValid: boolean; receiptsVerified: number; receiptsTotal: number } | null;
+  process?: {
+    chainValid: boolean;
+    receiptsVerified: number;
+    receiptsTotal: number;
+    toolAttested?: number;
+    scittRegistered?: number;
+  } | null;
+  inputBinding?: { ok: boolean; errors: string[]; expected?: string; actual?: string } | null;
   extensions?: Record<string, unknown> | null;
   reason?: string;
 }

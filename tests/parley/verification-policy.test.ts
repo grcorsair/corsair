@@ -14,7 +14,29 @@ function makePayload(overrides?: Record<string, unknown>) {
       credentialSubject: {
         summary: { overallScore: 90 },
         frameworks: { SOC2: { controlsMapped: 1, passed: 1, failed: 0, controls: [] } },
-        provenance: { sourceDate: new Date().toISOString() },
+        provenance: {
+          source: "tool",
+          sourceIdentity: "Prowler v3.1",
+          sourceDocument: "abc123",
+          sourceDate: new Date().toISOString(),
+        },
+        evidenceChain: {
+          chainType: "hash-linked",
+          algorithm: "sha256",
+          canonicalization: "sorted-json-v1",
+          recordCount: 1,
+          chainVerified: true,
+          chainDigest: "chain123",
+        },
+        processProvenance: {
+          chainDigest: "proc123",
+          receiptCount: 2,
+          chainVerified: true,
+          reproducibleSteps: 2,
+          attestedSteps: 0,
+          toolAttestedSteps: 1,
+          scittEntryIds: ["scitt-1", "scitt-2"],
+        },
       },
     },
     ...overrides,
@@ -52,5 +74,61 @@ describe("verification policy", () => {
     const payload = makePayload({ vc: { credentialSubject: { summary: { overallScore: 90 }, provenance: { sourceDate: oldDate } } } });
     const result = evaluateVerificationPolicy(payload, { maxAgeDays: 30 });
     expect(result.ok).toBe(false);
+  });
+
+  test("requires provenance source type", () => {
+    const payload = makePayload();
+    const result = evaluateVerificationPolicy(payload, { requireSource: "tool" });
+    expect(result.ok).toBe(true);
+  });
+
+  test("fails when provenance source type mismatches", () => {
+    const payload = makePayload();
+    const result = evaluateVerificationPolicy(payload, { requireSource: "auditor" });
+    expect(result.ok).toBe(false);
+  });
+
+  test("requires source identity in allowed list", () => {
+    const payload = makePayload();
+    const result = evaluateVerificationPolicy(payload, { requireSourceIdentity: ["Prowler v3.1"] });
+    expect(result.ok).toBe(true);
+  });
+
+  test("requires tool attestation", () => {
+    const payload = makePayload();
+    const result = evaluateVerificationPolicy(payload, { requireToolAttestation: true });
+    expect(result.ok).toBe(true);
+  });
+
+  test("requires input binding with context", () => {
+    const payload = makePayload();
+    const result = evaluateVerificationPolicy(payload, { requireInputBinding: true }, {
+      inputBinding: { ok: true, errors: [] },
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  test("requires evidence chain verification", () => {
+    const payload = makePayload();
+    const result = evaluateVerificationPolicy(payload, { requireEvidenceChain: true }, {
+      evidence: { ok: true },
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  test("requires verified receipts", () => {
+    const payload = makePayload();
+    const result = evaluateVerificationPolicy(payload, { requireReceipts: true }, {
+      process: { chainValid: true, receiptsTotal: 2, receiptsVerified: 2 },
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  test("requires scitt entry IDs", () => {
+    const payload = makePayload();
+    const result = evaluateVerificationPolicy(payload, { requireScitt: true }, {
+      process: { chainValid: true, receiptsTotal: 2, receiptsVerified: 2, scittRegistered: 2 },
+    });
+    expect(result.ok).toBe(true);
   });
 });

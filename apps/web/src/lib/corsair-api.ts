@@ -21,8 +21,10 @@ export interface APIVerifyResponse {
     format: string;
     reproducibleSteps: number;
     attestedSteps: number;
+    toolAttestedSteps?: number;
     scittEntryIds?: string[];
   } | null;
+  inputBinding?: { ok: boolean; errors: string[]; expected?: string; actual?: string } | null;
   extensions?: Record<string, unknown> | null;
 }
 

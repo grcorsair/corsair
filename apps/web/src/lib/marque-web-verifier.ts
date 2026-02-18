@@ -103,6 +103,7 @@ export interface MarqueVerificationResult {
     format: string;
     reproducibleSteps: number;
     attestedSteps: number;
+    toolAttestedSteps?: number;
     scittEntryIds?: string[];
   };
   /** Optional passthrough fields and mapping metadata */

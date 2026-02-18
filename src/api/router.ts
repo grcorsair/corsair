@@ -98,6 +98,7 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
     let jwt: string;
     let policy: V1VerifyRequest["policy"] | undefined;
     let receipts: V1VerifyRequest["receipts"] | undefined;
+    let sourceDocumentHash: V1VerifyRequest["sourceDocumentHash"] | undefined;
     const contentType = req.headers.get("content-type") || "";
 
     if (contentType.includes("application/json")) {
@@ -114,6 +115,7 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
       jwt = (body.cpoe as string).trim();
       policy = body.policy;
       receipts = body.receipts;
+      sourceDocumentHash = body.sourceDocumentHash;
 
       if (policy) {
         if (policy.requireIssuer && typeof policy.requireIssuer !== "string") {
@@ -131,10 +133,40 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
         if (policy.minScore !== undefined && typeof policy.minScore !== "number") {
           return envelopeError("validation_error", "policy.minScore must be a number", requestId, 400);
         }
+        if (policy.requireSource && typeof policy.requireSource !== "string") {
+          return envelopeError("validation_error", "policy.requireSource must be a string", requestId, 400);
+        }
+        if (policy.requireSource && !["self", "tool", "auditor"].includes(policy.requireSource)) {
+          return envelopeError("validation_error", "policy.requireSource must be one of: self, tool, auditor", requestId, 400);
+        }
+        if (policy.requireSourceIdentity && !Array.isArray(policy.requireSourceIdentity)) {
+          return envelopeError("validation_error", "policy.requireSourceIdentity must be an array of strings", requestId, 400);
+        }
+        if (Array.isArray(policy.requireSourceIdentity) && policy.requireSourceIdentity.some(id => typeof id !== "string")) {
+          return envelopeError("validation_error", "policy.requireSourceIdentity must be an array of strings", requestId, 400);
+        }
+        if (policy.requireToolAttestation !== undefined && typeof policy.requireToolAttestation !== "boolean") {
+          return envelopeError("validation_error", "policy.requireToolAttestation must be a boolean", requestId, 400);
+        }
+        if (policy.requireInputBinding !== undefined && typeof policy.requireInputBinding !== "boolean") {
+          return envelopeError("validation_error", "policy.requireInputBinding must be a boolean", requestId, 400);
+        }
+        if (policy.requireEvidenceChain !== undefined && typeof policy.requireEvidenceChain !== "boolean") {
+          return envelopeError("validation_error", "policy.requireEvidenceChain must be a boolean", requestId, 400);
+        }
+        if (policy.requireReceipts !== undefined && typeof policy.requireReceipts !== "boolean") {
+          return envelopeError("validation_error", "policy.requireReceipts must be a boolean", requestId, 400);
+        }
+        if (policy.requireScitt !== undefined && typeof policy.requireScitt !== "boolean") {
+          return envelopeError("validation_error", "policy.requireScitt must be a boolean", requestId, 400);
+        }
       }
 
       if (receipts !== undefined && !Array.isArray(receipts)) {
         return envelopeError("validation_error", "receipts must be an array", requestId, 400);
+      }
+      if (sourceDocumentHash !== undefined && typeof sourceDocumentHash !== "string") {
+        return envelopeError("validation_error", "sourceDocumentHash must be a string", requestId, 400);
       }
     } else {
       // Accept raw JWT string
@@ -185,7 +217,7 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
       const ext = cs?.extensions as Record<string, unknown> | undefined;
       const pp = cs?.processProvenance as {
         chainDigest: string; receiptCount: number; chainVerified: boolean;
-        reproducibleSteps: number; attestedSteps: number;
+        reproducibleSteps: number; attestedSteps: number; toolAttestedSteps?: number; scittEntryIds?: string[];
       } | undefined;
       if (pp) {
         processProvenance = {
@@ -194,22 +226,14 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
           chainVerified: pp.chainVerified,
           reproducibleSteps: pp.reproducibleSteps,
           attestedSteps: pp.attestedSteps,
+          ...(typeof pp.toolAttestedSteps === "number" ? { toolAttestedSteps: pp.toolAttestedSteps } : {}),
+          ...(pp.scittEntryIds ? { scittEntryIds: pp.scittEntryIds } : {}),
         };
       }
       if (ext) {
         extensions = ext;
       }
     } catch { /* decode-only, non-critical */ }
-
-    let policyResult: V1VerifyResponse["policy"] = null;
-    if (policy) {
-      if (!payload) {
-        policyResult = { ok: false, errors: ["Policy checks require JWT-VC input"] };
-      } else {
-        const { evaluateVerificationPolicy } = await import("../parley/verification-policy");
-        policyResult = evaluateVerificationPolicy(payload, policy);
-      }
-    }
 
     let processResult: V1VerifyResponse["process"] = null;
     if (receipts) {
@@ -234,7 +258,46 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
         chainValid: fullResult.chainValid,
         receiptsVerified: fullResult.receiptsVerified,
         receiptsTotal: fullResult.receiptsTotal,
+        toolAttested: fullResult.toolAttestedVerified,
+        scittRegistered: fullResult.scittRegistered,
       };
+    }
+
+    let inputBinding: V1VerifyResponse["inputBinding"] = null;
+    if (sourceDocumentHash) {
+      const cs = (payload?.vc as Record<string, unknown> | undefined)?.credentialSubject as Record<string, unknown> | undefined;
+      const expectedHash = cs?.provenance && (cs.provenance as { sourceDocument?: string }).sourceDocument;
+      const errors: string[] = [];
+      if (!expectedHash) {
+        errors.push("missing provenance.sourceDocument in CPOE");
+      } else if (expectedHash !== sourceDocumentHash) {
+        errors.push("sourceDocumentHash does not match provenance.sourceDocument");
+      }
+      inputBinding = {
+        ok: errors.length === 0,
+        errors,
+        expected: expectedHash,
+        actual: sourceDocumentHash,
+      };
+    }
+
+    let policyResult: V1VerifyResponse["policy"] = null;
+    if (policy) {
+      if (!payload) {
+        policyResult = { ok: false, errors: ["Policy checks require JWT-VC input"] };
+      } else {
+        const { evaluateVerificationPolicy } = await import("../parley/verification-policy");
+        policyResult = evaluateVerificationPolicy(payload, policy, {
+          process: processResult ? {
+            chainValid: processResult.chainValid,
+            receiptsTotal: processResult.receiptsTotal,
+            receiptsVerified: processResult.receiptsVerified,
+            toolAttestedVerified: processResult.toolAttested ?? 0,
+            scittRegistered: processResult.scittRegistered ?? 0,
+          } : null,
+          inputBinding: inputBinding ? { ok: inputBinding.ok, errors: inputBinding.errors } : null,
+        });
+      }
     }
 
     // Build response
@@ -252,6 +315,7 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
       processProvenance,
       policy: policyResult,
       process: processResult,
+      inputBinding,
       extensions,
     };
 
