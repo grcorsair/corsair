@@ -13,7 +13,7 @@ import { createHash } from "crypto";
 import { appendFileSync, readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { dirname } from "path";
 
-import { computeRootHash } from "./parley/merkle";
+import { computeRootHash, generateInclusionProof, verifyInclusionProof } from "./parley/merkle";
 
 import type {
   OperationType,
@@ -52,6 +52,39 @@ export interface EvidenceChainMatchResult {
   errors: string[];
   actual?: EvidenceChainAggregate | null;
   expected?: Partial<EvidenceChainAggregate> | null;
+}
+
+export interface EvidenceReceiptProofStep {
+  hash: string;
+  direction: "left" | "right";
+}
+
+export interface EvidenceReceiptChain {
+  chainType: typeof EVIDENCE_CHAIN_TYPE;
+  algorithm: typeof EVIDENCE_HASH_ALGORITHM;
+  canonicalization: typeof EVIDENCE_CANONICALIZATION;
+  recordCount: number;
+  chainVerified: boolean;
+  chainDigest: string;
+}
+
+export interface EvidenceReceipt {
+  type: "CorsairEvidenceReceipt";
+  version: "1.0";
+  recordHash: string;
+  chain: EvidenceReceiptChain;
+  proof: EvidenceReceiptProofStep[];
+  meta?: {
+    sequence?: number;
+    timestamp?: string;
+    operation?: string;
+    evidencePath?: string;
+  };
+}
+
+export interface EvidenceReceiptVerificationResult {
+  ok: boolean;
+  errors: string[];
 }
 
 /**
@@ -463,6 +496,118 @@ export function compareEvidenceChain(
     actual,
     expected,
   };
+}
+
+// =============================================================================
+// EVIDENCE RECEIPTS
+// =============================================================================
+
+export function generateEvidenceReceipts(
+  evidencePath: string,
+  options?: { indexes?: number[]; recordHashes?: string[]; includeMeta?: boolean },
+): EvidenceReceipt[] {
+  const engine = new EvidenceEngine();
+  const records = engine.readJSONLFile(evidencePath);
+  if (records.length === 0) {
+    throw new Error(`No evidence records found at ${evidencePath}`);
+  }
+
+  const leafHashes = records.map(r => r.hash);
+  const chainDigest = computeRootHash(leafHashes);
+  const verification = engine.verifyEvidenceChain(evidencePath);
+
+  const chain: EvidenceReceiptChain = {
+    chainType: EVIDENCE_CHAIN_TYPE,
+    algorithm: EVIDENCE_HASH_ALGORITHM,
+    canonicalization: EVIDENCE_CANONICALIZATION,
+    recordCount: records.length,
+    chainVerified: verification.valid,
+    chainDigest,
+  };
+
+  const indexes = new Set<number>();
+  for (const idx of options?.indexes ?? []) {
+    if (!Number.isInteger(idx)) {
+      throw new Error(`Invalid index: ${idx}`);
+    }
+    if (idx < 0 || idx >= records.length) {
+      throw new Error(`Index out of range: ${idx}`);
+    }
+    indexes.add(idx);
+  }
+
+  for (const hash of options?.recordHashes ?? []) {
+    const idx = records.findIndex(r => r.hash === hash);
+    if (idx === -1) {
+      throw new Error(`Record hash not found: ${hash}`);
+    }
+    indexes.add(idx);
+  }
+
+  if (indexes.size === 0) {
+    throw new Error("At least one index or record hash is required");
+  }
+
+  const sortedIndexes = Array.from(indexes).sort((a, b) => a - b);
+  return sortedIndexes.map(idx => {
+    const proof = generateInclusionProof(idx, leafHashes);
+    const steps = proof.hashes.map((hash, i) => ({
+      hash,
+      direction: proof.directions[i]!,
+    }));
+    const meta = options?.includeMeta
+      ? {
+        sequence: records[idx]!.sequence,
+        timestamp: records[idx]!.timestamp,
+        operation: records[idx]!.operation,
+        evidencePath,
+      }
+      : undefined;
+
+    return {
+      type: "CorsairEvidenceReceipt",
+      version: "1.0",
+      recordHash: records[idx]!.hash,
+      chain,
+      proof: steps,
+      ...(meta ? { meta } : {}),
+    };
+  });
+}
+
+export function verifyEvidenceReceipt(
+  receipt: EvidenceReceipt,
+  expectedChainDigest?: string,
+): EvidenceReceiptVerificationResult {
+  const errors: string[] = [];
+
+  if (receipt.type !== "CorsairEvidenceReceipt") {
+    errors.push("invalid receipt type");
+  }
+
+  if (receipt.version !== "1.0") {
+    errors.push("unsupported receipt version");
+  }
+
+  if (expectedChainDigest && receipt.chain.chainDigest !== expectedChainDigest) {
+    errors.push("chainDigest mismatch");
+  }
+
+  if (!receipt.chain.chainVerified) {
+    errors.push("chain not verified");
+  }
+
+  const proof = {
+    hashes: receipt.proof.map(step => step.hash),
+    directions: receipt.proof.map(step => step.direction),
+  };
+
+  const valid = verifyInclusionProof(receipt.recordHash, proof, receipt.chain.chainDigest);
+  if (!valid) {
+    errors.push("invalid inclusion proof");
+  }
+
+  return { ok: errors.length === 0, errors };
 }
 
 // =============================================================================

@@ -9,6 +9,7 @@
  *   corsair verify --file <cpoe.jwt> [--pubkey <path>]
  *   corsair diff --current <new.jwt> --previous <old.jwt>
  *   corsair log [--last <N>] [--dir <DIR>]
+ *   corsair receipts generate --evidence <jsonl> --index <N>
  *   corsair signal generate --event <event.json> --issuer <did> --audience <did>
  *   corsair keygen [--output <dir>]
  *   corsair help
@@ -56,6 +57,9 @@ switch (subcommand) {
   case "mappings":
     await handleMappings();
     break;
+  case "receipts":
+    await handleReceipts();
+    break;
   case "init":
     await handleInit();
     break;
@@ -67,7 +71,7 @@ switch (subcommand) {
     break;
   default:
     console.error(`Unknown command: ${subcommand}`);
-    console.error("  Available: init, sign, verify, diff, log, keygen, trust-txt, mappings, help");
+    console.error("  Available: init, sign, verify, diff, log, keygen, trust-txt, mappings, receipts, help");
     console.error('  Run "corsair help" for details');
     process.exit(1);
 }
@@ -1846,6 +1850,228 @@ OPTIONS:
 }
 
 // =============================================================================
+// RECEIPTS
+// =============================================================================
+
+async function handleReceipts(): Promise<void> {
+  const args = process.argv.slice(3);
+  const sub = args[0];
+
+  if (!sub || sub === "--help" || sub === "-h") {
+    console.log(`
+CORSAIR RECEIPTS — Evidence inclusion proofs
+
+USAGE:
+  corsair receipts generate --evidence <JSONL> [--index <N>] [--record-hash <HASH>] [--meta] [--output <PATH>] [--json]
+  corsair receipts verify --file <RECEIPT.json> --cpoe <CPOE.jwt|json> [--json]
+
+NOTES:
+  - Receipts prove that a specific evidence record exists in the chain without revealing the record.
+  - Verify the CPOE signature separately with: corsair verify --file <CPOE>
+`);
+    return;
+  }
+
+  if (sub === "generate") {
+    const subArgs = args.slice(1);
+    let evidencePath: string | undefined;
+    let outputPath: string | undefined;
+    let jsonOutput = false;
+    let includeMeta = false;
+    const indexes: number[] = [];
+    const recordHashes: string[] = [];
+    let showHelp = false;
+
+    for (let i = 0; i < subArgs.length; i++) {
+      switch (subArgs[i]) {
+        case "--evidence":
+          evidencePath = subArgs[++i];
+          break;
+        case "--index":
+          indexes.push(parseInt(subArgs[++i], 10));
+          break;
+        case "--record-hash":
+          recordHashes.push(subArgs[++i]);
+          break;
+        case "--meta":
+          includeMeta = true;
+          break;
+        case "--output":
+        case "-o":
+          outputPath = subArgs[++i];
+          break;
+        case "--json":
+          jsonOutput = true;
+          break;
+        case "--help":
+        case "-h":
+          showHelp = true;
+          break;
+      }
+    }
+
+    if (showHelp) {
+      console.log(`
+CORSAIR RECEIPTS GENERATE
+
+USAGE:
+  corsair receipts generate --evidence <JSONL> [--index <N>] [--record-hash <HASH>] [--meta] [--output <PATH>] [--json]
+
+OPTIONS:
+  --evidence <PATH>     Evidence JSONL file (required)
+  --index <N>           Evidence record index (repeatable)
+  --record-hash <HASH>  Evidence record hash (repeatable)
+  --meta                Include minimal metadata (sequence/timestamp/operation)
+  -o, --output <PATH>   Write receipts to file (default: stdout)
+  --json                Output structured JSON (same as default)
+`);
+      return;
+    }
+
+    if (!evidencePath) {
+      console.error("Error: --evidence is required");
+      process.exit(2);
+    }
+
+    if (!existsSync(evidencePath)) {
+      console.error(`Error: Evidence file not found: ${evidencePath}`);
+      process.exit(2);
+    }
+
+    try {
+      const { generateEvidenceReceipts } = await import("./src/evidence");
+      const receipts = generateEvidenceReceipts(evidencePath, {
+        indexes,
+        recordHashes,
+        includeMeta,
+      });
+
+      const payload = receipts.length === 1 ? receipts[0] : receipts;
+      const output = JSON.stringify(payload, null, 2);
+
+      if (outputPath) {
+        writeFileSync(outputPath, output);
+        console.log(`Receipts written to ${outputPath}`);
+      } else {
+        process.stdout.write(output);
+      }
+
+      process.exit(0);
+    } catch (err) {
+      console.error(`Error: ${err instanceof Error ? err.message : String(err)}`);
+      process.exit(2);
+    }
+  }
+
+  if (sub === "verify") {
+    const subArgs = args.slice(1);
+    let filePath: string | undefined;
+    let cpoePath: string | undefined;
+    let jsonOutput = false;
+    let showHelp = false;
+
+    for (let i = 0; i < subArgs.length; i++) {
+      switch (subArgs[i]) {
+        case "--file":
+        case "-f":
+          filePath = subArgs[++i];
+          break;
+        case "--cpoe":
+          cpoePath = subArgs[++i];
+          break;
+        case "--json":
+          jsonOutput = true;
+          break;
+        case "--help":
+        case "-h":
+          showHelp = true;
+          break;
+      }
+    }
+
+    if (showHelp) {
+      console.log(`
+CORSAIR RECEIPTS VERIFY
+
+USAGE:
+  corsair receipts verify --file <RECEIPT.json> --cpoe <CPOE.jwt|json> [--json]
+
+OPTIONS:
+  -f, --file <PATH>   Receipt file (JSON object or array)
+  --cpoe <PATH>       CPOE file (JWT-VC or JSON envelope)
+  --json              Output structured JSON
+`);
+      return;
+    }
+
+    if (!filePath || !cpoePath) {
+      console.error("Error: --file and --cpoe are required");
+      process.exit(2);
+    }
+
+    if (!existsSync(filePath)) {
+      console.error(`Error: Receipt file not found: ${filePath}`);
+      process.exit(2);
+    }
+
+    if (!existsSync(cpoePath)) {
+      console.error(`Error: CPOE file not found: ${cpoePath}`);
+      process.exit(2);
+    }
+
+    try {
+      const receiptRaw = readFileSync(filePath, "utf-8");
+      const receiptPayload = JSON.parse(receiptRaw);
+      const receipts = Array.isArray(receiptPayload) ? receiptPayload : [receiptPayload];
+
+      const cpoeRaw = readFileSync(cpoePath, "utf-8").trim();
+      const cpoePayload = cpoeRaw.startsWith("eyJ") ? decodeJwtPayload(cpoeRaw) : JSON.parse(cpoeRaw);
+      const evidenceChain = cpoeRaw.startsWith("eyJ")
+        ? ((cpoePayload as any)?.vc as any)?.credentialSubject?.evidenceChain
+        : (cpoePayload as any)?.marque?.evidenceChain;
+
+      if (!evidenceChain?.chainDigest) {
+        console.error("Error: CPOE does not include evidenceChain.chainDigest");
+        process.exit(2);
+      }
+
+      const { verifyEvidenceReceipt } = await import("./src/evidence");
+      const results = receipts.map((r: any) => verifyEvidenceReceipt(r, evidenceChain.chainDigest));
+      const failed = results.filter(r => !r.ok);
+
+      if (jsonOutput) {
+        process.stdout.write(JSON.stringify({
+          ok: failed.length === 0,
+          total: results.length,
+          failed: failed.length,
+          results,
+        }, null, 2));
+      } else {
+        if (failed.length === 0) {
+          console.log(`RECEIPTS VERIFIED (${results.length})`);
+        } else {
+          console.error(`RECEIPTS FAILED (${failed.length}/${results.length})`);
+          for (const [i, r] of results.entries()) {
+            if (!r.ok) {
+              console.error(`  Receipt ${i + 1}: ${r.errors.join("; ")}`);
+            }
+          }
+        }
+      }
+
+      process.exit(failed.length === 0 ? 0 : 1);
+    } catch (err) {
+      console.error(`Error: ${err instanceof Error ? err.message : String(err)}`);
+      process.exit(2);
+    }
+  }
+
+  console.error(`Unknown receipts subcommand: ${sub}`);
+  console.error('Run "corsair receipts --help" for usage');
+  process.exit(1);
+}
+
+// =============================================================================
 // KEYGEN
 // =============================================================================
 
@@ -2906,7 +3132,8 @@ COMMANDS:
   verify          Verify a CPOE signature and integrity
   diff            Detect compliance regressions            like git diff
   log             List signed CPOEs (local/SCITT log)      like git log
-  trust-txt  Discovery layer (generate/validate/discover)
+  trust-txt        Discovery layer (generate/validate/discover)
+  receipts         Evidence inclusion proofs (generate/verify)
   mappings        List loaded evidence mappings
   renew           Re-sign a CPOE with fresh dates          like git commit --amend
   signal          FLAGSHIP SET generation/verification     like git webhooks

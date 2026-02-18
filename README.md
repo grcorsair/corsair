@@ -139,6 +139,16 @@ corsair verify --file cpoe.jwt --receipts receipts.json
 corsair verify --file cpoe.jwt --evidence evidence.jsonl
 ```
 
+### Evidence Receipts (Optional)
+
+Evidence receipts prove that a specific evidence record exists in the evidence chain
+without revealing the record itself.
+
+```bash
+corsair receipts generate --evidence evidence.jsonl --index 0 --output receipt.json
+corsair receipts verify --file receipt.json --cpoe cpoe.jwt
+```
+
 ### Diff Options
 
 ```bash

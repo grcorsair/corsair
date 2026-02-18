@@ -38,6 +38,16 @@ Each evidence chain also exposes a **chain digest** — a Merkle root computed o
 This provides a single stable fingerprint for the entire chain and is embedded in CPOEs as
 `evidenceChain.chainDigest` alongside `chainType`, `algorithm`, and `canonicalization`.
 
+## Evidence Receipts (Optional)
+
+Evidence receipts are lightweight inclusion proofs. They prove a specific evidence record exists
+in the chain without disclosing the record itself.
+
+```bash
+corsair receipts generate --evidence ./evidence/assessment.jsonl --index 0 --output receipt.json
+corsair receipts verify --file receipt.json --cpoe cpoe.jwt
+```
+
 ## Verification
 
 Verify a chain programmatically:

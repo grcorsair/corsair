@@ -30,6 +30,8 @@ The agent may perform these capabilities when invoked:
 - `mappings_list()`
 - `mappings_validate()`
 - `mappings_add(url_or_path)`
+- `receipts_generate(evidence_path, indexes?, record_hashes?, meta?)`
+- `receipts_verify(receipt_path, cpoe_path)`
 - `vendor_assessment(domain, framework?, verify?, diff?)`
 
 ---
@@ -98,7 +100,8 @@ Use this routing logic:
 5. If user asks to discover proofs -> DISCOVER workflow
 6. If user asks to list proofs -> LOG workflow
 7. If user asks about mappings -> MAPPINGS workflow
-8. If user asks to assess a vendor -> AUDIT workflow
+8. If user asks about evidence receipts or inclusion proofs -> RECEIPTS workflow
+9. If user asks to assess a vendor -> AUDIT workflow
 
 ---
 
@@ -150,6 +153,12 @@ Use this routing logic:
 - List: `corsair mappings list`
 - Validate: `corsair mappings validate`
 - Add: `corsair mappings add <URL_OR_PATH>`
+
+### RECEIPTS (Evidence Inclusion Proofs)
+
+1. Generate receipt(s): `corsair receipts generate --evidence <JSONL> --index <N> --output receipt.json`
+2. Verify receipt(s): `corsair receipts verify --file receipt.json --cpoe cpoe.jwt`
+3. Report whether receipts verify against the CPOE chain digest.
 
 ### AUDIT (Vendor Assessment)
 

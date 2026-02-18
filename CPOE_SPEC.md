@@ -105,6 +105,10 @@ All claims live under `vc.credentialSubject`. The provenance-first model (v0.5.0
 - `chainStartHash` / `chainHeadHash` — First/last record hash (only when a single chain is included)
 - `chains` — Optional array of per-file summaries when multiple evidence files are included
 
+**Evidence receipts (optional):** Receipts are separate JSON artifacts that prove a specific evidence
+record exists in the chain without disclosing the record. Receipts verify against
+`evidenceChain.chainDigest`.
+
 **Extensions namespace rules:** `extensions` keys must be `mapping`, `passthrough`, or namespaced with
 `x-` / `ext.`. Unknown un-namespaced keys are invalid.
 

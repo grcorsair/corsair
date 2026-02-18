@@ -175,6 +175,26 @@ corsair drift [options]   # alias
 
 **Exit codes:** 0 = no regression, 1 = regression detected, 2 = invalid args
 
+### corsair receipts
+
+Evidence inclusion proofs for JSONL evidence chains.
+
+#### generate
+
+```
+corsair receipts generate --evidence <JSONL> [--index <N>] [--record-hash <HASH>] [--meta] [-o <PATH>] [--json]
+```
+
+Generates receipt(s) proving a specific evidence record exists in the chain.
+
+#### verify
+
+```
+corsair receipts verify --file <RECEIPT.json> --cpoe <CPOE.jwt|json> [--json]
+```
+
+Verifies receipt inclusion proofs against the CPOE `evidenceChain.chainDigest`.
+
 ### corsair log
 
 List signed CPOEs from local files or a SCITT log.
