@@ -68,7 +68,7 @@ function buildTypedocIndex(): TypedocIndexEntry[] {
     const baseUrl = `/docs/${relativeOut}`;
 
     for (const entryPoint of data.entryPoints) {
-      const normalized = entryPoint.replace(/\\/g, "/").replace(/^\\.\\//, "");
+      const normalized = entryPoint.replace(/\\/g, "/").replace(/^\.\//, "");
       const root = normalized.endsWith(".ts") ? path.posix.dirname(normalized) + "/" : normalized;
       index.push({ root, baseUrl });
     }
@@ -87,7 +87,7 @@ function normalizeTypedocRefs(value: unknown): string[] {
 
 function resolveTypedocRef(ref: string): { label: string; href: string } {
   const [pathPart, symbol] = ref.split("#");
-  const normalizedPath = pathPart.replace(/\\/g, "/").replace(/^\\.\\//, "");
+  const normalizedPath = pathPart.replace(/\\/g, "/").replace(/^\.\//, "");
   const index = buildTypedocIndex();
   const match = index.find((entry) => normalizedPath.startsWith(entry.root));
   if (!match) {
