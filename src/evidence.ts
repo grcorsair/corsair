@@ -47,6 +47,13 @@ export interface EvidenceChainAggregate {
   chains?: EvidenceChainItemSummary[];
 }
 
+export interface EvidenceChainMatchResult {
+  ok: boolean;
+  errors: string[];
+  actual?: EvidenceChainAggregate | null;
+  expected?: Partial<EvidenceChainAggregate> | null;
+}
+
 /**
  * EvidenceEngine - JSONL Evidence Generation with Cryptographic Hash Chain
  *
@@ -409,6 +416,53 @@ export class EvidenceEngine {
   setLastHash(hash: string | null): void {
     this.lastHash = hash;
   }
+}
+
+// =============================================================================
+// EVIDENCE CHAIN COMPARISON
+// =============================================================================
+
+export function compareEvidenceChain(
+  expected: Partial<EvidenceChainAggregate> | null | undefined,
+  actual: EvidenceChainAggregate | null,
+): EvidenceChainMatchResult {
+  const errors: string[] = [];
+
+  if (!expected) {
+    errors.push("missing evidenceChain in CPOE");
+  }
+
+  if (!actual) {
+    if (expected && expected.recordCount === 0 && expected.chainDigest === "none") {
+      return { ok: errors.length === 0, errors, actual, expected };
+    }
+    errors.push("no evidence records found in provided path(s)");
+  }
+
+  if (expected && actual) {
+    if (expected.chainType && expected.chainType !== actual.chainType) {
+      errors.push(`chainType mismatch: expected ${expected.chainType}`);
+    }
+    if (expected.algorithm && expected.algorithm !== actual.algorithm) {
+      errors.push(`algorithm mismatch: expected ${expected.algorithm}`);
+    }
+    if (expected.canonicalization && expected.canonicalization !== actual.canonicalization) {
+      errors.push(`canonicalization mismatch: expected ${expected.canonicalization}`);
+    }
+    if (expected.recordCount !== undefined && expected.recordCount !== actual.recordCount) {
+      errors.push(`recordCount mismatch: expected ${expected.recordCount}`);
+    }
+    if (expected.chainDigest && expected.chainDigest !== actual.chainDigest) {
+      errors.push("chainDigest mismatch");
+    }
+  }
+
+  return {
+    ok: errors.length === 0,
+    errors,
+    actual,
+    expected,
+  };
 }
 
 // =============================================================================

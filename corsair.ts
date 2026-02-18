@@ -1599,6 +1599,7 @@ async function handleVerify(): Promise<void> {
   let maxAgeDays: number | undefined;
   let minScore: number | undefined;
   let receiptsPath: string | undefined;
+  const evidencePaths: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -1631,6 +1632,9 @@ async function handleVerify(): Promise<void> {
       case "--receipts":
         receiptsPath = args[++i];
         break;
+      case "--evidence":
+        evidencePaths.push(args[++i]);
+        break;
       case "--help":
       case "-h":
         showHelp = true;
@@ -1654,6 +1658,7 @@ OPTIONS:
       --max-age <DAYS>            Maximum allowed age based on provenance.sourceDate
       --min-score <N>             Minimum overallScore required
       --receipts <PATH>           Verify process receipts (JSON array)
+      --evidence <PATH>           Verify evidence chain against JSONL (repeatable)
       --json            Output structured JSON
   -h, --help            Show this help
 `);
@@ -1690,6 +1695,7 @@ OPTIONS:
 
   // Auto-detect format (JWT starts with eyJ, JSON starts with {)
   let result;
+  let doc: any | null = null;
   if (content.startsWith("eyJ")) {
     if (useDid) {
       const { verifyVCJWTViaDID } = await import("./src/parley/vc-verifier");
@@ -1698,7 +1704,7 @@ OPTIONS:
       result = await verifier.verify(content);
     }
   } else {
-    const doc = JSON.parse(content);
+    doc = JSON.parse(content);
     if (useDid) {
       console.error("Error: --did is only supported for JWT-VC verification");
       process.exit(2);
@@ -1709,6 +1715,7 @@ OPTIONS:
   const policyRequested = Boolean(requireIssuer || requireFrameworks.length > 0 || maxAgeDays !== undefined || minScore !== undefined);
   let policyResult: { ok: boolean; errors: string[] } | undefined;
   let processResult: import("./src/parley/receipt-verifier").ProcessVerificationResult | undefined;
+  let evidenceResult: import("./src/evidence").EvidenceChainMatchResult | undefined;
 
   let payload: Record<string, unknown> | null = null;
   if (format === "JWT-VC") {
@@ -1752,6 +1759,16 @@ OPTIONS:
     }
   }
 
+  if (evidencePaths.length > 0) {
+    const { EvidenceEngine, compareEvidenceChain } = await import("./src/evidence");
+    const engine = new EvidenceEngine();
+    const summary = engine.summarizeChains(evidencePaths);
+    const expectedChain = format === "JWT-VC"
+      ? ((payload?.vc as any)?.credentialSubject as any)?.evidenceChain
+      : doc?.marque?.evidenceChain;
+    evidenceResult = compareEvidenceChain(expectedChain, summary);
+  }
+
   if (jsonOutput) {
     const response = {
       valid: result.valid,
@@ -1769,9 +1786,13 @@ OPTIONS:
       format,
       policy: policyResult ?? null,
       process: processResult ?? null,
+      evidence: evidenceResult ?? null,
     };
     process.stdout.write(JSON.stringify(response, null, 2));
-    const ok = result.valid && (!policyResult || policyResult.ok) && (!processResult || processResult.chainValid);
+    const ok = result.valid
+      && (!policyResult || policyResult.ok)
+      && (!processResult || processResult.chainValid)
+      && (!evidenceResult || evidenceResult.ok);
     process.exit(ok ? 0 : 1);
   }
 
@@ -1805,7 +1826,17 @@ OPTIONS:
     if (processResult) {
       console.log(`  Process:   ${processResult.chainValid ? "VERIFIED" : "FAILED"} (${processResult.receiptsVerified}/${processResult.receiptsTotal})`);
     }
-    const ok = (!policyResult || policyResult.ok) && (!processResult || processResult.chainValid);
+    if (evidenceResult) {
+      console.log(`  Evidence:  ${evidenceResult.ok ? "VERIFIED" : "FAILED"}`);
+      if (!evidenceResult.ok) {
+        for (const err of evidenceResult.errors) {
+          console.log(`    - ${err}`);
+        }
+      }
+    }
+    const ok = (!policyResult || policyResult.ok)
+      && (!processResult || processResult.chainValid)
+      && (!evidenceResult || evidenceResult.ok);
     process.exit(ok ? 0 : 1);
   } else {
     console.error("VERIFICATION FAILED");

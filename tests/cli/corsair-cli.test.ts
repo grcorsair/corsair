@@ -60,6 +60,7 @@ describe("Corsair CLI", () => {
     await proc.exited;
     expect(output).toContain("VERIFY");
     expect(output).toContain("--file");
+    expect(output).toContain("--evidence");
     expect(output).toContain("--json");
   });
 

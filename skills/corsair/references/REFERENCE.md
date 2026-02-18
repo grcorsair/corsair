@@ -99,6 +99,7 @@ corsair verify [options]
 | `--max-age <DAYS>` | Max evidence age (provenance.sourceDate) | - |
 | `--min-score <N>` | Minimum overallScore | - |
 | `--receipts <PATH>` | Verify process receipts (JSON array) | - |
+| `--evidence <PATH>` | Verify evidence chain against JSONL (repeatable) | - |
 | `--json` | Output structured JSON | false |
 
 **Exit codes:** 0 = VERIFIED, 1 = FAILED
@@ -127,6 +128,18 @@ corsair verify [options]
   },
   "policy": { "ok": true, "errors": [] },
   "process": { "chainValid": true, "receiptsVerified": 2, "receiptsTotal": 2 },
+  "evidence": {
+    "ok": true,
+    "errors": [],
+    "actual": {
+      "chainType": "hash-linked",
+      "algorithm": "sha256",
+      "canonicalization": "sorted-json-v1",
+      "recordCount": 128,
+      "chainVerified": true,
+      "chainDigest": "f4c1..."
+    }
+  },
   "reason": null,
   "format": "JWT-VC"
 }

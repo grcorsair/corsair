@@ -56,6 +56,12 @@ Or via the CLI:
 bun corsair.ts verify ./evidence/assessment.jsonl
 ```
 
+To verify a CPOE against local evidence JSONL (strict match on `chainDigest`):
+
+```bash
+corsair verify --file cpoe.jwt --evidence ./evidence/assessment.jsonl
+```
+
 ## Evidence Phases
 
 Evidence records are tagged with their pipeline phase:

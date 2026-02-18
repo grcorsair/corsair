@@ -136,6 +136,7 @@ corsair verify --file cpoe.jwt --require-issuer did:web:acme.com
 corsair verify --file cpoe.jwt --require-framework SOC2,ISO27001
 corsair verify --file cpoe.jwt --max-age 30 --min-score 90
 corsair verify --file cpoe.jwt --receipts receipts.json
+corsair verify --file cpoe.jwt --evidence evidence.jsonl
 ```
 
 ### Diff Options

@@ -117,7 +117,8 @@ Use this routing logic:
 1. Identify CPOE path.
 2. Run `corsair verify --file <PATH>`
 3. If DID validation required: `corsair verify --file <PATH> --did`
-4. Report validity, issuer tier, summary.
+4. If evidence JSONL is available: `corsair verify --file <PATH> --evidence <JSONL_PATH>`
+5. Report validity, issuer tier, summary.
 
 ### DIFF
 
