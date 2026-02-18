@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import Link from "next/link";
 import { HeroVerifier } from "./hero-verifier";
+import { HeroRouteSelector } from "./hero-route-selector";
 
 const FEATURES = [
   { label: "6 Primitives", desc: "Sign · Log · Verify · Diff · Signal · Publish" },
@@ -93,11 +94,21 @@ export function HeroSection() {
               </Link>
             </motion.div>
 
+            {/* Route selector */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+              className="mt-6"
+            >
+              <HeroRouteSelector />
+            </motion.div>
+
             {/* Attribution */}
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.6 }}
+              transition={{ duration: 0.5, delay: 0.7 }}
               className="mt-6 text-sm text-corsair-text-dim/60"
             >
               by{" "}
