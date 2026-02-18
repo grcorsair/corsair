@@ -102,7 +102,7 @@ Use this routing logic:
 4. If user asks to publish proofs -> PUBLISH workflow
 5. If user asks to discover proofs -> DISCOVER workflow
 6. If user asks to list proofs -> LOG workflow
-7. If user asks about mappings -> MAPPINGS workflow
+7. If user asks about mappings, creating a mapping, or publishing a mapping pack -> MAPPINGS workflow
 8. If user asks about evidence receipts or inclusion proofs -> RECEIPTS workflow
 9. If user asks about policy artifacts -> POLICY workflow
 
@@ -148,11 +148,26 @@ Use this routing logic:
 1. `corsair log register --file <CPOE.jwt> --scitt <URL> [--proof-only]`
 2. Report entry id and registration time.
 
-### MAPPINGS
+### MAPPINGS (Use Existing Packs)
 
-`corsair mappings list`  
-`corsair mappings validate`  
-`corsair mappings add <URL_OR_PATH>`
+1. `corsair mappings list`
+2. `corsair mappings validate`
+3. `corsair mappings add <URL_OR_PATH>`
+
+### MAPPINGS (Create + Publish)
+
+1. Start from a **sample evidence JSON** (ask for it).
+2. Draft a mapping file and validate it:
+   `corsair mappings validate --mapping <PATH> --sample <EVIDENCE.json>`
+3. **Test the mapping output** before packaging:
+   `corsair sign --file <EVIDENCE.json> --mapping <PATH> --json`
+4. Package the mapping(s):
+   `corsair mappings pack --id <ID> --version <VER> --mapping <PATH> -o pack.json`
+5. Sign the pack (recommended):
+   `corsair mappings sign --file pack.json --key <KEY.pem>`
+6. Publish:
+   - Host the pack at a URL **or**
+   - Submit it to a community registry (if provided by the user)
 
 ### MAPPINGS PACK (Distribution)
 
