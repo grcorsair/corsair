@@ -10,9 +10,15 @@
     "corsair": "./corsair.ts"
   },
   "scripts": {
-    "build:web": "bun run --filter '@corsair/web' build",
+    "build:web": "bun run docs:gen:latest && bun run --filter '@corsair/web' build",
     "dev:web": "bun run --filter '@corsair/web' dev",
     "lint:web": "bun run --filter '@corsair/web' lint",
+    "docs:clean:latest": "bun run scripts/docs/clean-latest.ts",
+    "docs:gen:api": "typedoc --options docs/typedoc/api.json",
+    "docs:gen:sdk": "typedoc --options docs/typedoc/sdk.json",
+    "docs:gen:cli": "typedoc --options docs/typedoc/cli.json",
+    "docs:postprocess": "bun run scripts/docs/postprocess.ts",
+    "docs:gen:latest": "bun run docs:clean:latest && bun run docs:gen:api && bun run docs:gen:sdk && bun run docs:gen:cli && bun run docs:postprocess",
     "test": "bun test",
     "test:parley": "bun test tests/parley/",
     "test:flagship": "bun test tests/flagship/",
@@ -63,7 +69,9 @@
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.72.1",
-    "bun-types": "latest"
+    "bun-types": "latest",
+    "typedoc": "^0.28.10",
+    "typedoc-plugin-markdown": "^4.8.1"
   },
   "exports": {
     ".": "./src/ingestion/index.ts"

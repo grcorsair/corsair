@@ -14,6 +14,9 @@ build/
 apps/web/.next/
 apps/web/out/
 
+# Generated docs (latest reference)
+apps/web/content/docs/reference/latest/
+
 # Turbo
 .turbo/
 

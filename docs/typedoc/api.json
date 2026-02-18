@@ -1,0 +1,13 @@
+{
+  "entryPoints": ["src/api/index.ts"],
+  "entryPointStrategy": "resolve",
+  "out": "apps/web/content/docs/reference/latest/api",
+  "plugin": ["typedoc-plugin-markdown"],
+  "entryFileName": "index",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "hideBreadcrumbs": true,
+  "hideInPageTOC": true
+}

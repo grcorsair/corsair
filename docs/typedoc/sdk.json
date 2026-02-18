@@ -1,0 +1,14 @@
+{
+  "entryPoints": ["packages/sdk/src/index.ts"],
+  "tsconfig": "packages/sdk/tsconfig.json",
+  "entryPointStrategy": "resolve",
+  "out": "apps/web/content/docs/reference/latest/sdk",
+  "plugin": ["typedoc-plugin-markdown"],
+  "entryFileName": "index",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "hideBreadcrumbs": true,
+  "hideInPageTOC": true
+}

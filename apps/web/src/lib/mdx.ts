@@ -76,10 +76,13 @@ export function getDocPages(): DocMeta[] {
   function scanDir(dir: string, slugPrefix: string[]) {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
-      if (entry.isFile() && entry.name.endsWith(".mdx")) {
+      const isDocFile = entry.isFile() && (entry.name.endsWith(".mdx") || entry.name.endsWith(".md"));
+      if (isDocFile) {
         const raw = fs.readFileSync(path.join(dir, entry.name), "utf8");
         const { data } = matter(raw);
-        const slug = [...slugPrefix, entry.name.replace(".mdx", "")];
+        const name = entry.name.replace(/\.(mdx|md)$/i, "");
+        if (name === "index" && slugPrefix.length === 0) continue;
+        const slug = name === "index" ? slugPrefix : [...slugPrefix, name];
         pages.push({
           slug,
           title: data.title ?? "",
@@ -98,8 +101,29 @@ export function getDocPages(): DocMeta[] {
 }
 
 export function getDocPage(slug: string[]): { meta: DocMeta; content: string } | null {
-  const filePath = path.join(contentDir, "docs", ...slug.slice(0, -1), `${slug[slug.length - 1]}.mdx`);
-  if (!fs.existsSync(filePath)) return null;
+  const docsDir = path.join(contentDir, "docs");
+  const basePath = path.join(docsDir, ...slug);
+  const candidates = [
+    `${basePath}.mdx`,
+    `${basePath}.md`,
+  ];
+
+  let filePath: string | null = null;
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      filePath = candidate;
+      break;
+    }
+  }
+
+  if (!filePath && fs.existsSync(basePath) && fs.statSync(basePath).isDirectory()) {
+    const indexMdx = path.join(basePath, "index.mdx");
+    const indexMd = path.join(basePath, "index.md");
+    if (fs.existsSync(indexMdx)) filePath = indexMdx;
+    if (!filePath && fs.existsSync(indexMd)) filePath = indexMd;
+  }
+
+  if (!filePath) return null;
 
   const raw = fs.readFileSync(filePath, "utf8");
   const { data, content } = matter(raw);

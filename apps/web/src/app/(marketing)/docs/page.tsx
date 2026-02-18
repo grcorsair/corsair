@@ -15,6 +15,7 @@ const sections = [
   { id: "concepts", title: "Core Concepts", label: "CONCEPTS", labelColor: "text-corsair-gold" },
   { id: "protocol", title: "Protocol", label: "PARLEY", labelColor: "text-corsair-green" },
   { id: "integrations", title: "Integrations", label: "INTEGRATE", labelColor: "text-corsair-turquoise" },
+  { id: "reference", title: "Reference", label: "REFERENCE", labelColor: "text-corsair-crimson" },
 ];
 
 export default function DocsPage() {
