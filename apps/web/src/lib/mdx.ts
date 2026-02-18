@@ -101,6 +101,14 @@ function resolveTypedocRef(ref: string): { label: string; href: string } {
 function injectTypedoc(content: string, frontmatterValue: unknown): string {
   const refsFromFrontmatter = normalizeTypedocRefs(frontmatterValue);
   let updated = content;
+  const hasInlineTypedoc = /<!--\s*typedoc:[^\s]+?\s*-->/.test(content);
+  if (refsFromFrontmatter.length === 0 && !hasInlineTypedoc) {
+    return updated;
+  }
+  const typedocIndex = buildTypedocIndex();
+  if (typedocIndex.length === 0) {
+    return updated;
+  }
 
   const inlinePattern = /<!--\s*typedoc:([^\s]+)\s*-->/g;
   updated = updated.replace(inlinePattern, (_match, ref: string) => {
