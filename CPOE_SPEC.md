@@ -147,22 +147,22 @@ The `iss` claim is a `did:web` DID. To resolve it to a URL:
 
 The DID document contains a `verificationMethod` array. Match the `kid` from the JWT header to find the correct public key (JWK format, `"crv": "Ed25519"`).
 
-## 5. Discovery (compliance.txt)
+## 5. Discovery (trust.txt)
 
 CPOEs are meant to be discoverable without a prior relationship. Organizations should publish
-`/.well-known/compliance.txt` (modeled after `security.txt`) to advertise their DID identity,
+`/.well-known/trust.txt` (modeled after `security.txt`) to advertise their DID identity,
 SCITT log endpoint, optional catalog snapshot, and FLAGSHIP stream. For scale, keep
-compliance.txt tiny and point to SCITT + catalog instead of listing many CPOEs.
+trust.txt tiny and point to SCITT + catalog instead of listing many CPOEs.
 
-compliance.txt is a plain-text file with `KEY: value` pairs (keys are case-insensitive). The
+trust.txt is a plain-text file with `KEY: value` pairs (keys are case-insensitive). The
 `CPOE` key is repeatable.
-For large sets of proofs, keep compliance.txt minimal and link to a catalog snapshot.
+For large sets of proofs, keep trust.txt minimal and link to a catalog snapshot.
 
 Example:
 
 ```
-# Corsair Compliance Discovery
-# Spec: https://grcorsair.com/spec/compliance-txt
+# Corsair Trust Discovery
+# Spec: https://grcorsair.com/spec/trust-txt
 
 DID: did:web:acme.com
 

@@ -7,8 +7,8 @@ export const VERIFY_4_LINES = [
   "verify_ed25519(cpoe, key)",
 ];
 
-export const COMPLIANCE_TXT_SNIPPET = [
-  "# /.well-known/compliance.txt",
+export const TRUST_TXT_SNIPPET = [
+  "# /.well-known/trust.txt",
   "DID: did:web:acme.com",
   "SCITT: https://acme.com/scitt/entries?issuer=did:web:acme.com",
   "CATALOG: https://acme.com/compliance/catalog.json",

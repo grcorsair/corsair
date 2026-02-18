@@ -1,6 +1,6 @@
 ---
 name: corsair
-description: Cryptographic compliance verification. Sign evidence as verifiable proofs (CPOEs), verify vendor compliance via compliance.txt, detect regressions, and assess third-party risk — all from CLI. USE WHEN sign compliance evidence, verify vendor, check compliance, audit vendor, compliance.txt, CPOE, compliance drift, third-party risk, TPRM.
+description: Cryptographic compliance verification. Sign evidence as verifiable proofs (CPOEs), verify vendor compliance via trust.txt, detect regressions, and assess third-party risk — all from CLI. USE WHEN sign compliance evidence, verify vendor, check compliance, audit vendor, trust.txt, CPOE, compliance drift, third-party risk, TPRM.
 license: Apache-2.0
 compatibility: Requires Bun runtime (bun.sh) and corsair CLI (npm install -g corsair)
 metadata:
@@ -35,11 +35,11 @@ If Corsair is not installed, guide the user through installation first.
 |---------|----------|-------------|
 | "sign evidence", "create CPOE", "sign scan results" | **Sign** | Sign security tool output as a cryptographic proof |
 | "log CPOEs", "list proofs", "transparency log", "SCITT" | **Log** | List signed CPOEs from local files or a SCITT log |
-| "publish compliance", "generate compliance.txt", "make discoverable" | **Publish** | Generate compliance.txt so auditors can discover your proofs |
+| "publish compliance", "generate trust.txt", "make discoverable" | **Publish** | Generate trust.txt so auditors can discover your proofs |
 | "verify CPOE", "check proof", "verify compliance" | **Verify** | Verify a CPOE's Ed25519 signature and validity |
 | "compliance drift", "regression check", "compare CPOEs" | **Diff** | Compare two CPOEs to detect compliance regressions |
 | "signal compliance change", "FLAGSHIP", "notify" | **Signal** | Generate and verify FLAGSHIP SET notifications |
-| "check vendor", "discover compliance", "compliance.txt" | **Discover** | Crawl a domain's compliance.txt and verify their proofs |
+| "check vendor", "discover compliance", "trust.txt" | **Discover** | Crawl a domain's trust.txt and verify their proofs |
 | "audit vendor", "vendor assessment", "TPRM", "third-party risk" | **Audit** | Full autonomous vendor compliance assessment |
 | "set up corsair", "init compliance", "start signing" | **Init** | Initialize Corsair in a project |
 
@@ -122,7 +122,7 @@ List signed CPOEs from local files or a SCITT transparency log.
    ```bash
    corsair log --scitt https://log.example.com/v1/entries --issuer did:web:acme.com
    ```
-5. To resolve a domain's compliance.txt and use its SCITT endpoint:
+5. To resolve a domain's trust.txt and use its SCITT endpoint:
    ```bash
    corsair log --domain acme.com --framework SOC2
    ```
@@ -139,35 +139,35 @@ corsair log --scitt https://log.example.com/v1/entries --issuer did:web:acme.com
 
 ## Publish Workflow
 
-Generate a `compliance.txt` file so auditors and agents can discover your proofs at `/.well-known/compliance.txt`. For scale, keep it tiny and point to SCITT + a catalog snapshot.
+Generate a `trust.txt` file so auditors and agents can discover your proofs at `/.well-known/trust.txt`. For scale, keep it tiny and point to SCITT + a catalog snapshot.
 
 **Steps:**
-1. Publish a minimal compliance.txt that points to SCITT and a catalog:
+1. Publish a minimal trust.txt that points to SCITT and a catalog:
    ```bash
-   corsair compliance-txt generate \
+   corsair trust-txt generate \
      --did did:web:<DOMAIN> \
      --scitt https://log.example.com/v1/entries?issuer=did:web:<DOMAIN> \
      --catalog https://example.com/compliance/catalog.json \
-     -o .well-known/compliance.txt
+     -o .well-known/trust.txt
    ```
 2. For specific CPOE URLs instead of a catalog:
    ```bash
-   corsair compliance-txt generate \
+   corsair trust-txt generate \
      --did did:web:<DOMAIN> \
      --cpoe-url https://example.com/soc2.jwt \
      --cpoe-url https://example.com/iso27001.jwt \
-     -o .well-known/compliance.txt
+     -o .well-known/trust.txt
    ```
 3. Add FLAGSHIP endpoint if available:
    ```bash
-   corsair compliance-txt generate \
+   corsair trust-txt generate \
      --did did:web:<DOMAIN> \
      --scitt https://example.com/api/scitt \
      --catalog https://example.com/compliance/catalog.json \
      --flagship https://example.com/api/ssf/stream \
-     -o .well-known/compliance.txt
+     -o .well-known/trust.txt
    ```
-4. Report: Generated compliance.txt path. Remind user to host at `/.well-known/compliance.txt`.
+4. Report: Generated trust.txt path. Remind user to host at `/.well-known/trust.txt`.
 
 **Options:**
 - `--did <DID>` — DID:web identity (required)
@@ -184,7 +184,7 @@ Generate a `compliance.txt` file so auditors and agents can discover your proofs
 
 **Example:**
 ```bash
-corsair compliance-txt generate --did did:web:acme.com --cpoes ./proofs/ --frameworks SOC2,ISO27001 --contact compliance@acme.com -o .well-known/compliance.txt
+corsair trust-txt generate --did did:web:acme.com --cpoes ./proofs/ --frameworks SOC2,ISO27001 --contact compliance@acme.com -o .well-known/trust.txt
 ```
 
 ---
@@ -294,16 +294,16 @@ corsair signal verify --file flagship-set.jwt --json
 
 ## Discover Workflow
 
-Autonomously crawl a domain's `/.well-known/compliance.txt` to discover and verify their published compliance proofs. This is the agent-native way to assess a vendor's compliance posture.
+Autonomously crawl a domain's `/.well-known/trust.txt` to discover and verify their published compliance proofs. This is the agent-native way to assess a vendor's compliance posture.
 
 **Steps:**
-1. Resolve the domain's compliance.txt:
+1. Resolve the domain's trust.txt:
    ```bash
-   corsair compliance-txt discover <DOMAIN> --json
+   corsair trust-txt discover <DOMAIN> --json
    ```
 2. If `--verify` flag is available, also verify each listed CPOE:
    ```bash
-   corsair compliance-txt discover <DOMAIN> --json --verify
+   corsair trust-txt discover <DOMAIN> --json --verify
    ```
 3. Parse the output and report:
    - DID identity
@@ -316,21 +316,21 @@ Autonomously crawl a domain's `/.well-known/compliance.txt` to discover and veri
    - Contact information
    - Expiration date
 
-**If the domain has no compliance.txt:**
+**If the domain has no trust.txt:**
 Report that the domain does not publish machine-readable compliance proofs. Suggest they adopt Corsair.
 
 **Validation only (no CPOE fetch):**
 ```bash
-corsair compliance-txt validate <DOMAIN> --json
+corsair trust-txt validate <DOMAIN> --json
 ```
 
 **Example:**
 ```bash
 # Full discovery with verification
-corsair compliance-txt discover acme.com --json --verify
+corsair trust-txt discover acme.com --json --verify
 
 # Quick validation only
-corsair compliance-txt validate vendor.io --json
+corsair trust-txt validate vendor.io --json
 ```
 
 ---
@@ -340,9 +340,9 @@ corsair compliance-txt validate vendor.io --json
 Full autonomous vendor compliance assessment. Composes Discover + Verify + Diff + historical analysis.
 
 **Steps:**
-1. **Discover** — Crawl the vendor's compliance.txt:
+1. **Discover** — Crawl the vendor's trust.txt:
    ```bash
-   corsair compliance-txt discover <DOMAIN> --json --verify
+   corsair trust-txt discover <DOMAIN> --json --verify
    ```
 2. **Analyze** — Parse the discovery results:
    - How many frameworks are attested?
@@ -368,12 +368,12 @@ Full autonomous vendor compliance assessment. Composes Discover + Verify + Diff 
 - **Strong**: Valid CPOEs, multiple frameworks, SCITT log, FLAGSHIP signals, no regressions
 - **Adequate**: Valid CPOEs, at least one framework, scores > 70%
 - **Weak**: CPOEs present but expired/invalid, or scores < 70%
-- **None**: No compliance.txt or no valid proofs
+- **None**: No trust.txt or no valid proofs
 
 **Example:**
 ```bash
 # The agent runs this autonomously:
-corsair compliance-txt discover newvendor.io --json --verify
+corsair trust-txt discover newvendor.io --json --verify
 # Then analyzes, diffs if possible, and generates report
 ```
 
@@ -393,25 +393,25 @@ Set up Corsair in a new project from scratch.
    ```bash
    corsair sign --file <EVIDENCE_FILE> --verbose
    ```
-3. Generate compliance.txt for the project:
+3. Generate trust.txt for the project:
    ```bash
-   corsair compliance-txt generate \
+   corsair trust-txt generate \
      --did did:web:<DOMAIN> \
      --scitt https://log.example.com/v1/entries?issuer=did:web:<DOMAIN> \
      --catalog https://example.com/compliance/catalog.json \
-     -o .well-known/compliance.txt
+     -o .well-known/trust.txt
    ```
 4. Report next steps:
-   - Host compliance.txt at `/.well-known/compliance.txt`
+   - Host trust.txt at `/.well-known/trust.txt`
    - Host DID document at `/.well-known/did.json` (generate with `bun run bin/corsair-did-generate.ts`)
    - Set up CI/CD to auto-sign on every scan
-   - Share your domain so others can verify: `corsair compliance-txt discover yourdomain.com`
+   - Share your domain so others can verify: `corsair trust-txt discover yourdomain.com`
 
 **Example:**
 ```bash
 corsair init
 corsair sign --file evidence.json --verbose
-corsair compliance-txt generate --did did:web:mycompany.com --scitt https://log.example.com/v1/entries?issuer=did:web:mycompany.com --catalog https://example.com/compliance/catalog.json -o compliance.txt
+corsair trust-txt generate --did did:web:mycompany.com --scitt https://log.example.com/v1/entries?issuer=did:web:mycompany.com --catalog https://example.com/compliance/catalog.json -o trust.txt
 ```
 
 ---
@@ -422,7 +422,7 @@ corsair compliance-txt generate --did did:web:mycompany.com --scitt https://log.
 |-----------|---------|-------------|
 | **SIGN** | `corsair sign --file <F>` | Sign evidence → CPOE |
 | **LOG** | `corsair log` | List signed CPOEs (local or SCITT log) |
-| **PUBLISH** | `corsair compliance-txt generate --did <DID>` | Generate compliance.txt for discovery |
+| **PUBLISH** | `corsair trust-txt generate --did <DID>` | Generate trust.txt for discovery |
 | **VERIFY** | `corsair verify --file <F>` | Verify CPOE signature |
 | **DIFF** | `corsair diff --current <A> --previous <B>` | Detect compliance regressions |
 | **SIGNAL** | `corsair signal generate` | Generate FLAGSHIP SET notifications |
@@ -431,8 +431,8 @@ corsair compliance-txt generate --did did:web:mycompany.com --scitt https://log.
 
 | Command | What it does |
 |---------|-------------|
-| `corsair compliance-txt discover <domain>` | Crawl vendor compliance.txt |
-| `corsair compliance-txt validate <domain>` | Validate compliance.txt format |
+| `corsair trust-txt discover <domain>` | Crawl vendor trust.txt |
+| `corsair trust-txt validate <domain>` | Validate trust.txt format |
 | `corsair keygen` | Generate Ed25519 signing keys |
 | `corsair init` | Set up Corsair in project |
 | `corsair renew --file <F>` | Re-sign CPOE with fresh dates |
@@ -461,9 +461,9 @@ A **CPOE** (Certificate of Proof of Operational Effectiveness) is a W3C Verifiab
 
 CPOEs replace PDF compliance reports with machine-readable, cryptographically verifiable proofs that any agent can autonomously verify.
 
-## What is compliance.txt?
+## What is trust.txt?
 
-Like `security.txt` (RFC 9116) but for compliance. A plain-text file at `/.well-known/compliance.txt` that declares:
+Like `security.txt` (RFC 9116) but for compliance. A plain-text file at `/.well-known/trust.txt` that declares:
 - The organization's DID identity
 - SCITT transparency log endpoint (authoritative feed)
 - Optional catalog snapshot (human-friendly index)

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { ComplianceTxtGenerator } from "@/components/features/compliance-txt-generator";
+import { TrustTxtGenerator } from "@/components/features/trust-txt-generator";
 import { FadeIn } from "@/components/motion/fade-in";
 import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
-  title: "Publish compliance.txt",
+  title: "Publish trust.txt",
   description:
-    "Generate a compliance.txt file for your domain. Like security.txt for compliance proofs — let anyone discover your CPOEs, SCITT log, catalog snapshot, and FLAGSHIP signals.",
+    "Generate a trust.txt file for your domain. Like security.txt for compliance proofs — let anyone discover your CPOEs, SCITT log, catalog snapshot, and FLAGSHIP signals.",
 };
 
 export default function PublishPage() {
@@ -24,11 +24,11 @@ export default function PublishPage() {
               publish
             </h1>
             <p className="mx-auto max-w-xl text-corsair-text-dim">
-              Generate your compliance.txt — the discovery file for your compliance proofs. Like{" "}
+              Generate your trust.txt — the discovery file for your compliance proofs. Like{" "}
               <code className="text-corsair-cyan">security.txt</code> for
               compliance. Publish at{" "}
               <span className="font-semibold text-corsair-gold">
-                /.well-known/compliance.txt
+                /.well-known/trust.txt
               </span>{" "}
               so anyone can discover and verify your compliance posture.
             </p>
@@ -50,7 +50,7 @@ export default function PublishPage() {
 
         {/* Generator */}
         <FadeIn delay={0.2}>
-          <ComplianceTxtGenerator />
+          <TrustTxtGenerator />
         </FadeIn>
 
         <PixelDivider variant="swords" className="my-16" />
@@ -63,17 +63,17 @@ export default function PublishPage() {
                 WHY
               </p>
               <h2 className="mb-3 font-display text-xl font-bold text-corsair-text">
-                Why compliance.txt?
+                Why trust.txt?
               </h2>
               <p className="text-sm leading-relaxed text-corsair-text-dim">
                 <code className="text-corsair-cyan">security.txt</code> gave
                 vulnerability researchers a standard place to find contact info.
                 CISA made it mandatory for federal agencies.{" "}
-                <code className="text-corsair-gold">compliance.txt</code> does
+                <code className="text-corsair-gold">trust.txt</code> does
                 the same for compliance proofs &mdash; a machine-readable
                 discovery endpoint that lets buyers, auditors, and AI agents
                 find your CPOEs without asking you for a PDF. For large proof
-                sets, keep compliance.txt minimal and point to a SCITT log and
+                sets, keep trust.txt minimal and point to a SCITT log and
                 catalog snapshot.
               </p>
             </div>
@@ -103,10 +103,10 @@ export default function PublishPage() {
                   <li className="flex gap-3">
                     <span className="text-corsair-gold">2.</span>
                     Download{" "}
-                    <code className="text-corsair-cyan">compliance.txt</code>{" "}
+                    <code className="text-corsair-cyan">trust.txt</code>{" "}
                     and place it at{" "}
                     <code className="text-corsair-cyan">
-                      /.well-known/compliance.txt
+                      /.well-known/trust.txt
                     </code>{" "}
                     on your domain.
                   </li>
@@ -114,7 +114,7 @@ export default function PublishPage() {
                     <span className="text-corsair-gold">3.</span>
                     Verify it works:{" "}
                     <code className="text-corsair-cyan">
-                      corsair compliance-txt discover your-domain.com --verify
+                      corsair trust-txt discover your-domain.com --verify
                     </code>
                   </li>
                 </ol>

@@ -245,7 +245,7 @@ export default function VerifyPage() {
                 <div className="rounded-lg border border-corsair-border bg-corsair-surface p-3">
                   <p className="font-mono text-sm font-bold text-corsair-green">corsair publish</p>
                   <p className="mt-1 text-xs text-corsair-text-dim">
-                    Generate your compliance.txt discovery file
+                    Generate your trust.txt discovery file
                   </p>
                 </div>
                 <div className="rounded-lg border border-corsair-border bg-corsair-surface p-3">

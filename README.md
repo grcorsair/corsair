@@ -24,7 +24,7 @@
 
 <br/>
 
-[Website](https://grcorsair.com) · [Documentation](https://grcorsair.com/docs) · [CPOE Spec](CPOE_SPEC.md) · [Verify a CPOE](https://grcorsair.com/marque) · [Generate compliance.txt](https://grcorsair.com/generate)
+[Website](https://grcorsair.com) · [Documentation](https://grcorsair.com/docs) · [CPOE Spec](CPOE_SPEC.md) · [Verify a CPOE](https://grcorsair.com/marque) · [Generate trust.txt](https://grcorsair.com/generate)
 
 </div>
 
@@ -76,7 +76,7 @@ corsair diff --current q2.jwt --previous q1.jwt
 
 Corsair ships with a simple, shareable surface that maps directly to how people verify compliance in the real world.
 
-- **compliance.txt** — publish discoverable proofs at `/.well-known/compliance.txt`
+- **trust.txt** — publish discoverable proofs at `/.well-known/trust.txt`
 - **4-line verification** — verify any CPOE with standard JWT libs (see `CPOE_SPEC.md`)
 - **corsair diff** — drift detection that reads like `git diff`
 
@@ -94,7 +94,7 @@ Corsair does six things. Like git.
 |:----------|:--------|:-------------|:--------|
 | **SIGN** | `corsair sign --file <path>` | Parse tool output, record provenance, sign JWT-VC | `git commit` |
 | **LOG** | `corsair log` | List CPOEs from local files or a SCITT log | `git log` |
-| **PUBLISH** | `corsair compliance-txt generate` | Generate compliance.txt for proof discovery | `git push` |
+| **PUBLISH** | `corsair trust-txt generate` | Generate trust.txt for proof discovery | `git push` |
 | **VERIFY** | `corsair verify --file <cpoe.jwt>` | Verify Ed25519 signature, apply policy checks | `git verify-commit` |
 | **DIFF** | `corsair diff --current <new> --previous <old>` | Compare two CPOEs, detect regressions | `git diff` |
 | **SIGNAL** | `corsair signal generate` | Generate FLAGSHIP SETs for real-time notifications | `git webhooks` |
@@ -146,18 +146,18 @@ corsair diff --current new.jwt --previous old.jwt --verify
 corsair diff --current new.jwt --previous old.jwt --json
 ```
 
-### Compliance Discovery (compliance.txt)
+### Trust Discovery (trust.txt)
 
 Corsair supports a discovery layer modeled after `security.txt`. Organizations publish
-`/.well-known/compliance.txt` so verifiers can discover DID identity, current CPOEs,
+`/.well-known/trust.txt` so verifiers can discover DID identity, current CPOEs,
 SCITT log endpoints, optional catalog snapshots, and FLAGSHIP streams.
-For large numbers of proofs, keep compliance.txt tiny and point to SCITT + catalog.
+For large numbers of proofs, keep trust.txt tiny and point to SCITT + catalog.
 
 ```bash
-corsair compliance-txt generate --did did:web:acme.com --scitt https://log.acme.com/v1/entries?issuer=did:web:acme.com
-corsair compliance-txt generate --did did:web:acme.com --catalog https://acme.com/compliance/catalog.json
-corsair compliance-txt generate --did did:web:acme.com --cpoe-url https://acme.com/soc2.jwt
-corsair compliance-txt discover acme.com --verify
+corsair trust-txt generate --did did:web:acme.com --scitt https://log.acme.com/v1/entries?issuer=did:web:acme.com
+corsair trust-txt generate --did did:web:acme.com --catalog https://acme.com/compliance/catalog.json
+corsair trust-txt generate --did did:web:acme.com --cpoe-url https://acme.com/soc2.jwt
+corsair trust-txt discover acme.com --verify
 ```
 
 ---
@@ -352,7 +352,7 @@ Real-time compliance signals via OpenID SSF/CAEP:
 npx skills add grcorsair/corsair
 ```
 
-Works with Claude Code, Cursor, GitHub Copilot, and [25+ AI agents](https://skills.sh). Your agent can then sign evidence, verify CPOEs, detect compliance drift, and autonomously assess vendor compliance via `compliance.txt`.
+Works with Claude Code, Cursor, GitHub Copilot, and [25+ AI agents](https://skills.sh). Your agent can then sign evidence, verify CPOEs, detect compliance drift, and autonomously assess vendor compliance via `trust.txt`.
 
 ### MCP Server
 

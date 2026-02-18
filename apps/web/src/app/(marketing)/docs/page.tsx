@@ -106,7 +106,7 @@ export default function DocsPage() {
                     # Publish compliance discovery
                   </span>
                   <div className="text-corsair-gold">
-                    corsair compliance-txt generate --did did:web:acme.com
+                    corsair trust-txt generate --did did:web:acme.com
                   </div>
                 </div>
                 <div>

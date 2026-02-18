@@ -50,7 +50,7 @@ const primitives = [
   },
   {
     href: "/publish",
-    label: "compliance.txt",
+    label: "trust.txt",
     description: "Publish yours, discover theirs",
   },
 ];

@@ -24,9 +24,9 @@ bun run dev:web
 bun run corsair.ts sign --file <path>
 bun run corsair.ts verify --file <cpoe.jwt>
 bun run corsair.ts diff --current <new> --previous <old>
-bun run corsair.ts compliance-txt generate --did did:web:acme.com
-bun run corsair.ts compliance-txt validate <domain>
-bun run corsair.ts compliance-txt discover <domain>
+bun run corsair.ts trust-txt generate --did did:web:acme.com
+bun run corsair.ts trust-txt validate <domain>
+bun run corsair.ts trust-txt discover <domain>
 bun run corsair.ts keygen
 ```
 
@@ -60,7 +60,7 @@ bun run corsair.ts keygen
 - `test:` tests only
 - `style:` formatting/no logic change
 
-Scope is optional, e.g. `feat(web): add compliance.txt generator page`.
+Scope is optional, e.g. `feat(web): add trust.txt generator page`.
 
 ## Guardrails
 - Default to Bun; use Node/npm/yarn only if explicitly requested
@@ -104,11 +104,11 @@ When ANY change is made to the codebase — new command, renamed primitive, new 
 
 ### Why this matters
 
-This repo has pages and docs from different periods. Names drift (e.g. "Discovery" vs "Publish" vs "compliance.txt"). The only way to prevent this is: **grep the entire repo on every change, update every hit, verify with grep again.** No shortcuts.
+This repo has pages and docs from different periods. Names drift (e.g. "Discovery" vs "Publish" vs "trust.txt"). The only way to prevent this is: **grep the entire repo on every change, update every hit, verify with grep again.** No shortcuts.
 
 ## Repo Notes
-- Protocol primitives (6): SIGN, LOG, PUBLISH (compliance.txt), VERIFY, DIFF, SIGNAL (FLAGSHIP)
-- compliance.txt lives at `/.well-known/compliance.txt`
+- Protocol primitives (6): SIGN, LOG, PUBLISH (trust.txt), VERIFY, DIFF, SIGNAL (FLAGSHIP)
+- trust.txt lives at `/.well-known/trust.txt`
 
 ## Monorepo
 If you add a nested `AGENTS.md` in a subdirectory, it overrides this file for that subtree.

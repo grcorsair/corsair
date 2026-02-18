@@ -1,6 +1,6 @@
 "use client";
 
-import { COMPLIANCE_TXT_SNIPPET, VERIFY_4_LINES } from "@/content/snippets";
+import { TRUST_TXT_SNIPPET, VERIFY_4_LINES } from "@/content/snippets";
 
 export function HeroProofSnippet() {
   return (
@@ -28,11 +28,11 @@ export function HeroProofSnippet() {
       <div className="overflow-hidden rounded-lg border border-corsair-border/60 bg-[#0A0A0A]">
         <div className="flex items-center gap-2 border-b border-corsair-border/60 px-4 py-2">
           <span className="font-pixel text-[7px] tracking-wider text-corsair-gold/80">
-            COMPLIANCE.TXT
+            TRUST.TXT
           </span>
         </div>
         <pre className="p-4 font-mono text-[11px] leading-relaxed text-corsair-text-dim">
-          {COMPLIANCE_TXT_SNIPPET.map((line) => (
+          {TRUST_TXT_SNIPPET.map((line) => (
             <div key={line}>{line}</div>
           ))}
         </pre>

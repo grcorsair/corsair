@@ -175,20 +175,20 @@ corsair log [options]
 | `-n, --last <N>` | Show last N entries | 10 |
 | `-d, --dir <DIR>` | Directory to scan | . |
 | `--scitt <URL>` | SCITT log endpoint to query | - |
-| `--domain <DOMAIN>` | Resolve compliance.txt and use its SCITT endpoint | - |
+| `--domain <DOMAIN>` | Resolve trust.txt and use its SCITT endpoint | - |
 | `--issuer <DID>` | Filter SCITT entries by issuer | - |
 | `--framework <NAME>` | Filter SCITT entries by framework | - |
 | `--json` | Output structured JSON | false |
 
-### corsair compliance-txt
+### corsair trust-txt
 
-Compliance proof discovery via `/.well-known/compliance.txt`.
+Compliance proof discovery via `/.well-known/trust.txt`.
 
 **Subcommands:**
 
 #### generate
 ```
-corsair compliance-txt generate [options]
+corsair trust-txt generate [options]
 ```
 
 | Flag | Description | Default |
@@ -207,14 +207,14 @@ corsair compliance-txt generate [options]
 
 #### validate
 ```
-corsair compliance-txt validate <DOMAIN> [--json]
+corsair trust-txt validate <DOMAIN> [--json]
 ```
 
 Exit codes: 0 = valid, 1 = invalid
 
 #### discover
 ```
-corsair compliance-txt discover <DOMAIN> [--json] [--verify] [--scitt-limit <N>]
+corsair trust-txt discover <DOMAIN> [--json] [--verify] [--scitt-limit <N>]
 ```
 
 Exit codes: 0 = found, 1 = not found or failed
@@ -302,10 +302,10 @@ Corsair auto-detects evidence format from JSON structure:
 | ciso-assistant-export | Object with `meta` + `requirement_assessments` |
 | generic | Object with `controls` array |
 
-## compliance.txt Format
+## trust.txt Format
 
 ```
-# Corsair Compliance Discovery
+# Corsair Trust Discovery
 DID: did:web:example.com
 SCITT: https://example.com/scitt/entries?issuer=did:web:example.com
 CATALOG: https://example.com/compliance/catalog.json
@@ -315,4 +315,4 @@ Contact: compliance@example.com
 Expires: 2027-01-01T00:00:00Z
 ```
 
-Hosted at `https://<domain>/.well-known/compliance.txt`
+Hosted at `https://<domain>/.well-known/trust.txt`

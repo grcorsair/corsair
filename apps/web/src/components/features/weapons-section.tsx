@@ -4,18 +4,18 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  COMPLIANCE_TXT_SNIPPET,
   DIFF_SNIPPET_LINES,
+  TRUST_TXT_SNIPPET,
   VERIFY_4_LINES,
 } from "@/content/snippets";
 
 const weapons = [
   {
-    id: "compliance",
-    title: "compliance.txt",
+    id: "trust",
+    title: "trust.txt",
     subtitle: "Discovery layer for compliance proofs.",
     accent: "border-corsair-gold/40",
-    snippet: COMPLIANCE_TXT_SNIPPET,
+    snippet: TRUST_TXT_SNIPPET,
     cta: { label: "Generate yours", href: "/publish" },
   },
   {

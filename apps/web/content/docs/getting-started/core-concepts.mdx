@@ -30,7 +30,7 @@ Every `corsair sign` invocation flows through the core primitives. No flags requ
 |-----------|-------------|--------------|
 | **SIGN** | `git commit` | Parse tool output, record provenance, sign as JWT-VC (Ed25519) |
 | **LOG** | `git log` | Register in SCITT transparency log (append-only) |
-| **PUBLISH** | `git push` | Generate compliance.txt that points to SCITT + catalog |
+| **PUBLISH** | `git push` | Generate trust.txt that points to SCITT + catalog |
 | **VERIFY** | `git verify-commit` | Verify Ed25519 signature via DID:web resolution |
 | **DIFF** | `git diff` | Compare two CPOEs, detect compliance regressions |
 | **SIGNAL** | `git webhooks` | Real-time compliance change notifications via FLAGSHIP (SSF/CAEP) |

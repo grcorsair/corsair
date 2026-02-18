@@ -1,7 +1,7 @@
-# Corsair Compliance Discovery
-# Spec: https://grcorsair.com/spec/compliance-txt
+# Corsair Trust Discovery
+# Spec: https://grcorsair.com/spec/trust-txt
 #
-# Corsair eats its own dogfood. This is the first compliance.txt in production.
+# Corsair eats its own dogfood. This is the first trust.txt in production.
 # We pilot the format ourselves before recommending it to others.
 
 DID: did:web:grcorsair.com

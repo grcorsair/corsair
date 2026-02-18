@@ -47,7 +47,7 @@ function computeExpiry(days: number): string {
   return d.toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
-export function ComplianceTxtGenerator() {
+export function TrustTxtGenerator() {
   const [form, setForm] = useState<FormState>(INITIAL_STATE);
   const [copied, setCopied] = useState(false);
 
@@ -86,11 +86,11 @@ export function ComplianceTxtGenerator() {
     }));
   }, []);
 
-  // Generate compliance.txt output
+  // Generate trust.txt output
   const output = useMemo(() => {
     const lines: string[] = [
-      "# Corsair Compliance Discovery",
-      "# Spec: https://grcorsair.com/spec/compliance-txt",
+      "# Corsair Trust Discovery",
+      "# Spec: https://grcorsair.com/spec/trust-txt",
       "",
     ];
 
@@ -146,7 +146,7 @@ export function ComplianceTxtGenerator() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "compliance.txt";
+    a.download = "trust.txt";
     a.click();
     URL.revokeObjectURL(url);
   }, [output]);
@@ -355,7 +355,7 @@ export function ComplianceTxtGenerator() {
           <div className="flex items-center gap-2 border-b border-corsair-border px-4 py-2">
             <div className="h-2 w-2 rounded-full bg-corsair-gold/60" />
             <span className="font-pixel text-[7px] tracking-wider text-corsair-gold">
-              .WELL-KNOWN/COMPLIANCE.TXT
+              .WELL-KNOWN/TRUST.TXT
             </span>
           </div>
           <CardContent className="p-0">
@@ -394,13 +394,13 @@ export function ComplianceTxtGenerator() {
               <p className="text-xs leading-relaxed text-corsair-text-dim">
                 Place this file at{" "}
                 <code className="rounded bg-corsair-surface px-1.5 py-0.5 text-corsair-cyan">
-                  /.well-known/compliance.txt
+                  /.well-known/trust.txt
                 </code>{" "}
                 on your domain. Anyone can then discover your compliance proofs:
               </p>
               <div className="overflow-x-auto rounded-lg bg-corsair-surface p-3">
                 <code className="font-mono text-[11px] text-corsair-gold">
-                  curl https://{form.did.replace("did:web:", "") || "your-domain.com"}/.well-known/compliance.txt
+                  curl https://{form.did.replace("did:web:", "") || "your-domain.com"}/.well-known/trust.txt
                 </code>
               </div>
               <p className="text-[10px] text-muted-foreground">
@@ -420,7 +420,7 @@ export function ComplianceTxtGenerator() {
             </p>
             <div className="overflow-x-auto rounded-lg bg-[#0A0A0A] p-3">
               <code className="font-mono text-[11px] text-corsair-text-dim">
-                corsair compliance-txt generate --did {form.did || "did:web:your-domain.com"}
+                corsair trust-txt generate --did {form.did || "did:web:your-domain.com"}
                 {form.frameworks.length > 0 && ` \\\n  --frameworks ${form.frameworks.join(",")}`}
                 {form.scitt && ` \\\n  --scitt ${form.scitt}`}
                 {form.catalog && ` \\\n  --catalog ${form.catalog}`}

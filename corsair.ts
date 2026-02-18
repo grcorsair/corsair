@@ -50,8 +50,8 @@ switch (subcommand) {
   case "demo-keygen":
     await handleDemoKeygen();
     break;
-  case "compliance-txt":
-    await handleComplianceTxt();
+  case "trust-txt":
+    await handleTrustTxt();
     break;
   case "mappings":
     await handleMappings();
@@ -67,7 +67,7 @@ switch (subcommand) {
     break;
   default:
     console.error(`Unknown command: ${subcommand}`);
-    console.error("  Available: init, sign, verify, diff, log, keygen, compliance-txt, mappings, help");
+    console.error("  Available: init, sign, verify, diff, log, keygen, trust-txt, mappings, help");
     console.error('  Run "corsair help" for details');
     process.exit(1);
 }
@@ -1218,7 +1218,7 @@ OPTIONS:
   -n, --last <N>            Show last N entries (default: 10)
   -d, --dir <DIR>           Directory to scan for .jwt files (default: .)
       --scitt <URL>         SCITT log endpoint to query
-      --domain <DOMAIN>     Resolve compliance.txt and use its SCITT endpoint
+      --domain <DOMAIN>     Resolve trust.txt and use its SCITT endpoint
       --issuer <DID>        Filter SCITT log by issuer DID
       --framework <NAME>    Filter SCITT log by framework name
       --json                Output structured JSON
@@ -1238,17 +1238,17 @@ NOTE:
   }
 
   if (domain) {
-    const { resolveComplianceTxt } = await import("./src/parley/compliance-txt");
-    const resolution = await resolveComplianceTxt(domain);
-    if (!resolution.complianceTxt) {
-      console.error(`Error: ${resolution.error || "Failed to resolve compliance.txt"}`);
+    const { resolveTrustTxt } = await import("./src/parley/trust-txt");
+    const resolution = await resolveTrustTxt(domain);
+    if (!resolution.trustTxt) {
+      console.error(`Error: ${resolution.error || "Failed to resolve trust.txt"}`);
       process.exit(1);
     }
-    if (!resolution.complianceTxt.scitt) {
-      console.error("Error: compliance.txt does not publish a SCITT endpoint");
+    if (!resolution.trustTxt.scitt) {
+      console.error("Error: trust.txt does not publish a SCITT endpoint");
       process.exit(1);
     }
-    scittUrl = resolution.complianceTxt.scitt;
+    scittUrl = resolution.trustTxt.scitt;
   }
 
   if (scittUrl) {
@@ -2105,50 +2105,50 @@ EXAMPLES:
 }
 
 // =============================================================================
-// COMPLIANCE-TXT
+// TRUST-TXT
 // =============================================================================
 
-async function handleComplianceTxt(): Promise<void> {
+async function handleTrustTxt(): Promise<void> {
   const args = process.argv.slice(3);
   const ctSubcommand = args[0];
 
   if (!ctSubcommand || ctSubcommand === "--help" || ctSubcommand === "-h") {
-    printComplianceTxtHelp();
+    printTrustTxtHelp();
     return;
   }
 
   switch (ctSubcommand) {
     case "generate":
-      await handleComplianceTxtGenerate(args.slice(1));
+      await handleTrustTxtGenerate(args.slice(1));
       break;
     case "validate":
-      await handleComplianceTxtValidate(args.slice(1));
+      await handleTrustTxtValidate(args.slice(1));
       break;
     case "discover":
-      await handleComplianceTxtDiscover(args.slice(1));
+      await handleTrustTxtDiscover(args.slice(1));
       break;
     default:
-      console.error(`Unknown compliance-txt subcommand: ${ctSubcommand}`);
-      console.error('Run "corsair compliance-txt --help" for usage');
+      console.error(`Unknown trust-txt subcommand: ${ctSubcommand}`);
+      console.error('Run "corsair trust-txt --help" for usage');
       process.exit(1);
   }
 }
 
-function printComplianceTxtHelp(): void {
+function printTrustTxtHelp(): void {
   console.log(`
-CORSAIR COMPLIANCE-TXT -- Compliance proof discovery at /.well-known/
+CORSAIR TRUST-TXT -- Compliance proof discovery at /.well-known/
 
 USAGE:
-  corsair compliance-txt <subcommand> [options]
+  corsair trust-txt <subcommand> [options]
 
 SUBCOMMANDS:
-  generate    Generate a compliance.txt from local config
-  validate    Fetch and validate a domain's compliance.txt
-  discover    Fetch compliance.txt, list CPOEs, verify each
+  generate    Generate a trust.txt from local config
+  validate    Fetch and validate a domain's trust.txt
+  discover    Fetch trust.txt, list CPOEs, verify each
 
 ABOUT:
-  compliance.txt is a discovery layer for compliance proofs, modeled after
-  security.txt (RFC 9116). Organizations publish /.well-known/compliance.txt
+  trust.txt is a discovery layer for compliance proofs, modeled after
+  security.txt (RFC 9116). Organizations publish /.well-known/trust.txt
   to advertise their DID identity, CPOE proofs, SCITT log, optional catalog snapshot,
   and signal endpoints.
 
@@ -2157,16 +2157,16 @@ ABOUT:
   robots.txt          | Web crawlers
   security.txt        | Vulnerability reporters
   openid-configuration| Auth clients
-  compliance.txt      | Compliance verifiers + agentic audits
+  trust.txt      | Compliance verifiers + agentic audits
 
   Origin: @toufik-airane (github.com/grcorsair/corsair/issues/2)
-  Spec:   https://grcorsair.com/spec/compliance-txt
+  Spec:   https://grcorsair.com/spec/trust-txt
 
 EXAMPLES:
-  corsair compliance-txt generate --did did:web:acme.com --cpoes ./cpoes/ --output compliance.txt
-  corsair compliance-txt validate acme.com
-  corsair compliance-txt discover acme.com
-  corsair compliance-txt discover acme.com --verify
+  corsair trust-txt generate --did did:web:acme.com --cpoes ./cpoes/ --output trust.txt
+  corsair trust-txt validate acme.com
+  corsair trust-txt discover acme.com
+  corsair trust-txt discover acme.com --verify
 
 OPTIONS:
   --json            Output structured JSON (validate/discover)
@@ -2177,10 +2177,10 @@ OPTIONS:
 }
 
 // ---------------------------------------------------------------------------
-// COMPLIANCE-TXT GENERATE
+// TRUST-TXT GENERATE
 // ---------------------------------------------------------------------------
 
-async function handleComplianceTxtGenerate(args: string[]): Promise<void> {
+async function handleTrustTxtGenerate(args: string[]): Promise<void> {
   let did: string | undefined;
   let cpoeDir: string | undefined;
   let cpoeUrls: string[] = [];
@@ -2232,10 +2232,10 @@ async function handleComplianceTxtGenerate(args: string[]): Promise<void> {
       case "--help":
       case "-h":
         console.log(`
-CORSAIR COMPLIANCE-TXT GENERATE -- Create a compliance.txt
+CORSAIR TRUST-TXT GENERATE -- Create a trust.txt
 
 USAGE:
-  corsair compliance-txt generate --did <DID> [options]
+  corsair trust-txt generate --did <DID> [options]
 
 OPTIONS:
   --did <DID>              DID:web identity (required)
@@ -2252,8 +2252,8 @@ OPTIONS:
   -h, --help               Show this help
 
 EXAMPLES:
-  corsair compliance-txt generate --did did:web:acme.com --cpoe-url https://acme.com/soc2.jwt
-  corsair compliance-txt generate --did did:web:acme.com --cpoes ./cpoes/ --output compliance.txt
+  corsair trust-txt generate --did did:web:acme.com --cpoe-url https://acme.com/soc2.jwt
+  corsair trust-txt generate --did did:web:acme.com --cpoes ./cpoes/ --output trust.txt
 `);
         return;
     }
@@ -2261,7 +2261,7 @@ EXAMPLES:
 
   if (!did) {
     console.error("Error: --did is required");
-    console.error('Run "corsair compliance-txt generate --help" for usage');
+    console.error('Run "corsair trust-txt generate --help" for usage');
     process.exit(2);
   }
 
@@ -2303,9 +2303,9 @@ EXAMPLES:
   // Calculate expiry
   const expiresDate = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
 
-  const { generateComplianceTxt } = await import("./src/parley/compliance-txt");
+  const { generateTrustTxt } = await import("./src/parley/trust-txt");
 
-  const output = generateComplianceTxt({
+  const output = generateTrustTxt({
     did,
     cpoes: cpoeUrls,
     scitt,
@@ -2319,19 +2319,19 @@ EXAMPLES:
   if (outputPath) {
     const { writeFileSync } = await import("fs");
     writeFileSync(outputPath, output);
-    console.error("compliance.txt generated successfully.");
+    console.error("trust.txt generated successfully.");
     console.error(`  Output: ${outputPath}`);
-    console.error(`  Host at: https://${did.replace("did:web:", "")}/.well-known/compliance.txt`);
+    console.error(`  Host at: https://${did.replace("did:web:", "")}/.well-known/trust.txt`);
   } else {
     process.stdout.write(output);
   }
 }
 
 // ---------------------------------------------------------------------------
-// COMPLIANCE-TXT VALIDATE
+// TRUST-TXT VALIDATE
 // ---------------------------------------------------------------------------
 
-async function handleComplianceTxtValidate(args: string[]): Promise<void> {
+async function handleTrustTxtValidate(args: string[]): Promise<void> {
   const domain = args.find(a => !a.startsWith("--"));
   const jsonOutput = args.includes("--json");
   const verify = args.includes("--verify");
@@ -2341,26 +2341,26 @@ async function handleComplianceTxtValidate(args: string[]): Promise<void> {
 
   if (!domain) {
     console.error("Error: domain is required");
-    console.error('Usage: corsair compliance-txt validate <domain>');
+    console.error('Usage: corsair trust-txt validate <domain>');
     process.exit(2);
   }
 
-  const { resolveComplianceTxt, validateComplianceTxt } = await import("./src/parley/compliance-txt");
+  const { resolveTrustTxt, validateTrustTxt } = await import("./src/parley/trust-txt");
   const { resolveComplianceCatalog, validateComplianceCatalog } = await import("./src/parley/compliance-catalog");
   const { verifyVCJWTViaDID } = await import("./src/parley/vc-verifier");
   const { createHash } = await import("crypto");
 
-  console.error(`Fetching https://${domain}/.well-known/compliance.txt ...`);
+  console.error(`Fetching https://${domain}/.well-known/trust.txt ...`);
 
-  const resolution = await resolveComplianceTxt(domain);
+  const resolution = await resolveTrustTxt(domain);
 
-  if (!resolution.complianceTxt) {
+  if (!resolution.trustTxt) {
     console.error(`Error: ${resolution.error}`);
     process.exit(1);
   }
 
-  const validation = validateComplianceTxt(resolution.complianceTxt);
-  const ct = resolution.complianceTxt;
+  const validation = validateTrustTxt(resolution.trustTxt);
+  const ct = resolution.trustTxt;
 
   let verificationResults: Array<{ url: string; valid: boolean; reason?: string; issuer?: string; trustTier?: string }> = [];
   if (verify && ct.cpoes.length > 0) {
@@ -2492,7 +2492,7 @@ async function handleComplianceTxtValidate(args: string[]): Promise<void> {
   if (jsonOutput) {
     process.stdout.write(JSON.stringify({
       domain,
-      complianceTxt: ct,
+      trustTxt: ct,
       validation,
       catalog: catalogSummary,
       verification: verify ? verificationResults : undefined,
@@ -2500,17 +2500,17 @@ async function handleComplianceTxtValidate(args: string[]): Promise<void> {
     return;
   }
 
-  console.log(`COMPLIANCE.TXT VALIDATION: ${domain}`);
+  console.log(`TRUST.TXT VALIDATION: ${domain}`);
   console.log("=".repeat(50));
   console.log("");
-  console.log(`  DID:        ${resolution.complianceTxt.did || "(missing)"}`);
-  console.log(`  CPOEs:      ${resolution.complianceTxt.cpoes.length}`);
-  console.log(`  Frameworks: ${resolution.complianceTxt.frameworks.join(", ") || "(none)"}`);
-  console.log(`  Contact:    ${resolution.complianceTxt.contact || "(none)"}`);
-  console.log(`  Expires:    ${resolution.complianceTxt.expires || "(none)"}`);
-  console.log(`  SCITT:      ${resolution.complianceTxt.scitt || "(none)"}`);
-  console.log(`  CATALOG:    ${resolution.complianceTxt.catalog || "(none)"}`);
-  console.log(`  FLAGSHIP:   ${resolution.complianceTxt.flagship || "(none)"}`);
+  console.log(`  DID:        ${resolution.trustTxt.did || "(missing)"}`);
+  console.log(`  CPOEs:      ${resolution.trustTxt.cpoes.length}`);
+  console.log(`  Frameworks: ${resolution.trustTxt.frameworks.join(", ") || "(none)"}`);
+  console.log(`  Contact:    ${resolution.trustTxt.contact || "(none)"}`);
+  console.log(`  Expires:    ${resolution.trustTxt.expires || "(none)"}`);
+  console.log(`  SCITT:      ${resolution.trustTxt.scitt || "(none)"}`);
+  console.log(`  CATALOG:    ${resolution.trustTxt.catalog || "(none)"}`);
+  console.log(`  FLAGSHIP:   ${resolution.trustTxt.flagship || "(none)"}`);
   console.log("");
 
   if (catalogSummary) {
@@ -2555,10 +2555,10 @@ async function handleComplianceTxtValidate(args: string[]): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// COMPLIANCE-TXT DISCOVER
+// TRUST-TXT DISCOVER
 // ---------------------------------------------------------------------------
 
-async function handleComplianceTxtDiscover(args: string[]): Promise<void> {
+async function handleTrustTxtDiscover(args: string[]): Promise<void> {
   const domain = args.find(a => !a.startsWith("--"));
   const jsonOutput = args.includes("--json");
   const verify = args.includes("--verify");
@@ -2567,24 +2567,24 @@ async function handleComplianceTxtDiscover(args: string[]): Promise<void> {
 
   if (!domain) {
     console.error("Error: domain is required");
-    console.error('Usage: corsair compliance-txt discover <domain>');
+    console.error('Usage: corsair trust-txt discover <domain>');
     process.exit(2);
   }
 
-  const { resolveComplianceTxt, validateComplianceTxt } = await import("./src/parley/compliance-txt");
+  const { resolveTrustTxt, validateTrustTxt } = await import("./src/parley/trust-txt");
 
   console.error(`Discovering compliance proofs for ${domain}...`);
-  console.error(`Fetching https://${domain}/.well-known/compliance.txt ...`);
+  console.error(`Fetching https://${domain}/.well-known/trust.txt ...`);
 
-  const resolution = await resolveComplianceTxt(domain);
+  const resolution = await resolveTrustTxt(domain);
 
-  if (!resolution.complianceTxt) {
+  if (!resolution.trustTxt) {
     console.error(`Error: ${resolution.error}`);
     process.exit(1);
   }
 
-  const ct = resolution.complianceTxt;
-  const validation = validateComplianceTxt(ct);
+  const ct = resolution.trustTxt;
+  const validation = validateTrustTxt(ct);
   let verificationResults: Array<{ url: string; valid: boolean; reason?: string; issuer?: string; trustTier?: string }> = [];
   let scittSummary:
     | { url: string; entries: Array<import("./src/parley/scitt-types").SCITTListEntry>; error?: string }
@@ -2658,7 +2658,7 @@ async function handleComplianceTxtDiscover(args: string[]): Promise<void> {
   if (jsonOutput) {
     process.stdout.write(JSON.stringify({
       domain,
-      complianceTxt: ct,
+      trustTxt: ct,
       validation,
       cpoeCount: ct.cpoes.length,
       scitt: scittSummary,
@@ -2875,7 +2875,7 @@ COMMANDS:
   verify          Verify a CPOE signature and integrity
   diff            Detect compliance regressions            like git diff
   log             List signed CPOEs (local/SCITT log)      like git log
-  compliance-txt  Discovery layer (generate/validate/discover)
+  trust-txt  Discovery layer (generate/validate/discover)
   mappings        List loaded evidence mappings
   renew           Re-sign a CPOE with fresh dates          like git commit --amend
   signal          FLAGSHIP SET generation/verification     like git webhooks

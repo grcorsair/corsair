@@ -23,7 +23,7 @@ const logLines = [
 const publishLines = [
   { label: "DID", value: "did:web:grcorsair.com", color: "text-corsair-text" },
   { label: "CPOEs", value: "3 found, published", color: "text-corsair-green" },
-  { label: "Output", value: "/.well-known/compliance.txt", color: "text-corsair-gold" },
+  { label: "Output", value: "/.well-known/trust.txt", color: "text-corsair-gold" },
 ];
 
 const verifyLines = [

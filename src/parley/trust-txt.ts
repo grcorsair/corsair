@@ -1,23 +1,23 @@
 /**
- * compliance.txt — Compliance Proof Discovery
+ * trust.txt — Compliance Proof Discovery
  *
  * A discovery layer for compliance proofs, modeled after security.txt (RFC 9116).
- * Organizations publish /.well-known/compliance.txt to advertise their
+ * Organizations publish /.well-known/trust.txt to advertise their
  * DID identity, CPOE proofs, SCITT log, optional catalog snapshot,
  * and FLAGSHIP signal endpoints.
  *
- * Any agent or human can crawl acme.com/.well-known/compliance.txt and
+ * Any agent or human can crawl acme.com/.well-known/trust.txt and
  * discover everything that org can prove.
  *
  * Origin: @toufik-airane (GitHub issue #2)
- * Spec: https://grcorsair.com/spec/compliance-txt
+ * Spec: https://grcorsair.com/spec/trust-txt
  *
  * Standard   | Discovery for...
  * ---------- | ----------------
  * robots.txt | Web crawlers
  * security.txt | Vulnerability reporters
  * openid-configuration | Auth clients
- * compliance.txt | Compliance verifiers + agentic audits
+ * trust.txt | Compliance verifiers + agentic audits
  */
 
 import { isBlockedHost } from "../security/url-validation";
@@ -26,7 +26,7 @@ import { isBlockedHost } from "../security/url-validation";
 // TYPES
 // =============================================================================
 
-export interface ComplianceTxt {
+export interface TrustTxt {
   /** DID:web identity for signature verification */
   did?: string;
 
@@ -48,17 +48,17 @@ export interface ComplianceTxt {
   /** Contact email for compliance inquiries */
   contact?: string;
 
-  /** ISO 8601 expiry date for this compliance.txt */
+  /** ISO 8601 expiry date for this trust.txt */
   expires?: string;
 }
 
-export interface ComplianceTxtValidation {
+export interface TrustTxtValidation {
   valid: boolean;
   errors: string[];
 }
 
-export interface ComplianceTxtResolution {
-  complianceTxt: ComplianceTxt | null;
+export interface TrustTxtResolution {
+  trustTxt: TrustTxt | null;
   error?: string;
 }
 
@@ -67,14 +67,14 @@ export interface ComplianceTxtResolution {
 // =============================================================================
 
 /**
- * Parse a compliance.txt string into a structured ComplianceTxt object.
+ * Parse a trust.txt string into a structured TrustTxt object.
  *
  * Format: KEY: value pairs, one per line. Lines starting with # are comments.
  * CPOE is a repeatable key (multiple entries allowed).
  * Keys are case-insensitive.
  */
-export function parseComplianceTxt(input: string): ComplianceTxt {
-  const result: ComplianceTxt = {
+export function parseTrustTxt(input: string): TrustTxt {
+  const result: TrustTxt = {
     cpoes: [],
     frameworks: [],
   };
@@ -134,16 +134,16 @@ export function parseComplianceTxt(input: string): ComplianceTxt {
 // =============================================================================
 
 /**
- * Generate a compliance.txt string from a structured ComplianceTxt object.
+ * Generate a trust.txt string from a structured TrustTxt object.
  *
  * Includes a header comment with the spec URL for discoverability.
  */
-export function generateComplianceTxt(input: ComplianceTxt): string {
+export function generateTrustTxt(input: TrustTxt): string {
   const lines: string[] = [];
 
   // Header
-  lines.push("# Corsair Compliance Discovery");
-  lines.push("# Spec: https://grcorsair.com/spec/compliance-txt");
+  lines.push("# Corsair Trust Discovery");
+  lines.push("# Spec: https://grcorsair.com/spec/trust-txt");
   lines.push("");
 
   // Identity
@@ -203,7 +203,7 @@ export function generateComplianceTxt(input: ComplianceTxt): string {
 // =============================================================================
 
 /**
- * Validate a ComplianceTxt object.
+ * Validate a TrustTxt object.
  *
  * Checks:
  * - DID is present and starts with "did:web:"
@@ -211,7 +211,7 @@ export function generateComplianceTxt(input: ComplianceTxt): string {
  * - SCITT/FLAGSHIP URLs are HTTPS
  * - Expires is a valid ISO 8601 date in the future
  */
-export function validateComplianceTxt(input: ComplianceTxt): ComplianceTxtValidation {
+export function validateTrustTxt(input: TrustTxt): TrustTxtValidation {
   const errors: string[] = [];
 
   // DID is required
@@ -290,37 +290,37 @@ function validateHttpsUrl(url: string, fieldName: string): string | undefined {
 // =============================================================================
 
 /**
- * Resolve a domain's compliance.txt by fetching /.well-known/compliance.txt.
+ * Resolve a domain's trust.txt by fetching /.well-known/trust.txt.
  *
  * Includes SSRF protection via isBlockedHost.
  * Accepts an optional fetchFn for testing/mocking.
  */
-export async function resolveComplianceTxt(
+export async function resolveTrustTxt(
   domain: string,
   fetchFn?: typeof fetch,
-): Promise<ComplianceTxtResolution> {
+): Promise<TrustTxtResolution> {
   // SSRF protection: block private/reserved hosts
   if (isBlockedHost(domain)) {
     return {
-      complianceTxt: null,
+      trustTxt: null,
       error: `Blocked: domain resolves to private/reserved address: ${domain}`,
     };
   }
 
-  const url = `https://${domain}/.well-known/compliance.txt`;
+  const url = `https://${domain}/.well-known/trust.txt`;
 
   // Validate constructed URL
   try {
     const urlObj = new URL(url);
     if (isBlockedHost(urlObj.hostname)) {
       return {
-        complianceTxt: null,
+        trustTxt: null,
         error: `Blocked: domain resolves to private/reserved address: ${urlObj.hostname}`,
       };
     }
   } catch {
     return {
-      complianceTxt: null,
+      trustTxt: null,
       error: `Invalid resolution URL: ${url}`,
     };
   }
@@ -335,18 +335,18 @@ export async function resolveComplianceTxt(
 
     if (!response.ok) {
       return {
-        complianceTxt: null,
+        trustTxt: null,
         error: `HTTP ${(response as Response).status}: ${(response as Response).statusText}`,
       };
     }
 
     const text = await response.text();
-    const complianceTxt = parseComplianceTxt(text);
+    const trustTxt = parseTrustTxt(text);
 
-    return { complianceTxt };
+    return { trustTxt };
   } catch (e) {
     return {
-      complianceTxt: null,
+      trustTxt: null,
       error: `Resolution failed: ${(e as Error).message}`,
     };
   }

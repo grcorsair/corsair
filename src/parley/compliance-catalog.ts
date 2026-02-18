@@ -2,7 +2,7 @@
  * compliance catalog — Human-Friendly Index for CPOEs
  *
  * A JSON snapshot that lists CPOEs with metadata (framework, scope, source, dates, hash).
- * Used to keep compliance.txt minimal while still giving humans a digestible index.
+ * Used to keep trust.txt minimal while still giving humans a digestible index.
  */
 
 import { isBlockedHost } from "../security/url-validation";

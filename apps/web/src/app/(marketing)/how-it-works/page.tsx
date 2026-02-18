@@ -52,7 +52,7 @@ export default function HowItWorksPage() {
               <Link href="/verify">Verify a CPOE</Link>
             </Button>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/publish">Publish compliance.txt</Link>
+              <Link href="/publish">Publish trust.txt</Link>
             </Button>
           </div>
         </FadeIn>
@@ -154,7 +154,7 @@ export default function HowItWorksPage() {
             <FadeIn>
               <div className="rounded-xl border border-corsair-border bg-corsair-surface p-5">
                 <h3 className="mb-2 font-display text-lg font-semibold text-corsair-text">
-                  compliance.txt
+                  trust.txt
                 </h3>
                 <p className="text-sm text-corsair-text-dim">
                   A public discovery file that points to SCITT and a catalog. Like security.txt, but for CPOEs.
@@ -235,7 +235,7 @@ export default function HowItWorksPage() {
               Ready to try it?
             </h2>
             <p className="mb-6 text-corsair-text-dim">
-              Verify a real CPOE, generate compliance.txt, or sign your first proof in minutes.
+              Verify a real CPOE, generate trust.txt, or sign your first proof in minutes.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Button asChild>
