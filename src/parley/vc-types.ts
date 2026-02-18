@@ -126,9 +126,21 @@ export interface CPOECredentialSubject extends CredentialSubject {
 
   /** Evidence chain metadata (optional — document ingestion has no chain) */
   evidenceChain?: {
-    hashChainRoot: string;
+    chainType: "hash-linked";
+    algorithm: "sha256";
+    canonicalization: "sorted-json-v1";
     recordCount: number;
     chainVerified: boolean;
+    chainDigest: string;
+    chainStartHash?: string;
+    chainHeadHash?: string;
+    chains?: Array<{
+      recordCount: number;
+      chainStartHash: string;
+      chainHeadHash: string;
+      chainDigest: string;
+      chainVerified: boolean;
+    }>;
   };
 
   /** Per-framework compliance results (optional — passthrough from tool output) */

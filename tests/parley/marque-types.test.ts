@@ -30,7 +30,14 @@ describe("MARQUE Types - Proof of Operational Effectiveness", () => {
         expiresAt: new Date(Date.now() + 86400000).toISOString(),
         scope: { providers: ["aws-cognito"], resourceCount: 3, frameworksCovered: ["SOC2"] },
         summary: { controlsTested: 10, controlsPassed: 8, controlsFailed: 2, overallScore: 80 },
-        evidenceChain: { hashChainRoot: "abc123", recordCount: 5, chainVerified: true },
+        evidenceChain: {
+          chainType: "hash-linked",
+          algorithm: "sha256",
+          canonicalization: "sorted-json-v1",
+          recordCount: 5,
+          chainVerified: true,
+          chainDigest: "abc123",
+        },
         frameworks: {},
       },
       signature: "sig-placeholder",
@@ -74,14 +81,17 @@ describe("MARQUE Types - Proof of Operational Effectiveness", () => {
     expect(summary.controlsPassed + summary.controlsFailed).toBe(summary.controlsTested);
   });
 
-  test("MarqueEvidenceChain has hashChainRoot, recordCount, chainVerified", () => {
+  test("MarqueEvidenceChain has chainDigest, recordCount, chainVerified", () => {
     const chain: MarqueEvidenceChain = {
-      hashChainRoot: "e3b0c44298fc1c149afbf4c8996fb924",
+      chainType: "hash-linked",
+      algorithm: "sha256",
+      canonicalization: "sorted-json-v1",
       recordCount: 42,
       chainVerified: true,
+      chainDigest: "e3b0c44298fc1c149afbf4c8996fb924",
     };
 
-    expect(chain.hashChainRoot).toBe("e3b0c44298fc1c149afbf4c8996fb924");
+    expect(chain.chainDigest).toBe("e3b0c44298fc1c149afbf4c8996fb924");
     expect(chain.recordCount).toBe(42);
     expect(chain.chainVerified).toBe(true);
   });

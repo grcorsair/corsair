@@ -69,7 +69,7 @@ Every finding in Corsair is backed by a cryptographic evidence chain:
 
 1. Each evidence record is hashed with SHA-256
 2. Each hash includes the previous record's hash (chain)
-3. The chain root is included in the Marque signature
+3. The chain digest is included in the Marque signature
 4. Tampering with any record breaks the chain
 
 This ensures evidence integrity without trusting any central authority.

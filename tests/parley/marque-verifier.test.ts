@@ -280,7 +280,8 @@ describe("MARQUE Verifier - Document Verification", () => {
     badDoc.marque.evidenceChain.chainVerified = false;
 
     // Re-sign the tampered content so signature passes
-    const marquePayload = JSON.stringify(badDoc.marque, Object.keys(badDoc.marque).sort());
+    const { sortKeysDeep } = await import("../../src/parley/marque-generator");
+    const marquePayload = JSON.stringify(sortKeysDeep(badDoc.marque));
     badDoc.signature = keyManager.sign(marquePayload, keypair.privateKey);
 
     const verifier = new MarqueVerifier([publicKey]);

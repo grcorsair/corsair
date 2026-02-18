@@ -13,6 +13,8 @@ import { createHash } from "crypto";
 import { appendFileSync, readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { dirname } from "path";
 
+import { computeRootHash } from "./parley/merkle";
+
 import type {
   OperationType,
   PlunderRecord,
@@ -21,12 +23,36 @@ import type {
   RaidResult,
 } from "./types";
 
+export const EVIDENCE_CHAIN_TYPE = "hash-linked" as const;
+export const EVIDENCE_HASH_ALGORITHM = "sha256" as const;
+export const EVIDENCE_CANONICALIZATION = "sorted-json-v1" as const;
+
+export interface EvidenceChainItemSummary {
+  recordCount: number;
+  chainStartHash: string;
+  chainHeadHash: string;
+  chainDigest: string;
+  chainVerified: boolean;
+}
+
+export interface EvidenceChainAggregate {
+  chainType: typeof EVIDENCE_CHAIN_TYPE;
+  algorithm: typeof EVIDENCE_HASH_ALGORITHM;
+  canonicalization: typeof EVIDENCE_CANONICALIZATION;
+  recordCount: number;
+  chainVerified: boolean;
+  chainDigest: string;
+  chainStartHash?: string;
+  chainHeadHash?: string;
+  chains?: EvidenceChainItemSummary[];
+}
+
 /**
  * EvidenceEngine - JSONL Evidence Generation with Cryptographic Hash Chain
  *
  * Responsibilities:
  * - Generate JSONL evidence records with SHA-256 hash chain
- * - Verify hash chain integrity
+  * - Verify hash chain integrity
  * - Read and write JSONL files
  */
 export class EvidenceEngine {
@@ -239,6 +265,67 @@ export class EvidenceEngine {
   }
 
   /**
+   * Summarize a single evidence chain file.
+   * Returns null if the file is missing or empty.
+   */
+  summarizeChain(evidencePath: string): EvidenceChainItemSummary | null {
+    if (!existsSync(evidencePath)) return null;
+    const records = this.readJSONLFile(evidencePath);
+    if (records.length === 0) return null;
+
+    const verification = this.verifyEvidenceChain(evidencePath);
+    const recordCount = records.length;
+    const chainStartHash = records[0]!.hash;
+    const chainHeadHash = records[records.length - 1]!.hash;
+    const chainDigest = computeRootHash(records.map(r => r.hash));
+
+    return {
+      recordCount,
+      chainStartHash,
+      chainHeadHash,
+      chainDigest,
+      chainVerified: verification.valid,
+    };
+  }
+
+  /**
+   * Summarize multiple evidence chain files into a single aggregate.
+   * Returns null if no evidence records are found.
+   */
+  summarizeChains(evidencePaths: string[]): EvidenceChainAggregate | null {
+    const summaries: EvidenceChainItemSummary[] = [];
+    for (const evPath of evidencePaths) {
+      const summary = this.summarizeChain(evPath);
+      if (summary) summaries.push(summary);
+    }
+
+    if (summaries.length === 0) return null;
+
+    const recordCount = summaries.reduce((sum, s) => sum + s.recordCount, 0);
+    const chainVerified = summaries.every(s => s.chainVerified);
+    const chainDigests = summaries.map(s => s.chainDigest).sort();
+    const chainDigest = computeRootHash(chainDigests);
+
+    const aggregate: EvidenceChainAggregate = {
+      chainType: EVIDENCE_CHAIN_TYPE,
+      algorithm: EVIDENCE_HASH_ALGORITHM,
+      canonicalization: EVIDENCE_CANONICALIZATION,
+      recordCount,
+      chainVerified,
+      chainDigest,
+    };
+
+    if (summaries.length === 1) {
+      aggregate.chainStartHash = summaries[0]!.chainStartHash;
+      aggregate.chainHeadHash = summaries[0]!.chainHeadHash;
+    } else {
+      aggregate.chains = summaries;
+    }
+
+    return aggregate;
+  }
+
+  /**
    * Simple boolean check for hash chain validity.
    *
    * @param evidencePath - Path to the JSONL evidence file
@@ -253,7 +340,7 @@ export class EvidenceEngine {
    * @internal
    */
   calculateHash(record: Omit<PlunderRecord, "hash">): string {
-    const dataToHash = JSON.stringify({
+    const dataToHash = canonicalJSONStringify({
       sequence: record.sequence,
       timestamp: record.timestamp,
       operation: record.operation,
@@ -322,4 +409,25 @@ export class EvidenceEngine {
   setLastHash(hash: string | null): void {
     this.lastHash = hash;
   }
+}
+
+// =============================================================================
+// INTERNAL HELPERS
+// =============================================================================
+
+function canonicalJSONStringify(value: unknown): string {
+  return JSON.stringify(sortKeysDeep(value));
+}
+
+function sortKeysDeep(value: unknown): unknown {
+  if (value === null || value === undefined) return value;
+  if (Array.isArray(value)) return value.map(sortKeysDeep);
+  if (typeof value === "object") {
+    const sorted: Record<string, unknown> = {};
+    for (const key of Object.keys(value as Record<string, unknown>).sort()) {
+      sorted[key] = sortKeysDeep((value as Record<string, unknown>)[key]);
+    }
+    return sorted;
+  }
+  return value;
 }

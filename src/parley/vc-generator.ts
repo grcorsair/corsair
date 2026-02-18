@@ -13,7 +13,6 @@
 
 import * as crypto from "crypto";
 import { SignJWT, importPKCS8 } from "jose";
-import { existsSync } from "fs";
 
 import { MarqueKeyManager } from "./marque-key-manager";
 import { sanitize } from "./marque-generator";
@@ -25,7 +24,12 @@ import {
   deriveEvidenceTypeDistribution,
 } from "../ingestion/provenance-utils";
 import { computeSummaryFromControls } from "../ingestion/summary";
-import { EvidenceEngine } from "../evidence";
+import {
+  EvidenceEngine,
+  EVIDENCE_CANONICALIZATION,
+  EVIDENCE_CHAIN_TYPE,
+  EVIDENCE_HASH_ALGORITHM,
+} from "../evidence";
 import { hashReceipt } from "./process-receipt";
 import type { ProcessReceipt } from "./process-receipt";
 import { computeRootHash } from "./merkle";
@@ -150,22 +154,20 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
   // Evidence chain — only include if there are evidence paths with data
   const evidencePaths = input.evidencePaths || [];
   if (evidencePaths.length > 0) {
-    let hashChainRoot = "none";
-    let recordCount = 0;
-    let chainVerified = true;
     const engine = new EvidenceEngine();
-    for (const evPath of evidencePaths) {
-      if (!existsSync(evPath)) continue;
-      const verification = engine.verifyEvidenceChain(evPath);
-      recordCount += verification.recordCount;
-      if (!verification.valid) chainVerified = false;
-      if (!hashChainRoot || hashChainRoot === "none") {
-        const records = engine.readJSONLFile(evPath);
-        if (records.length > 0) hashChainRoot = records[0].hash;
-      }
-    }
-    if (recordCount > 0) {
-      subject.evidenceChain = { hashChainRoot, recordCount, chainVerified };
+    const summary = engine.summarizeChains(evidencePaths);
+    if (summary && summary.recordCount > 0) {
+      subject.evidenceChain = summary;
+    } else if (summary === null && evidencePaths.length > 0) {
+      // If evidence paths were provided but empty, include a minimal chain descriptor
+      subject.evidenceChain = {
+        chainType: EVIDENCE_CHAIN_TYPE,
+        algorithm: EVIDENCE_HASH_ALGORITHM,
+        canonicalization: EVIDENCE_CANONICALIZATION,
+        recordCount: 0,
+        chainVerified: true,
+        chainDigest: "none",
+      };
     }
   }
 

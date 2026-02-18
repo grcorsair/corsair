@@ -132,9 +132,12 @@ describe("VC Types - W3C Verifiable Credential 2.0", () => {
         overallScore: 80,
       },
       evidenceChain: {
-        hashChainRoot: "sha256-abc123",
+        chainType: "hash-linked",
+        algorithm: "sha256",
+        canonicalization: "sorted-json-v1",
         recordCount: 42,
         chainVerified: true,
+        chainDigest: "sha256-abc123",
       },
       frameworks: {
         "SOC2": {
@@ -166,7 +169,14 @@ describe("VC Types - W3C Verifiable Credential 2.0", () => {
       scope: "aws-cognito — 1 resource, SOC2",
       provenance: { source: "tool", sourceIdentity: "Corsair Test" },
       summary: { controlsTested: 5, controlsPassed: 5, controlsFailed: 0, overallScore: 100 },
-      evidenceChain: { hashChainRoot: "sha256-root", recordCount: 10, chainVerified: true },
+      evidenceChain: {
+        chainType: "hash-linked",
+        algorithm: "sha256",
+        canonicalization: "sorted-json-v1",
+        recordCount: 10,
+        chainVerified: true,
+        chainDigest: "sha256-root",
+      },
       frameworks: {},
       threatModel: {
         methodology: "STRIDE",
@@ -238,7 +248,14 @@ describe("VC Types - W3C Verifiable Credential 2.0", () => {
         scope: "aws-cognito — 3 resources, SOC2",
         provenance: { source: "tool", sourceIdentity: "Corsair Engine" },
         summary: { controlsTested: 10, controlsPassed: 8, controlsFailed: 2, overallScore: 80 },
-        evidenceChain: { hashChainRoot: "sha256-root", recordCount: 20, chainVerified: true },
+        evidenceChain: {
+          chainType: "hash-linked",
+          algorithm: "sha256",
+          canonicalization: "sorted-json-v1",
+          recordCount: 20,
+          chainVerified: true,
+          chainDigest: "sha256-root",
+        },
         frameworks: {},
       },
     };

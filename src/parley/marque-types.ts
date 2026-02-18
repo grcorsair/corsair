@@ -154,17 +154,41 @@ export interface MarqueSummary {
 
 /**
  * Metadata about the cryptographic evidence chain backing this MARQUE.
- * Links to the JSONL evidence store with SHA-256 hash chains.
+ * Links to the JSONL evidence store with SHA-256 hash chains and a Merkle digest.
  */
 export interface MarqueEvidenceChain {
-  /** Root hash of the evidence chain */
-  hashChainRoot: string;
+  /** Evidence chain type */
+  chainType: "hash-linked";
+
+  /** Hash algorithm used for chain and digest */
+  algorithm: "sha256";
+
+  /** Canonicalization scheme used before hashing */
+  canonicalization: "sorted-json-v1";
 
   /** Total number of evidence records in the chain */
   recordCount: number;
 
   /** Whether the hash chain was verified as intact */
   chainVerified: boolean;
+
+  /** Merkle root of evidence record hashes (or "none" if empty) */
+  chainDigest: string;
+
+  /** First record hash (only present for single-chain summaries) */
+  chainStartHash?: string;
+
+  /** Last record hash (only present for single-chain summaries) */
+  chainHeadHash?: string;
+
+  /** Per-file chain summaries (present when multiple chains are included) */
+  chains?: Array<{
+    recordCount: number;
+    chainStartHash: string;
+    chainHeadHash: string;
+    chainDigest: string;
+    chainVerified: boolean;
+  }>;
 }
 
 // =============================================================================

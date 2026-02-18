@@ -29,8 +29,14 @@ Each evidence record contains:
 
 1. The first record has `previousHash` set to all zeros (genesis)
 2. Each subsequent record includes the `hash` of the previous record as its `previousHash`
-3. The `hash` is computed as `SHA-256(JSON.stringify(record_without_hash))`
+3. The `hash` is computed as `SHA-256(canonical(record_without_hash))` using `sorted-json-v1`
 4. Breaking any record invalidates all subsequent hashes
+
+### Chain Digest
+
+Each evidence chain also exposes a **chain digest** — a Merkle root computed over all record hashes.
+This provides a single stable fingerprint for the entire chain and is embedded in CPOEs as
+`evidenceChain.chainDigest` alongside `chainType`, `algorithm`, and `canonicalization`.
 
 ## Verification
 
@@ -74,7 +80,7 @@ Evidence uses JSONL (JSON Lines) — one JSON object per line. This format is:
 Evidence chains integrate with:
 
 - **OSCAL output** — Hash chain status included in Assessment Results metadata
-- **Marque documents** — Chain root hash and record count are part of the signed attestation
+- **Marque documents** — Chain digest and record count are part of the signed attestation
 - **GRC platforms** — JSONL can be ingested by ServiceNow, Jira, Splunk via webhooks
 
 ## Compaction
@@ -85,11 +91,11 @@ For repeated assessments, the evidence compaction engine can merge multiple chai
 bun corsair.ts --compact ./evidence/assessment-*.jsonl --output ./evidence/compacted.jsonl
 ```
 
-Compaction creates a new chain that references the original chains' root hashes, maintaining the full audit trail.
+Compaction creates a new chain that references the original chains' digests, maintaining the full audit trail.
 
 ## SCITT Transparency Log Integration
 
-As part of the Parley protocol, evidence chains can be registered with an IETF SCITT (Supply Chain Integrity, Transparency, and Trust) transparency service. When a Marque is issued, the signed attestation and its evidence chain root hash can be submitted as a SCITT statement, producing a COSE receipt that proves inclusion in the append-only log.
+As part of the Parley protocol, evidence chains can be registered with an IETF SCITT (Supply Chain Integrity, Transparency, and Trust) transparency service. When a Marque is issued, the signed attestation and its evidence chain digest can be submitted as a SCITT statement, producing a COSE receipt that proves inclusion in the append-only log.
 
 This provides two properties beyond the existing hash chain:
 

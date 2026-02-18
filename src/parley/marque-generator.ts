@@ -9,7 +9,6 @@
  */
 
 import * as crypto from "crypto";
-import { readFileSync, existsSync } from "fs";
 
 import { MarqueKeyManager } from "./marque-key-manager";
 import type {
@@ -26,10 +25,14 @@ import type {
   RaidResult,
   ChartResult,
   ThreatModelResult,
-  PlunderRecord,
 } from "../types";
 import type { IngestedDocument } from "../ingestion/types";
-import { EvidenceEngine } from "../evidence";
+import {
+  EvidenceEngine,
+  EVIDENCE_CANONICALIZATION,
+  EVIDENCE_CHAIN_TYPE,
+  EVIDENCE_HASH_ALGORITHM,
+} from "../evidence";
 
 // =============================================================================
 // INPUT TYPE
@@ -253,39 +256,23 @@ export class MarqueGenerator {
 
   /**
    * Build evidence chain metadata from evidence files.
-   * Reads the first record hash as the chain root.
    */
   private buildEvidenceChain(evidencePaths: string[]): MarqueEvidenceChain {
-    let totalRecords = 0;
-    let hashChainRoot = "";
-    let allVerified = true;
-
     const engine = new EvidenceEngine();
+    const summary = engine.summarizeChains(evidencePaths);
 
-    for (const evPath of evidencePaths) {
-      if (!existsSync(evPath)) continue;
-
-      const verification = engine.verifyEvidenceChain(evPath);
-      totalRecords += verification.recordCount;
-
-      if (!verification.valid) {
-        allVerified = false;
-      }
-
-      // Use first record's hash as chain root
-      if (!hashChainRoot) {
-        const records = engine.readJSONLFile(evPath);
-        if (records.length > 0) {
-          hashChainRoot = records[0].hash;
-        }
-      }
+    if (!summary) {
+      return {
+        chainType: EVIDENCE_CHAIN_TYPE,
+        algorithm: EVIDENCE_HASH_ALGORITHM,
+        canonicalization: EVIDENCE_CANONICALIZATION,
+        recordCount: 0,
+        chainVerified: true,
+        chainDigest: "none",
+      };
     }
 
-    return {
-      hashChainRoot: hashChainRoot || "none",
-      recordCount: totalRecords,
-      chainVerified: allVerified,
-    };
+    return summary;
   }
 
   /**

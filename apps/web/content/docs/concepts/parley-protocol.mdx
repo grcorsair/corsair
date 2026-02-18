@@ -30,7 +30,7 @@ W3C Verifiable Credentials 2.0 provides the **credential data model**. A CPOE be
 - `@context`: W3C VC 2.0 + Corsair credential context
 - `type`: `["VerifiableCredential", "CorsairCPOE"]`
 - `issuer`: DID of the assessing organization
-- `credentialSubject`: Assessment scope, summary, evidence chain, frameworks
+- `credentialSubject`: Assessment scope, summary, evidence chain (`chainDigest`), frameworks
 
 The JWT encoding (`vc+jwt`) means the signature IS the JWT — no separate proof object needed.
 

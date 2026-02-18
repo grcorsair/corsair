@@ -200,7 +200,10 @@ export class MarqueVerifier {
     }
 
     if (
-      !marque.evidenceChain?.hashChainRoot ||
+      marque.evidenceChain?.chainType !== "hash-linked" ||
+      marque.evidenceChain?.algorithm !== "sha256" ||
+      marque.evidenceChain?.canonicalization !== "sorted-json-v1" ||
+      !marque.evidenceChain?.chainDigest ||
       marque.evidenceChain?.recordCount === undefined ||
       marque.evidenceChain?.chainVerified === undefined
     ) {

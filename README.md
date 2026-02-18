@@ -213,6 +213,14 @@ The credential subject records **provenance and summary** — who produced the e
     "controlsFailed": 4,
     "overallScore": 91
   },
+  "evidenceChain": {
+    "chainType": "hash-linked",
+    "algorithm": "sha256",
+    "canonicalization": "sorted-json-v1",
+    "recordCount": 128,
+    "chainVerified": true,
+    "chainDigest": "f4c1..."
+  },
   "frameworks": {
     "SOC2": { "controlsMapped": 24, "passed": 22, "failed": 2 },
     "NIST-800-53": { "controlsMapped": 22, "passed": 20, "failed": 2 }

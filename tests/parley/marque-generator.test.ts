@@ -297,14 +297,16 @@ describe("MARQUE Generator - Document Generation", () => {
     expect(soc2.controls).toHaveLength(2);
   });
 
-  test("generated MARQUE evidence chain references hash chain root", async () => {
+  test("generated MARQUE evidence chain includes a digest and metadata", async () => {
     const { generator, keyDir } = await setupGenerator();
     const input = await buildInput(keyDir);
 
     const doc = await generator.generate(input);
 
-    expect(doc.marque.evidenceChain.hashChainRoot).toBeDefined();
-    expect(doc.marque.evidenceChain.hashChainRoot.length).toBeGreaterThan(0);
+    expect(doc.marque.evidenceChain.chainDigest).toBeDefined();
+    expect(doc.marque.evidenceChain.chainDigest.length).toBeGreaterThan(0);
+    expect(doc.marque.evidenceChain.chainType).toBe("hash-linked");
+    expect(doc.marque.evidenceChain.algorithm).toBe("sha256");
     expect(doc.marque.evidenceChain.recordCount).toBeGreaterThan(0);
     expect(doc.marque.evidenceChain.chainVerified).toBe(true);
   });

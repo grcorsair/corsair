@@ -90,11 +90,20 @@ All claims live under `vc.credentialSubject`. The provenance-first model (v0.5.0
 | `provenance.sourceIdentity` | string | Who produced the evidence (e.g., "Deloitte LLP", "Prowler v3.1") |
 | `provenance.sourceDocument` | string | SHA-256 hash of the source document |
 | `provenance.sourceDate` | string | ISO 8601 date of the source assessment |
-| `evidenceChain` | object | Hash chain metadata: `{ hashChainRoot, recordCount, chainVerified }` |
+| `evidenceChain` | object | Evidence chain metadata: `{ chainType, algorithm, canonicalization, recordCount, chainVerified, chainDigest, chainStartHash?, chainHeadHash?, chains? }` |
 | `frameworks` | object | Per-framework results (keyed by framework name) |
 | `processProvenance` | object | Pipeline receipt chain: `{ chainDigest, receiptCount, chainVerified, format, reproducibleSteps, attestedSteps, scittEntryIds? }` — in-toto/SLSA provenance trail |
 | `schemaVersion` | string | CPOE schema version (current: `"1.0"`) |
 | `extensions` | object | Optional passthrough fields and mapping metadata (namespaced keys only) |
+
+**Evidence chain fields:**
+
+- `chainType` — `"hash-linked"` (JSONL records linked by SHA-256)
+- `algorithm` — `"sha256"`
+- `canonicalization` — `"sorted-json-v1"` (keys sorted before hashing)
+- `chainDigest` — Merkle root of record hashes (or `"none"` if empty)
+- `chainStartHash` / `chainHeadHash` — First/last record hash (only when a single chain is included)
+- `chains` — Optional array of per-file summaries when multiple evidence files are included
 
 **Extensions namespace rules:** `extensions` keys must be `mapping`, `passthrough`, or namespaced with
 `x-` / `ext.`. Unknown un-namespaced keys are invalid.

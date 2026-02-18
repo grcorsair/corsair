@@ -570,11 +570,17 @@ export function MarqueVerifier() {
                     <div className="font-mono text-xs text-muted-foreground">
                       <div>
                         Records: {result.document.evidenceChain.recordCount} |
-                        Algorithm: {result.document.evidenceChain.algorithm}
+                        Algorithm: {result.document.evidenceChain.algorithm} |
+                        Canonicalization: {result.document.evidenceChain.canonicalization}
                       </div>
                       <div className="mt-1 truncate text-corsair-cyan/60">
-                        Root: {result.document.evidenceChain.hashChainRoot}
+                        Digest: {result.document.evidenceChain.chainDigest}
                       </div>
+                      {result.document.evidenceChain.chainHeadHash && (
+                        <div className="mt-1 truncate text-corsair-cyan/60">
+                          Head: {result.document.evidenceChain.chainHeadHash}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

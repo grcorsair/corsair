@@ -53,9 +53,14 @@ export interface MarqueVerificationResult {
       overallScore: number;
     };
     evidenceChain: {
-      hashChainRoot: string;
-      recordCount: number;
+      chainType: string;
       algorithm: string;
+      canonicalization: string;
+      recordCount: number;
+      chainVerified: boolean;
+      chainDigest: string;
+      chainStartHash?: string;
+      chainHeadHash?: string;
     };
     findings?: Array<{
       criterion: string;
@@ -395,9 +400,14 @@ function mapVCToDocument(payload: {
       overallScore: (summary.overallScore as number) ?? 0,
     },
     evidenceChain: {
-      hashChainRoot: (evidence.hashChainRoot as string) ?? "",
+      chainType: (evidence.chainType as string) ?? "hash-linked",
+      algorithm: (evidence.algorithm as string) ?? "sha256",
+      canonicalization: (evidence.canonicalization as string) ?? "sorted-json-v1",
       recordCount: (evidence.recordCount as number) ?? 0,
-      algorithm: "SHA-256",
+      chainVerified: (evidence.chainVerified as boolean) ?? false,
+      chainDigest: (evidence.chainDigest as string) ?? "",
+      chainStartHash: evidence.chainStartHash as string | undefined,
+      chainHeadHash: evidence.chainHeadHash as string | undefined,
     },
   };
 }
