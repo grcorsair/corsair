@@ -57,6 +57,9 @@ switch (subcommand) {
   case "mappings":
     await handleMappings();
     break;
+  case "policy":
+    await handlePolicy();
+    break;
   case "receipts":
     await handleReceipts();
     break;
@@ -71,7 +74,7 @@ switch (subcommand) {
     break;
   default:
     console.error(`Unknown command: ${subcommand}`);
-    console.error("  Available: init, sign, verify, diff, log, keygen, trust-txt, mappings, receipts, help");
+    console.error("  Available: init, sign, verify, diff, log, keygen, trust-txt, mappings, policy, receipts, help");
     console.error('  Run "corsair help" for details');
     process.exit(1);
 }
@@ -101,6 +104,7 @@ async function handleSign(): Promise<void> {
   let sdFields: string[] | undefined;
   let mappingFiles: string[] = [];
   let mappingDirs: string[] = [];
+  let dependencyRefs: string[] = [];
   let gate = false;
 
   for (let i = 0; i < args.length; i++) {
@@ -170,6 +174,12 @@ async function handleSign(): Promise<void> {
           }
         }
         break;
+      case "--dependency":
+        {
+          const value = args[++i];
+          if (value) dependencyRefs.push(value);
+        }
+        break;
       case "--help":
       case "-h":
         showHelp = true;
@@ -208,6 +218,7 @@ OPTIONS:
       --sd-jwt              Enable SD-JWT selective disclosure
       --sd-fields <FIELDS>  Comma-separated fields to make disclosable (default: summary,frameworks)
       --mapping <PATH>      Mapping file or directory (repeatable; JSON maps tool output)
+      --dependency <PATH>   Dependency CPOE path or URL (repeatable)
   -v, --verbose             Print step-by-step progress to stderr
   -q, --quiet               Suppress all stderr output
       --version             Print version
@@ -326,6 +337,57 @@ EXAMPLES:
     console.error("Parsing evidence...");
   }
 
+  let dependencies: import("./src/parley/vc-types").DependencyProof[] | undefined;
+  if (dependencyRefs.length > 0) {
+    const { buildDependencyProof } = await import("./src/parley/dependency-proofs");
+    const { validatePublicUrl } = await import("./src/security/url-validation");
+    dependencies = [];
+
+    for (const ref of dependencyRefs) {
+      if (ref.startsWith("http://") || ref.startsWith("https://")) {
+        const urlCheck = validatePublicUrl(ref);
+        if (!urlCheck.valid) {
+          console.error(`Error: dependency URL invalid: ${urlCheck.error || ref}`);
+          process.exit(2);
+        }
+        if (ref.startsWith("http://")) {
+          console.error("Error: dependency URL must use HTTPS");
+          process.exit(2);
+        }
+
+        try {
+          const res = await fetch(ref, { signal: AbortSignal.timeout(10_000), redirect: "error" });
+          if (!res.ok) {
+            console.error(`Error: dependency fetch failed (${res.status})`);
+            process.exit(2);
+          }
+          const body = await res.text();
+          const jwt = extractJwtFromContent(body);
+          if (!jwt) {
+            console.error("Error: dependency URL did not return a JWT");
+            process.exit(2);
+          }
+          dependencies.push(buildDependencyProof(jwt, { cpoeUrl: ref }));
+        } catch (err) {
+          console.error(`Error: dependency fetch failed: ${err instanceof Error ? err.message : String(err)}`);
+          process.exit(2);
+        }
+      } else {
+        if (!existsSync(ref)) {
+          console.error(`Error: dependency file not found: ${ref}`);
+          process.exit(2);
+        }
+        const content = readFileSync(ref, "utf-8");
+        const jwt = extractJwtFromContent(content);
+        if (!jwt) {
+          console.error(`Error: dependency file did not contain a JWT: ${ref}`);
+          process.exit(2);
+        }
+        dependencies.push(buildDependencyProof(jwt));
+      }
+    }
+  }
+
   // Call the shared sign engine
   const { signEvidence, SignError } = await import("./src/sign/sign-core");
   type EvidenceFormat = import("./src/sign/sign-core").EvidenceFormat;
@@ -341,6 +403,7 @@ EXAMPLES:
       dryRun,
       sdJwt,
       sdFields,
+      dependencies,
     }, keyManager);
 
     // Always show compact summary (not just with --verbose)
@@ -710,6 +773,25 @@ function decodeJwtPayload(jwt: string): Record<string, unknown> | null {
   }
 }
 
+function extractJwtFromContent(content: string): string | null {
+  const trimmed = content.trim();
+  if (trimmed.startsWith("eyJ") && trimmed.split(".").length === 3) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(trimmed) as { cpoe?: string; jwt?: string };
+      if (parsed.cpoe && typeof parsed.cpoe === "string") return parsed.cpoe;
+      if (parsed.jwt && typeof parsed.jwt === "string") return parsed.jwt;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
 /** Extract control map from CPOE credentialSubject frameworks */
 function extractControls(subject: Record<string, unknown>): Map<string, DriftControl> {
   const controls = new Map<string, DriftControl>();
@@ -825,6 +907,15 @@ async function handleMappings(): Promise<void> {
   const showHelp = args.includes("--help") || args.includes("-h");
   const strict = args.includes("--strict");
 
+  if (sub === "pack") {
+    await handleMappingsPack(args.slice(1));
+    return;
+  }
+  if (sub === "sign") {
+    await handleMappingsSign(args.slice(1));
+    return;
+  }
+
   let mappingFiles: string[] = [];
   let mappingDirs: string[] = [];
   let samplePath: string | undefined;
@@ -867,6 +958,8 @@ USAGE:
   corsair mappings list [options]
   corsair mappings validate [options]
   corsair mappings add <url> [options]
+  corsair mappings pack --id <ID> --version <SEMVER> [options]
+  corsair mappings sign --file <PACK.json> --key <KEY.pem> [options]
 
 OPTIONS:
       --mapping <PATH>      Mapping file or directory (repeatable)
@@ -886,6 +979,8 @@ EXAMPLES:
   corsair mappings validate --strict --json
   corsair mappings add https://example.com/mappings/pack.json
   corsair mappings add --file ./mappings/toolx.json --dir ~/.corsair/mappings
+  corsair mappings pack --id wiz --version 1.0.0 --mapping ./mappings
+  corsair mappings sign --file pack.json --key ./keys/mapping-pack.key
 `);
     return;
   }
@@ -1162,12 +1257,246 @@ EXAMPLES:
   if (!ok) process.exit(1);
 }
 
+async function handleMappingsPack(args: string[]): Promise<void> {
+  let packId: string | undefined;
+  let packVersion: string | undefined;
+  let issuedAt: string | undefined;
+  let outputPath: string | undefined;
+  let showHelp = false;
+  let jsonOutput = false;
+  const mappingPaths: string[] = [];
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "--id":
+        packId = args[++i];
+        break;
+      case "--version":
+        packVersion = args[++i];
+        break;
+      case "--issued-at":
+        issuedAt = args[++i];
+        break;
+      case "--mapping":
+        {
+          const value = args[++i];
+          if (value) mappingPaths.push(value);
+        }
+        break;
+      case "--output":
+      case "-o":
+        outputPath = args[++i];
+        break;
+      case "--json":
+        jsonOutput = true;
+        break;
+      case "--help":
+      case "-h":
+        showHelp = true;
+        break;
+    }
+  }
+
+  if (showHelp) {
+    console.log(`
+CORSAIR MAPPINGS PACK — Bundle mappings into a signed pack
+
+USAGE:
+  corsair mappings pack --id <ID> --version <SEMVER> --mapping <PATH> [options]
+
+OPTIONS:
+      --id <ID>           Mapping pack id
+      --version <VER>     Mapping pack version (semver or date)
+      --issued-at <ISO>   ISO 8601 issuance time (default: now)
+      --mapping <PATH>    Mapping file or directory (repeatable)
+  -o, --output <PATH>     Write pack JSON to file (default: stdout)
+      --json              Output JSON to stdout (default when no --output)
+  -h, --help              Show this help
+
+EXAMPLES:
+  corsair mappings pack --id wiz --version 1.0.0 --mapping ./mappings
+  corsair mappings pack --id prowler --version 2026-02-18 --mapping ./mappings/prowler.json -o pack.json
+`);
+    return;
+  }
+
+  if (!packId || !packVersion) {
+    console.error("Error: --id and --version are required");
+    console.error('Run "corsair mappings pack --help" for usage');
+    process.exit(2);
+  }
+
+  if (mappingPaths.length === 0) {
+    console.error("Error: at least one --mapping path is required");
+    console.error('Run "corsair mappings pack --help" for usage');
+    process.exit(2);
+  }
+
+  if (issuedAt) {
+    const parsed = new Date(issuedAt);
+    if (Number.isNaN(parsed.getTime())) {
+      console.error(`Error: invalid --issued-at value: ${issuedAt}`);
+      process.exit(2);
+    }
+  }
+
+  const { loadMappingsFromPaths, createMappingPack } = await import("./src/ingestion/mapping-pack");
+  const { mappings, errors } = loadMappingsFromPaths(mappingPaths);
+
+  if (errors.length > 0) {
+    console.error(`Error: failed to load mappings (${errors.length} issues)`);
+    for (const err of errors) {
+      const id = err.mappingId ? ` [${err.mappingId}]` : "";
+      console.error(`  - ${err.error}${id} (${err.path})`);
+    }
+    process.exit(2);
+  }
+
+  const pack = createMappingPack(
+    { id: packId, version: packVersion, issuedAt: issuedAt ?? new Date().toISOString() },
+    mappings,
+  );
+  const output = JSON.stringify(pack, null, 2);
+
+  if (outputPath) {
+    writeFileSync(outputPath, output);
+    if (jsonOutput) {
+      process.stdout.write(output);
+    } else {
+      console.log(`Mapping pack written to ${outputPath}`);
+    }
+    return;
+  }
+
+  process.stdout.write(output);
+}
+
+async function handleMappingsSign(args: string[]): Promise<void> {
+  let filePath: string | undefined;
+  let keyPath: string | undefined;
+  let outputPath: string | undefined;
+  let showHelp = false;
+  let jsonOutput = false;
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "--file":
+      case "-f":
+        filePath = args[++i];
+        break;
+      case "--key":
+        keyPath = args[++i];
+        break;
+      case "--output":
+      case "-o":
+        outputPath = args[++i];
+        break;
+      case "--json":
+        jsonOutput = true;
+        break;
+      case "--help":
+      case "-h":
+        showHelp = true;
+        break;
+    }
+  }
+
+  if (showHelp) {
+    console.log(`
+CORSAIR MAPPINGS SIGN — Sign a mapping pack
+
+USAGE:
+  corsair mappings sign --file <PACK.json> --key <KEY.pem> [options]
+
+OPTIONS:
+  -f, --file <PATH>     Mapping pack JSON file
+      --key <PATH>      Ed25519 private key (PKCS8 PEM)
+  -o, --output <PATH>   Write signed pack JSON to file (default: stdout)
+      --json            Output JSON to stdout (default when no --output)
+  -h, --help            Show this help
+
+EXAMPLE:
+  corsair mappings sign --file pack.json --key ./keys/mapping-pack.key
+`);
+    return;
+  }
+
+  if (!filePath || !keyPath) {
+    console.error("Error: --file and --key are required");
+    console.error('Run "corsair mappings sign --help" for usage');
+    process.exit(2);
+  }
+
+  if (!existsSync(filePath)) {
+    console.error(`Error: mapping pack not found: ${filePath}`);
+    process.exit(2);
+  }
+
+  if (!existsSync(keyPath)) {
+    console.error(`Error: key file not found: ${keyPath}`);
+    process.exit(2);
+  }
+
+  let packRaw: string;
+  try {
+    packRaw = readFileSync(filePath, "utf-8");
+  } catch (err) {
+    console.error(`Error: failed to read pack: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(2);
+  }
+
+  let packJson: unknown;
+  try {
+    packJson = JSON.parse(packRaw);
+  } catch {
+    console.error("Error: pack file is not valid JSON");
+    process.exit(2);
+  }
+
+  const { isMappingPack } = await import("./src/ingestion/mapping-schema");
+  if (!isMappingPack(packJson)) {
+    console.error("Error: file is not a valid mapping pack");
+    process.exit(2);
+  }
+
+  const { validateMappingPack, signMappingPack } = await import("./src/ingestion/mapping-pack");
+  const validation = validateMappingPack(packJson);
+  if (!validation.ok) {
+    console.error("Error: mapping pack validation failed");
+    for (const err of validation.errors) {
+      console.error(`  - ${err}`);
+    }
+    process.exit(2);
+  }
+
+  const privateKeyPem = readFileSync(keyPath, "utf-8");
+  const signedPack = signMappingPack(packJson, privateKeyPem);
+  const output = JSON.stringify(signedPack, null, 2);
+
+  if (outputPath) {
+    writeFileSync(outputPath, output);
+    if (jsonOutput) {
+      process.stdout.write(output);
+    } else {
+      console.log(`Signed mapping pack written to ${outputPath}`);
+    }
+    return;
+  }
+
+  process.stdout.write(output);
+}
+
 // =============================================================================
 // LOG
 // =============================================================================
 
 async function handleLog(): Promise<void> {
   const args = process.argv.slice(3);
+  const sub = args[0];
+  if (sub === "register") {
+    await handleLogRegister(args.slice(1));
+    return;
+  }
   let showHelp = false;
   let last = 10;
   let lastProvided = false;
@@ -1217,6 +1546,7 @@ CORSAIR LOG — List signed CPOEs (local SCITT transparency log)
 
 USAGE:
   corsair log [options]
+  corsair log register --file <CPOE.jwt> --scitt <URL> [--proof-only] [--json]
 
 OPTIONS:
   -n, --last <N>            Show last N entries (default: 10)
@@ -1234,9 +1564,12 @@ EXAMPLES:
   corsair log --dir ./cpoes           Scan specific directory
   corsair log --scitt https://log.example.com/v1/entries --issuer did:web:acme.com
   corsair log --domain acme.com --framework SOC2
+  corsair log register --file cpoe.jwt --scitt https://log.example.com/scitt/entries
+  corsair log register --file cpoe.jwt --domain acme.com --proof-only
 
 NOTE:
   Local mode scans .jwt files on disk. Remote mode queries SCITT logs.
+  Register mode posts a JWT-VC to a SCITT log (optionally proof-only).
 `);
     return;
   }
@@ -1284,10 +1617,13 @@ NOTE:
     console.log("");
 
     for (const entry of resolution.entries) {
-      const score = entry.summary?.overallScore ?? "?";
+      const score = entry.proofOnly ? "-" : (entry.summary?.overallScore ?? "?");
+      const scoreSuffix = entry.proofOnly ? "" : "%";
       const source = entry.provenance?.source ?? "unknown";
       const date = entry.registrationTime.split("T")[0];
-      console.log(`  ${entry.entryId}  ${entry.scope}  ${score}%  ${source}  ${date}`);
+      const scope = entry.proofOnly ? "proof-only" : entry.scope;
+      const proofTag = entry.proofOnly ? " (proof-only)" : "";
+      console.log(`  ${entry.entryId}  ${scope}  ${score}${scoreSuffix}  ${source}  ${date}${proofTag}`);
     }
 
     if (resolution.entries.length === 0) {
@@ -1387,6 +1723,122 @@ NOTE:
     console.log(`  #${i + 1}  ${date}  ${fileName}  ${source}  ${iss}  score:${score}%${marker}`);
   }
   console.log("");
+}
+
+async function handleLogRegister(args: string[]): Promise<void> {
+  let filePath: string | undefined;
+  let scittUrl: string | undefined;
+  let domain: string | undefined;
+  let proofOnly = false;
+  let jsonOutput = false;
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "--file":
+      case "-f":
+        filePath = args[++i];
+        break;
+      case "--scitt":
+        scittUrl = args[++i];
+        break;
+      case "--domain":
+        domain = args[++i];
+        break;
+      case "--proof-only":
+        proofOnly = true;
+        break;
+      case "--json":
+        jsonOutput = true;
+        break;
+      case "--help":
+      case "-h":
+        console.log(`
+CORSAIR LOG REGISTER — Register a CPOE in SCITT
+
+USAGE:
+  corsair log register --file <CPOE.jwt> --scitt <URL> [--proof-only] [--json]
+  corsair log register --file <CPOE.jwt> --domain <DOMAIN> [--proof-only]
+
+OPTIONS:
+  -f, --file <PATH>     CPOE JWT file path
+      --scitt <URL>     SCITT log endpoint (POST /scitt/entries)
+      --domain <DOMAIN> Resolve trust.txt for SCITT endpoint
+      --proof-only      Register hash commitment only (no statement stored)
+      --json            Output structured JSON
+  -h, --help            Show this help
+`);
+        return;
+    }
+  }
+
+  if (!filePath) {
+    console.error("Error: --file is required");
+    console.error('Run "corsair log register --help" for usage');
+    process.exit(2);
+  }
+
+  if (!existsSync(filePath)) {
+    console.error(`Error: CPOE file not found: ${filePath}`);
+    process.exit(2);
+  }
+
+  if (domain) {
+    const { resolveTrustTxt } = await import("./src/parley/trust-txt");
+    const resolution = await resolveTrustTxt(domain);
+    if (!resolution.trustTxt) {
+      console.error(`Error: ${resolution.error || "Failed to resolve trust.txt"}`);
+      process.exit(1);
+    }
+    if (!resolution.trustTxt.scitt) {
+      console.error("Error: trust.txt does not publish a SCITT endpoint");
+      process.exit(1);
+    }
+    scittUrl = resolution.trustTxt.scitt;
+  }
+
+  if (!scittUrl) {
+    console.error("Error: --scitt or --domain is required");
+    process.exit(2);
+  }
+
+  const rawJwt = readFileSync(filePath, "utf-8");
+  const jwt = extractJwtFromContent(rawJwt);
+  if (!jwt) {
+    console.error("Error: CPOE file did not contain a JWT");
+    process.exit(2);
+  }
+
+  try {
+    const res = await fetch(scittUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ statement: jwt, proofOnly }),
+      signal: AbortSignal.timeout(10_000),
+      redirect: "error",
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const message = (body as { error?: string }).error || res.statusText;
+      console.error(`Error: SCITT registration failed (${res.status}): ${message}`);
+      process.exit(1);
+    }
+
+    const registration = await res.json();
+    if (jsonOutput) {
+      process.stdout.write(JSON.stringify(registration, null, 2));
+      return;
+    }
+
+    console.log("SCITT REGISTERED");
+    console.log(`  Entry: ${registration.entryId}`);
+    console.log(`  Time:  ${registration.registrationTime}`);
+    console.log(`  Proof: ${registration.proofOnly ? "proof-only" : "full"}`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`Error: SCITT registration failed: ${message}`);
+    process.exit(1);
+  }
 }
 
 function appendScittQuery(
@@ -1609,8 +2061,11 @@ async function handleVerify(): Promise<void> {
   let requireEvidenceChain = false;
   let requireReceipts = false;
   let requireScitt = false;
+  let verifyDependencies = false;
+  let dependencyDepth = 1;
   let receiptsPath: string | undefined;
   let sourceDocumentPath: string | undefined;
+  let policyPath: string | undefined;
   const evidencePaths: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
@@ -1662,8 +2117,18 @@ async function handleVerify(): Promise<void> {
       case "--require-scitt":
         requireScitt = true;
         break;
+      case "--dependencies":
+      case "--verify-dependencies":
+        verifyDependencies = true;
+        break;
+      case "--dependency-depth":
+        dependencyDepth = Math.max(1, parseInt(args[++i], 10) || 1);
+        break;
       case "--receipts":
         receiptsPath = args[++i];
+        break;
+      case "--policy":
+        policyPath = args[++i];
         break;
       case "--source-document":
         sourceDocumentPath = args[++i];
@@ -1700,7 +2165,10 @@ OPTIONS:
       --require-evidence-chain    Require evidenceChain + verification
       --require-receipts          Require verified process receipts
       --require-scitt             Require SCITT entry IDs for receipts
+      --dependencies              Verify dependency CPOEs (trust graph)
+      --dependency-depth <N>      Dependency verification depth (default: 1)
       --receipts <PATH>           Verify process receipts (JSON array)
+      --policy <PATH>             Apply policy artifact JSON
       --evidence <PATH>           Verify evidence chain against JSONL (repeatable)
       --source-document <PATH>    Verify provenance.sourceDocument against raw evidence JSON
       --json            Output structured JSON
@@ -1761,8 +2229,34 @@ OPTIONS:
     result = await verifier.verify(doc);
   }
 
+  let policyFromFile: import("./src/parley/verification-policy").VerificationPolicy | undefined;
+  if (policyPath) {
+    if (!existsSync(policyPath)) {
+      console.error(`Error: Policy file not found: ${policyPath}`);
+      process.exit(2);
+    }
+    try {
+      const raw = readFileSync(policyPath, "utf-8");
+      const parsed = JSON.parse(raw);
+      const { validatePolicyArtifact } = await import("./src/parley/policy");
+      const result = validatePolicyArtifact(parsed);
+      if (!result.ok || !result.policy) {
+        console.error("Error: Invalid policy file");
+        for (const err of result.errors) {
+          console.error(`  - ${err}`);
+        }
+        process.exit(2);
+      }
+      policyFromFile = result.policy;
+    } catch (err) {
+      console.error(`Error: failed to parse policy file: ${err instanceof Error ? err.message : String(err)}`);
+      process.exit(2);
+    }
+  }
+
   const policyRequested = Boolean(
-    requireIssuer
+    policyFromFile
+    || requireIssuer
     || requireFrameworks.length > 0
     || maxAgeDays !== undefined
     || minScore !== undefined
@@ -1849,24 +2343,60 @@ OPTIONS:
     }
   }
 
+  let dependencyStatus:
+    | { ok: boolean; errors: string[]; results: import("./src/parley/dependency-proofs").DependencyVerificationResult[] }
+    | null = null;
+
+  if (verifyDependencies) {
+    if (!payload) {
+      dependencyStatus = {
+        ok: false,
+        errors: ["Dependency verification requires JWT-VC input"],
+        results: [],
+      };
+    } else {
+      const { parseDependencyProofs, verifyDependencyChain } = await import("./src/parley/dependency-proofs");
+      const parsed = parseDependencyProofs(payload);
+      if (parsed.dependencies.length === 0) {
+        dependencyStatus = {
+          ok: false,
+          errors: [...parsed.errors, "No dependencies declared in CPOE"],
+          results: [],
+        };
+      } else {
+        const results = await verifyDependencyChain(parsed.dependencies, { depth: dependencyDepth });
+        const ok = parsed.errors.length === 0 && results.every((r) => r.ok);
+        dependencyStatus = {
+          ok,
+          errors: parsed.errors,
+          results,
+        };
+      }
+    }
+  }
+
   if (policyRequested) {
     if (!payload) {
       policyResult = { ok: false, errors: ["Policy checks require JWT-VC input"] };
     } else {
       const { evaluateVerificationPolicy } = await import("./src/parley/verification-policy");
-      policyResult = evaluateVerificationPolicy(payload, {
-        requireIssuer,
-        requireFramework: requireFrameworks,
-        maxAgeDays,
-        minScore,
-        requireSource,
-        requireSourceIdentity: requireSourceIdentities,
-        requireToolAttestation,
-        requireInputBinding,
-        requireEvidenceChain,
-        requireReceipts,
-        requireScitt,
-      }, {
+      const mergedPolicy = {
+        requireIssuer: requireIssuer ?? policyFromFile?.requireIssuer,
+        requireFramework: requireFrameworks.length > 0 ? requireFrameworks : policyFromFile?.requireFramework,
+        maxAgeDays: maxAgeDays ?? policyFromFile?.maxAgeDays,
+        minScore: minScore ?? policyFromFile?.minScore,
+        requireSource: requireSource ?? policyFromFile?.requireSource,
+        requireSourceIdentity: requireSourceIdentities.length > 0
+          ? requireSourceIdentities
+          : policyFromFile?.requireSourceIdentity,
+        requireToolAttestation: requireToolAttestation || policyFromFile?.requireToolAttestation,
+        requireInputBinding: requireInputBinding || policyFromFile?.requireInputBinding,
+        requireEvidenceChain: requireEvidenceChain || policyFromFile?.requireEvidenceChain,
+        requireReceipts: requireReceipts || policyFromFile?.requireReceipts,
+        requireScitt: requireScitt || policyFromFile?.requireScitt,
+      };
+
+      policyResult = evaluateVerificationPolicy(payload, mergedPolicy, {
         process: processResult
           ? {
             chainValid: processResult.chainValid,
@@ -1903,13 +2433,15 @@ OPTIONS:
       process: processResult ?? null,
       evidence: evidenceResult ?? null,
       inputBinding: inputBindingResult ?? null,
+      dependencies: dependencyStatus,
     };
     process.stdout.write(JSON.stringify(response, null, 2));
     const ok = result.valid
       && (!policyResult || policyResult.ok)
       && (!processResult || processResult.chainValid)
       && (!evidenceResult || evidenceResult.ok)
-      && (!inputBindingResult || inputBindingResult.ok);
+      && (!inputBindingResult || inputBindingResult.ok)
+      && (!dependencyStatus || dependencyStatus.ok);
     process.exit(ok ? 0 : 1);
   }
 
@@ -1959,10 +2491,25 @@ OPTIONS:
         }
       }
     }
+    if (dependencyStatus) {
+      const failed = dependencyStatus.results.filter((r) => !r.ok);
+      console.log(`  Dependencies: ${dependencyStatus.ok ? "VERIFIED" : "FAILED"} (${dependencyStatus.results.length - failed.length}/${dependencyStatus.results.length})`);
+      if (dependencyStatus.errors.length > 0) {
+        for (const err of dependencyStatus.errors) {
+          console.log(`    - ${err}`);
+        }
+      }
+      if (failed.length > 0) {
+        for (const dep of failed) {
+          console.log(`    - ${dep.dependency.issuer || "unknown"} (${dep.dependency.cpoe || "no url"}): ${dep.reason || "verification failed"}`);
+        }
+      }
+    }
     const ok = (!policyResult || policyResult.ok)
       && (!processResult || processResult.chainValid)
       && (!evidenceResult || evidenceResult.ok)
-      && (!inputBindingResult || inputBindingResult.ok);
+      && (!inputBindingResult || inputBindingResult.ok)
+      && (!dependencyStatus || dependencyStatus.ok);
     process.exit(ok ? 0 : 1);
   } else {
     console.error("VERIFICATION FAILED");
@@ -2385,6 +2932,22 @@ EXAMPLES:
   const existingSubject = existingVc.credentialSubject as Record<string, unknown> | undefined;
   const existingIss = existingPayload.iss as string;
   const existingScope = (existingSubject?.scope as string) || undefined;
+  let existingDependencies: import("./src/parley/vc-types").DependencyProof[] | undefined;
+  try {
+    const { parseDependencyProofs } = await import("./src/parley/dependency-proofs");
+    const parsed = parseDependencyProofs(existingPayload);
+    if (parsed.dependencies.length > 0) {
+      existingDependencies = parsed.dependencies;
+    }
+    if (parsed.errors.length > 0) {
+      console.error("Warning: existing dependency proofs had validation errors:");
+      for (const err of parsed.errors) {
+        console.error(`  - ${err}`);
+      }
+    }
+  } catch {
+    // Non-critical — skip dependency parsing
+  }
 
   // Load key manager
   const { MarqueKeyManager } = await import("./src/parley/marque-key-manager");
@@ -2412,6 +2975,7 @@ EXAMPLES:
       evidence: rawJson,
       did: existingIss,
       scope: existingScope,
+      dependencies: existingDependencies,
     }, keyManager);
 
     renewedJwt = result.jwt;
@@ -2484,6 +3048,93 @@ EXAMPLES:
 }
 
 // =============================================================================
+// POLICY
+// =============================================================================
+
+async function handlePolicy(): Promise<void> {
+  const args = process.argv.slice(3);
+  const sub = args[0];
+
+  if (!sub || sub === "--help" || sub === "-h") {
+    console.log(`
+CORSAIR POLICY — Policy artifacts for verification
+
+USAGE:
+  corsair policy validate --file <PATH> [--json]
+
+NOTES:
+  - Policies are deterministic acceptance criteria for verification.
+  - Use with: corsair verify --policy <PATH>
+`);
+    return;
+  }
+
+  if (sub !== "validate") {
+    console.error(`Unknown policy subcommand: ${sub}`);
+    console.error('Run "corsair policy --help" for usage');
+    process.exit(1);
+  }
+
+  const subArgs = args.slice(1);
+  let filePath: string | undefined;
+  let jsonOutput = false;
+
+  for (let i = 0; i < subArgs.length; i++) {
+    switch (subArgs[i]) {
+      case "--file":
+      case "-f":
+        filePath = subArgs[++i];
+        break;
+      case "--json":
+        jsonOutput = true;
+        break;
+    }
+  }
+
+  if (!filePath) {
+    const positional = subArgs.find((a) => !a.startsWith("--"));
+    if (positional) filePath = positional;
+  }
+
+  if (!filePath) {
+    console.error("Error: --file is required");
+    console.error('Run "corsair policy --help" for usage');
+    process.exit(2);
+  }
+
+  if (!existsSync(filePath)) {
+    console.error(`Error: Policy file not found: ${filePath}`);
+    process.exit(2);
+  }
+
+  try {
+    const raw = readFileSync(filePath, "utf-8");
+    const parsed = JSON.parse(raw);
+    const { validatePolicyArtifact } = await import("./src/parley/policy");
+    const result = validatePolicyArtifact(parsed);
+
+    if (jsonOutput) {
+      process.stdout.write(JSON.stringify(result, null, 2));
+      process.exit(result.ok ? 0 : 1);
+    }
+
+    if (result.ok) {
+      console.log("POLICY VALID");
+      process.exit(0);
+    }
+
+    console.error("POLICY INVALID");
+    for (const err of result.errors) {
+      console.error(`  - ${err}`);
+    }
+    process.exit(1);
+  } catch (err) {
+    console.error(`Error: failed to validate policy: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(2);
+  }
+}
+
+// =============================================================================
 // TRUST-TXT
 // =============================================================================
 
@@ -2529,7 +3180,7 @@ ABOUT:
   trust.txt is a discovery layer for compliance proofs, modeled after
   security.txt (RFC 9116). Organizations publish /.well-known/trust.txt
   to advertise their DID identity, CPOE proofs, SCITT log, optional catalog snapshot,
-  and signal endpoints.
+  policy artifact, and signal endpoints.
 
   Standard           | Discovery for...
   ------------------- | ----------------
@@ -2565,6 +3216,7 @@ async function handleTrustTxtGenerate(args: string[]): Promise<void> {
   let cpoeUrls: string[] = [];
   let scitt: string | undefined;
   let catalog: string | undefined;
+  let policy: string | undefined;
   let flagship: string | undefined;
   let frameworks: string[] = [];
   let contact: string | undefined;
@@ -2588,6 +3240,9 @@ async function handleTrustTxtGenerate(args: string[]): Promise<void> {
         break;
       case "--catalog":
         catalog = args[++i];
+        break;
+      case "--policy":
+        policy = args[++i];
         break;
       case "--flagship":
         flagship = args[++i];
@@ -2623,6 +3278,7 @@ OPTIONS:
   --base-url <URL>         Base URL to prefix scanned CPOE filenames
   --scitt <URL>            SCITT transparency log endpoint
   --catalog <URL>          Catalog snapshot with per-CPOE metadata
+  --policy <URL>           Policy artifact for verification criteria
   --flagship <URL>         FLAGSHIP signal stream endpoint
   --frameworks <LIST>      Comma-separated framework names
   --contact <EMAIL>        Compliance contact email
@@ -2689,6 +3345,7 @@ EXAMPLES:
     cpoes: cpoeUrls,
     scitt,
     catalog,
+    policy,
     flagship,
     frameworks,
     contact,
@@ -3077,6 +3734,10 @@ async function handleTrustTxtDiscover(args: string[]): Promise<void> {
     console.log(`  CATALOG:    ${ct.catalog}`);
   }
 
+  if (ct.policy) {
+    console.log(`  POLICY:     ${ct.policy}`);
+  }
+
   if (ct.flagship) {
     console.log(`  FLAGSHIP:   ${ct.flagship}`);
   }
@@ -3256,7 +3917,8 @@ COMMANDS:
   log             List signed CPOEs (local/SCITT log)      like git log
   trust-txt        Discovery layer (generate/validate/discover)
   receipts         Evidence inclusion proofs (generate/verify)
-  mappings        List loaded evidence mappings
+  mappings        Manage evidence mappings (list/pack/sign)
+  policy          Validate policy artifacts
   renew           Re-sign a CPOE with fresh dates          like git commit --amend
   signal          FLAGSHIP SET generation/verification     like git webhooks
   keygen          Generate Ed25519 signing keypair
@@ -3274,6 +3936,7 @@ EXAMPLES:
   corsair sign --file evidence.json --dry-run
   corsair diff --current cpoe-new.jwt --previous cpoe-old.jwt
   corsair verify --file cpoe.jwt --pubkey keys/corsair-signing.pub
+  corsair policy validate --file policy.json
   corsair keygen --output ./my-keys
 
 VERSION: ${version}

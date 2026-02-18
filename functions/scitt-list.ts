@@ -21,9 +21,11 @@ export interface SCITTProvenance {
 export interface SCITTListEntry {
   entryId: string;
   registrationTime: string;
+  treeSize?: number;
   issuer: string;
   scope: string;
   provenance: SCITTProvenance;
+  proofOnly?: boolean;
   summary?: {
     controlsTested: number;
     controlsPassed: number;

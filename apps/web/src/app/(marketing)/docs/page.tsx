@@ -112,6 +112,14 @@ export default function DocsPage() {
                 </div>
                 <div>
                   <span className="text-corsair-text-dim">
+                    # Validate a policy artifact
+                  </span>
+                  <div className="text-corsair-gold">
+                    corsair policy validate --file policy.json
+                  </div>
+                </div>
+                <div>
+                  <span className="text-corsair-text-dim">
                     # Generate signing keys
                   </span>
                   <div className="text-corsair-cyan">

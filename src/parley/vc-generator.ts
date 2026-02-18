@@ -151,6 +151,11 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
     subject.extensions = input.document.extensions;
   }
 
+  // Dependency proofs (trust graph)
+  if (input.dependencies && input.dependencies.length > 0) {
+    subject.dependencies = input.dependencies;
+  }
+
   // Evidence chain — only include if there are evidence paths with data
   const evidencePaths = input.evidencePaths || [];
   if (evidencePaths.length > 0) {

@@ -38,12 +38,21 @@ The CPOE credential subject maps directly to the assessment results:
   "extensions": {
     "mapping": { "id": "toolx-evidence-only", "evidenceOnly": true },
     "passthrough": { "summary": { "passed": 12, "failed": 2 } }
-  }
+  },
+  "dependencies": [
+    {
+      "issuer": "did:web:vendor.com",
+      "scope": "SOC 2 Type II — Infrastructure",
+      "cpoe": "https://vendor.com/cpoe.jwt",
+      "digest": "sha256:4b2c...d91"
+    }
+  ]
 }
 ```
 
 The `provenance` field records where the evidence came from.
 The `extensions` field is optional and is used for passthrough data or mapping metadata (evidence-only CPOEs).
+The `dependencies` field is optional and links to upstream CPOEs for composable trust graphs.
 Extensions must be namespaced (`mapping`, `passthrough`, `x-`, or `ext.`).
 
 Any W3C VC 2.0 verifier can validate a Corsair credential — verification is not locked to Corsair tooling.

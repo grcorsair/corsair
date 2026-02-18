@@ -18,6 +18,7 @@ const resourceLinks = [
   { href: "/docs/getting-started/quick-start", label: "Quick Start" },
   { href: "/docs/concepts/pipeline", label: "CPOE Lifecycle" },
   { href: "/docs/integrations/api", label: "REST API" },
+  { href: "/docs/integrations/skills", label: "Agent Skills" },
   { href: "/docs/integrations/sdk", label: "TypeScript SDK" },
   { href: "/docs#integrations", label: "Integrations" },
 ];

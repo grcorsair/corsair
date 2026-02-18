@@ -50,6 +50,7 @@ export const CLI_REFERENCE: CLICommandReference[] = [
       { flag: "--sd-jwt", description: "Enable SD-JWT selective disclosure." },
       { flag: "--sd-fields <CSV>", description: "Fields in credentialSubject to make disclosable." },
       { flag: "--mapping <PATH>", description: "Mapping pack file or directory (repeatable)." },
+      { flag: "--dependency <PATH>", description: "Dependency CPOE path or URL (repeatable)." },
       { flag: "--dry-run", description: "Parse and classify without signing." },
       { flag: "--json", description: "Machine-readable output." },
     ],
@@ -65,6 +66,24 @@ export const CLI_REFERENCE: CLICommandReference[] = [
     options: [
       { flag: "-f, --file <PATH>", description: "Path to CPOE JWT." },
       { flag: "--pubkey <PATH>", description: "Override public key for verification." },
+      { flag: "--did", description: "Verify via DID:web resolution." },
+      { flag: "--policy <PATH>", description: "Apply policy artifact JSON." },
+      { flag: "--require-issuer <DID>", description: "Require issuer DID." },
+      { flag: "--require-framework <CSV>", description: "Comma-separated required frameworks." },
+      { flag: "--max-age <DAYS>", description: "Max evidence age (provenance.sourceDate)." },
+      { flag: "--min-score <N>", description: "Minimum overallScore." },
+      { flag: "--require-source <TYPE>", description: "Require provenance source (self|tool|auditor)." },
+      { flag: "--require-source-identity <CSV>", description: "Allowed source identities." },
+      { flag: "--require-tool-attestation", description: "Require tool attestation in receipts." },
+      { flag: "--require-input-binding", description: "Require provenance.sourceDocument binding." },
+      { flag: "--require-evidence-chain", description: "Require evidence chain verification." },
+      { flag: "--require-receipts", description: "Require verified process receipts." },
+      { flag: "--require-scitt", description: "Require SCITT entry IDs for receipts." },
+      { flag: "--dependencies", description: "Verify dependency CPOEs (trust graph)." },
+      { flag: "--dependency-depth <N>", description: "Dependency verification depth." },
+      { flag: "--receipts <PATH>", description: "Process receipts JSON array." },
+      { flag: "--evidence <PATH>", description: "Evidence JSONL path (repeatable)." },
+      { flag: "--source-document <PATH>", description: "Raw evidence JSON for input binding." },
       { flag: "--json", description: "Machine-readable output." },
     ],
   },
@@ -86,8 +105,26 @@ export const CLI_REFERENCE: CLICommandReference[] = [
     options: [
       { flag: "--last <N>", description: "Limit number of entries." },
       { flag: "--dir <DIR>", description: "Directory containing local CPOEs." },
+      { flag: "--scitt <URL>", description: "SCITT log endpoint to query." },
       { flag: "--domain <DOMAIN>", description: "Domain for trust.txt discovery." },
+      { flag: "--issuer <DID>", description: "Filter SCITT entries by issuer." },
       { flag: "--framework <NAME>", description: "Filter SCITT entries by framework." },
+      { flag: "--json", description: "Machine-readable output." },
+    ],
+  },
+  {
+    command: "log register",
+    summary: "Register a CPOE in a SCITT transparency log.",
+    usage: [
+      "corsair log register --file <cpoe.jwt> --scitt <URL> [options]",
+      "corsair log register --file <cpoe.jwt> --domain <DOMAIN> [options]",
+    ],
+    options: [
+      { flag: "--file <PATH>", description: "CPOE JWT file path." },
+      { flag: "--scitt <URL>", description: "SCITT log endpoint (POST /scitt/entries)." },
+      { flag: "--domain <DOMAIN>", description: "Resolve trust.txt for SCITT endpoint." },
+      { flag: "--proof-only", description: "Register hash commitment only (no statement stored)." },
+      { flag: "--json", description: "Machine-readable output." },
     ],
   },
   {
@@ -99,6 +136,7 @@ export const CLI_REFERENCE: CLICommandReference[] = [
       { flag: "--cpoe-url <URL>", description: "Direct CPOE URL (repeatable)." },
       { flag: "--scitt <URL>", description: "SCITT log endpoint." },
       { flag: "--catalog <URL>", description: "Catalog snapshot URL." },
+      { flag: "--policy <URL>", description: "Policy artifact URL." },
       { flag: "--flagship <URL>", description: "FLAGSHIP stream endpoint." },
       { flag: "--frameworks <CSV>", description: "Framework list." },
       { flag: "-o, --output <PATH>", description: "Output file path.", defaultValue: ".well-known/trust.txt" },
@@ -121,6 +159,34 @@ export const CLI_REFERENCE: CLICommandReference[] = [
       "corsair mappings add <URL_OR_PATH>",
     ],
     options: [
+      { flag: "--json", description: "Machine-readable output." },
+    ],
+  },
+  {
+    command: "mappings pack",
+    summary: "Bundle mappings into a pack for distribution.",
+    usage: [
+      "corsair mappings pack --id <ID> --version <SEMVER> --mapping <PATH>",
+    ],
+    options: [
+      { flag: "--id <ID>", description: "Mapping pack id." },
+      { flag: "--version <VER>", description: "Mapping pack version." },
+      { flag: "--issued-at <ISO>", description: "Pack issuance timestamp (default: now)." },
+      { flag: "--mapping <PATH>", description: "Mapping file or directory (repeatable)." },
+      { flag: "-o, --output <PATH>", description: "Write pack JSON to file." },
+      { flag: "--json", description: "Machine-readable output." },
+    ],
+  },
+  {
+    command: "mappings sign",
+    summary: "Sign a mapping pack with Ed25519.",
+    usage: [
+      "corsair mappings sign --file <PACK.json> --key <KEY.pem>",
+    ],
+    options: [
+      { flag: "--file <PATH>", description: "Mapping pack JSON file." },
+      { flag: "--key <PATH>", description: "Ed25519 private key (PKCS8 PEM)." },
+      { flag: "-o, --output <PATH>", description: "Write signed pack JSON to file." },
       { flag: "--json", description: "Machine-readable output." },
     ],
   },
@@ -149,6 +215,18 @@ export const CLI_REFERENCE: CLICommandReference[] = [
     options: [
       { flag: "--evidence <PATH>", description: "Evidence JSONL file." },
       { flag: "--index <N>", description: "Evidence index to generate a receipt for." },
+    ],
+  },
+  {
+    command: "policy validate",
+    summary: "Validate a policy artifact JSON file.",
+    usage: ["corsair policy validate --file <policy.json>"],
+    options: [
+      { flag: "--file <PATH>", description: "Policy artifact JSON file." },
+      { flag: "--json", description: "Machine-readable output." },
+    ],
+    examples: [
+      "corsair policy validate --file policy.json",
     ],
   },
 ];

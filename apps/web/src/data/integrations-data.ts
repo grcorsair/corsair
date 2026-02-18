@@ -299,7 +299,7 @@ export const INTEGRATIONS: Integration[] = [
     category: "ai-assistants",
     status: "available",
     description: "One-line install for Claude Code, Cursor, Copilot, and 25+ AI agents — sign, verify, diff, discover, audit",
-    docsUrl: "/docs/integrations/sdk",
+    docsUrl: "/docs/integrations/skills",
     snippet: "npx skills add grcorsair/corsair",
   },
   {

@@ -420,6 +420,18 @@ describe("SCITT Registration API", () => {
     expect(typeof body.registrationTime).toBe("string");
   });
 
+  test("POST /scitt/entries supports proofOnly mode", async () => {
+    const req = jsonRequest("POST", "/scitt/entries", {
+      statement: "eyJhbGciOiJFZERTQSJ9.test.signature",
+      proofOnly: true,
+    });
+
+    const res = await router(req);
+    expect(res.status).toBe(201);
+    const body = (await jsonResponse(res)) as Record<string, unknown>;
+    expect(body.proofOnly).toBe(true);
+  });
+
   test("POST /scitt/entries returns 400 for missing statement", async () => {
     const req = jsonRequest("POST", "/scitt/entries", {});
     const res = await router(req);

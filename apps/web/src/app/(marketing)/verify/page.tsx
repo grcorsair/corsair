@@ -138,7 +138,7 @@ export default function VerifyPage() {
                   <li className="flex gap-3">
                     <span className="text-corsair-gold">4.</span>
                     Result: signature validity, provenance, controls summary, pass rate — plus optional policy checks
-                    (source identity, receipts, SCITT, evidence chain). Math replaces trust.
+                    (source identity, receipts, SCITT, evidence chain, dependency proofs). Math replaces trust.
                   </li>
                 </ol>
               </div>
@@ -190,7 +190,8 @@ export default function VerifyPage() {
                 CPOE is the universal format. A CPOE replaces trust with
                 verification: the evidence was assessed, the results were
                 recorded with provenance metadata, and the credential is
-                cryptographically signed. You don&apos;t have to trust the
+                cryptographically signed. Policy artifacts let buyers encode
+                deterministic acceptance criteria. You don&apos;t have to trust the
                 vendor or the platform. You verify the proof.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">

@@ -14,6 +14,13 @@ Mappings are loaded at runtime from:
 - `CORSAIR_MAPPING_DIR` (comma-separated list of directories)
 - `CORSAIR_MAPPING_FILE` (comma-separated list of JSON files)
 
+To distribute mappings as a bundle, create a mapping pack:
+
+```bash
+corsair mappings pack --id <ID> --version <VER> --mapping ./mappings
+corsair mappings sign --file mapping-pack.json --key ./keys/mapping-pack.key
+```
+
 Mappings are evaluated in priority order (highest first). When priorities
 are equal, file order is deterministic by filename within each directory.
 

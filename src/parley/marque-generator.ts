@@ -27,6 +27,7 @@ import type {
   ThreatModelResult,
 } from "../types";
 import type { IngestedDocument } from "../ingestion/types";
+import type { DependencyProof } from "./vc-types";
 import {
   EvidenceEngine,
   EVIDENCE_CANONICALIZATION,
@@ -49,6 +50,9 @@ export interface MarqueGeneratorInput {
 
   /** Process receipt chain from pipeline steps (in-toto/SLSA format) */
   processReceipts?: import("./process-receipt").ProcessReceipt[];
+
+  /** Optional dependency proofs (trust graph) */
+  dependencies?: DependencyProof[];
 
   /** Legacy fields (now optional — not needed for document ingestion) */
   markResults?: MarkResult[];

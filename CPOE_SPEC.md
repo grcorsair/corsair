@@ -61,7 +61,15 @@ A CPOE is a standard JWT with three base64url-encoded segments: `header.payload.
       "extensions": {
         "mapping": { "id": "toolx-evidence-only", "evidenceOnly": true },
         "passthrough": { "summary": { "passed": 12, "failed": 2 } }
-      }
+      },
+      "dependencies": [
+        {
+          "issuer": "did:web:vendor.com",
+          "scope": "SOC 2 Type II — Infrastructure",
+          "cpoe": "https://vendor.com/cpoe.jwt",
+          "digest": "sha256:4b2c...d91"
+        }
+      ]
     }
   }
 }
@@ -95,6 +103,7 @@ All claims live under `vc.credentialSubject`. The provenance-first model (v0.5.0
 | `processProvenance` | object | Pipeline receipt chain: `{ chainDigest, receiptCount, chainVerified, format, reproducibleSteps, attestedSteps, toolAttestedSteps?, scittEntryIds? }` — in-toto/SLSA provenance trail |
 | `schemaVersion` | string | CPOE schema version (current: `"1.0"`) |
 | `extensions` | object | Optional passthrough fields and mapping metadata (namespaced keys only) |
+| `dependencies` | array | Optional dependency proofs (trust graph links to other CPOEs) |
 
 **Evidence chain fields:**
 
@@ -165,7 +174,8 @@ The DID document contains a `verificationMethod` array. Match the `kid` from the
 CPOEs are meant to be discoverable without a prior relationship. Organizations should publish
 `/.well-known/trust.txt` (modeled after `security.txt`) to advertise their DID identity,
 SCITT log endpoint, optional catalog snapshot, and FLAGSHIP stream. For scale, keep
-trust.txt tiny and point to SCITT + catalog instead of listing many CPOEs.
+trust.txt tiny and point to SCITT + catalog instead of listing many CPOEs. You can
+also publish a `POLICY` URL to share deterministic acceptance criteria.
 
 trust.txt is a plain-text file with `KEY: value` pairs (keys are case-insensitive). The
 `CPOE` key is repeatable.
@@ -184,6 +194,7 @@ CPOE: https://acme.com/compliance/iso27001.jwt
 
 SCITT: https://scitt.acme.com/v1/entries?issuer=did:web:acme.com
 CATALOG: https://acme.com/compliance/catalog.json
+POLICY: https://acme.com/.well-known/policy.json
 FLAGSHIP: https://acme.com/.well-known/flagship
 Frameworks: SOC2, ISO27001
 Contact: security@acme.com

@@ -24,6 +24,7 @@ Core primitives: SIGN, LOG, PUBLISH (trust.txt), VERIFY, DIFF, SIGNAL (FLAGSHIP)
 - The user wants to detect drift between two proofs.
 - The user wants to publish or discover trust.txt.
 - The user asks about SCITT, FLAGSHIP, SD-JWT, or compliance proof exchange.
+- The user wants to attach or verify dependency proofs (trust graph).
 
 ---
 
@@ -31,8 +32,8 @@ Core primitives: SIGN, LOG, PUBLISH (trust.txt), VERIFY, DIFF, SIGNAL (FLAGSHIP)
 
 The agent may perform these capabilities when invoked:
 
-- `sign_cpoe(evidence_path, format?, mapping?, source?, did?, scope?, expiry_days?, sd_jwt?, sd_fields?)`
-- `verify_cpoe(cpoe_path, did?, require_issuer?, require_framework?, max_age_days?, min_score?, require_source?, require_source_identity?, require_tool_attestation?, require_input_binding?, require_evidence_chain?, require_receipts?, require_scitt?, source_document?, policy_path?)`
+- `sign_cpoe(evidence_path, format?, mapping?, dependency?, source?, did?, scope?, expiry_days?, sd_jwt?, sd_fields?)`
+- `verify_cpoe(cpoe_path, did?, require_issuer?, require_framework?, max_age_days?, min_score?, require_source?, require_source_identity?, require_tool_attestation?, require_input_binding?, require_evidence_chain?, require_receipts?, require_scitt?, source_document?, policy_path?, dependencies?, dependency_depth?)`
 - `policy_validate(policy_path?)`
 - `diff_cpoe(current_path, previous_path, verify?)`
 - `publish_trust_txt(did, cpoes?, base_url?, scitt?, catalog?, flagship?, frameworks?, contact?, expiry_days?)`
@@ -112,13 +113,13 @@ Use this routing logic:
 ### SIGN
 
 1. `corsair sign --file <PATH>`
-2. If needed: `--format`, `--mapping`, `--sd-jwt`, `--sd-fields`
+2. If needed: `--format`, `--mapping`, `--dependency`, `--sd-jwt`, `--sd-fields`
 3. Report CPOE path, detected format, summary.
 
 ### VERIFY
 
 1. `corsair verify --file <PATH>`
-2. If needed: `--did`, `--policy`, `--receipts`, `--evidence`, `--source-document`
+2. If needed: `--did`, `--policy`, `--receipts`, `--evidence`, `--source-document`, `--dependencies`
 3. Report validity, trust tier, summary, and any policy errors.
 
 ### DIFF

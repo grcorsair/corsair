@@ -94,6 +94,7 @@ describe("Corsair CLI", () => {
     expect(output).toContain("diff");
     expect(output).toContain("log");
     expect(output).toContain("mappings");
+    expect(output).toContain("policy");
     expect(output).toContain("receipts");
   });
 

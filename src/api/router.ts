@@ -383,6 +383,28 @@ function createV1SignHandler(deps: V1RouterDeps): (req: Request) => Promise<Resp
       return envelopeError("payload_too_large", "Evidence exceeds maximum size (500KB)", requestId, 400);
     }
 
+    const dependencies = body.dependencies;
+    if (dependencies !== undefined) {
+      if (!Array.isArray(dependencies)) {
+        return envelopeError("validation_error", "dependencies must be an array", requestId, 400);
+      }
+      for (const dep of dependencies) {
+        if (!dep || typeof dep !== "object") {
+          return envelopeError("validation_error", "dependencies must be objects", requestId, 400);
+        }
+        const record = dep as Record<string, unknown>;
+        if (typeof record.digest !== "string") {
+          return envelopeError("validation_error", "dependency.digest must be a string", requestId, 400);
+        }
+        if (typeof record.issuer !== "string") {
+          return envelopeError("validation_error", "dependency.issuer must be a string", requestId, 400);
+        }
+        if (record.cpoe !== undefined && typeof record.cpoe !== "string") {
+          return envelopeError("validation_error", "dependency.cpoe must be a string", requestId, 400);
+        }
+      }
+    }
+
     const { signEvidence, SignError } = await import("../sign/sign-core");
 
     try {
@@ -393,6 +415,7 @@ function createV1SignHandler(deps: V1RouterDeps): (req: Request) => Promise<Resp
         scope: body.scope as string | undefined,
         expiryDays: body.expiryDays as number | undefined,
         dryRun: body.dryRun as boolean | undefined,
+        dependencies: dependencies as import("../parley/vc-types").DependencyProof[] | undefined,
       }, keyManager);
 
       // Compute expiry from JWT

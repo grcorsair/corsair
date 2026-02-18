@@ -9,6 +9,7 @@
 
 import { readFileSync } from "fs";
 import type { IngestedDocument, DocumentSource } from "../ingestion/types";
+import type { DependencyProof } from "../parley/vc-types";
 import type { KeyManager } from "../parley/marque-key-manager";
 import { sanitize } from "../parley/marque-generator";
 import { deriveProvenance } from "../ingestion/provenance-utils";
@@ -56,6 +57,9 @@ export interface SignInput {
 
   /** Fields in credentialSubject to make disclosable (default: summary, frameworks) */
   sdFields?: string[];
+
+  /** Optional dependency proofs to embed (trust graph) */
+  dependencies?: DependencyProof[];
 }
 
 export interface SignDocumentInput {
@@ -82,6 +86,9 @@ export interface SignDocumentInput {
 
   /** Fields in credentialSubject to make disclosable (default: summary, frameworks) */
   sdFields?: string[];
+
+  /** Optional dependency proofs to embed (trust graph) */
+  dependencies?: DependencyProof[];
 }
 
 export interface SignOutput {
@@ -159,6 +166,7 @@ export async function signEvidence(
       dryRun: input.dryRun,
       sdJwt: input.sdJwt,
       sdFields: input.sdFields,
+      dependencies: input.dependencies,
     },
     keyManager,
   );
@@ -221,6 +229,9 @@ export async function signDocument(
   // 2. Map to MarqueGeneratorInput
   const { mapToMarqueInput } = await import("../ingestion/mapper");
   const marqueInput = mapToMarqueInput(doc, { did: input.did });
+  if (input.dependencies && input.dependencies.length > 0) {
+    marqueInput.dependencies = input.dependencies;
+  }
 
   // 3. Build process receipt chain
   const { ReceiptChain } = await import("../parley/receipt-chain");

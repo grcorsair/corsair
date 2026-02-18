@@ -31,7 +31,7 @@ Accepts structured output from security scanning tools and compliance platforms,
 - `ciso-assistant-export` — CISO Assistant export (Django JSON)
 - `generic` — Pre-structured control data from any source `{ metadata, controls[] }`
 
-**Mapping registry (tool-agnostic):** For tools not on the list, mappings can extract controls or passthrough fields without code changes. Load mappings via `CORSAIR_MAPPING_DIR`, `CORSAIR_MAPPING_FILE`, the CLI `--mapping` flag, or `corsair mappings add`. Evidence-only mappings still produce valid CPOEs and store passthrough data under `credentialSubject.extensions`. Mappings are evaluated by priority (higher wins), then filename order. Signed mapping packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set.
+**Mapping registry (tool-agnostic):** For tools not on the list, mappings can extract controls or passthrough fields without code changes. Load mappings via `CORSAIR_MAPPING_DIR`, `CORSAIR_MAPPING_FILE`, the CLI `--mapping` flag, or `corsair mappings add`. Evidence-only mappings still produce valid CPOEs and store passthrough data under `credentialSubject.extensions`. Mappings are evaluated by priority (higher wins), then filename order. Build packs with `corsair mappings pack` and sign them with `corsair mappings sign` — signed packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set.
 
 **Output:** Structured controls with evidence references, provenance metadata, and pass/fail status.
 
@@ -59,6 +59,8 @@ Signature: Ed25519
 
 Corsair does not judge evidence quality. It records where the evidence came from, signs it, and lets buyers decide what's sufficient.
 
+Dependency proofs (`--dependency`) let you link upstream CPOEs and build a trust graph.
+
 ### LOG — SCITT Transparency Registration
 
 CPOEs are registered with an IETF SCITT transparency log. Registration produces a COSE receipt proving inclusion in the append-only log:
@@ -67,6 +69,12 @@ CPOEs are registered with an IETF SCITT transparency log. Registration produces 
 - **Discoverability** — Third parties can audit the transparency log to verify CPOE history
 
 The SCITT registry uses SHA-256 Merkle tree hashing with COSE_Sign1 signed receipts (RFC 9052, Ed25519).
+
+Proof-only mode registers only the hash commitment (no CPOE stored):
+
+```bash
+corsair log register --file cpoe.jwt --scitt https://log.example.com/scitt/entries --proof-only
+```
 
 ### VERIFY — Signature + Provenance Verification
 

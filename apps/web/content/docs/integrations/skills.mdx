@@ -1,0 +1,42 @@
+---
+title: "Agent Skills"
+description: "Distribute Corsair as a SKILL.md so any agent can discover and run it without SDK lock-in."
+section: "integrations"
+order: 40
+---
+
+## Skills-First Distribution
+
+Corsair ships with a **SKILL.md** that describes how to sign, verify, discover, and diff compliance proofs. Any agent that supports the Agent Skills standard can load the skill and run Corsair workflows without a bespoke SDK.
+
+This keeps integration light:
+
+- No client libraries to install
+- No proprietary API lock-in
+- Deterministic, auditable steps (sign, verify, trust.txt)
+
+## Install the Skill
+
+```bash
+npx skills add grcorsair/corsair
+```
+
+The skill lives at:
+
+```
+skills/corsair/SKILL.md
+```
+
+## What Agents Can Do
+
+- Sign tool output into CPOEs
+- Verify vendor proofs via trust.txt discovery
+- Diff CPOEs to detect drift
+- Register proofs in SCITT logs
+- Validate policy artifacts
+
+## Why This Matters
+
+Skills make Corsair a **compliance substrate** for agents. Instead of rebuilding scanners, agents can reuse deterministic tool output (Prowler, SecurityHub, Wiz, etc.), wrap it in cryptographic proof, and exchange it in a trust-safe format.
+
+If you maintain your own agent harness, point it at `skills/corsair/SKILL.md` and map the commands to your runtime.

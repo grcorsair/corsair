@@ -3,6 +3,9 @@ title: "REST API"
 description: "Corsair REST API for signing and verifying CPOEs programmatically."
 section: "integrations"
 order: 31
+typedoc:
+  - src/api/types.ts#V1VerifyRequest
+  - src/api/types.ts#V1VerifyResponse
 ---
 
 ## Overview
@@ -61,7 +64,7 @@ Error responses use the same envelope:
 ## POST /v1/sign
 
 Sign evidence into a CPOE (JWT-VC). Accepts raw tool output from any supported format. Requires authentication.
-To support additional tools without code changes, configure the mapping registry on the API server via `CORSAIR_MAPPING_DIR`, `CORSAIR_MAPPING_FILE`, or `corsair mappings add`. Mappings are evaluated by priority (higher wins), then filename order. Signed packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set.
+To support additional tools without code changes, configure the mapping registry on the API server via `CORSAIR_MAPPING_DIR`, `CORSAIR_MAPPING_FILE`, or `corsair mappings add`. Build packs with `corsair mappings pack` and sign them with `corsair mappings sign`. Mappings are evaluated by priority (higher wins), then filename order. Signed packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set.
 
 ```bash
 curl -X POST https://api.grcorsair.com/v1/sign \
@@ -88,6 +91,7 @@ curl -X POST https://api.grcorsair.com/v1/sign \
 | `scope` | string | No | Override scope description |
 | `expiryDays` | number | No | CPOE validity in days (default: 7) |
 | `dryRun` | boolean | No | Parse without signing |
+| `dependencies` | array | No | Dependency proofs to attach (trust graph) |
 
 **Response:**
 
@@ -123,6 +127,8 @@ curl -X POST https://api.grcorsair.com/v1/sign \
 
 Verify a CPOE signature and extract attestation details. No authentication required.
 Optional policy checks and process receipt verification are supported.
+
+<!-- typedoc:src/api/types.ts#V1VerifyRequest -->
 
 Policy fields include:
 - `requireSource` (`self` | `tool` | `auditor`)

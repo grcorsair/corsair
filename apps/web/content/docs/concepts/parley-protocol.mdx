@@ -3,6 +3,8 @@ title: "Parley Protocol"
 description: "The Parley trust exchange protocol — JWT-VC proofs, SCITT transparency logs, and SSF/CAEP real-time signals."
 section: "concepts"
 order: 14
+typedoc:
+  - src/cli/reference.ts#CLI_REFERENCE
 ---
 
 ## Overview
@@ -20,6 +22,8 @@ Each standard handles a different aspect of the trust lifecycle:
 - **JWT-VC** — The attestation itself (what happened)
 - **SCITT** — The public record (that it happened)
 - **SSF/CAEP** — The notification (when things change)
+
+Parley also supports **dependency proofs** that link upstream CPOEs, enabling a composable trust graph.
 
 ## Three-Standard Composition
 
@@ -43,6 +47,8 @@ IETF Supply Chain Integrity, Transparency, and Trust provides the **transparency
 - **Verification**: Anyone can verify the CPOE was registered at a specific time
 
 SCITT ensures that CPOEs are auditable and that issuers cannot silently revoke or modify attestations without detection.
+
+Proof-only mode lets issuers register **only a hash commitment** (no statement stored) while still receiving a COSE receipt.
 
 ### 3. SSF/CAEP (The Signal)
 

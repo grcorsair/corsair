@@ -42,6 +42,9 @@ export interface SCITTRegistration {
 
   /** Registration status */
   status: "registered" | "pending" | "failed";
+
+  /** True when only a hash commitment was stored */
+  proofOnly?: boolean;
 }
 
 /**

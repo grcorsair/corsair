@@ -234,6 +234,31 @@ describe("V1 Router — Sign Integration", () => {
     expect(data.marqueId).toBeTruthy();
   });
 
+  test("POST /v1/sign rejects invalid dependencies", async () => {
+    const req = makeRequest("POST", "/v1/sign", {
+      evidence: genericEvidence,
+      dependencies: "bad",
+    } as unknown as Record<string, unknown>);
+    const res = await router(req);
+    expect(res.status).toBe(400);
+    const body: APIEnvelope = await res.json();
+    expect(body.ok).toBe(false);
+    expect(body.error?.code).toBe("validation_error");
+  });
+
+  test("POST /v1/sign accepts dependency proofs", async () => {
+    const req = makeRequest("POST", "/v1/sign", {
+      evidence: genericEvidence,
+      dependencies: [
+        { issuer: "did:web:vendor.com", digest: "sha256:abc123" },
+      ],
+    });
+    const res = await router(req);
+    expect(res.status).toBe(200);
+    const body: APIEnvelope = await res.json();
+    expect(body.ok).toBe(true);
+  });
+
   test("GET /v1/sign returns 405 method not allowed", async () => {
     const req = makeRequest("GET", "/v1/sign");
     const res = await router(req);

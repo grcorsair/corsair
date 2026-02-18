@@ -1,0 +1,59 @@
+---
+title: "Policy Artifacts"
+description: "Deterministic acceptance criteria for verifying CPOEs."
+section: "concepts"
+order: 15
+typedoc:
+  - src/cli/reference.ts#CLI_REFERENCE
+  - src/api/types.ts#V1VerifyRequest
+---
+
+## Overview
+
+Policy artifacts are small JSON files that encode **acceptance criteria** for verification.
+They turn “trust decisions” into deterministic checks:
+
+- Who issued the proof
+- Which frameworks are required
+- How fresh the evidence must be
+- Whether receipts, SCITT anchors, or input binding are required
+
+## Why It Matters
+
+A CPOE is the proof. A policy artifact is the checklist for accepting that proof.
+This keeps Corsair opinion-free while allowing each relying party to decide what is sufficient.
+
+## Example Policy
+
+```json
+{
+  "version": "1.0",
+  "name": "Acme Procurement Baseline",
+  "requireIssuer": "did:web:vendor.com",
+  "requireFramework": ["SOC2"],
+  "maxAgeDays": 90,
+  "minScore": 85,
+  "requireSource": "tool",
+  "requireSourceIdentity": ["Prowler v3.1"],
+  "requireReceipts": true,
+  "requireScitt": true,
+  "requireToolAttestation": true
+}
+```
+
+## CLI Usage
+
+```bash
+corsair policy validate --file policy.json
+corsair verify --file cpoe.jwt --policy policy.json
+```
+
+## trust.txt Integration
+
+Publish a policy URL alongside proofs for discoverability:
+
+```
+POLICY: https://acme.com/.well-known/policy.json
+```
+
+<!-- typedoc:src/cli/reference.ts#CLI_REFERENCE -->

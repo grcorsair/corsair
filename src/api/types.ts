@@ -8,6 +8,8 @@
  *   - Typed error codes
  */
 
+import type { DependencyProof } from "../parley/vc-types";
+
 // =============================================================================
 // ENVELOPE
 // =============================================================================
@@ -115,6 +117,8 @@ export interface V1SignRequest {
   scope?: string;
   expiryDays?: number;
   dryRun?: boolean;
+  /** Optional dependency proofs (trust graph) */
+  dependencies?: DependencyProof[];
 }
 
 export interface V1SignResponse {

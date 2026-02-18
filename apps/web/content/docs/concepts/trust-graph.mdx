@@ -1,0 +1,56 @@
+---
+title: "Trust Graph"
+description: "Dependency proofs that make compliance attestations composable across issuers."
+section: "concepts"
+order: 16
+---
+
+## What Is the Trust Graph?
+
+The **trust graph** is a network of CPOEs that reference each other. Instead of re-auditing everything, you can attach upstream proofs as **dependency proofs** and verify them end-to-end.
+
+This enables:
+
+- Vendor attestations that include their critical suppliers
+- Shared controls across subsidiaries without re-issuing everything
+- Composable trust decisions across multiple issuers
+
+## Dependency Proofs
+
+Each dependency proof includes:
+
+- The issuer DID
+- The scope of the referenced CPOE
+- A hash of the dependency CPOE
+- An optional URL to fetch the dependency
+
+Example:
+
+```json
+{
+  "issuer": "did:web:vendor.com",
+  "scope": "SOC 2 Type II — Infrastructure",
+  "cpoe": "https://vendor.com/cpoe.jwt",
+  "digest": "sha256:4b2c...d91"
+}
+```
+
+## Attach Dependencies When Signing
+
+```bash
+corsair sign --file evidence.json \
+  --dependency https://vendor.com/cpoe.jwt
+```
+
+## Verify the Dependency Chain
+
+```bash
+corsair verify --file cpoe.jwt --dependencies
+corsair verify --file cpoe.jwt --dependencies --dependency-depth 2
+```
+
+Corsair verifies:
+
+- Ed25519 signature via DID:web for each dependency
+- Digest match against the recorded hash
+- Optional nested dependencies (depth > 1)

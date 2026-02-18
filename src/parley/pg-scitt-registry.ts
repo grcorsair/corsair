@@ -100,6 +100,7 @@ export class PgSCITTRegistry implements SCITTRegistry {
       entryId,
       registrationTime,
       status: "registered",
+      proofOnly: Boolean(options?.proofOnly),
     };
   }
 

@@ -117,7 +117,15 @@ The generated JWT contains three parts:
       "extensions": {
         "mapping": { "id": "toolx-evidence-only", "evidenceOnly": true },
         "passthrough": { "summary": { "passed": 12, "failed": 2 } }
-      }
+      },
+      "dependencies": [
+        {
+          "issuer": "did:web:vendor.com",
+          "scope": "SOC 2 Type II — Infrastructure",
+          "cpoe": "https://vendor.com/cpoe.jwt",
+          "digest": "sha256:4b2c...d91"
+        }
+      ]
     }
   },
   "parley": "2.0"
@@ -127,6 +135,7 @@ The generated JWT contains three parts:
 **Signature:** Ed25519 signature over `base64url(header).base64url(payload)`
 
 **Extensions namespace:** `extensions` keys must be `mapping`, `passthrough`, or namespaced with `x-` / `ext.`.
+**Dependencies:** Optional `dependencies[]` link upstream CPOEs for trust graph verification (`corsair verify --dependencies`).
 
 ## Verifying CPOEs
 

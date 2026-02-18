@@ -190,6 +190,32 @@ export interface CPOECredentialSubject extends CredentialSubject {
 
   /** Optional passthrough fields and mapping metadata */
   extensions?: Record<string, unknown>;
+
+  /** Optional dependency proofs (trust graph) */
+  dependencies?: DependencyProof[];
+}
+
+// =============================================================================
+// TRUST GRAPH
+// =============================================================================
+
+export interface DependencyProof {
+  /** Issuer DID of the dependency CPOE */
+  issuer: string;
+  /** Optional dependency scope */
+  scope?: string;
+  /** Frameworks covered by the dependency (by name) */
+  frameworks?: string[];
+  /** Optional URL to the dependency CPOE */
+  cpoe?: string;
+  /** Digest of the dependency CPOE JWT (sha256:<hex>) */
+  digest: string;
+  /** Issued timestamp of the dependency CPOE */
+  issuedAt?: string;
+  /** Expiry timestamp of the dependency CPOE */
+  expiresAt?: string;
+  /** Dependency CPOE identifier (marque-UUID) */
+  marqueId?: string;
 }
 
 // =============================================================================

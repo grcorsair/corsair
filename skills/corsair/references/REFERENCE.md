@@ -32,6 +32,7 @@ corsair sign [options]
 | `--key-dir <DIR>` | Ed25519 key directory | ./keys |
 | `--source <SOURCE>` | Override provenance source | derived from evidence |
 | `--mapping <PATH>` | Mapping file or directory (repeatable) | none |
+| `--dependency <PATH>` | Dependency CPOE path or URL (repeatable) | none |
 | `--dry-run` | Parse + classify without signing | false |
 | `--json` | Output structured JSON | false |
 | `--baseline <PATH>` | Compare against baseline CPOE | none |
@@ -105,7 +106,10 @@ corsair verify [options]
 | `--require-evidence-chain` | Require evidenceChain + verification | - |
 | `--require-receipts` | Require verified process receipts | - |
 | `--require-scitt` | Require SCITT entry IDs for receipts | - |
+| `--dependencies` | Verify dependency CPOEs (trust graph) | false |
+| `--dependency-depth <N>` | Dependency verification depth | 1 |
 | `--receipts <PATH>` | Verify process receipts (JSON array) | - |
+| `--policy <PATH>` | Apply policy artifact JSON | - |
 | `--evidence <PATH>` | Verify evidence chain against JSONL (repeatable) | - |
 | `--source-document <PATH>` | Verify provenance.sourceDocument against raw evidence JSON | - |
 | `--json` | Output structured JSON | false |
@@ -208,6 +212,14 @@ Verifies receipt inclusion proofs against the CPOE `evidenceChain.chainDigest`.
 
 List signed CPOEs from local files or a SCITT log.
 
+### corsair policy
+
+Validate policy artifacts for verification.
+
+```
+corsair policy validate --file <POLICY.json> [--json]
+```
+
 ```
 corsair log [options]
 ```
@@ -220,6 +232,21 @@ corsair log [options]
 | `--domain <DOMAIN>` | Resolve trust.txt and use its SCITT endpoint | - |
 | `--issuer <DID>` | Filter SCITT entries by issuer | - |
 | `--framework <NAME>` | Filter SCITT entries by framework | - |
+| `--json` | Output structured JSON | false |
+
+#### register
+
+```
+corsair log register --file <CPOE.jwt> --scitt <URL> [--proof-only] [--json]
+corsair log register --file <CPOE.jwt> --domain <DOMAIN> [--proof-only]
+```
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-f, --file <PATH>` | CPOE JWT file path | Required |
+| `--scitt <URL>` | SCITT log endpoint (POST /scitt/entries) | - |
+| `--domain <DOMAIN>` | Resolve trust.txt for SCITT endpoint | - |
+| `--proof-only` | Register hash commitment only | false |
 | `--json` | Output structured JSON | false |
 
 ### corsair trust-txt
@@ -241,6 +268,7 @@ corsair trust-txt generate [options]
 | `--base-url <URL>` | Base URL prefix for scanned CPOEs | - |
 | `--scitt <URL>` | SCITT log endpoint | - |
 | `--catalog <URL>` | Catalog snapshot with per-CPOE metadata | - |
+| `--policy <URL>` | Policy artifact URL | - |
 | `--flagship <URL>` | FLAGSHIP signal stream | - |
 | `--frameworks <LIST>` | Comma-separated framework names | - |
 | `--contact <EMAIL>` | Compliance contact | - |
@@ -263,13 +291,15 @@ Exit codes: 0 = found, 1 = not found or failed
 
 ### corsair mappings
 
-List, validate, and add evidence mappings.
+List, validate, add, and package evidence mappings.
 
 ```
 corsair mappings list [--mapping <PATH>] [--json]
 corsair mappings validate [--mapping <PATH>] [--sample <PATH>] [--strict] [--json]
 corsair mappings add --url <URL> [--dir <DIR>]
 corsair mappings add --file <PATH> [--dir <DIR>]
+corsair mappings pack --id <ID> --version <VER> --mapping <PATH> [--issued-at <ISO>] [--output <PATH>]
+corsair mappings sign --file <PACK.json> --key <KEY.pem> [--output <PATH>]
 ```
 
 Signed packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set.

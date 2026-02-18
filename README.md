@@ -110,6 +110,7 @@ corsair sign --file evidence.json --sd-jwt     # SD-JWT selective disclosure
 corsair sign --file evidence.json --sd-jwt --sd-fields scope  # Disclose only scope
 corsair sign --file evidence.json --mapping ./mappings/toolx.json  # Apply mapping file
 corsair sign --file evidence.json --mapping ./mappings/            # Apply mapping directory
+corsair sign --file evidence.json --dependency https://vendor.com/cpoe.jwt  # Attach dependency proof
 corsair sign --file evidence.json --source tool  # Override provenance source
 corsair sign --file evidence.json --baseline baseline.cpoe.jwt --gate  # Fail on regression vs baseline
 corsair sign --file - < data.json              # Sign from stdin
@@ -122,6 +123,8 @@ corsair mappings list                          # Show loaded mappings
 corsair mappings list --json                   # Machine-readable output
 corsair mappings validate --json               # Validate mappings
 corsair mappings add https://example.com/pack.json  # Add a mapping pack
+corsair mappings pack --id wiz --version 1.0.0 --mapping ./mappings  # Build a pack
+corsair mappings sign --file pack.json --key ./keys/mapping-pack.key  # Sign a pack
 ```
 
 Mapping packs can be signed. If a pack includes a `signature`, set
@@ -142,9 +145,21 @@ corsair verify --file cpoe.jwt --require-tool-attestation --require-receipts --r
 corsair verify --file cpoe.jwt --require-evidence-chain --evidence evidence.jsonl
 corsair verify --file cpoe.jwt --require-input-binding --source-document raw-evidence.json
 corsair verify --file cpoe.jwt --require-scitt --receipts receipts.json
+corsair verify --file cpoe.jwt --policy policy.json
+corsair verify --file cpoe.jwt --dependencies
+corsair verify --file cpoe.jwt --dependencies --dependency-depth 2
 ```
 
 `--source-document` computes a canonical JSON hash (sorted keys) and compares it to `provenance.sourceDocument`.
+
+### Policy Artifacts
+
+Policies encode acceptance criteria as portable JSON files:
+
+```bash
+corsair policy validate --file policy.json
+corsair verify --file cpoe.jwt --policy policy.json
+```
 
 ### Evidence Receipts (Optional)
 
@@ -168,12 +183,13 @@ corsair diff --current new.jwt --previous old.jwt --json
 
 Corsair supports a discovery layer modeled after `security.txt`. Organizations publish
 `/.well-known/trust.txt` so verifiers can discover DID identity, current CPOEs,
-SCITT log endpoints, optional catalog snapshots, and FLAGSHIP streams.
+SCITT log endpoints, optional catalog snapshots, policy artifacts, and FLAGSHIP streams.
 For large numbers of proofs, keep trust.txt tiny and point to SCITT + catalog.
 
 ```bash
 corsair trust-txt generate --did did:web:acme.com --scitt https://log.acme.com/v1/entries?issuer=did:web:acme.com
 corsair trust-txt generate --did did:web:acme.com --catalog https://acme.com/compliance/catalog.json
+corsair trust-txt generate --did did:web:acme.com --policy https://acme.com/.well-known/policy.json
 corsair trust-txt generate --did did:web:acme.com --cpoe-url https://acme.com/soc2.jwt
 corsair trust-txt discover acme.com --verify
 ```
@@ -296,6 +312,19 @@ Companies fear publishing detailed control data. Corsair solves this with three 
 ### Proof-Only SCITT
 
 Register a CPOE in the transparency log without storing the credential itself — only a SHA-256 hash and COSE receipt. The CPOE is shared bilaterally while the log proves it was registered at a specific time.
+
+```bash
+corsair log register --file cpoe.jwt --scitt https://log.example.com/scitt/entries --proof-only
+```
+
+### Dependency Proofs (Trust Graph)
+
+Attach other issuers’ CPOEs as **dependency proofs** to build a composable trust graph. Each dependency stores the issuer, scope, and a hash of the referenced CPOE:
+
+```bash
+corsair sign --file evidence.json --dependency https://vendor.com/cpoe.jwt
+corsair verify --file cpoe.jwt --dependencies
+```
 
 ### SD-JWT in the Sign Pipeline
 

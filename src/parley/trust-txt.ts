@@ -4,7 +4,7 @@
  * A discovery layer for compliance proofs, modeled after security.txt (RFC 9116).
  * Organizations publish /.well-known/trust.txt to advertise their
  * DID identity, CPOE proofs, SCITT log, optional catalog snapshot,
- * and FLAGSHIP signal endpoints.
+ * policy artifacts, and FLAGSHIP signal endpoints.
  *
  * Any agent or human can crawl acme.com/.well-known/trust.txt and
  * discover everything that org can prove.
@@ -38,6 +38,9 @@ export interface TrustTxt {
 
   /** Optional catalog snapshot with per-CPOE metadata */
   catalog?: string;
+
+  /** Optional policy artifact URL for verification criteria */
+  policy?: string;
 
   /** FLAGSHIP real-time signal stream endpoint */
   flagship?: string;
@@ -107,6 +110,9 @@ export function parseTrustTxt(input: string): TrustTxt {
       case "catalog":
         result.catalog = value;
         break;
+      case "policy":
+        result.policy = value;
+        break;
       case "flagship":
         result.flagship = value;
         break;
@@ -169,6 +175,11 @@ export function generateTrustTxt(input: TrustTxt): string {
   if (input.catalog) {
     lines.push("");
     lines.push(`CATALOG: ${input.catalog}`);
+  }
+
+  if (input.policy) {
+    lines.push("");
+    lines.push(`POLICY: ${input.policy}`);
   }
 
   // Real-time signals
@@ -237,6 +248,12 @@ export function validateTrustTxt(input: TrustTxt): TrustTxtValidation {
   // Validate CATALOG URL
   if (input.catalog) {
     const urlError = validateHttpsUrl(input.catalog, "CATALOG");
+    if (urlError) errors.push(urlError);
+  }
+
+  // Validate POLICY URL
+  if (input.policy) {
+    const urlError = validateHttpsUrl(input.policy, "POLICY");
     if (urlError) errors.push(urlError);
   }
 

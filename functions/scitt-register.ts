@@ -93,7 +93,7 @@ export function createSCITTRouter(
 
     // POST /scitt/entries — Register statement
     if (method === "POST" && pathname === "/scitt/entries") {
-      let body: { statement?: string };
+      let body: { statement?: string; proofOnly?: boolean };
       try {
         body = await req.json();
       } catch {
@@ -103,6 +103,9 @@ export function createSCITTRouter(
       if (!body.statement || typeof body.statement !== "string") {
         return jsonError(400, "Missing required field: statement");
       }
+      if (body.proofOnly !== undefined && typeof body.proofOnly !== "boolean") {
+        return jsonError(400, "proofOnly must be a boolean");
+      }
 
       // Validate statement is a well-formed JWT (3 base64url-separated parts)
       const statementError = validateStatement(body.statement);
@@ -110,8 +113,8 @@ export function createSCITTRouter(
         return jsonError(400, statementError);
       }
 
-      const registration = await registry.register(body.statement);
-      return jsonOk(registration, 201);
+      const registration = await registry.register(body.statement, { proofOnly: body.proofOnly });
+      return jsonOk({ ...registration, proofOnly: Boolean(body.proofOnly) }, 201);
     }
 
     // GET routes with entry ID

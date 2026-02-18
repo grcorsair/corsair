@@ -3,6 +3,8 @@ title: "Quick Start"
 description: "Install Corsair, sign your first CPOE from tool output, and verify it in under 5 minutes."
 section: "getting-started"
 order: 1
+typedoc:
+  - src/cli/reference.ts#CLI_REFERENCE
 ---
 
 ## Prerequisites
@@ -55,6 +57,9 @@ corsair verify --file cpoe.jwt --receipts ./receipts.json --require-receipts --r
 
 # Verify raw evidence hash binding
 corsair verify --file cpoe.jwt --source-document ./evidence/prowler-findings.json --require-input-binding
+
+# Apply a policy artifact
+corsair verify --file cpoe.jwt --policy ./policy.json
 ```
 
 This verifies the Ed25519 signature, checks expiry, and displays provenance and control results.

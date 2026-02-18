@@ -56,12 +56,14 @@ describe("trust-txt CLI", () => {
         "--did", "did:web:acme.com",
         "--cpoe-url", "https://acme.com/soc2.jwt",
         "--catalog", "https://acme.com/compliance/catalog.json",
+        "--policy", "https://acme.com/.well-known/policy.json",
         "--frameworks", "SOC2,ISO27001",
         "--contact", "compliance@acme.com",
       ]);
       expect(result.stdout).toContain("DID: did:web:acme.com");
       expect(result.stdout).toContain("CPOE: https://acme.com/soc2.jwt");
       expect(result.stdout).toContain("CATALOG: https://acme.com/compliance/catalog.json");
+      expect(result.stdout).toContain("POLICY: https://acme.com/.well-known/policy.json");
       expect(result.stdout).toContain("Frameworks: SOC2, ISO27001");
       expect(result.stdout).toContain("Contact: compliance@acme.com");
       expect(result.exitCode).toBe(0);
