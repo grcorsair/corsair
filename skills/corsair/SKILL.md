@@ -5,15 +5,25 @@ license: Apache-2.0
 compatibility: Requires Corsair CLI and Bun runtime for repo scripts; network access needed for DID/trust.txt resolution.
 metadata:
   author: grcorsair
-  version: "2.1"
+  version: "2.2"
   website: https://grcorsair.com
 ---
 
-# Corsair Skill v2 — Agentic Compliance Substrate
+# Corsair Skill — Agentic Compliance Substrate
 
 Corsair is a protocol layer that makes compliance evidence verifiable, portable, and agent-consumable. This skill provides deterministic workflows for signing, verifying, diffing, and discovering proofs without building new scanners.
 
-Core primitives: SIGN, LOG, PUBLISH, VERIFY, DIFF, SIGNAL
+Core primitives: SIGN, LOG, PUBLISH (trust.txt), VERIFY, DIFF, SIGNAL (FLAGSHIP)
+
+---
+
+## When To Use
+
+- The user wants to sign tool output into verifiable proofs (CPOEs).
+- The user wants to verify a vendor’s proofs from trust.txt.
+- The user wants to detect drift between two proofs.
+- The user wants to publish or discover trust.txt.
+- The user asks about SCITT, FLAGSHIP, SD-JWT, or compliance proof exchange.
 
 ---
 
@@ -22,7 +32,8 @@ Core primitives: SIGN, LOG, PUBLISH, VERIFY, DIFF, SIGNAL
 The agent may perform these capabilities when invoked:
 
 - `sign_cpoe(evidence_path, format?, mapping?, source?, did?, scope?, expiry_days?, sd_jwt?, sd_fields?)`
-- `verify_cpoe(cpoe_path, did?, require_issuer?, require_framework?, max_age?, min_score?, require_source?, require_source_identity?, require_tool_attestation?, require_input_binding?, require_evidence_chain?, require_receipts?, require_scitt?, source_document?)`
+- `verify_cpoe(cpoe_path, did?, require_issuer?, require_framework?, max_age_days?, min_score?, require_source?, require_source_identity?, require_tool_attestation?, require_input_binding?, require_evidence_chain?, require_receipts?, require_scitt?, source_document?, policy_path?)`
+- `policy_validate(policy_path?)`
 - `diff_cpoe(current_path, previous_path, verify?)`
 - `publish_trust_txt(did, cpoes?, base_url?, scitt?, catalog?, flagship?, frameworks?, contact?, expiry_days?)`
 - `discover_trust_txt(domain, verify?)`
@@ -30,15 +41,14 @@ The agent may perform these capabilities when invoked:
 - `mappings_list()`
 - `mappings_validate()`
 - `mappings_add(url_or_path)`
-- `receipts_generate(evidence_path, indexes?, record_hashes?, meta?)`
+- `receipts_generate(evidence_path, indexes?, record_hash?, meta?)`
 - `receipts_verify(receipt_path, cpoe_path)`
-- `vendor_assessment(domain, framework?, verify?, diff?)`
 
 ---
 
-## Inputs
+## Inputs To Ask For
 
-Required inputs by task:
+Ask explicitly for missing inputs:
 
 - SIGN: evidence file path (or `-` for stdin)
 - VERIFY: CPOE file path (JWT string or JSON envelope)
@@ -51,42 +61,11 @@ If required input is missing, ask for it explicitly.
 
 ---
 
-## Outputs
+## Outputs (Concise)
 
-Return a concise summary plus a structured JSON-like result when possible.
+Return a concise summary. If the user asks for machine-readable output, use `--json`.
 
-Sign output fields:
-
-- `cpoe_path`
-- `detected_format`
-- `summary.controlsTested`
-- `summary.controlsPassed`
-- `summary.controlsFailed`
-- `summary.overallScore`
-- `provenance.source`
-- `warnings[]`
-
-Verify output fields:
-
-- `valid`
-- `reason`
-- `issuerTier`
-- `summary`
-- `evidenceChain.chainDigest`
-- `processProvenance.chainDigest`
-- `inputBinding.ok`
-
-Evidence chain fields (CPOE):
-
-- `chainType: "hash-linked"`
-- `algorithm: "sha256"`
-- `canonicalization: "sorted-json-v1"`
-- `recordCount`
-- `chainVerified`
-- `chainDigest`
-- `chainStartHash?`
-- `chainHeadHash?`
-- `chains[]?`
+For full output schemas and CLI flags, use `skills/corsair/references/REFERENCE.md`.
 
 ---
 
@@ -102,74 +81,60 @@ Use this routing logic:
 6. If user asks to list proofs -> LOG workflow
 7. If user asks about mappings -> MAPPINGS workflow
 8. If user asks about evidence receipts or inclusion proofs -> RECEIPTS workflow
-9. If user asks to assess a vendor -> AUDIT workflow
+9. If user asks about policy artifacts -> POLICY workflow
 
 ---
 
-## Workflows
+## Workflows (Fast Path)
 
 ### SIGN
 
-1. Identify evidence file path (or stdin).
-2. Run `corsair sign --file <PATH> --verbose`
-3. If format is specified: `corsair sign --file <PATH> --format <FORMAT>`
-4. If mapping pack provided: `corsair sign --file <PATH> --mapping <PATH>`
-5. Report: CPOE path, format, summary.
+1. `corsair sign --file <PATH>`
+2. If needed: `--format`, `--mapping`, `--sd-jwt`, `--sd-fields`
+3. Report CPOE path, detected format, summary.
 
 ### VERIFY
 
-1. Identify CPOE path.
-2. Run `corsair verify --file <PATH>`
-3. If DID validation required: `corsair verify --file <PATH> --did`
-4. If evidence JSONL is available: `corsair verify --file <PATH> --evidence <JSONL_PATH>`
-5. If process receipts are available: `corsair verify --file <PATH> --receipts <RECEIPTS.json>`
-6. If raw evidence JSON is available: `corsair verify --file <PATH> --source-document <RAW.json>`
-7. Apply policy checks as requested: `--require-source`, `--require-source-identity`, `--require-tool-attestation`, `--require-input-binding`, `--require-evidence-chain`, `--require-receipts`, `--require-scitt`
-8. Report validity, issuer tier, summary.
+1. `corsair verify --file <PATH>`
+2. If needed: `--did`, `--policy`, `--receipts`, `--evidence`, `--source-document`
+3. Report validity, trust tier, summary, and any policy errors.
 
 ### DIFF
 
-1. Identify current and previous CPOE paths.
-2. Run `corsair diff --current <NEW> --previous <OLD>`
-3. If verify: `corsair diff --current <NEW> --previous <OLD> --verify`
-4. Report regressions and score delta.
+1. `corsair diff --current <NEW> --previous <OLD> [--verify]`
+2. Report regressions and score delta.
 
 ### PUBLISH (trust.txt)
 
-1. Require DID.
-2. Generate trust.txt: `corsair trust-txt generate --did <DID> [options] -o .well-known/trust.txt`
-3. Report output path and hosting requirement `/.well-known/trust.txt`.
+1. `corsair trust-txt generate --did <DID> [options] -o .well-known/trust.txt`
+2. Report output path and hosting requirement `/.well-known/trust.txt`.
 
 ### DISCOVER
 
-1. Require domain.
-2. Run `corsair trust-txt discover <DOMAIN> [--verify]`
-3. Summarize CPOEs and verification status.
+1. `corsair trust-txt discover <DOMAIN> [--verify]`
+2. Summarize discovered CPOEs, SCITT, and FLAGSHIP.
 
 ### LOG
 
-1. Optional directory or SCITT endpoint.
-2. Run `corsair log [--dir <DIR>] [--scitt <URL>] [--issuer <DID>]`
-3. Summarize recent CPOEs.
+1. `corsair log [--dir <DIR>] [--scitt <URL>] [--issuer <DID>]`
+2. Summarize recent CPOEs.
 
 ### MAPPINGS
 
-- List: `corsair mappings list`
-- Validate: `corsair mappings validate`
-- Add: `corsair mappings add <URL_OR_PATH>`
+`corsair mappings list`  
+`corsair mappings validate`  
+`corsair mappings add <URL_OR_PATH>`
 
 ### RECEIPTS (Evidence Inclusion Proofs)
 
-1. Generate receipt(s): `corsair receipts generate --evidence <JSONL> --index <N> --output receipt.json`
-2. Verify receipt(s): `corsair receipts verify --file receipt.json --cpoe cpoe.jwt`
+1. `corsair receipts generate --evidence <JSONL> --index <N>`
+2. `corsair receipts verify --file <RECEIPT.json> --cpoe <CPOE.jwt>`
 3. Report whether receipts verify against the CPOE chain digest.
 
-### AUDIT (Vendor Assessment)
+### POLICY (Policy Artifacts)
 
-1. Resolve trust.txt: `corsair trust-txt discover <DOMAIN> --verify`
-2. If SCITT is present, log entries: `corsair log --domain <DOMAIN> --framework <FRAMEWORK>`
-3. If multiple CPOEs available, diff: `corsair diff --current <NEW> --previous <OLD> --verify`
-4. Report risk summary with evidence.
+1. Validate a policy: `corsair policy validate --file <POLICY.json>`
+2. Apply policy during verification: `corsair verify --file <CPOE> --policy <POLICY.json>`
 
 ---
 
@@ -201,6 +166,13 @@ Common failures and responses:
 - Never expose secrets from evidence or environment variables.
 - Prefer evidence-only mappings when controls are sensitive.
 - Use SD-JWT for selective disclosure when requested.
+
+---
+
+## Reference
+
+For detailed command flags, JSON outputs, and example payloads, use:
+`skills/corsair/references/REFERENCE.md`
 
 ---
 
