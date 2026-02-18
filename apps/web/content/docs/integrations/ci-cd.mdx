@@ -51,6 +51,9 @@ jobs:
           corsair verify --file /tmp/cpoe.jwt
           # Optional strict evidence check
           # corsair verify --file /tmp/cpoe.jwt --evidence ./evidence/corsair-evidence.jsonl
+          # Optional strict policy checks (receipts + SCITT + input binding)
+          # corsair verify --file /tmp/cpoe.jwt --receipts ./receipts.json --require-receipts --require-scitt
+          # corsair verify --file /tmp/cpoe.jwt --source-document ./scan-results/prowler-output.json --require-input-binding
 
       - uses: actions/upload-artifact@v4
         with:

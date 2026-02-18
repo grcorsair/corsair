@@ -60,16 +60,19 @@ const result = verifyChain(records);
 // { valid: true, recordCount: 12, brokenAt: null }
 ```
 
-Or via the CLI:
+Or via the CLI (strict match on `chainDigest`):
 
 ```bash
-bun corsair.ts verify ./evidence/assessment.jsonl
+corsair verify --file cpoe.jwt --evidence ./evidence/assessment.jsonl --require-evidence-chain
 ```
 
-To verify a CPOE against local evidence JSONL (strict match on `chainDigest`):
+## Input Binding (Optional)
+
+To bind a CPOE back to the raw evidence JSON, compare the canonical JSON hash to
+`provenance.sourceDocument`:
 
 ```bash
-corsair verify --file cpoe.jwt --evidence ./evidence/assessment.jsonl
+corsair verify --file cpoe.jwt --source-document ./evidence/assessment.json --require-input-binding
 ```
 
 ## Evidence Phases

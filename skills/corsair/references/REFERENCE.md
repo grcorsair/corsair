@@ -98,8 +98,16 @@ corsair verify [options]
 | `--require-framework <LIST>` | Comma-separated required frameworks | - |
 | `--max-age <DAYS>` | Max evidence age (provenance.sourceDate) | - |
 | `--min-score <N>` | Minimum overallScore | - |
+| `--require-source <TYPE>` | Require provenance source: self\|tool\|auditor | - |
+| `--require-source-identity <LIST>` | Comma-separated allowed source identities | - |
+| `--require-tool-attestation` | Require toolAttestation in receipts | - |
+| `--require-input-binding` | Require provenance.sourceDocument hash binding | - |
+| `--require-evidence-chain` | Require evidenceChain + verification | - |
+| `--require-receipts` | Require verified process receipts | - |
+| `--require-scitt` | Require SCITT entry IDs for receipts | - |
 | `--receipts <PATH>` | Verify process receipts (JSON array) | - |
 | `--evidence <PATH>` | Verify evidence chain against JSONL (repeatable) | - |
+| `--source-document <PATH>` | Verify provenance.sourceDocument against raw evidence JSON | - |
 | `--json` | Output structured JSON | false |
 
 **Exit codes:** 0 = VERIFIED, 1 = FAILED
@@ -128,6 +136,7 @@ corsair verify [options]
   },
   "policy": { "ok": true, "errors": [] },
   "process": { "chainValid": true, "receiptsVerified": 2, "receiptsTotal": 2 },
+  "inputBinding": { "ok": true, "errors": [] },
   "evidence": {
     "ok": true,
     "errors": [],

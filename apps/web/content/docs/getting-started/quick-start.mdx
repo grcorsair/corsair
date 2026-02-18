@@ -49,6 +49,12 @@ corsair verify --file cpoe.jwt --did
 
 # Verify against local evidence JSONL (strict)
 corsair verify --file cpoe.jwt --evidence ./evidence/corsair-evidence.jsonl
+
+# Require tool-attested receipts + SCITT anchors
+corsair verify --file cpoe.jwt --receipts ./receipts.json --require-receipts --require-scitt
+
+# Verify raw evidence hash binding
+corsair verify --file cpoe.jwt --source-document ./evidence/prowler-findings.json --require-input-binding
 ```
 
 This verifies the Ed25519 signature, checks expiry, and displays provenance and control results.

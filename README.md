@@ -137,7 +137,14 @@ corsair verify --file cpoe.jwt --require-framework SOC2,ISO27001
 corsair verify --file cpoe.jwt --max-age 30 --min-score 90
 corsair verify --file cpoe.jwt --receipts receipts.json
 corsair verify --file cpoe.jwt --evidence evidence.jsonl
+corsair verify --file cpoe.jwt --require-source tool --require-source-identity "Prowler v3.1"
+corsair verify --file cpoe.jwt --require-tool-attestation --require-receipts --receipts receipts.json
+corsair verify --file cpoe.jwt --require-evidence-chain --evidence evidence.jsonl
+corsair verify --file cpoe.jwt --require-input-binding --source-document raw-evidence.json
+corsair verify --file cpoe.jwt --require-scitt --receipts receipts.json
 ```
+
+`--source-document` computes a canonical JSON hash (sorted keys) and compares it to `provenance.sourceDocument`.
 
 ### Evidence Receipts (Optional)
 

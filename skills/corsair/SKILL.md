@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Requires Corsair CLI and Bun runtime for repo scripts; network access needed for DID/trust.txt resolution.
 metadata:
   author: grcorsair
-  version: "2.0"
+  version: "2.1"
   website: https://grcorsair.com
 ---
 
@@ -22,7 +22,7 @@ Core primitives: SIGN, LOG, PUBLISH, VERIFY, DIFF, SIGNAL
 The agent may perform these capabilities when invoked:
 
 - `sign_cpoe(evidence_path, format?, mapping?, source?, did?, scope?, expiry_days?, sd_jwt?, sd_fields?)`
-- `verify_cpoe(cpoe_path, did?, require_issuer?, require_framework?, max_age?, min_score?)`
+- `verify_cpoe(cpoe_path, did?, require_issuer?, require_framework?, max_age?, min_score?, require_source?, require_source_identity?, require_tool_attestation?, require_input_binding?, require_evidence_chain?, require_receipts?, require_scitt?, source_document?)`
 - `diff_cpoe(current_path, previous_path, verify?)`
 - `publish_trust_txt(did, cpoes?, base_url?, scitt?, catalog?, flagship?, frameworks?, contact?, expiry_days?)`
 - `discover_trust_txt(domain, verify?)`
@@ -74,6 +74,7 @@ Verify output fields:
 - `summary`
 - `evidenceChain.chainDigest`
 - `processProvenance.chainDigest`
+- `inputBinding.ok`
 
 Evidence chain fields (CPOE):
 
@@ -121,7 +122,10 @@ Use this routing logic:
 2. Run `corsair verify --file <PATH>`
 3. If DID validation required: `corsair verify --file <PATH> --did`
 4. If evidence JSONL is available: `corsair verify --file <PATH> --evidence <JSONL_PATH>`
-5. Report validity, issuer tier, summary.
+5. If process receipts are available: `corsair verify --file <PATH> --receipts <RECEIPTS.json>`
+6. If raw evidence JSON is available: `corsair verify --file <PATH> --source-document <RAW.json>`
+7. Apply policy checks as requested: `--require-source`, `--require-source-identity`, `--require-tool-attestation`, `--require-input-binding`, `--require-evidence-chain`, `--require-receipts`, `--require-scitt`
+8. Report validity, issuer tier, summary.
 
 ### DIFF
 
@@ -188,6 +192,7 @@ Common failures and responses:
 - DID resolution failed -> report and suggest `--did` or `--require-issuer`
 - CPOE expired -> report with expiry timestamp
 - Evidence chain unverified -> report `chainVerified=false`
+- Input binding mismatch -> report `sourceDocument` hash mismatch
 
 ---
 

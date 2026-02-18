@@ -124,6 +124,15 @@ curl -X POST https://api.grcorsair.com/v1/sign \
 Verify a CPOE signature and extract attestation details. No authentication required.
 Optional policy checks and process receipt verification are supported.
 
+Policy fields include:
+- `requireSource` (`self` | `tool` | `auditor`)
+- `requireSourceIdentity` (array of allowed identities)
+- `requireToolAttestation` (boolean)
+- `requireInputBinding` (boolean, requires `sourceDocumentHash`)
+- `requireEvidenceChain` (boolean, CLI-only because it needs the JSONL evidence file)
+- `requireReceipts` (boolean)
+- `requireScitt` (boolean)
+
 ```bash
 curl -X POST https://api.grcorsair.com/v1/verify \
   -H "Content-Type: application/json" \
@@ -133,9 +142,15 @@ curl -X POST https://api.grcorsair.com/v1/verify \
       "requireIssuer": "did:web:grcorsair.com",
       "requireFramework": ["SOC2"],
       "maxAgeDays": 30,
-      "minScore": 90
+      "minScore": 90,
+      "requireSource": "tool",
+      "requireSourceIdentity": ["Prowler v3.1"],
+      "requireReceipts": true,
+      "requireScitt": true,
+      "requireInputBinding": true
     },
-    "receipts": []
+    "receipts": [],
+    "sourceDocumentHash": "a2b4c6d8..."
   }'
 ```
 
@@ -169,7 +184,10 @@ curl -X POST https://api.grcorsair.com/v1/verify \
       "expiresAt": "2026-05-14T00:00:00.000Z"
     },
     "policy": { "ok": true, "errors": [] },
-    "process": { "chainValid": true, "receiptsVerified": 2, "receiptsTotal": 2 }
+    "process": { "chainValid": true, "receiptsVerified": 2, "receiptsTotal": 2 },
+    "inputBinding": { "ok": true, "errors": [] }
   }
 }
 ```
+
+`sourceDocumentHash` should be the SHA-256 of canonical JSON (sorted keys), matching `provenance.sourceDocument`.

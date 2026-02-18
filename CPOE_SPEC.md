@@ -92,7 +92,7 @@ All claims live under `vc.credentialSubject`. The provenance-first model (v0.5.0
 | `provenance.sourceDate` | string | ISO 8601 date of the source assessment |
 | `evidenceChain` | object | Evidence chain metadata: `{ chainType, algorithm, canonicalization, recordCount, chainVerified, chainDigest, chainStartHash?, chainHeadHash?, chains? }` |
 | `frameworks` | object | Per-framework results (keyed by framework name) |
-| `processProvenance` | object | Pipeline receipt chain: `{ chainDigest, receiptCount, chainVerified, format, reproducibleSteps, attestedSteps, scittEntryIds? }` — in-toto/SLSA provenance trail |
+| `processProvenance` | object | Pipeline receipt chain: `{ chainDigest, receiptCount, chainVerified, format, reproducibleSteps, attestedSteps, toolAttestedSteps?, scittEntryIds? }` — in-toto/SLSA provenance trail |
 | `schemaVersion` | string | CPOE schema version (current: `"1.0"`) |
 | `extensions` | object | Optional passthrough fields and mapping metadata (namespaced keys only) |
 

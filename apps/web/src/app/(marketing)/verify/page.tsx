@@ -137,7 +137,8 @@ export default function VerifyPage() {
                   </li>
                   <li className="flex gap-3">
                     <span className="text-corsair-gold">4.</span>
-                    Result: signature validity, provenance, controls summary, pass rate. Math replaces trust.
+                    Result: signature validity, provenance, controls summary, pass rate — plus optional policy checks
+                    (source identity, receipts, SCITT, evidence chain). Math replaces trust.
                   </li>
                 </ol>
               </div>
