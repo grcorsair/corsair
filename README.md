@@ -72,6 +72,20 @@ corsair diff --current q2.jwt --previous q1.jwt
 
 ---
 
+## Production Environment Variables
+
+| Variable | Purpose | Required |
+|:--|:--|:--|
+| `DATABASE_URL` | Postgres connection string for persistence | Yes (server) |
+| `CORSAIR_KEY_ENCRYPTION_SECRET` | 32-byte key for AES-256-GCM signing key encryption (64 hex chars or base64) | Yes (server) |
+| `CORSAIR_API_KEYS` | Comma-separated API keys for authenticated endpoints | Yes (prod) |
+| `CORSAIR_DOMAIN` | Public domain for DID:web and trust.txt generation | Recommended |
+| `CORSAIR_MAPPING_PACK_PUBKEY` | Ed25519 public key PEM to verify signed mapping packs | Optional |
+
+`CORSAIR_KEY_ENCRYPTION_SECRET` can also be supplied as `KEY_ENCRYPTION_SECRET` for backwards compatibility.
+
+---
+
 ## Three Production Pillars
 
 Corsair ships with a simple, shareable surface that maps directly to how people verify compliance in the real world.

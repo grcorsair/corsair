@@ -27,7 +27,7 @@
  *
  * All routes also available under /v1/ prefix (e.g. /v1/verify).
  * Runs migrations on startup (idempotent).
- * Reads DATABASE_URL, KEY_ENCRYPTION_SECRET, CORSAIR_DOMAIN from env.
+ * Reads DATABASE_URL, CORSAIR_KEY_ENCRYPTION_SECRET, CORSAIR_DOMAIN from env.
  */
 
 import { VERSION } from "./src/version";
@@ -258,14 +258,27 @@ console.log(`  Server listening on :${PORT} (health endpoint active)`);
 
 async function initialize() {
   // 1. Validate KEY_ENCRYPTION_SECRET (sync, fast)
-  const keySecretHex = (Bun.env.KEY_ENCRYPTION_SECRET || "").trim();
-  if (!keySecretHex) {
-    throw new Error("KEY_ENCRYPTION_SECRET is required (64 hex chars = 32 bytes)");
+  const keySecretRaw =
+    (Bun.env.CORSAIR_KEY_ENCRYPTION_SECRET || "").trim()
+    || (Bun.env.KEY_ENCRYPTION_SECRET || "").trim();
+  if (!keySecretRaw) {
+    throw new Error(
+      "CORSAIR_KEY_ENCRYPTION_SECRET is required (32 bytes). " +
+        "Provide 64 hex chars or base64.",
+    );
   }
-  if (!/^[0-9a-fA-F]{64}$/.test(keySecretHex)) {
-    throw new Error(`KEY_ENCRYPTION_SECRET must be exactly 64 hex characters (got ${keySecretHex.length} chars)`);
+  let keySecret: Buffer;
+  if (/^[0-9a-fA-F]{64}$/.test(keySecretRaw)) {
+    keySecret = Buffer.from(keySecretRaw, "hex");
+  } else {
+    const decoded = Buffer.from(keySecretRaw, "base64");
+    if (decoded.length !== 32) {
+      throw new Error(
+        "CORSAIR_KEY_ENCRYPTION_SECRET must be 32 bytes (64 hex chars or base64-encoded 32 bytes).",
+      );
+    }
+    keySecret = decoded;
   }
-  const keySecret = Buffer.from(keySecretHex, "hex");
 
   // 2. Connect to database
   console.log("  Init: Connecting to database...");
