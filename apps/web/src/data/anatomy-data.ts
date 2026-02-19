@@ -4,8 +4,8 @@
  *
  * Three evidence tiers:
  *   Tier 1: LOOKOUT  — Telemetry from source systems (CloudTrail, Azure Monitor, etc.)
- *   Tier 2: SPYGLASS — Output from security tools (InSpec, Prowler, Trivy, etc.)
- *   Tier 3: QUARTERMASTER — Results from GRC platforms (Vanta, Drata, CISO Assistant, etc.)
+ *   Tier 2: SPYGLASS — Output from security tools (via mapping packs)
+ *   Tier 3: QUARTERMASTER — Results from GRC platforms (via mapping packs)
  */
 
 export interface AnatomyControl {
@@ -60,17 +60,17 @@ export const INTEGRATION_TIERS: IntegrationTier[] = [
     description:
       "Security scanners and compliance tools that actively test your infrastructure. Vulnerability scans, policy checks, configuration audits — tools that go beyond observation and produce structured compliance findings.",
     sources: [
-      "InSpec",
-      "Prowler",
-      "Trivy",
-      "SecurityHub",
-      "GitLab SAST",
-      "ComplianceAsCode (coming soon)",
+      "CSPM scanners (via mapping pack)",
+      "SAST outputs (via mapping pack)",
+      "Vulnerability scanners (via mapping pack)",
+      "Cloud posture exports (via mapping pack)",
+      "Policy engines (via mapping pack)",
+      "Custom tooling (via mapping pack)",
     ],
     evidenceType: "Scan results, compliance checks, vulnerability reports",
     provenanceType: "tool (scanner)",
-    cliExample: "prowler aws --output json | corsair sign --format prowler --output cpoe.jwt",
-    cliLabel: "Pipe Prowler output directly into corsair sign",
+    cliExample: "corsair sign --file tool-output.json --mapping ./mappings/toolx.json --output cpoe.jwt",
+    cliLabel: "Apply a mapping pack to tool output",
   },
   {
     tier: 3,
@@ -80,110 +80,110 @@ export const INTEGRATION_TIERS: IntegrationTier[] = [
     description:
       "GRC platforms that aggregate evidence, manage control lifecycles, and provide continuous monitoring. Structured compliance data with governance context — the richest evidence source.",
     sources: [
-      "CISO Assistant",
-      "Eramba (coming soon)",
-      "Vanta (coming soon)",
-      "Drata (coming soon)",
-      "OneTrust (coming soon)",
-      "Conveyor (coming soon)",
+      "Open-source GRC exports (via mapping pack)",
+      "GRC APIs (via mapping pack)",
+      "Audit platforms (via mapping pack)",
+      "Vendor questionnaires (via mapping pack)",
+      "Assurance portals (via mapping pack)",
+      "Custom evidence hubs (via mapping pack)",
     ],
     evidenceType: "Control assessments, continuous monitoring, audit results",
     provenanceType: "tool (platform)",
     cliExample:
-      "corsair sign --file controls-export.json --format ciso-assistant-export",
+      "corsair sign --file grc-export.json --mapping ./mappings/grc.json",
     cliLabel: "Sign GRC platform export as CPOE",
   },
 ];
 
-/** Sample controls from a Prowler scan (Tier 2 example) */
+/** Sample controls from a tool scan (Tier 2 example) */
 export const ANATOMY_CONTROLS: AnatomyControl[] = [
   {
-    id: "prowler-iam-1",
+    id: "scan-iam-1",
     name: "MFA Enabled for Root Account",
     status: "effective",
     evidence:
-      "Prowler check: iam_root_hardware_mfa_enabled — PASS. Hardware MFA device attached to root account.",
+      "Scanner check: iam_root_hardware_mfa_enabled — PASS. Hardware MFA device attached to root account.",
     provenanceType: "tool",
     methodology: "automated-config-check",
   },
   {
-    id: "prowler-iam-4",
+    id: "scan-iam-4",
     name: "IAM Password Policy Enforced",
     status: "effective",
     evidence:
-      "Prowler check: iam_password_policy_minimum_length_14 — PASS. Minimum 14 chars, complexity enabled.",
+      "Scanner check: iam_password_policy_minimum_length_14 — PASS. Minimum 14 chars, complexity enabled.",
     provenanceType: "tool",
     methodology: "automated-config-check",
   },
   {
-    id: "prowler-s3-1",
+    id: "scan-s3-1",
     name: "S3 Bucket Encryption at Rest",
     status: "effective",
     evidence:
-      "Prowler check: s3_bucket_default_encryption — PASS. AES-256 (SSE-S3) enabled on all 12 buckets.",
+      "Scanner check: s3_bucket_default_encryption — PASS. AES-256 (SSE-S3) enabled on all 12 buckets.",
     provenanceType: "tool",
     methodology: "automated-config-check",
   },
   {
-    id: "prowler-vpc-1",
+    id: "scan-vpc-1",
     name: "VPC Flow Logs Enabled",
     status: "effective",
     evidence:
-      "Prowler check: vpc_flow_logs_enabled — PASS. Flow logs active on all 3 VPCs.",
+      "Scanner check: vpc_flow_logs_enabled — PASS. Flow logs active on all 3 VPCs.",
     provenanceType: "tool",
     methodology: "automated-config-check",
   },
   {
-    id: "trivy-vuln-1",
+    id: "scan-vuln-1",
     name: "Container Image Vulnerability Scan",
     status: "effective",
     evidence:
-      "Trivy scan: 0 critical, 0 high vulnerabilities in production images. Full scan of 8 images.",
+      "Scanner scan: 0 critical, 0 high vulnerabilities in production images. Full scan of 8 images.",
     provenanceType: "tool",
     methodology: "automated-vulnerability-scan",
   },
   {
-    id: "inspec-cis-1",
+    id: "scan-cis-1",
     name: "CIS Benchmark: SSH Configuration",
     status: "effective",
     evidence:
-      "InSpec profile: cis-aws-foundations-baseline — 42/42 controls passed. SSH hardened per CIS Level 1 baseline.",
+      "Compliance profile: cis-aws-foundations-baseline — 42/42 controls passed. SSH hardened per CIS Level 1 baseline.",
     provenanceType: "tool",
     methodology: "compliance-benchmark-test",
   },
   {
-    id: "prowler-ct-1",
+    id: "scan-ct-1",
     name: "CloudTrail Logging Enabled",
     status: "effective",
     evidence:
-      "Prowler check: cloudtrail_multi_region_enabled — PASS. Multi-region trail active with S3 delivery.",
+      "Scanner check: cloudtrail_multi_region_enabled — PASS. Multi-region trail active with S3 delivery.",
     provenanceType: "tool",
     methodology: "automated-config-check",
   },
   {
-    id: "prowler-guard-1",
+    id: "scan-guard-1",
     name: "GuardDuty Threat Detection Active",
     status: "effective",
     evidence:
-      "Prowler check: guardduty_is_enabled — PASS. GuardDuty active in all 3 regions.",
+      "Scanner check: guardduty_is_enabled — PASS. GuardDuty active in all 3 regions.",
     provenanceType: "tool",
     methodology: "automated-config-check",
   },
   {
-    id: "prowler-ec2-1",
+    id: "scan-ec2-1",
     name: "EC2 IMDSv2 Enforced",
     status: "ineffective",
     evidence:
-      "Prowler check: ec2_imdsv2_only — FAIL. 2 of 14 instances still allow IMDSv1.",
+      "Scanner check: ec2_imdsv2_only — FAIL. 2 of 14 instances still allow IMDSv1.",
     provenanceType: "tool",
     methodology: "automated-config-check",
   },
   {
-    id: "prowler-kms-1",
+    id: "scan-kms-1",
     name: "KMS Key Rotation Enabled",
     status: "ineffective",
     evidence:
-      "Prowler check: kms_cmk_rotation_enabled — FAIL. 1 of 5 CMKs missing automatic rotation.",
+      "Scanner check: kms_cmk_rotation_enabled — FAIL. 1 of 5 CMKs missing automatic rotation.",
     provenanceType: "tool",
     methodology: "automated-config-check",
   },

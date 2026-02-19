@@ -2,7 +2,7 @@
  * Sign Core Tests — TDD
  *
  * Tests for the shared signEvidence() engine.
- * Covers: all 8 formats, dry-run, format override, warnings, error handling.
+ * Covers: generic format, mapping registry, dry-run, format override, warnings, error handling.
  */
 
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
@@ -49,84 +49,11 @@ const genericEvidence = {
   ],
 };
 
-const prowlerFindings = [
-  {
-    StatusCode: "PASS",
-    Severity: "HIGH",
-    FindingInfo: { Uid: "prowler-iam-001", Title: "IAM root access keys" },
-    Compliance: { Requirements: ["CIS-1.1", "NIST-800-53-IA-2"] },
-  },
-  {
-    StatusCode: "FAIL",
-    Severity: "CRITICAL",
-    FindingInfo: { Uid: "prowler-s3-001", Title: "S3 bucket public access" },
-    Remediation: { Recommendation: "Block public access" },
-  },
-];
-
-const securityHubFindings = {
-  Findings: [
-    { Id: "sh-001", Title: "MFA Enabled", Compliance: { Status: "PASSED" }, Severity: { Label: "HIGH" } },
-    { Id: "sh-002", Title: "Encryption", Compliance: { Status: "FAILED" }, Severity: { Label: "MEDIUM" } },
-  ],
-};
-
-const inspecReport = {
-  platform: { name: "aws", release: "sdk-v3" },
-  profiles: [{
-    name: "cis-level1",
-    title: "CIS Level 1",
-    controls: [
-      { id: "cis-1.1", title: "No root keys", impact: 1.0, results: [{ status: "passed", code_desc: "OK" }] },
-      { id: "cis-2.1", title: "CloudTrail enabled", impact: 0.7, results: [{ status: "failed", code_desc: "Not enabled" }] },
-    ],
-  }],
-};
-
-const trivyReport = {
-  SchemaVersion: 2,
-  ArtifactName: "myapp:latest",
-  Results: [{
-    Target: "Dockerfile",
-    Misconfigurations: [
-      { Type: "dockerfile", ID: "DS001", Title: "Running as root", Severity: "HIGH", Status: "FAIL", Description: "Bad" },
-      { Type: "dockerfile", ID: "DS005", Title: "COPY vs ADD", Severity: "LOW", Status: "PASS", Description: "OK" },
-    ],
-  }],
-};
-
-const gitlabReport = {
-  version: "15.0.0",
-  scan: { type: "sast", scanner: { id: "semgrep", name: "Semgrep" }, status: "success" },
-  vulnerabilities: [
-    { id: "gl-001", name: "SQL Injection", severity: "Critical", identifiers: [{ type: "cwe", name: "CWE-89", value: "89" }] },
-    { id: "gl-002", name: "XSS", severity: "High", identifiers: [{ type: "cwe", name: "CWE-79", value: "79" }] },
-  ],
-};
-
-const cisoAssistantAPI = {
-  count: 2,
-  next: null,
-  previous: null,
-  results: [
-    { id: "ca-001", requirement: "urn:intuitem:risk:req_node:soc2-2017:CC1.1", result: "compliant", observation: "Controls documented" },
-    { id: "ca-002", requirement: "urn:intuitem:risk:req_node:soc2-2017:CC6.1", result: "non_compliant", observation: "Access not enforced" },
-  ],
-};
-
-const cisoAssistantExport = {
-  meta: { media_version: "1.0", exported_at: "2026-01-15" },
-  requirement_assessments: [
-    { id: "exp-001", requirement: "urn:intuitem:risk:req_node:iso-27001-2022:A.5.1", result: "compliant", observation: "Policy exists" },
-    { id: "exp-002", requirement: "urn:intuitem:risk:req_node:iso-27001-2022:A.8.1", result: "not_assessed" },
-  ],
-};
-
 // =============================================================================
-// CORE SIGNING — ALL 8 FORMATS
+// CORE SIGNING — GENERIC + MAPPING
 // =============================================================================
 
-describe("signEvidence — all formats", () => {
+describe("signEvidence — generic", () => {
   test("signs generic JSON evidence", async () => {
     const result = await signEvidence({ evidence: genericEvidence }, keyManager);
     expect(result.jwt).toMatch(/^eyJ/);
@@ -138,49 +65,6 @@ describe("signEvidence — all formats", () => {
     expect(result.warnings).toHaveLength(0);
   });
 
-  test("signs Prowler OCSF findings", async () => {
-    const result = await signEvidence({ evidence: prowlerFindings }, keyManager);
-    expect(result.jwt).toMatch(/^eyJ/);
-    expect(result.detectedFormat).toBe("prowler");
-    expect(result.summary.controlsTested).toBeGreaterThanOrEqual(2);
-  });
-
-  test("signs SecurityHub ASFF findings", async () => {
-    const result = await signEvidence({ evidence: securityHubFindings }, keyManager);
-    expect(result.jwt).toMatch(/^eyJ/);
-    expect(result.detectedFormat).toBe("securityhub");
-  });
-
-  test("signs InSpec report", async () => {
-    const result = await signEvidence({ evidence: inspecReport }, keyManager);
-    expect(result.jwt).toMatch(/^eyJ/);
-    expect(result.detectedFormat).toBe("inspec");
-  });
-
-  test("signs Trivy report", async () => {
-    const result = await signEvidence({ evidence: trivyReport }, keyManager);
-    expect(result.jwt).toMatch(/^eyJ/);
-    expect(result.detectedFormat).toBe("trivy");
-  });
-
-  test("signs GitLab security report", async () => {
-    const result = await signEvidence({ evidence: gitlabReport }, keyManager);
-    expect(result.jwt).toMatch(/^eyJ/);
-    expect(result.detectedFormat).toBe("gitlab");
-  });
-
-  test("signs CISO Assistant API response", async () => {
-    const result = await signEvidence({ evidence: cisoAssistantAPI }, keyManager);
-    expect(result.jwt).toMatch(/^eyJ/);
-    expect(result.detectedFormat).toBe("ciso-assistant-api");
-  });
-
-  test("signs CISO Assistant domain export", async () => {
-    const result = await signEvidence({ evidence: cisoAssistantExport }, keyManager);
-    expect(result.jwt).toMatch(/^eyJ/);
-    expect(result.detectedFormat).toBe("ciso-assistant-api");
-  });
-
   test("accepts JSON string input", async () => {
     const result = await signEvidence({ evidence: JSON.stringify(genericEvidence) }, keyManager);
     expect(result.jwt).toMatch(/^eyJ/);
@@ -189,6 +73,49 @@ describe("signEvidence — all formats", () => {
   test("respects source override for provenance", async () => {
     const result = await signEvidence({ evidence: genericEvidence, source: "manual" }, keyManager);
     expect(result.provenance.source).toBe("self");
+  });
+});
+
+describe("signEvidence — mapping registry", () => {
+  test("uses mapping registry for tool-specific inputs", async () => {
+    const mappingDir = join(tmpDir, "mappings");
+    mkdirSync(mappingDir, { recursive: true });
+    const mapping = {
+      id: "toolx-basic",
+      match: { allOf: ["$.tool", "$.findings"] },
+      metadata: {
+        title: "Tool X Findings",
+        issuer: "Tool X",
+        reportType: "Tool X",
+      },
+      controls: {
+        path: "$.findings[*]",
+        idPath: "@.id",
+        descriptionPath: "@.title",
+        statusPath: "@.status",
+        statusMap: { pass: "effective", fail: "ineffective" },
+        severityPath: "@.severity",
+        severityMap: { high: "HIGH", low: "LOW" },
+      },
+    };
+    writeFileSync(join(mappingDir, "toolx.json"), JSON.stringify(mapping, null, 2));
+    process.env.CORSAIR_MAPPING_DIR = mappingDir;
+    resetMappingRegistry();
+
+    const input = {
+      tool: "toolx",
+      findings: [
+        { id: "X-1", title: "MFA enabled", status: "pass", severity: "high" },
+        { id: "X-2", title: "Logging", status: "fail", severity: "low" },
+      ],
+    };
+
+    const result = await signEvidence({ evidence: input }, keyManager);
+    expect(result.summary.controlsTested).toBe(2);
+    expect(result.detectedFormat).toBe("mapping-pack");
+
+    delete process.env.CORSAIR_MAPPING_DIR;
+    resetMappingRegistry();
   });
 
   test("warns when evidence-only mapping is used", async () => {
@@ -233,22 +160,6 @@ describe("signEvidence — all formats", () => {
 // =============================================================================
 
 describe("signEvidence — format override", () => {
-  test("forces prowler format when specified", async () => {
-    const result = await signEvidence({
-      evidence: prowlerFindings,
-      format: "prowler",
-    }, keyManager);
-    expect(result.detectedFormat).toBe("prowler");
-  });
-
-  test("forces securityhub format", async () => {
-    const result = await signEvidence({
-      evidence: securityHubFindings,
-      format: "securityhub",
-    }, keyManager);
-    expect(result.detectedFormat).toBe("securityhub");
-  });
-
   test("forces generic format on structured data", async () => {
     const result = await signEvidence({
       evidence: genericEvidence,
@@ -275,10 +186,10 @@ describe("signEvidence — dry-run", () => {
 
   test("dry-run returns detected format", async () => {
     const result = await signEvidence({
-      evidence: prowlerFindings,
+      evidence: genericEvidence,
       dryRun: true,
     }, keyManager);
-    expect(result.detectedFormat).toBe("prowler");
+    expect(result.detectedFormat).toBe("generic");
   });
 });
 
@@ -348,7 +259,7 @@ describe("signEvidence — summary consistency", () => {
 
 describe("signEvidence — severity distribution", () => {
   test("computes severity distribution when controls have severity", async () => {
-    const result = await signEvidence({ evidence: trivyReport }, keyManager);
+    const result = await signEvidence({ evidence: genericEvidence }, keyManager);
     expect(result.summary.severityDistribution).toBeDefined();
     expect(result.summary.severityDistribution!["HIGH"]).toBeGreaterThanOrEqual(1);
   });

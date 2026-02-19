@@ -32,7 +32,7 @@ eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCIsImtpZCI6ImRpZDp3ZWI6ZXhhbXBsZS5jb20ja2V5
 
 The JWT payload contains a CPOE credential subject with assessment scope, control test results, evidence chain metadata, and framework mappings. The credential type is `["VerifiableCredential", "CorsairCPOE"]`.
 
-The vendor runs their security tools (Prowler, InSpec, Trivy) and feeds the structured output to Corsair. Corsair records provenance and signs the results as a JWT-VC with Ed25519. The resulting Marque can be verified by **anyone** — using Corsair tooling, any W3C VC verifier, or any JWT library with EdDSA support. No Corsair account needed, no server calls, no data sharing.
+The vendor runs their security tools (scanners, CI checks, API exports) and feeds the structured output to Corsair. Corsair records provenance and signs the results as a JWT-VC with Ed25519. The resulting Marque can be verified by **anyone** — using Corsair tooling, any W3C VC verifier, or any JWT library with EdDSA support. No Corsair account needed, no server calls, no data sharing.
 
 ## Client-Side Verification
 

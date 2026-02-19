@@ -86,7 +86,7 @@ export interface CPOEProvenance {
   /** Source authority type */
   source: "self" | "tool" | "auditor";
 
-  /** Identity of source (e.g., "Deloitte LLP", "Prowler v3.1") */
+  /** Identity of source (e.g., "Deloitte LLP", "Scanner v1.2") */
   sourceIdentity?: string;
 
   /** SHA-256 hash of the source document */

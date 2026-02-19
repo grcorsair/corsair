@@ -5,7 +5,7 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 
 export const metadata: Metadata = {
-  title: "Transparency Log",
+  title: "Transparency Log — SCITT Append-Only Audit Trail",
   description:
     "Public, real-time feed of CPOEs registered in the SCITT transparency log. Browse, filter, and verify compliance attestations.",
   alternates: {

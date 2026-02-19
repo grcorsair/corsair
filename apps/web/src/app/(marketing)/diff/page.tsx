@@ -4,7 +4,7 @@ import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Diff CPOEs",
+  title: "Diff CPOEs — Compare Compliance Posture Over Time",
   description:
     "Compare two CPOEs to see regressions and improvements in your compliance posture over time.",
 };

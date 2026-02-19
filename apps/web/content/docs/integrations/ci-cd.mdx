@@ -7,7 +7,7 @@ order: 32
 
 ## Overview
 
-Corsair runs in any CI/CD pipeline that supports Bun. Use it for continuous compliance signing and verification — sign security tool output into CPOEs and verify existing attestations on every release cycle.
+Corsair runs in any CI/CD pipeline that supports Bun. Use it for continuous compliance signing and verification — sign tool output into CPOEs and verify existing attestations on every release cycle.
 
 ## GitHub Actions
 
@@ -33,16 +33,16 @@ jobs:
           git clone https://github.com/Arudjreis/corsair.git /tmp/corsair
           cd /tmp/corsair && bun install
 
-      - name: Run Prowler scan
+      - name: Run scanner
         run: |
-          prowler aws --output-formats json --output-directory ./scan-results/
+          ./scripts/run-scanner.sh --output ./scan-results/tool-output.json
 
       - name: Sign scan results into CPOE
         run: |
           cd /tmp/corsair
           corsair sign \
-            --format prowler \
-            --file ${{ github.workspace }}/scan-results/prowler-output.json \
+            --file ${{ github.workspace }}/scan-results/tool-output.json \
+            --mapping ${{ github.workspace }}/mappings/toolx.json \
             --output /tmp/cpoe.jwt
 
       - name: Verify CPOE
@@ -53,7 +53,7 @@ jobs:
           # corsair verify --file /tmp/cpoe.jwt --evidence ./evidence/corsair-evidence.jsonl
           # Optional strict policy checks (receipts + SCITT + input binding)
           # corsair verify --file /tmp/cpoe.jwt --receipts ./receipts.json --require-receipts --require-scitt
-          # corsair verify --file /tmp/cpoe.jwt --source-document ./scan-results/prowler-output.json --require-input-binding
+          # corsair verify --file /tmp/cpoe.jwt --source-document ./scan-results/tool-output.json --require-input-binding
 
       - uses: actions/upload-artifact@v4
         with:
@@ -72,7 +72,7 @@ corsair:
   script:
     - git clone https://github.com/Arudjreis/corsair.git /tmp/corsair
     - cd /tmp/corsair && bun install
-    - corsair sign --format prowler --file scan-results/prowler-output.json --output cpoe.jwt
+    - corsair sign --file scan-results/tool-output.json --mapping ./mappings/toolx.json --output cpoe.jwt
     - corsair verify --file cpoe.jwt
   artifacts:
     paths:
@@ -91,8 +91,8 @@ pipeline {
             steps {
                 sh '''
                     corsair sign \
-                        --format inspec \
-                        --file compliance/inspec-results.json \
+                        --file compliance/tool-output.json \
+                        --mapping ./mappings/toolx.json \
                         --output evidence/cpoe-${BUILD_ID}.jwt
                 '''
             }
@@ -118,4 +118,4 @@ pipeline {
 3. **Diff between runs** — Use `corsair diff` to compare CPOEs across release cycles
 4. **Verify CPOEs** — Use `corsair verify` to validate existing CPOEs in your pipeline
 5. **Track provenance** — Record which tools produced the evidence at each cycle
-6. **Chain with tool scans** — Run Prowler/InSpec/Trivy first, then sign the results with `corsair sign`
+6. **Chain with tool scans** — Run your scanners first, then sign the results with `corsair sign`

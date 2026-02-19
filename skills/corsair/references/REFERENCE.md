@@ -7,7 +7,7 @@ Complete reference for all Corsair CLI commands, flags, and output formats.
 - **Ed25519 signing**: All signatures use Ed25519 (NIST standard)
 - **DID:web identity**: Issuer identity resolved via `/.well-known/did.json`
 - **JWT-VC format**: CPOEs are W3C Verifiable Credentials encoded as JWTs
-- **Auto-detection**: Evidence format is auto-detected from JSON structure
+- **Auto-detection**: Mapping packs are auto-detected; fallback is generic JSON
 - **Key directory**: Default `./keys/`, override with `--key-dir <DIR>`
 - **Piping**: Most commands support stdin/stdout for composability
 
@@ -25,7 +25,7 @@ corsair sign [options]
 |------|-------------|---------|
 | `--file <PATH>` | Evidence file path (use `-` for stdin) | Required |
 | `-o, --output <PATH>` | Output CPOE file path | Auto-derived |
-| `-F, --format <NAME>` | Force parser format | Auto-detect |
+| `-F, --format <NAME>` | Force generic format (bypass mapping registry) | Auto-detect |
 | `--did <DID>` | Issuer DID | Derived from key |
 | `--scope <TEXT>` | Override scope string | From evidence |
 | `--expiry-days <N>` | CPOE validity in days | 90 |
@@ -47,7 +47,7 @@ corsair sign [options]
 {
   "cpoe": "<JWT string>",
   "marqueId": "marque-<uuid>",
-  "detectedFormat": "prowler",
+  "detectedFormat": "mapping-pack",
   "summary": {
     "controlsTested": 42,
     "controlsPassed": 38,
@@ -55,7 +55,7 @@ corsair sign [options]
     "overallScore": 90
   },
   "provenance": {
-    "source": "prowler",
+    "source": "tool",
     "sourceIdentity": "unknown"
   },
   "warnings": [],
@@ -73,7 +73,7 @@ corsair sign [options]
 **Pipe patterns:**
 ```bash
 # Pipe from tool
-prowler aws --output json | corsair sign --file - --format prowler
+cat evidence.json | corsair sign --file -
 
 # Pipe to next command
 corsair sign --file evidence.json --json | jq '.summary'
@@ -361,17 +361,12 @@ corsair renew [options]
 
 ## Evidence Format Detection
 
-Corsair auto-detects evidence format from JSON structure:
+Corsair auto-detects evidence via mapping packs. If no pack matches, it
+falls back to the generic format:
 
 | Format | Detection Signal |
 |--------|-----------------|
-| prowler | Array with `StatusCode` + `FindingInfo` fields |
-| securityhub | Object with `Findings` array (ASFF format) |
-| inspec | Object with `profiles[].controls` |
-| trivy | Object with `SchemaVersion` + `Results` |
-| gitlab | Object with `scan` + `vulnerabilities` |
-| ciso-assistant-api | Object with `count` + `results` |
-| ciso-assistant-export | Object with `meta` + `requirement_assessments` |
+| mapping-pack | Mapping registry match (pack + mapping file) |
 | generic | Object with `controls` array |
 
 ## trust.txt Format

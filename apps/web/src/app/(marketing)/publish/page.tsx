@@ -5,7 +5,7 @@ import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
-  title: "Publish trust.txt",
+  title: "Publish trust.txt — Compliance Discovery Endpoint",
   description:
     "Generate a trust.txt file for your domain. Like security.txt for compliance proofs — let anyone discover your CPOEs, SCITT log, catalog snapshot, and FLAGSHIP signals.",
 };

@@ -49,7 +49,7 @@ A CPOE is a standard JWT with three base64url-encoded segments: `header.payload.
       "scope": "SOC 2 Type II - Cloud Infrastructure Controls",
       "provenance": {
         "source": "tool",
-        "sourceIdentity": "Prowler v3.1",
+        "sourceIdentity": "Scanner v1.2",
         "sourceDate": "2026-01-15T00:00:00Z"
       },
       "summary": {
@@ -95,7 +95,7 @@ All claims live under `vc.credentialSubject`. The provenance-first model (v0.5.0
 
 | Claim | Type | Description |
 |-------|------|-------------|
-| `provenance.sourceIdentity` | string | Who produced the evidence (e.g., "Deloitte LLP", "Prowler v3.1") |
+| `provenance.sourceIdentity` | string | Who produced the evidence (e.g., "Deloitte LLP", "Scanner v1.2") |
 | `provenance.sourceDocument` | string | SHA-256 hash of the source document |
 | `provenance.sourceDate` | string | ISO 8601 date of the source assessment |
 | `evidenceChain` | object | Evidence chain metadata: `{ chainType, algorithm, canonicalization, recordCount, chainVerified, chainDigest, chainStartHash?, chainHeadHash?, chains? }` |

@@ -1,8 +1,0 @@
-{
-  "format": "trivy",
-  "controlCount": 3,
-  "passCount": 2,
-  "failCount": 1,
-  "score": 67,
-  "targetCount": 3
-}

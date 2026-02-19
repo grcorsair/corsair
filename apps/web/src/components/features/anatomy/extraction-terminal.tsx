@@ -11,44 +11,44 @@ interface TerminalLine {
 
 const lines: TerminalLine[] = [
   {
-    text: "$ prowler aws --output json | corsair sign --format prowler",
+    text: "$ scanner run --output json | corsair sign --mapping ./mappings/toolx.json",
     className: "text-corsair-gold",
     delayMs: 0,
   },
   { text: "", className: "", delayMs: 800 },
   {
-    text: "[SIGN] Reading Prowler output from stdin...",
+    text: "[SIGN] Reading tool output from stdin...",
     className: "text-corsair-gold/70",
     delayMs: 1400,
   },
   {
-    text: "[SIGN] Detected: Prowler v3.12 | AWS account 4821-XXXX-7193",
+    text: "[SIGN] Detected: Toolx v1.0 | AWS account 4821-XXXX-7193",
     className: "text-corsair-text-dim",
     delayMs: 2200,
   },
   { text: "", className: "", delayMs: 2800 },
   {
-    text: "[SIGN] prowler-iam-1  MFA Enabled for Root Account         PASS",
+    text: "[SIGN] scan-iam-1     MFA Enabled for Root Account         PASS",
     className: "text-corsair-gold/80",
     delayMs: 3200,
   },
   {
-    text: "[SIGN] prowler-iam-4  IAM Password Policy Enforced         PASS",
+    text: "[SIGN] scan-iam-4     IAM Password Policy Enforced         PASS",
     className: "text-corsair-gold/80",
     delayMs: 3500,
   },
   {
-    text: "[SIGN] prowler-s3-1   S3 Bucket Encryption at Rest         PASS",
+    text: "[SIGN] scan-s3-1      S3 Bucket Encryption at Rest         PASS",
     className: "text-corsair-gold/80",
     delayMs: 3800,
   },
   {
-    text: "[SIGN] prowler-vpc-1  VPC Flow Logs Enabled                PASS",
+    text: "[SIGN] scan-vpc-1     VPC Flow Logs Enabled                PASS",
     className: "text-corsair-gold/80",
     delayMs: 4100,
   },
   {
-    text: "[SIGN] prowler-ec2-1  EC2 IMDSv2 Enforced                  FAIL",
+    text: "[SIGN] scan-ec2-1     EC2 IMDSv2 Enforced                  FAIL",
     className: "text-corsair-crimson/80",
     delayMs: 4400,
   },
@@ -64,7 +64,7 @@ const lines: TerminalLine[] = [
     delayMs: 5500,
   },
   {
-    text: "[SIGN] \u2713 Provenance: tool (Prowler v3.12)",
+    text: "[SIGN] \u2713 Provenance: tool (Toolx v1.0)",
     className: "text-corsair-green",
     delayMs: 6000,
   },
@@ -74,7 +74,7 @@ const lines: TerminalLine[] = [
     delayMs: 6400,
   },
   {
-    text: "[SIGN] CPOE written to prowler-cpoe.jwt (1.4 KB)",
+    text: "[SIGN] CPOE written to toolx-cpoe.jwt (1.4 KB)",
     className: "text-corsair-text-dim",
     delayMs: 6800,
   },

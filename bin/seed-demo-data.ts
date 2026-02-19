@@ -32,65 +32,78 @@ const ENTRIES_OUT = join(WEB_PUBLIC, "demo-scitt-entries.json");
 const EVIDENCE_FILES: Array<{
   file: string;
   format?: EvidenceFormat;
+  source?: "soc2" | "iso27001" | "pentest" | "manual" | "json" | "tool";
   did: string;
   scope: string;
   daysAgo: number;
   provenanceOverride?: { source: string; sourceIdentity: string };
 }> = [
   {
-    file: "prowler-findings.json",
-    format: "prowler",
+    file: "generic-evidence.json",
+    format: "generic",
+    source: "tool",
     did: "did:web:cloudbank.io",
     scope: "AWS Production — Cloud Infrastructure Controls",
     daysAgo: 1,
   },
   {
-    file: "inspec-report.json",
-    format: "inspec",
+    file: "generic-evidence.json",
+    format: "generic",
+    source: "tool",
     did: "did:web:retailcorp.com",
     scope: "PCI DSS — Payment Infrastructure Hardening",
     daysAgo: 2,
+    provenanceOverride: { source: "tool", sourceIdentity: "Compliance Runner" },
   },
   {
-    file: "trivy-report.json",
-    format: "trivy",
+    file: "generic-evidence.json",
+    format: "generic",
+    source: "tool",
     did: "did:web:devshipco.dev",
     scope: "Container Security — Production Images",
     daysAgo: 3,
+    provenanceOverride: { source: "tool", sourceIdentity: "Vuln Scanner" },
   },
   {
-    file: "securityhub-findings.json",
-    format: "securityhub",
+    file: "generic-evidence.json",
+    format: "generic",
+    source: "tool",
     did: "did:web:healthsafe.ai",
     scope: "HIPAA — AWS Environment Security Posture",
     daysAgo: 5,
+    provenanceOverride: { source: "tool", sourceIdentity: "Cloud Posture API" },
   },
   {
-    file: "ciso-assistant-api.json",
-    format: "ciso-assistant-api",
+    file: "generic-evidence.json",
+    format: "generic",
+    source: "iso27001",
     did: "did:web:govcloud.org",
     scope: "ISO 27001 — Information Security Management",
     daysAgo: 7,
     provenanceOverride: { source: "auditor", sourceIdentity: "Coalfire ISO Audit Team" },
   },
   {
-    file: "ciso-assistant-export.json",
-    format: "ciso-assistant-export",
+    file: "generic-evidence.json",
+    format: "generic",
+    source: "soc2",
     did: "did:web:fintrust.co",
     scope: "SOC 2 Type II — Trust Services Criteria",
     daysAgo: 10,
     provenanceOverride: { source: "auditor", sourceIdentity: "Deloitte LLP" },
   },
   {
-    file: "gl-sast-report.json",
-    format: "gitlab",
+    file: "generic-evidence.json",
+    format: "generic",
+    source: "tool",
     did: "did:web:appsec-team.io",
     scope: "SAST — Application Code Security Review",
     daysAgo: 12,
+    provenanceOverride: { source: "tool", sourceIdentity: "SAST Engine" },
   },
   {
     file: "generic-evidence.json",
     format: "generic",
+    source: "manual",
     did: "did:web:acme-corp.com",
     scope: "Internal Security Assessment — Q1 2026",
     daysAgo: 14,
@@ -139,6 +152,7 @@ async function main() {
         {
           evidence,
           format: config.format,
+          source: config.source,
           did: config.did,
           scope: config.scope,
           expiryDays: 180,

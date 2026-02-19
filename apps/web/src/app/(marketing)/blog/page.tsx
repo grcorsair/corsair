@@ -5,7 +5,7 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 
 export const metadata: Metadata = {
-  title: "Blog",
+  title: "Blog — Compliance Proof Infrastructure Insights",
   description:
     "Thought leadership on compliance proof infrastructure, trust exchange protocols, and the future of vendor verification.",
 };

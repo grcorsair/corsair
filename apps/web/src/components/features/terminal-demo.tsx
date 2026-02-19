@@ -10,18 +10,18 @@ interface TerminalLine {
 
 const lines: TerminalLine[] = [
   {
-    text: "$ corsair sign --format prowler --file scan-results.json",
+    text: "$ corsair sign --file tool-output.json --mapping ./mappings/toolx.json",
     className: "text-corsair-gold",
     delayMs: 0,
   },
   { text: "", className: "", delayMs: 800 },
   {
-    text: "[EVIDENCE]  Accepting Prowler scan output (10 controls)...",
+    text: "[EVIDENCE]  Accepting tool output (10 controls)...",
     className: "text-corsair-cyan",
     delayMs: 1500,
   },
   {
-    text: "[SIGN]      Provenance: tool (Prowler v3.1)",
+    text: "[SIGN]      Provenance: tool (Scanner v1.2)",
     className: "text-corsair-cyan",
     delayMs: 2500,
   },
@@ -31,7 +31,7 @@ const lines: TerminalLine[] = [
     delayMs: 3500,
   },
   {
-    text: "[SIGN]      Scope: AWS Production — Prowler CIS Benchmark",
+    text: "[SIGN]      Scope: AWS Production — Toolx Benchmark",
     className: "text-corsair-turquoise",
     delayMs: 4500,
   },
@@ -46,13 +46,13 @@ const lines: TerminalLine[] = [
     delayMs: 6500,
   },
   {
-    text: "[SIGN]      \u2713 CPOE signed — provenance: tool (Prowler v3.1)",
+    text: "[SIGN]      \u2713 CPOE signed — provenance: tool (Scanner v1.2)",
     className: "text-corsair-green font-bold",
     delayMs: 7500,
   },
   { text: "", className: "", delayMs: 8200 },
   {
-    text: "Verification: corsair verify --file output/acme-prowler.jwt",
+    text: "Verification: corsair verify --file output/acme-toolx.jwt",
     className: "text-corsair-text-dim",
     delayMs: 8500,
   },

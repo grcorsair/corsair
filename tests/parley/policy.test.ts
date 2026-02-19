@@ -50,7 +50,7 @@ describe("policy artifacts", () => {
       maxAgeDays: 90,
       minScore: 85,
       requireSource: "tool",
-      requireSourceIdentity: ["Prowler v3.1"],
+      requireSourceIdentity: ["Scanner v1.2"],
       requireToolAttestation: true,
       requireInputBinding: true,
       requireEvidenceChain: true,

@@ -245,7 +245,7 @@ For detailed command flags, JSON outputs, and example payloads, use:
 ## Examples
 
 Sign evidence:
-`corsair sign --file prowler-results.json --format prowler`
+`corsair sign --file evidence.json`
 
 Verify:
 `corsair verify --file cpoe.jwt --did`

@@ -65,7 +65,7 @@ function buildTestPayload() {
         scope: "SOC 2 Type II - Cloud Infrastructure Controls",
         provenance: {
           source: "tool",
-          sourceIdentity: "Prowler v3.1",
+          sourceIdentity: "Scanner v1.2",
           sourceDate: "2026-01-15T00:00:00Z",
         },
         summary: {

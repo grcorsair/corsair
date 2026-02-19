@@ -71,7 +71,7 @@ async function createTestCPOE(
       credentialSubject: {
         type: "CorsairCPOE",
         scope: "SOC 2 Type II - Acme Cloud",
-        provenance: { source: "tool", sourceIdentity: "Prowler v3.1" },
+        provenance: { source: "tool", sourceIdentity: "Scanner v1.2" },
         summary: { controlsTested: 10, controlsPassed: 9, controlsFailed: 1, overallScore: 90 },
       },
     },

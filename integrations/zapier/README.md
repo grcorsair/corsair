@@ -21,9 +21,9 @@ Connect Corsair to 6,000+ apps via Zapier.
 **Action 1**: Corsair Sign
 **Action 2**: Email CPOE JWT + grcorsair.com/marque verification link
 
-### 3. Schedule → Prowler → Sign → Archive
+### 3. Schedule → Scanner → Sign → Archive
 **Trigger**: Schedule (weekly)
-**Action 1**: Run Prowler via SSH/webhook
+**Action 1**: Run your scanner via SSH/webhook
 **Action 2**: Corsair Sign
 **Action 3**: Upload CPOE to S3/Google Drive
 

@@ -5,7 +5,7 @@
 # This template adds compliance signing + drift detection to your GitLab pipeline.
 # Each pipeline run:
 #   1. Runs GitLab security scans (SAST, dependency scanning, etc.)
-#   2. Signs the results as a CPOE (JWT-VC) with `corsair sign`
+#   2. Signs the results as a CPOE (JWT-VC) with `corsair sign` + mapping pack
 #   3. Compares against the previous CPOE with `corsair drift`
 #   4. Stores the CPOE as a pipeline artifact for the next run
 #
@@ -60,11 +60,12 @@ corsair-sign:
     - mkdir -p keys
     - cp $CORSAIR_PRIVATE_KEY keys/corsair-signing.key
   script:
-    # Sign the SAST report as a CPOE
+    # Sign the SAST report as a CPOE (mapping pack required)
     - |
       if [ -f gl-sast-report.json ]; then
         corsair sign \
           --file gl-sast-report.json \
+          --mapping ./mappings/gitlab-sast.json \
           --key-dir ./keys \
           --did "did:web:${CI_PROJECT_ROOT_NAMESPACE}.gitlab.io" \
           --scope "${CI_PROJECT_NAME} SAST — ${CI_COMMIT_SHORT_SHA}" \
@@ -72,11 +73,12 @@ corsair-sign:
         echo "SAST CPOE signed: cpoe-sast.jwt"
       fi
 
-    # Sign dependency scanning report if available
+    # Sign dependency scanning report if available (mapping pack required)
     - |
       if [ -f gl-dependency-scanning-report.json ]; then
         corsair sign \
           --file gl-dependency-scanning-report.json \
+          --mapping ./mappings/gitlab-deps.json \
           --key-dir ./keys \
           --did "did:web:${CI_PROJECT_ROOT_NAMESPACE}.gitlab.io" \
           --scope "${CI_PROJECT_NAME} Dependency Scan — ${CI_COMMIT_SHORT_SHA}" \

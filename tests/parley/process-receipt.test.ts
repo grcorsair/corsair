@@ -127,7 +127,7 @@ describe("generateReceipt", () => {
   test("should generate receipt with all required fields", () => {
     const receipt = generateReceipt({
       step: "evidence",
-      inputData: { file: "prowler-findings.json" },
+      inputData: { file: "generic-evidence.json" },
       outputData: { controls: [{ id: "CC1.1" }] },
       reproducible: true,
     }, keypair.privateKeyPem);
@@ -192,25 +192,25 @@ describe("generateReceipt", () => {
   test("should include toolAttestation when provided", () => {
     const receipt = generateReceipt({
       step: "evidence",
-      inputData: { source: "prowler" },
+      inputData: { source: "tool" },
       outputData: { controls: [{ id: "CC1.1" }] },
       reproducible: true,
       toolAttestation: {
-        toolName: "Prowler",
+        toolName: "Scanner",
         toolVersion: "4.2.1",
         scanTimestamp: "2026-02-12T10:00:00Z",
         scanTarget: "aws:123456789012",
         scanProfile: "cis-aws-benchmark-v3.0",
-        outputFormat: "prowler-jsonl",
+        outputFormat: "scanner-json",
       },
     }, keypair.privateKeyPem);
 
     expect(receipt.predicate.toolAttestation).toBeDefined();
-    expect(receipt.predicate.toolAttestation!.toolName).toBe("Prowler");
+    expect(receipt.predicate.toolAttestation!.toolName).toBe("Scanner");
     expect(receipt.predicate.toolAttestation!.toolVersion).toBe("4.2.1");
     expect(receipt.predicate.toolAttestation!.scanTarget).toBe("aws:123456789012");
     expect(receipt.predicate.toolAttestation!.scanProfile).toBe("cis-aws-benchmark-v3.0");
-    expect(receipt.predicate.toolAttestation!.outputFormat).toBe("prowler-jsonl");
+    expect(receipt.predicate.toolAttestation!.outputFormat).toBe("scanner-json");
   });
 
   test("should NOT include LLM attestation for deterministic steps", () => {
@@ -397,7 +397,7 @@ describe("ReceiptChain", () => {
 
     const receipt = await chain.captureStep({
       step: "evidence",
-      inputData: { file: "prowler-findings.json" },
+      inputData: { file: "generic-evidence.json" },
       outputData: { controls: [{ id: "CC1.1" }] },
       reproducible: true,
     });
@@ -506,20 +506,20 @@ describe("ReceiptChain", () => {
 
     const receipt = await chain.captureStep({
       step: "evidence",
-      inputData: { source: "prowler" },
+      inputData: { source: "tool" },
       outputData: { controls: 24 },
       reproducible: true,
       toolAttestation: {
-        toolName: "Prowler",
+        toolName: "Scanner",
         toolVersion: "4.2.1",
         scanTimestamp: "2026-02-12T10:00:00Z",
         scanTarget: "aws:123456789012",
-        outputFormat: "prowler-jsonl",
+        outputFormat: "scanner-json",
       },
     });
 
     expect(receipt.predicate.toolAttestation).toBeDefined();
-    expect(receipt.predicate.toolAttestation!.toolName).toBe("Prowler");
+    expect(receipt.predicate.toolAttestation!.toolName).toBe("Scanner");
   });
 });
 
@@ -661,11 +661,11 @@ describe("verifyProcessChain", () => {
       outputData: "b",
       reproducible: true,
       toolAttestation: {
-        toolName: "InSpec",
+        toolName: "Compliance Runner",
         toolVersion: "5.0",
         scanTimestamp: "2026-02-12T00:00:00Z",
         scanTarget: "aws-production",
-        outputFormat: "inspec-json",
+        outputFormat: "compliance-json",
       },
     });
     await chain.captureStep({
@@ -695,16 +695,16 @@ describe("full pipeline simulation", () => {
     // Step 1: EVIDENCE (tool scan — reproducible)
     await chain.captureStep({
       step: "evidence",
-      inputData: { source: "prowler", scanTarget: "aws:123456789012" },
+      inputData: { source: "tool", scanTarget: "aws:123456789012" },
       outputData: { controls: [{ id: "CC1.1", status: "effective" }, { id: "CC1.2", status: "effective" }] },
       reproducible: true,
       toolAttestation: {
-        toolName: "Prowler",
+        toolName: "Scanner",
         toolVersion: "4.2.1",
         scanTimestamp: "2026-02-12T10:00:00Z",
         scanTarget: "aws:123456789012",
         scanProfile: "cis-aws-benchmark-v3.0",
-        outputFormat: "prowler-jsonl",
+        outputFormat: "scanner-json",
       },
     });
 
@@ -798,15 +798,15 @@ describe("full pipeline simulation", () => {
 
     await chain.captureStep({
       step: "evidence",
-      inputData: { source: "trivy" },
+      inputData: { source: "tool" },
       outputData: { vulnerabilities: 0, controls: 12 },
       reproducible: true,
       toolAttestation: {
-        toolName: "Trivy",
+        toolName: "Vuln Scanner",
         toolVersion: "0.50.0",
         scanTimestamp: "2026-02-12T08:00:00Z",
         scanTarget: "registry.example.com/app:latest",
-        outputFormat: "trivy-json",
+        outputFormat: "vuln-json",
       },
     });
 
@@ -832,7 +832,7 @@ describe("full pipeline simulation", () => {
 
     // Verify tool attestation is present on first receipt
     const receipts = chain.getReceipts();
-    expect(receipts[0]!.predicate.toolAttestation?.toolName).toBe("Trivy");
+    expect(receipts[0]!.predicate.toolAttestation?.toolName).toBe("Vuln Scanner");
     expect(receipts[1]!.predicate.toolAttestation).toBeUndefined();
   });
 });

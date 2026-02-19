@@ -13,7 +13,6 @@
 import { createKeyManager } from "../../../src/parley/marque-key-manager";
 import type { KeyManager } from "../../../src/parley/marque-key-manager";
 import { signEvidence } from "../../../src/sign/sign-core";
-import type { EvidenceFormat } from "../../../src/sign/sign-core";
 import { MarqueVerifier } from "../../../src/parley/marque-verifier";
 
 import type {
@@ -27,15 +26,9 @@ import type {
 // SUPPORTED FORMATS
 // =============================================================================
 
-const SUPPORTED_FORMATS: EvidenceFormat[] = [
+const SUPPORTED_FORMATS: string[] = [
+  "mapping-pack",
   "generic",
-  "prowler",
-  "securityhub",
-  "inspec",
-  "trivy",
-  "gitlab",
-  "ciso-assistant-api",
-  "ciso-assistant-export",
 ];
 
 // =============================================================================

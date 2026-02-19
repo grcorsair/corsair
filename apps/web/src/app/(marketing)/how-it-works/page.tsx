@@ -111,7 +111,7 @@ export default function HowItWorksPage() {
             {[
               {
                 title: "Collect evidence",
-                body: "Run your security tools (Prowler, InSpec, Trivy, etc.) and export JSON output.",
+                body: "Run your security tools (scanners, CI checks, API exports) and export JSON output.",
               },
               {
                 title: "Sign a CPOE",

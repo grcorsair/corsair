@@ -38,7 +38,7 @@ Compliance trust today is exchanged via PDF. SOC 2 reports, pentest results, ISO
 
 ## The Solution
 
-**CORSAIR** signs tool output as a **CPOE** (Certificate of Proof of Operational Effectiveness) — a [W3C Verifiable Credential](https://www.w3.org/TR/vc-data-model-2.0/) with an Ed25519 signature. Prowler says PASS, Corsair signs "Prowler said PASS." The tool's finding, signed, verifiable.
+**CORSAIR** signs tool output as a **CPOE** (Certificate of Proof of Operational Effectiveness) — a [W3C Verifiable Credential](https://www.w3.org/TR/vc-data-model-2.0/) with an Ed25519 signature. Your scanner says PASS, Corsair signs "the scanner said PASS." The tool's finding, signed, verifiable.
 
 A CPOE is:
 - **Machine-readable** — structured JSON, not a PDF
@@ -60,8 +60,8 @@ npx skills add grcorsair/corsair               # AI agent skill (Claude Code, Cu
 # Initialize a project (generates keys + example evidence)
 corsair init
 
-# Sign your Prowler scan as a CPOE (keys auto-generate on first use)
-corsair sign --file prowler-findings.json
+# Sign your tool output as a CPOE (keys auto-generate on first use)
+corsair sign --file evidence.json
 
 # Verify any CPOE (always free, no account needed)
 corsair verify --file cpoe.jwt
@@ -102,8 +102,7 @@ Corsair does six things. Like git.
 ### Sign Options
 
 ```bash
-corsair sign --file evidence.json              # Auto-detect format, sign
-corsair sign --file evidence.json --format prowler  # Force format
+corsair sign --file evidence.json              # Auto-detect mapping pack, sign
 corsair sign --file evidence.json --json       # Structured JSON output
 corsair sign --file evidence.json --dry-run    # Preview without signing
 corsair sign --file evidence.json --sd-jwt     # SD-JWT selective disclosure
@@ -140,7 +139,7 @@ corsair verify --file cpoe.jwt --require-framework SOC2,ISO27001
 corsair verify --file cpoe.jwt --max-age 30 --min-score 90
 corsair verify --file cpoe.jwt --receipts receipts.json
 corsair verify --file cpoe.jwt --evidence evidence.jsonl
-corsair verify --file cpoe.jwt --require-source tool --require-source-identity "Prowler v3.1"
+corsair verify --file cpoe.jwt --require-source tool --require-source-identity "Scanner v1.2"
 corsair verify --file cpoe.jwt --require-tool-attestation --require-receipts --receipts receipts.json
 corsair verify --file cpoe.jwt --require-evidence-chain --evidence evidence.jsonl
 corsair verify --file cpoe.jwt --require-input-binding --source-document raw-evidence.json
@@ -196,23 +195,17 @@ corsair trust-txt discover acme.com --verify
 
 ---
 
-## Supported Formats
+## Supported Inputs
 
-Corsair auto-detects evidence format from JSON structure. Override with `--format <name>`.
-For tools not on this list, use the mapping registry to extract controls or passthrough
-fields without code changes (see `--mapping` and `CORSAIR_MAPPING_DIR`). Mappings
-are evaluated by priority (higher wins), then filename order.
+Corsair auto-detects evidence via mapping packs or falls back to the generic format.
+Use the mapping registry to extract controls or passthrough fields without code changes
+(see `--mapping` and `CORSAIR_MAPPING_DIR`). Mappings are evaluated by priority (higher wins),
+then filename order.
 
-| Format | Tool | Detection |
-|:-------|:-----|:----------|
+| Format | Purpose | Detection |
+|:-------|:--------|:----------|
+| `mapping-pack` | Tool-specific mappings (config-driven) | Auto-detected via `--mapping` or `CORSAIR_MAPPING_*` |
 | `generic` | Any JSON with `{ metadata, controls[] }` | Default fallback |
-| `prowler` | AWS Prowler OCSF | Array with `StatusCode` + `FindingInfo` |
-| `securityhub` | AWS SecurityHub ASFF | `{ Findings[] }` |
-| `inspec` | Chef InSpec | `{ profiles[].controls[] }` |
-| `trivy` | Aqua Trivy | `{ Results[].Vulnerabilities[] }` |
-| `gitlab` | GitLab SAST | `{ vulnerabilities[] }` |
-| `ciso-assistant-api` | CISO Assistant (API) | `{ results[] }` with compliance fields |
-| `ciso-assistant-export` | CISO Assistant (Export) | `{ requirement_assessments[] }` |
 
 ---
 
@@ -238,7 +231,7 @@ The credential subject records **provenance and summary** — who produced the e
   "scope": "SOC 2 Type II — Acme Cloud Platform",
   "provenance": {
     "source": "tool",
-    "sourceIdentity": "Prowler v3.1",
+    "sourceIdentity": "Cloud Scanner v1.2",
     "sourceDate": "2026-01-15"
   },
   "summary": {
@@ -292,10 +285,10 @@ Corsair records **where evidence came from** and lets buyers decide what's suffi
 | Provenance | Source | Example |
 |:-----------|:-------|:--------|
 | **Self** | Organization self-reports | Policy documents, manual attestation |
-| **Tool** | Automated scanning tools | Prowler, InSpec, Trivy, SecurityHub |
+| **Tool** | Automated scanning tools | CSPM, SAST, vuln scanners |
 | **Auditor** | Independent third party | SOC 2 auditor, ISO 27001 certification body |
 
-The CPOE is a signed fact: "Prowler said PASS on Jan 15." Not an opinion. Not a score. A verifiable record of what a tool found.
+The CPOE is a signed fact: "The scanner said PASS on Jan 15." Not an opinion. Not a score. A verifiable record of what a tool found.
 
 ---
 
@@ -339,8 +332,8 @@ corsair sign --file evidence.json --sd-jwt --sd-fields scope  # Only scope is di
 
 ```
           ┌─────────────────────┐
-          │  Tool / Platform     │   Prowler, InSpec, Trivy,
-          │  Evidence Output     │   SecurityHub, CISO Assistant
+          │  Tool / Platform     │   CSPM, SAST, vuln scanners,
+          │  Evidence Output     │   API exports, tool outputs
           └──────────┬──────────┘
                      │
           ┌──────────▼──────────┐
@@ -426,8 +419,7 @@ Tools: `corsair_sign`, `corsair_verify`, `corsair_diff`, `corsair_formats`
 ```yaml
 - uses: Arudjreis/corsair@main
   with:
-    file: trivy-results.json
-    format: trivy
+    file: evidence.json
   id: sign
 ```
 
@@ -437,7 +429,7 @@ Tools: `corsair_sign`, `corsair_verify`, `corsair_diff`, `corsair_formats`
 # Sign (requires auth)
 curl -X POST https://api.grcorsair.com/sign \
   -H "Authorization: Bearer $API_KEY" \
-  -d '{"evidence": {...}, "format": "prowler"}'
+  -d '{"evidence": {...}}'
 
 # Verify (no auth required)
 curl -X POST https://api.grcorsair.com/verify \

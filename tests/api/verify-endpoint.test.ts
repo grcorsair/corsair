@@ -50,7 +50,7 @@ beforeAll(async () => {
       credentialSubject: {
         type: "CorsairCPOE",
         scope: "SOC 2 Type II - Test Infrastructure",
-        provenance: { source: "tool", sourceIdentity: "Prowler v3.1", sourceDate: "2026-02-10" },
+        provenance: { source: "tool", sourceIdentity: "Scanner v1.2", sourceDate: "2026-02-10" },
         summary: { controlsTested: 5, controlsPassed: 5, controlsFailed: 0, overallScore: 100 },
         frameworks: { SOC2: { controls: [] } },
         processProvenance: {
@@ -120,7 +120,7 @@ beforeAll(async () => {
       credentialSubject: {
         type: "CorsairCPOE",
         scope: "SOC 2 Type II - Receipts Test",
-        provenance: { source: "tool", sourceIdentity: "Prowler v3.1", sourceDate: "2026-02-10" },
+        provenance: { source: "tool", sourceIdentity: "Scanner v1.2", sourceDate: "2026-02-10" },
         summary: { controlsTested: 2, controlsPassed: 2, controlsFailed: 0, overallScore: 100 },
         processProvenance: {
           chainDigest,
@@ -206,7 +206,7 @@ describe("V1 Verify — Valid CPOE", () => {
     const body: APIEnvelope<V1VerifyResponse> = await res.json();
     expect(body.data?.provenance).toBeTruthy();
     expect(body.data?.provenance?.source).toBe("tool");
-    expect(body.data?.provenance?.sourceIdentity).toBe("Prowler v3.1");
+    expect(body.data?.provenance?.sourceIdentity).toBe("Scanner v1.2");
   });
 
   test("extracts timestamps", async () => {

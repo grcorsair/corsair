@@ -1,5 +1,5 @@
 # CORSAIR SIGN — Sign evidence as a cryptographic CPOE
-# Demonstrates: corsair sign with Prowler findings
+# Demonstrates: corsair sign with generic evidence
 # Duration: ~30 seconds
 
 Output recordings/sign.gif
@@ -10,10 +10,10 @@ Set Theme "Catppuccin Mocha"
 Set Padding 20
 
 Sleep 1s
-Type "# Sign a Prowler scan as a CPOE (Certificate of Proof of Operational Effectiveness)"
+Type "# Sign tool output as a CPOE (Certificate of Proof of Operational Effectiveness)"
 Enter
 Sleep 1s
-Type "corsair sign --file examples/prowler-findings.json --json"
+Type "corsair sign --file examples/generic-evidence.json --json"
 Enter
 Sleep 5s
 Type "# The output is a signed JWT-VC — verifiable by anyone with standard JWT libraries"

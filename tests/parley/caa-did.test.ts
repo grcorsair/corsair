@@ -53,7 +53,7 @@ function makeCPOEPayload(overrides?: {
         scope: "Test SOC 2 Type II",
         provenance: {
           source: overrides?.provenanceSource ?? "tool",
-          sourceIdentity: "Prowler v3.1",
+          sourceIdentity: "Scanner v1.2",
         },
         summary: {
           controlsTested: 10,

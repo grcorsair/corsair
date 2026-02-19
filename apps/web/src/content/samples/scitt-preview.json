@@ -6,7 +6,7 @@
     "scope": "AWS Production - Cloud Infrastructure Controls",
     "provenance": {
       "source": "tool",
-      "sourceIdentity": "Prowler"
+      "sourceIdentity": "Scanner v1.2"
     },
     "summary": {
       "controlsTested": 15,
@@ -22,7 +22,7 @@
     "scope": "PCI DSS - Payment Infrastructure Hardening",
     "provenance": {
       "source": "tool",
-      "sourceIdentity": "InSpec"
+      "sourceIdentity": "Compliance Runner"
     },
     "summary": {
       "controlsTested": 10,
@@ -38,7 +38,7 @@
     "scope": "Container Security - Production Images",
     "provenance": {
       "source": "tool",
-      "sourceIdentity": "Trivy"
+      "sourceIdentity": "Vuln Scanner"
     },
     "summary": {
       "controlsTested": 12,

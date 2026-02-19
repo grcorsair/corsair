@@ -2,7 +2,7 @@
   {
     "hash": "897e22",
     "date": "2026-02-13",
-    "tool": "Prowler",
+    "tool": "Scanner v1.2",
     "scope": "AWS Production — Cloud Infrastructure Controls",
     "score": 58,
     "controls": {
@@ -24,7 +24,7 @@
   {
     "hash": "09dc8b",
     "date": "2026-02-13",
-    "tool": "InSpec",
+    "tool": "Compliance Runner",
     "scope": "PCI DSS — Payment Infrastructure Hardening",
     "score": 71,
     "controls": {

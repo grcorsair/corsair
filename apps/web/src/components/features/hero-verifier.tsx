@@ -15,8 +15,8 @@ const DEMO_RESULT: MarqueVerificationResult = {
   reason: "Signature verified via DID:web. Credential integrity confirmed.",
   format: "jwt",
   issuerTier: "corsair-verified",
-  provenance: { source: "tool", sourceIdentity: "Prowler" },
-  scope: "CIS AWS Foundations Benchmark v3.0",
+  provenance: { source: "tool", sourceIdentity: "Scanner v1.2" },
+  scope: "AWS Production Baseline",
   summary: {
     controlsTested: 51,
     controlsPassed: 47,

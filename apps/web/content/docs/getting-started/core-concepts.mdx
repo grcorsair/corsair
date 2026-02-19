@@ -37,22 +37,16 @@ Every `corsair sign` invocation flows through the core primitives. No flags requ
 | **DIFF** | `git diff` | Compare two CPOEs, detect compliance regressions |
 | **SIGNAL** | `git webhooks` | Real-time compliance change notifications via FLAGSHIP (SSF/CAEP) |
 
-## Tool Adapters
+## Tool Adapters (Mapping-First)
 
-Corsair accepts structured output from security scanning tools and compliance platforms. Each adapter translates tool-native formats into the canonical evidence format for signing. Override auto-detection with `--format <name>`.
+Corsair accepts structured output from security scanning tools and compliance platforms via **mapping packs**. Each mapping translates tool-native formats into the canonical evidence format for signing. You can still force the generic parser with `--format generic`, which bypasses mapping detection.
 
-For tools not on the built-in list, use the **mapping registry** to extract controls or passthrough fields without code changes. Mappings are JSON files loaded via `CORSAIR_MAPPING_DIR`, `CORSAIR_MAPPING_FILE`, the CLI `--mapping` flag, or `corsair mappings add`. Evidence-only mappings still produce a valid CPOE and surface data in `credentialSubject.extensions`. Use `corsair mappings list` to see what’s loaded and `corsair mappings validate` to verify mappings. Build packs with `corsair mappings pack` and sign them with `corsair mappings sign`. Mappings are evaluated by priority (higher wins), then filename order. Signed packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set.
+Mappings are JSON files loaded via `CORSAIR_MAPPING_DIR`, `CORSAIR_MAPPING_FILE`, the CLI `--mapping` flag, or `corsair mappings add`. Evidence-only mappings still produce a valid CPOE and surface data in `credentialSubject.extensions`. Use `corsair mappings list` to see what’s loaded and `corsair mappings validate` to verify mappings. Build packs with `corsair mappings pack` and sign them with `corsair mappings sign`. Mappings are evaluated by priority (higher wins), then filename order. Signed packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set.
 
-| Format | Tool | Detection |
-|--------|------|-----------|
-| `generic` | Any JSON with `{ metadata, controls[] }` | Default fallback |
-| `prowler` | AWS Prowler OCSF | Array with `StatusCode` + `FindingInfo` |
-| `securityhub` | AWS SecurityHub ASFF | `{ Findings[] }` |
-| `inspec` | Chef InSpec | `{ profiles[].controls[] }` |
-| `trivy` | Aqua Trivy | `{ Results[].Vulnerabilities[] }` |
-| `gitlab` | GitLab SAST | `{ vulnerabilities[] }` |
-| `ciso-assistant-api` | CISO Assistant (API) | `{ results[] }` with compliance fields |
-| `ciso-assistant-export` | CISO Assistant (Export) | `{ requirement_assessments[] }` |
+| Input | How It Works |
+|-------|---------------|
+| `mapping-pack` | Auto-detected via mapping registry (tool-specific) |
+| `generic` | Any JSON with `{ metadata, controls[] }` |
 
 ## Provenance Model
 
@@ -61,7 +55,7 @@ Every CPOE records **provenance** — where the evidence came from. Corsair does
 | Source | Name | What It Means |
 |--------|------|---------------|
 | **self** | Self-Assessed | Organization self-attests without automated evidence |
-| **tool** | Tool-Generated | Security tool (Prowler, InSpec, Trivy) produced the evidence |
+| **tool** | Tool-Generated | Security tool output produced the evidence |
 | **auditor** | Auditor-Verified | Independent third party reviewed and verified the assessment |
 
 ## Policy Artifacts

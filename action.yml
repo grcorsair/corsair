@@ -9,7 +9,7 @@ inputs:
     description: "Path to evidence JSON file"
     required: true
   format:
-    description: "Force evidence format (bypasses auto-detection)"
+    description: "Force generic parsing (bypasses mapping packs)"
     required: false
   key-dir:
     description: "Ed25519 key directory (default: ./keys)"

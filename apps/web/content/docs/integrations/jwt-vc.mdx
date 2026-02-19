@@ -58,8 +58,8 @@ The document contains your Ed25519 public key:
 ```bash
 # Sign tool output and output as JWT-VC
 corsair sign \
-  --format prowler \
-  --file prowler-results.json \
+  --file tool-output.json \
+  --mapping ./mappings/toolx.json \
   --did did:web:example.com
 
 # Output: JWT string written to evidence directory
@@ -105,7 +105,7 @@ The generated JWT contains three parts:
       "scope": "SOC 2 Type II — Cloud Infrastructure Controls",
       "provenance": {
         "source": "tool",
-        "sourceIdentity": "Prowler v3.1",
+        "sourceIdentity": "Scanner v1.2",
         "sourceDate": "2026-01-15"
       },
       "summary": {

@@ -2,9 +2,9 @@
   "metadata": {
     "title": "Acme Corp Cloud Platform Security Assessment — Q1 2026",
     "issuer": "Acme Corp Security Team",
-    "date": "2026-02-01",
+    "date": "2026-03-01",
     "scope": "AWS production environment (us-east-1, us-west-2) — customer-facing SaaS platform",
-    "reportType": "Internal Security Assessment"
+    "reportType": "Internal Security Assessment (Updated)"
   },
   "controls": [
     {
@@ -30,9 +30,9 @@
     {
       "id": "ACME-IAM-003",
       "description": "Quarterly access reviews completed for all privileged accounts",
-      "status": "fail",
+      "status": "pass",
       "severity": "MEDIUM",
-      "evidence": "Q4 2025 access review completed 3 weeks late (due January 15, completed February 5). Two former contractors retained read access to staging S3 buckets for 67 days after contract termination. Access has since been revoked.",
+      "evidence": "Q1 2026 access review completed on time (March 1). No stale access detected. Automated deprovisioning removed 3 dormant accounts within 24 hours.",
       "framework": "NIST-800-53",
       "controlId": "AC-2",
       "controlName": "Account Management"
@@ -98,7 +98,7 @@
       "description": "Automated vulnerability scanning in CI/CD pipeline for all deployable artifacts",
       "status": "pass",
       "severity": "HIGH",
-      "evidence": "Trivy scans all container images in GitHub Actions before push to ECR. Dependabot monitors all repositories for dependency vulnerabilities. Snyk integrated in PR checks for SAST. Critical findings block deployment (enforced via GitHub branch protection). SLA: Critical=72h, High=7d, Medium=30d.",
+      "evidence": "Container scans run in GitHub Actions before push to ECR. Dependabot monitors repositories for dependency vulnerabilities. SAST runs in PR checks. Critical findings block deployment (enforced via GitHub branch protection). SLA: Critical=72h, High=7d, Medium=30d.",
       "frameworks": [
         { "framework": "NIST-800-53", "controlId": "RA-5", "controlName": "Vulnerability Monitoring and Scanning" },
         { "framework": "SOC2", "controlId": "CC7.1", "controlName": "Detection and Monitoring" }
@@ -138,6 +138,6 @@
       "Access review process needs automation to prevent schedule slippage"
     ],
     "scopeCoverage": "Covers 100% of customer-facing production infrastructure. Excludes internal corporate IT (separate assessment).",
-    "assessorNotes": "Assessment conducted by internal security team with tooling support from Prowler, Trivy, and Datadog. No independent third-party validation in this cycle."
+    "assessorNotes": "Assessment conducted by internal security team with tooling support from scanners and observability platforms. No independent third-party validation in this cycle."
   }
 }

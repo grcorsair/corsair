@@ -4,7 +4,7 @@ import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Signal — FLAGSHIP",
+  title: "Signal — FLAGSHIP Real-Time Compliance Notifications",
   description:
     "Subscribe to FLAGSHIP compliance change notifications. Real-time SSF/SET/CAEP events for compliance posture changes.",
 };

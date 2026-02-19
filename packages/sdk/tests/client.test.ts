@@ -26,21 +26,14 @@ import type {
 const FIXTURES_DIR = path.join(import.meta.dir, "fixtures");
 const TEMP_KEY_DIR = path.join(import.meta.dir, ".test-keys-sdk");
 
-// Sample Prowler evidence from the examples directory
-const PROWLER_EVIDENCE_PATH = path.resolve(
-  import.meta.dir,
-  "../../../examples/prowler-findings.json",
-);
 const GENERIC_EVIDENCE_PATH = path.resolve(
   import.meta.dir,
   "../../../examples/generic-evidence.json",
 );
 
-let prowlerEvidence: unknown;
 let genericEvidence: unknown;
 
 beforeAll(() => {
-  prowlerEvidence = JSON.parse(fs.readFileSync(PROWLER_EVIDENCE_PATH, "utf-8"));
   genericEvidence = JSON.parse(fs.readFileSync(GENERIC_EVIDENCE_PATH, "utf-8"));
 
   // Create temp key directory for tests
@@ -127,19 +120,19 @@ describe("CorsairClient", () => {
       await client.keygen();
     });
 
-    test("should sign Prowler evidence and return a SignResult", async () => {
-      const result = await client.sign(prowlerEvidence);
+    test("should sign generic evidence and return a SignResult", async () => {
+      const result = await client.sign(genericEvidence);
 
       expect(result).toBeDefined();
       expect(result.jwt).toBeString();
       expect(result.jwt.length).toBeGreaterThan(0);
       expect(result.jwt.split(".")).toHaveLength(3);
       expect(result.marqueId).toMatch(/^marque-/);
-      expect(result.detectedFormat).toBe("prowler");
+      expect(result.detectedFormat).toBe("generic");
     });
 
     test("should include summary in sign result", async () => {
-      const result = await client.sign(prowlerEvidence);
+      const result = await client.sign(genericEvidence);
 
       expect(result.summary).toBeDefined();
       expect(result.summary.controlsTested).toBeGreaterThan(0);
@@ -150,16 +143,16 @@ describe("CorsairClient", () => {
     });
 
     test("should include provenance in sign result", async () => {
-      const result = await client.sign(prowlerEvidence);
+      const result = await client.sign(genericEvidence);
 
       expect(result.provenance).toBeDefined();
       expect(result.provenance.source).toBeString();
     });
 
     test("should sign with format override", async () => {
-      const result = await client.sign(prowlerEvidence, { format: "prowler" });
+      const result = await client.sign(genericEvidence, { format: "generic" });
 
-      expect(result.detectedFormat).toBe("prowler");
+      expect(result.detectedFormat).toBe("generic");
       expect(result.jwt.length).toBeGreaterThan(0);
     });
 
@@ -171,7 +164,7 @@ describe("CorsairClient", () => {
     });
 
     test("should sign string evidence (JSON string input)", async () => {
-      const jsonString = JSON.stringify(prowlerEvidence);
+      const jsonString = JSON.stringify(genericEvidence);
       const result = await client.sign(jsonString);
 
       expect(result.jwt).toBeString();
@@ -179,7 +172,7 @@ describe("CorsairClient", () => {
     });
 
     test("should support dry-run mode (no signing)", async () => {
-      const result = await client.sign(prowlerEvidence, { dryRun: true });
+      const result = await client.sign(genericEvidence, { dryRun: true });
 
       expect(result.jwt).toBe("");
       expect(result.marqueId).toMatch(/^marque-/);
@@ -187,7 +180,7 @@ describe("CorsairClient", () => {
     });
 
     test("should support custom DID override in sign options", async () => {
-      const result = await client.sign(prowlerEvidence, {
+      const result = await client.sign(genericEvidence, {
         did: "did:web:custom.example.com",
       });
 
@@ -196,7 +189,7 @@ describe("CorsairClient", () => {
     });
 
     test("should support custom scope override", async () => {
-      const result = await client.sign(prowlerEvidence, {
+      const result = await client.sign(genericEvidence, {
         scope: "Custom SOC 2 Scope",
       });
 
@@ -204,13 +197,13 @@ describe("CorsairClient", () => {
     });
 
     test("should support custom expiry days", async () => {
-      const result = await client.sign(prowlerEvidence, { expiryDays: 30 });
+      const result = await client.sign(genericEvidence, { expiryDays: 30 });
 
       expect(result.jwt).toBeString();
     });
 
     test("should return warnings array", async () => {
-      const result = await client.sign(prowlerEvidence);
+      const result = await client.sign(genericEvidence);
 
       expect(Array.isArray(result.warnings)).toBe(true);
     });
@@ -228,7 +221,7 @@ describe("CorsairClient", () => {
       client = new CorsairClient({ keyDir: TEMP_KEY_DIR });
       // Ensure keys exist
       const keys = await client.keygen();
-      const signResult = await client.sign(prowlerEvidence);
+      const signResult = await client.sign(genericEvidence);
       signedJwt = signResult.jwt;
     });
 
@@ -284,14 +277,8 @@ describe("CorsairClient", () => {
 
       expect(Array.isArray(formats)).toBe(true);
       expect(formats.length).toBeGreaterThan(0);
-      expect(formats).toContain("prowler");
+      expect(formats).toContain("mapping-pack");
       expect(formats).toContain("generic");
-      expect(formats).toContain("inspec");
-      expect(formats).toContain("trivy");
-      expect(formats).toContain("securityhub");
-      expect(formats).toContain("gitlab");
-      expect(formats).toContain("ciso-assistant-api");
-      expect(formats).toContain("ciso-assistant-export");
     });
   });
 

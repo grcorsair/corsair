@@ -71,17 +71,6 @@ describe("corsair_sign tool", () => {
     expect(output.summary.controlsTested).toBe(2);
   });
 
-  test("signs Prowler findings", async () => {
-    const prowler = [
-      { StatusCode: "PASS", FindingInfo: { Uid: "p-1", Title: "Root keys" } },
-      { StatusCode: "FAIL", FindingInfo: { Uid: "p-2", Title: "S3 public" } },
-    ];
-    const result = await handleToolCall("corsair_sign", { evidence: prowler }, deps);
-    expect(result.isError).toBeUndefined();
-    const output = JSON.parse(result.content[0].text);
-    expect(output.detectedFormat).toBe("prowler");
-  });
-
   test("supports dry-run", async () => {
     const result = await handleToolCall("corsair_sign", { evidence: genericEvidence, dryRun: true }, deps);
     const output = JSON.parse(result.content[0].text);
@@ -89,12 +78,9 @@ describe("corsair_sign tool", () => {
   });
 
   test("supports format override", async () => {
-    const prowler = [
-      { StatusCode: "PASS", FindingInfo: { Uid: "p-1", Title: "Root keys" } },
-    ];
-    const result = await handleToolCall("corsair_sign", { evidence: prowler, format: "prowler" }, deps);
+    const result = await handleToolCall("corsair_sign", { evidence: genericEvidence, format: "generic" }, deps);
     const output = JSON.parse(result.content[0].text);
-    expect(output.detectedFormat).toBe("prowler");
+    expect(output.detectedFormat).toBe("generic");
   });
 
   test("reports errors gracefully", async () => {
@@ -163,15 +149,14 @@ describe("corsair_diff tool", () => {
 // =============================================================================
 
 describe("corsair_formats tool", () => {
-  test("lists all 8 formats", async () => {
+  test("lists mapping + generic formats", async () => {
     const result = await handleToolCall("corsair_formats", {}, deps);
     expect(result.isError).toBeUndefined();
     const output = JSON.parse(result.content[0].text);
-    expect(output.count).toBe(8);
-    expect(output.formats).toHaveLength(8);
+    expect(output.count).toBe(2);
+    expect(output.formats).toHaveLength(2);
     const names = output.formats.map((f: { name: string }) => f.name);
-    expect(names).toContain("prowler");
-    expect(names).toContain("trivy");
+    expect(names).toContain("mapping-pack");
     expect(names).toContain("generic");
   });
 });

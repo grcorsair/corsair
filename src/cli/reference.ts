@@ -42,7 +42,7 @@ export const CLI_REFERENCE: CLICommandReference[] = [
     options: [
       { flag: "-f, --file <PATH>", description: "Path to evidence JSON file (or '-' for stdin)." },
       { flag: "-o, --output <PATH>", description: "Write JWT-VC to file." },
-      { flag: "-F, --format <NAME>", description: "Force evidence format (bypass auto-detection)." },
+      { flag: "-F, --format <NAME>", description: "Force generic format (bypass mapping registry)." },
       { flag: "--key-dir <DIR>", description: "Ed25519 key directory.", defaultValue: "./keys" },
       { flag: "--did <DID>", description: "Issuer DID (did:web:...)." },
       { flag: "--scope <SCOPE>", description: "Override scope string." },
@@ -55,7 +55,7 @@ export const CLI_REFERENCE: CLICommandReference[] = [
       { flag: "--json", description: "Machine-readable output." },
     ],
     examples: [
-      "corsair sign --file evidence.json --format prowler",
+      "corsair sign --file evidence.json --format generic",
       "corsair sign --file evidence.json --sd-jwt --sd-fields scope,summary",
     ],
   },

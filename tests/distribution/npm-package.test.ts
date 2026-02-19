@@ -84,18 +84,6 @@ describe("npm package publish readiness (bin/corsair entry point)", () => {
       expect(files.some((f: string) => f === "examples" || f === "examples/")).toBe(true);
     });
 
-    test("files array includes scripts/wrappers/", () => {
-      const pkg = getPkg();
-      const files = pkg.files as string[];
-      expect(
-        files.some(
-          (f: string) =>
-            f === "scripts/wrappers" ||
-            f === "scripts/wrappers/" ||
-            f === "scripts"
-        )
-      ).toBe(true);
-    });
   });
 
   describe("engines field", () => {

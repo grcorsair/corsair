@@ -21,22 +21,16 @@ FLAGSHIP delivers real-time compliance change notifications via SSF/SET/CAEP.
 
 Accepts structured output from security scanning tools and compliance platforms, normalizing it into a canonical control format for signing.
 
-**Supported tool formats (8 total, auto-detected):**
-- `prowler` — Prowler AWS/Azure/GCP security scan results (OCSF JSON)
-- `securityhub` — AWS SecurityHub findings (ASFF JSON)
-- `inspec` — Chef InSpec compliance test results (JSON)
-- `trivy` — Trivy vulnerability and misconfiguration reports (JSON)
-- `gitlab` — GitLab SAST vulnerability reports (JSON)
-- `ciso-assistant-api` — CISO Assistant API response (DRF paginated JSON)
-- `ciso-assistant-export` — CISO Assistant export (Django JSON)
+**Supported inputs (mapping-first):**
+- `mapping-pack` — Tool-native outputs mapped via the registry (auto-detected)
 - `generic` — Pre-structured control data from any source `{ metadata, controls[] }`
 
-**Mapping registry (tool-agnostic):** For tools not on the list, mappings can extract controls or passthrough fields without code changes. Load mappings via `CORSAIR_MAPPING_DIR`, `CORSAIR_MAPPING_FILE`, the CLI `--mapping` flag, or `corsair mappings add`. Evidence-only mappings still produce valid CPOEs and store passthrough data under `credentialSubject.extensions`. Mappings are evaluated by priority (higher wins), then filename order. Build packs with `corsair mappings pack` and sign them with `corsair mappings sign` — signed packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set.
+**Mapping registry (tool-agnostic):** Mappings extract controls or passthrough fields without code changes. Load mappings via `CORSAIR_MAPPING_DIR`, `CORSAIR_MAPPING_FILE`, the CLI `--mapping` flag, or `corsair mappings add`. Evidence-only mappings still produce valid CPOEs and store passthrough data under `credentialSubject.extensions`. Mappings are evaluated by priority (higher wins), then filename order. Build packs with `corsair mappings pack` and sign them with `corsair mappings sign` — signed packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set.
 
 **Output:** Structured controls with evidence references, provenance metadata, and pass/fail status.
 
 ```bash
-corsair sign --file prowler-results.json --format prowler
+corsair sign --file tool-output.json --mapping ./mappings/toolx.json
 ```
 
 ### SIGN — Provenance Recording + Ed25519 Signing
@@ -46,7 +40,7 @@ The signing stage records provenance (who produced the evidence) and signs the r
 | Provenance | Meaning |
 |------------|---------|
 | **self** | Organization self-attests without automated evidence |
-| **tool** | Security tool (Prowler, InSpec, Trivy) produced the evidence |
+| **tool** | Security tool output produced the evidence |
 | **auditor** | Independent third party reviewed and verified the assessment |
 
 **CPOE format:**

@@ -15,13 +15,13 @@ Corsair will generate [OSCAL](https://pages.nist.gov/OSCAL/) (Open Security Cont
 
 ```bash
 # OSCAL JSON (machine-readable, NIST SP 800-53A compliant)
-corsair sign --format prowler --file scan-results.json --output-format oscal
+corsair sign --file tool-output.json --mapping ./mappings/toolx.json --output-format oscal
 
 # HTML report (self-contained, no external dependencies)
-corsair sign --format inspec --file inspec-results.json --output-format html
+corsair sign --file tool-output.json --mapping ./mappings/toolx.json --output-format html
 
 # Markdown report
-corsair sign --format trivy --file trivy-report.json --output-format md
+corsair sign --file tool-output.json --mapping ./mappings/toolx.json --output-format md
 ```
 
 ## OSCAL Mapping

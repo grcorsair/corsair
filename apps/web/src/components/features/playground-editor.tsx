@@ -12,8 +12,8 @@ import { CopyIcon, CheckIcon } from "lucide-react";
 type PlaygroundState = "idle" | "signing" | "signed" | "error";
 
 function buildCliCommand(format?: string): string {
-  if (!format || format === "generic") return "corsair sign --file evidence.json";
-  return `corsair sign --file evidence.json --format ${format}`;
+  if (format === "generic") return "corsair sign --file evidence.json --format generic";
+  return "corsair sign --file evidence.json";
 }
 
 export function PlaygroundEditor() {
@@ -52,7 +52,7 @@ export function PlaygroundEditor() {
 
     const apiResult = await signDemoViaAPI({
       evidence: parsed,
-      ...(selectedExample?.format ? { format: selectedExample.format } : {}),
+      ...(selectedExample?.format === "generic" ? { format: "generic" } : {}),
     });
 
     if (apiResult.ok) {

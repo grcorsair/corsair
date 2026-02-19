@@ -75,6 +75,7 @@ export function Header() {
             alt="CORSAIR"
             width={36}
             height={36}
+            priority
             className="h-9 w-9"
           />
           <span className="text-xl font-bold tracking-tight text-corsair-text" style={{ fontFamily: "var(--font-pixel-display)" }}>

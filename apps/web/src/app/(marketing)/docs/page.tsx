@@ -5,7 +5,7 @@ import { FadeIn, StaggerChildren, StaggerItem } from "@/components/motion/fade-i
 import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 
 export const metadata: Metadata = {
-  title: "Documentation",
+  title: "Documentation — Getting Started with CORSAIR",
   description:
     "Get started with Corsair. Learn about the CPOE lifecycle, Parley protocol, provenance model, and how to integrate with your GRC workflow.",
 };
@@ -75,7 +75,7 @@ export default function DocsPage() {
                     # Sign tool output into a CPOE
                   </span>
                   <div className="text-corsair-gold">
-                    corsair sign --format prowler --file scan-results.json
+                    corsair sign --file tool-output.json --mapping ./mappings/toolx.json
                   </div>
                 </div>
                 <div>

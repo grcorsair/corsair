@@ -51,7 +51,6 @@
     "src",
     "bin",
     "examples",
-    "scripts/wrappers",
     "CPOE_SPEC.md",
     "LICENSE",
     "NOTICE"

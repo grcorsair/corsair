@@ -20,15 +20,7 @@ import { computeSummaryFromControls, computeSeverityDistribution } from "../inge
 // =============================================================================
 
 /** Supported evidence format identifiers */
-export type EvidenceFormat =
-  | "generic"
-  | "prowler"
-  | "securityhub"
-  | "inspec"
-  | "trivy"
-  | "gitlab"
-  | "ciso-assistant-api"
-  | "ciso-assistant-export";
+export type EvidenceFormat = "generic";
 
 export interface SignInput {
   /** Raw JSON string or parsed object */
@@ -372,15 +364,8 @@ export async function signDocument(
 function detectFormatName(doc: IngestedDocument, forced?: EvidenceFormat): string {
   if (forced) return forced;
 
-  const source = doc.source;
-  const reportType = doc.metadata.reportType || "";
-
-  if (source === "prowler" || reportType === "Prowler OCSF") return "prowler";
-  if (source === "securityhub" || reportType === "SecurityHub ASFF") return "securityhub";
-  if (reportType === "InSpec") return "inspec";
-  if (reportType === "Trivy") return "trivy";
-  if (reportType.startsWith("GitLab")) return "gitlab";
-  if (source === "ciso-assistant" || reportType === "CISO Assistant") return "ciso-assistant-api";
+  const mappingMeta = (doc.extensions as { mapping?: { id?: string } } | undefined)?.mapping;
+  if (mappingMeta?.id) return "mapping-pack";
   return "generic";
 }
 

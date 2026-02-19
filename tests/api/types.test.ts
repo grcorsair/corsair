@@ -74,7 +74,7 @@ describe("API Types — structural contracts", () => {
       trustTier: "corsair-verified",
       scope: "SOC 2 Type II",
       summary: { controlsTested: 10, controlsPassed: 9, controlsFailed: 1, overallScore: 90 },
-      provenance: { source: "tool", sourceIdentity: "Prowler v3" },
+      provenance: { source: "tool", sourceIdentity: "Scanner v1" },
       timestamps: { issuedAt: "2026-02-13T00:00:00Z", expiresAt: "2026-05-13T00:00:00Z" },
     };
     expect(res.valid).toBe(true);

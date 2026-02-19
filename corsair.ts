@@ -205,7 +205,7 @@ USAGE:
 OPTIONS:
   -f, --file <PATH>         Path to evidence JSON file (or "-" for stdin)
   -o, --output <PATH>       Write JWT-VC to file (default: <input>.cpoe.jwt)
-  -F, --format <NAME>       Force evidence format (bypass auto-detection)
+  -F, --format <NAME>       Force generic format (bypass mapping registry)
       --key-dir <DIR>       Ed25519 key directory (default: ./keys)
       --did <DID>           Issuer DID (default: derived from key)
       --scope <TEXT>        Override scope string
@@ -225,25 +225,19 @@ OPTIONS:
   -h, --help                Show this help
 
 FORMATS (auto-detected or forced with --format):
+  mapping-pack          Mapping registry (auto-detected via --mapping or CORSAIR_MAPPING_* envs)
   generic               { metadata, controls[] }
-  prowler               Array of findings with StatusCode + FindingInfo
-  securityhub           { Findings[] } (AWS SecurityHub ASFF)
-  inspec                { profiles[].controls[] } (Chef InSpec)
-  trivy                 { SchemaVersion, Results[] } (Aqua Trivy)
-  gitlab                { version, scan, vulnerabilities[] }
-  ciso-assistant-api    { count, results[] } (CISO Assistant API)
-  ciso-assistant-export { meta, requirement_assessments[] }
 
 EXAMPLES:
-  corsair sign --file prowler-findings.json
-  corsair sign --file inspec-report.json --output cpoe.jwt
+  corsair sign --file evidence.json
+  corsair sign --file evidence.json --output cpoe.jwt
   corsair sign --file evidence.json --did did:web:acme.com --scope "AWS Production"
   corsair sign --file evidence.json --dry-run
   corsair sign --file evidence.json --json | jq .summary
   corsair sign --file evidence.json --sd-jwt --sd-fields summary,provenance
   corsair sign --file evidence.json --mapping ./mappings/toolx.json
   corsair sign --file evidence.json --baseline baseline.cpoe.jwt --gate
-  cat trivy-report.json | corsair sign --format trivy --output cpoe.jwt
+  cat evidence.json | corsair sign --format generic --output cpoe.jwt
 `);
     return;
   }
@@ -255,6 +249,12 @@ EXAMPLES:
 
   if (baselinePath && dryRun) {
     console.error("Error: --baseline cannot be used with --dry-run");
+    process.exit(2);
+  }
+
+  if (format && format !== "generic") {
+    console.error(`Error: unsupported --format "${format}".`);
+    console.error("Only \"generic\" is supported. Use mapping packs for tool-specific outputs.");
     process.exit(2);
   }
 
@@ -543,9 +543,9 @@ EXAMPLES:
       console.error(`Error: ${err.message}`);
       // Provide actionable guidance based on common errors
       if (err.message.includes("No controls found") || err.message.includes("empty")) {
-        console.error("  Check that your evidence file matches a supported format.");
-        console.error("  Supported: generic, prowler, securityhub, inspec, trivy, gitlab, ciso-assistant");
-        console.error("  Force format: corsair sign --file <path> --format <name>");
+        console.error("  Check that your evidence file matches a mapping pack or the generic format.");
+        console.error("  Use mapping packs via --mapping or CORSAIR_MAPPING_DIR/CORSAIR_MAPPING_FILE.");
+        console.error("  Force generic: corsair sign --file <path> --format generic");
       } else if (err.message.includes("keypair") || err.message.includes("key")) {
         console.error("  Generate keys: corsair keygen");
       } else if (err.message.includes("parse") || err.message.includes("JSON")) {
@@ -1315,7 +1315,7 @@ OPTIONS:
 
 EXAMPLES:
   corsair mappings pack --id wiz --version 1.0.0 --mapping ./mappings
-  corsair mappings pack --id prowler --version 2026-02-18 --mapping ./mappings/prowler.json -o pack.json
+  corsair mappings pack --id toolx --version 2026-02-18 --mapping ./mappings/toolx.json -o pack.json
 `);
     return;
   }
@@ -3931,8 +3931,8 @@ ALIASES:
 EXAMPLES:
   corsair sign --file evidence.json --output cpoe.jwt
   corsair sign --file gl-sast-report.json --did did:web:acme.com
-  corsair sign --file - < prowler-findings.json
-  cat trivy-report.json | corsair sign --format trivy
+  corsair sign --file - < evidence.json
+  cat evidence.json | corsair sign --format generic
   corsair sign --file evidence.json --dry-run
   corsair diff --current cpoe-new.jwt --previous cpoe-old.jwt
   corsair verify --file cpoe.jwt --pubkey keys/corsair-signing.pub

@@ -45,18 +45,18 @@ export interface MCPServerDeps {
 export const TOOL_DEFINITIONS: MCPToolDefinition[] = [
   {
     name: "corsair_sign",
-    description: "Sign evidence as a CPOE (Certificate of Proof of Operational Effectiveness). Accepts JSON evidence from security tools (Prowler, SecurityHub, InSpec, Trivy, GitLab, CISO Assistant) or generic format. Returns a signed JWT-VC.",
+    description: "Sign evidence as a CPOE (Certificate of Proof of Operational Effectiveness). Accepts JSON evidence via mapping packs or generic format. Returns a signed JWT-VC.",
     inputSchema: {
       type: "object",
       properties: {
         evidence: {
           type: "object",
-          description: "Raw evidence JSON (any of 8 supported formats)",
+          description: "Raw evidence JSON (generic or mapping pack)",
         },
         format: {
           type: "string",
-          description: "Force parser format: generic, prowler, securityhub, inspec, trivy, gitlab, ciso-assistant-api, ciso-assistant-export",
-          enum: ["generic", "prowler", "securityhub", "inspec", "trivy", "gitlab", "ciso-assistant-api", "ciso-assistant-export"],
+          description: "Force generic format (bypasses mapping registry)",
+          enum: ["generic"],
         },
         did: {
           type: "string",
@@ -274,14 +274,8 @@ async function handleDiff(args: Record<string, unknown>): Promise<MCPToolResult>
 
 async function handleFormats(): Promise<MCPToolResult> {
   const formats = [
+    { name: "mapping-pack", description: "Mapping registry (config-driven, auto-detected)", autoDetected: true },
     { name: "generic", description: "Generic JSON: { metadata, controls[] }", autoDetected: true },
-    { name: "prowler", description: "Prowler OCSF: Array of findings with StatusCode + FindingInfo", autoDetected: true },
-    { name: "securityhub", description: "AWS SecurityHub ASFF: { Findings[] }", autoDetected: true },
-    { name: "inspec", description: "Chef InSpec: { profiles[].controls[] }", autoDetected: true },
-    { name: "trivy", description: "Aqua Trivy: { SchemaVersion, Results[] }", autoDetected: true },
-    { name: "gitlab", description: "GitLab Security Report: { version, scan, vulnerabilities[] }", autoDetected: true },
-    { name: "ciso-assistant-api", description: "CISO Assistant API: { count, results[] }", autoDetected: true },
-    { name: "ciso-assistant-export", description: "CISO Assistant Export: { meta, requirement_assessments[] }", autoDetected: true },
   ];
 
   return {

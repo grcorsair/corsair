@@ -63,7 +63,7 @@ Error responses use the same envelope:
 
 ## POST /v1/sign
 
-Sign evidence into a CPOE (JWT-VC). Accepts raw tool output from any supported format. Requires authentication.
+Sign evidence into a CPOE (JWT-VC). Accepts raw tool output via mapping packs or generic format. Requires authentication.
 To support additional tools without code changes, configure the mapping registry on the API server via `CORSAIR_MAPPING_DIR`, `CORSAIR_MAPPING_FILE`, or `corsair mappings add`. Build packs with `corsair mappings pack` and sign them with `corsair mappings sign`. Mappings are evaluated by priority (higher wins), then filename order. Signed packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set.
 
 ```bash
@@ -72,10 +72,11 @@ curl -X POST https://api.grcorsair.com/v1/sign \
   -H "Content-Type: application/json" \
   -d '{
     "evidence": {
-      "StatusCode": "PASS",
-      "FindingInfo": { "Title": "S3 bucket versioning enabled" }
+      "metadata": { "title": "S3 Controls", "issuer": "Acme", "scope": "AWS Production" },
+      "controls": [
+        { "id": "S3-001", "description": "Bucket versioning enabled", "status": "pass" }
+      ]
     },
-    "format": "prowler",
     "scope": "AWS Production - S3 Controls",
     "expiryDays": 90
   }'
@@ -85,8 +86,8 @@ curl -X POST https://api.grcorsair.com/v1/sign \
 
 | Field | Type | Required | Description |
 |:------|:-----|:---------|:-----------|
-| `evidence` | object or string | Yes | Raw tool output (any supported format) |
-| `format` | string | No | Force parser format. Auto-detected if omitted |
+| `evidence` | object or string | Yes | Raw tool output (mapping pack or generic) |
+| `format` | string | No | Force generic format (bypasses mapping registry) |
 | `did` | string | No | Override issuer DID (e.g., `did:web:acme.com`) |
 | `scope` | string | No | Override scope description |
 | `expiryDays` | number | No | CPOE validity in days (default: 7) |
@@ -101,7 +102,7 @@ curl -X POST https://api.grcorsair.com/v1/sign \
   "data": {
     "cpoe": "eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCIs...",
     "marqueId": "marque-a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "detectedFormat": "prowler",
+    "detectedFormat": "generic",
     "summary": {
       "controlsTested": 24,
       "controlsPassed": 22,
@@ -110,7 +111,7 @@ curl -X POST https://api.grcorsair.com/v1/sign \
     },
     "provenance": {
       "source": "tool",
-      "sourceIdentity": "Prowler v3.1",
+      "sourceIdentity": "Acme",
       "sourceDate": "2026-02-13T00:00:00Z"
     },
     "extensions": {
@@ -150,7 +151,7 @@ curl -X POST https://api.grcorsair.com/v1/verify \
       "maxAgeDays": 30,
       "minScore": 90,
       "requireSource": "tool",
-      "requireSourceIdentity": ["Prowler v3.1"],
+      "requireSourceIdentity": ["Scanner v1.2"],
       "requireReceipts": true,
       "requireScitt": true,
       "requireInputBinding": true
@@ -178,7 +179,7 @@ curl -X POST https://api.grcorsair.com/v1/verify \
     },
     "provenance": {
       "source": "tool",
-      "sourceIdentity": "Prowler v3.1",
+      "sourceIdentity": "Scanner v1.2",
       "sourceDate": "2026-01-15"
     },
     "extensions": {

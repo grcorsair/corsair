@@ -38,7 +38,7 @@ bun run corsair.ts keygen --output ./keys
 
 ## Example Usage in Claude Code
 
-> "Sign this Prowler scan as a CPOE"
+> "Sign this scanner output as a CPOE"
 > "Verify this JWT: eyJ..."
 > "Compare these two CPOEs and show me what regressed"
 > "What evidence formats does Corsair support?"

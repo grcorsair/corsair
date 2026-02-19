@@ -16,15 +16,8 @@ type WizardStep = 1 | 2 | 3;
 type SignState = "idle" | "signing" | "signed" | "error";
 
 const FORMAT_OPTIONS = [
-  { value: "", label: "Auto-detect" },
-  { value: "generic", label: "Generic" },
-  { value: "prowler", label: "Prowler" },
-  { value: "securityhub", label: "SecurityHub" },
-  { value: "inspec", label: "InSpec" },
-  { value: "trivy", label: "Trivy" },
-  { value: "gitlab", label: "GitLab SAST" },
-  { value: "ciso-assistant-api", label: "CISO Assistant (API)" },
-  { value: "ciso-assistant-export", label: "CISO Assistant (Export)" },
+  { value: "", label: "Auto (mapping packs)" },
+  { value: "generic", label: "Generic (controls array)" },
 ];
 
 /** Persist and retrieve API key from localStorage */

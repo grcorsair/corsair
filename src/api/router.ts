@@ -405,6 +405,15 @@ function createV1SignHandler(deps: V1RouterDeps): (req: Request) => Promise<Resp
       }
     }
 
+    if (body.format !== undefined && body.format !== "generic") {
+      return envelopeError(
+        "validation_error",
+        'Only "generic" format is supported. Use mapping packs for tool-specific outputs.',
+        requestId,
+        400,
+      );
+    }
+
     const { signEvidence, SignError } = await import("../sign/sign-core");
 
     try {

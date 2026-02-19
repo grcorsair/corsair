@@ -56,10 +56,10 @@ Sign structured evidence as a CPOE (JWT-VC with Ed25519):
 ```typescript
 import { readFileSync } from "fs";
 
-const evidence = JSON.parse(readFileSync("prowler-findings.json", "utf-8"));
+const evidence = JSON.parse(readFileSync("evidence.json", "utf-8"));
 
 const result = await corsair.sign(evidence, {
-  format: "prowler",           // Optional: force format (auto-detected by default)
+  // format: "generic",        // Optional: bypass mapping packs
   did: "did:web:acme.com",    // Override issuer DID
   source: "tool",             // Override provenance source
   scope: "AWS Production",    // Assessment scope
@@ -71,9 +71,9 @@ const result = await corsair.sign(evidence, {
 
 console.log(result.jwt);              // Signed JWT-VC string
 console.log(result.marqueId);         // CPOE identifier
-console.log(result.detectedFormat);   // "prowler"
+console.log(result.detectedFormat);   // "mapping-pack" or "generic"
 console.log(result.summary);          // { controlsTested, controlsPassed, controlsFailed, overallScore }
-console.log(result.provenance);       // { source: "tool", sourceIdentity: "prowler" }
+console.log(result.provenance);       // { source: "tool", sourceIdentity: "Scanner v1" }
 console.log(result.warnings);         // Any warnings from parsing
 console.log(result.extensions);       // Optional passthrough fields + mapping metadata
 ```
@@ -82,7 +82,7 @@ console.log(result.extensions);       // Optional passthrough fields + mapping m
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `format` | `EvidenceFormat` | auto-detect | Force evidence format |
+| `format` | `EvidenceFormat` | auto-detect | Force generic format (bypass mapping packs) |
 | `did` | `string` | config default | Override issuer DID |
 | `source` | `DocumentSource` | from evidence | Override provenance source |
 | `scope` | `string` | from evidence | Override scope string |
@@ -97,7 +97,7 @@ Call `corsair.formats()` to get the full list:
 
 ```typescript
 const formats = corsair.formats();
-// ["generic", "prowler", "securityhub", "inspec", "trivy", "gitlab", "ciso-assistant-api", "ciso-assistant-export"]
+// ["mapping-pack", "generic"]
 ```
 
 For tool outputs not on the built-in list, use the mapping registry on the signing host (see `CORSAIR_MAPPING_DIR` / `CORSAIR_MAPPING_FILE` or `corsair mappings add`). Build packs with `corsair mappings pack` and sign them with `corsair mappings sign`. Evidence-only mappings still produce a valid CPOE and surface passthrough fields under `extensions`. Mappings are evaluated by priority (higher wins), then filename order. Signed packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set.
@@ -181,10 +181,10 @@ const corsair = new CorsairClient({ keyDir: "./keys", did: "did:web:acme.com" })
 await corsair.keygen();
 
 // Load evidence
-const evidence = JSON.parse(readFileSync("prowler-findings.json", "utf-8"));
+const evidence = JSON.parse(readFileSync("tool-output.json", "utf-8"));
 
 // Sign
-const signed = await corsair.sign(evidence, { format: "prowler", scope: "AWS Production" });
+const signed = await corsair.sign(evidence, { scope: "AWS Production" });
 console.log(`Signed CPOE: ${signed.marqueId} (${signed.summary.overallScore}/100)`);
 
 // Verify the signed CPOE

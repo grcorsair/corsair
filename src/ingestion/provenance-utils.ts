@@ -70,11 +70,9 @@ function sourceToProvenanceType(source: DocumentSource): CPOEProvenance["source"
     case "soc2":
     case "iso27001":
       return "auditor";
-    case "prowler":
-    case "securityhub":
     case "pentest":
     case "json":
-    case "ciso-assistant":
+    case "tool":
       return "tool";
     case "manual":
     default:
@@ -125,8 +123,8 @@ export function deriveEvidenceTypes(
 
   // Source type determines the primary evidence method
   switch (source) {
-    case "prowler":
-    case "securityhub":
+    case "tool":
+    case "json":
       types.add("automated-observation");
       types.add("system-generated-record");
       break;
@@ -138,14 +136,6 @@ export function deriveEvidenceTypes(
     case "iso27001":
       types.add("documented-record");
       types.add("interview");
-      break;
-    case "ciso-assistant":
-      types.add("system-generated-record");
-      types.add("documented-record");
-      break;
-    case "json":
-      types.add("system-generated-record");
-      types.add("documented-record");
       break;
     case "manual":
       types.add("self-attestation");

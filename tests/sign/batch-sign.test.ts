@@ -28,14 +28,7 @@ beforeAll(async () => {
     ],
   };
 
-  const prowler = [
-    { StatusCode: "PASS", FindingInfo: { Uid: "p-1", Title: "Root MFA" } },
-    { StatusCode: "FAIL", FindingInfo: { Uid: "p-2", Title: "S3 public" } },
-    { StatusCode: "PASS", FindingInfo: { Uid: "p-3", Title: "CloudTrail" } },
-  ];
-
   await Bun.write(join(inputDir, "generic.json"), JSON.stringify(generic));
-  await Bun.write(join(inputDir, "prowler.json"), JSON.stringify(prowler));
   await Bun.write(join(inputDir, "invalid.json"), "not valid json {{{");
   await Bun.write(join(inputDir, "readme.txt"), "This should be skipped");
 });
@@ -48,19 +41,14 @@ describe("signBatch", () => {
   test("signs all .json files in a directory", async () => {
     const results = await signBatch({ inputDir, outputDir }, keyManager);
 
-    // Should process 3 .json files (generic, prowler, invalid)
-    expect(results).toHaveLength(3);
+    // Should process 2 .json files (generic, invalid)
+    expect(results).toHaveLength(2);
 
     // generic.json should succeed
     const generic = results.find((r) => r.file === "generic.json");
     expect(generic?.success).toBe(true);
     expect(generic?.output?.detectedFormat).toBe("generic");
     expect(generic?.outputPath).toContain("generic.jwt");
-
-    // prowler.json should succeed
-    const prowler = results.find((r) => r.file === "prowler.json");
-    expect(prowler?.success).toBe(true);
-    expect(prowler?.output?.detectedFormat).toBe("prowler");
 
     // invalid.json should fail gracefully
     const invalid = results.find((r) => r.file === "invalid.json");
@@ -97,23 +85,20 @@ describe("signBatch", () => {
   });
 
   test("passes format override to all files", async () => {
-    // Create a dir with only prowler files
-    const prowlerDir = join(tmpDir, "prowler-only");
-    mkdirSync(prowlerDir, { recursive: true });
+    const genericDir = join(tmpDir, "generic-only");
+    mkdirSync(genericDir, { recursive: true });
     await Bun.write(
-      join(prowlerDir, "scan1.json"),
-      JSON.stringify([
-        { StatusCode: "PASS", FindingInfo: { Uid: "p-1", Title: "Test" } },
-      ]),
+      join(genericDir, "scan1.json"),
+      JSON.stringify({ metadata: { title: "Test", issuer: "Test" }, controls: [] }),
     );
 
     const results = await signBatch(
-      { inputDir: prowlerDir, format: "prowler" },
+      { inputDir: genericDir, format: "generic" },
       keyManager,
     );
 
     expect(results[0].success).toBe(true);
-    expect(results[0].output?.detectedFormat).toBe("prowler");
+    expect(results[0].output?.detectedFormat).toBe("generic");
   });
 
   test("throws if input directory does not exist", async () => {

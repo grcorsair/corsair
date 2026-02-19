@@ -163,7 +163,7 @@ describe("PgSCITTRegistry proofOnly mode", () => {
     const jwt = buildMockJWT({
       iss: "did:web:acme.com",
       scope: "SOC 2 Type II",
-      provenance: { source: "tool", sourceIdentity: "Prowler v3.1" },
+      provenance: { source: "tool", sourceIdentity: "Scanner v1.2" },
     });
 
     const result = await registry.register(jwt, { proofOnly: true });

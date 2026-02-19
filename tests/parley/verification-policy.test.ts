@@ -16,7 +16,7 @@ function makePayload(overrides?: Record<string, unknown>) {
         frameworks: { SOC2: { controlsMapped: 1, passed: 1, failed: 0, controls: [] } },
         provenance: {
           source: "tool",
-          sourceIdentity: "Prowler v3.1",
+          sourceIdentity: "Scanner v1.2",
           sourceDocument: "abc123",
           sourceDate: new Date().toISOString(),
         },
@@ -90,7 +90,7 @@ describe("verification policy", () => {
 
   test("requires source identity in allowed list", () => {
     const payload = makePayload();
-    const result = evaluateVerificationPolicy(payload, { requireSourceIdentity: ["Prowler v3.1"] });
+    const result = evaluateVerificationPolicy(payload, { requireSourceIdentity: ["Scanner v1.2"] });
     expect(result.ok).toBe(true);
   });
 

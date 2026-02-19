@@ -5,7 +5,7 @@ import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
-  title: "Verify CPOE",
+  title: "Verify CPOE — Ed25519 Signature Verification",
   description:
     "Verify any CPOE (Certificate of Proof of Operational Effectiveness). Ed25519 signature verified via DID:web resolution. No account needed.",
 };
@@ -84,7 +84,7 @@ export default function VerifyPage() {
               <div className="space-y-2">
                 {[
                   { source: "self", name: "Self-Assessed", desc: "Organization self-attests without automated evidence", color: "text-corsair-text-dim", barWidth: "33%", barColor: "bg-corsair-text-dim/40" },
-                  { source: "tool", name: "Tool-Generated", desc: "Security tool (Prowler, InSpec, Trivy) produced the evidence", color: "text-corsair-green", barWidth: "66%", barColor: "bg-corsair-green/40" },
+                  { source: "tool", name: "Tool-Generated", desc: "Security tooling produced the evidence (scanner output, API export)", color: "text-corsair-green", barWidth: "66%", barColor: "bg-corsair-green/40" },
                   { source: "auditor", name: "Auditor-Verified", desc: "Independent third party reviewed and verified the assessment", color: "text-corsair-gold", barWidth: "100%", barColor: "bg-corsair-gold/40" },
                 ].map((item) => (
                   <div key={item.source} className="rounded-lg border border-corsair-border bg-corsair-surface p-3">
@@ -122,7 +122,7 @@ export default function VerifyPage() {
                 <ol className="space-y-3 p-5 font-mono text-[12px] leading-relaxed text-corsair-text-dim sm:text-[13px]">
                   <li className="flex gap-3">
                     <span className="text-corsair-gold">1.</span>
-                    Organization runs security tools (Prowler, InSpec, Trivy) and signs evidence into a CPOE via{" "}
+                    Organization runs security tools (scanners, CI checks, API exports) and signs evidence into a CPOE via{" "}
                     <code className="text-corsair-cyan">corsair sign</code> — JWT-VC with Ed25519.
                   </li>
                   <li className="flex gap-3">

@@ -55,9 +55,9 @@ export function Footer() {
 
           {/* Product */}
           <div>
-            <h3 className="mb-3 font-display text-sm font-semibold text-corsair-text">
+            <p className="mb-3 font-display text-sm font-semibold text-corsair-text">
               Product
-            </h3>
+            </p>
             <ul className="space-y-2">
               {productLinks.map((link) => (
                 <li key={link.href}>
@@ -74,9 +74,9 @@ export function Footer() {
 
           {/* Resources */}
           <div>
-            <h3 className="mb-3 font-display text-sm font-semibold text-corsair-text">
+            <p className="mb-3 font-display text-sm font-semibold text-corsair-text">
               Resources
-            </h3>
+            </p>
             <ul className="space-y-2">
               {resourceLinks.map((link) => (
                 <li key={link.href}>
@@ -93,9 +93,9 @@ export function Footer() {
 
           {/* Community */}
           <div>
-            <h3 className="mb-3 font-display text-sm font-semibold text-corsair-text">
+            <p className="mb-3 font-display text-sm font-semibold text-corsair-text">
               Community
-            </h3>
+            </p>
             <ul className="space-y-2">
               {communityLinks.map((link) => (
                 <li key={link.href}>

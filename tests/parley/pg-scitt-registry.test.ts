@@ -212,7 +212,7 @@ describe("PgSCITTRegistry.listEntries", () => {
     const jwt = buildMockJWT({
       iss: "did:web:acme.com",
       scope: "AWS Production",
-      provenance: { source: "tool", sourceIdentity: "Prowler v3.1" },
+      provenance: { source: "tool", sourceIdentity: "Scanner v1.2" },
       summary: { controlsTested: 10, controlsPassed: 8, controlsFailed: 2, overallScore: 80 },
     });
 
@@ -223,7 +223,7 @@ describe("PgSCITTRegistry.listEntries", () => {
     expect(entries[0].entryId).toBeDefined();
     expect(entries[0].issuer).toBe("did:web:acme.com");
     expect(entries[0].scope).toBe("AWS Production");
-    expect(entries[0].provenance).toEqual({ source: "tool", sourceIdentity: "Prowler v3.1" });
+    expect(entries[0].provenance).toEqual({ source: "tool", sourceIdentity: "Scanner v1.2" });
     expect(entries[0].summary).toEqual({
       controlsTested: 10,
       controlsPassed: 8,
@@ -339,7 +339,7 @@ describe("PgSCITTRegistry.getIssuerProfile", () => {
     await registry.register(buildMockJWT({
       iss: "did:web:acme.com",
       scope: "SOC 2",
-      provenance: { source: "tool", sourceIdentity: "Prowler v3.1" },
+      provenance: { source: "tool", sourceIdentity: "Scanner v1.2" },
       summary: { controlsTested: 10, controlsPassed: 8, controlsFailed: 2, overallScore: 80 },
       frameworks: { "SOC2": { controlsMapped: 10 } },
     }));

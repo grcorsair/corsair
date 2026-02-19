@@ -31,7 +31,7 @@ The CPOE credential subject maps directly to the assessment results:
   "scope": "SOC 2 Type II — Cloud Infrastructure Controls",
   "provenance": {
     "source": "tool",
-    "sourceIdentity": "Prowler v3.1",
+    "sourceIdentity": "Scanner v1.2",
     "sourceDate": "2026-01-15T00:00:00Z"
   },
   "summary": { "controlsTested": 24, "controlsPassed": 22, "overallScore": 92 },
@@ -83,7 +83,7 @@ Every CPOE records provenance — who produced the underlying evidence:
 | Source | Meaning |
 |--------|---------|
 | **self** | Organization self-attests without automated evidence |
-| **tool** | Security tool (Prowler, InSpec, Trivy) produced the evidence |
+| **tool** | Security tooling (scanner output, API export) produced the evidence |
 | **auditor** | Independent third party reviewed and verified |
 
 Corsair does not judge evidence quality. It records provenance and lets buyers decide what's sufficient.

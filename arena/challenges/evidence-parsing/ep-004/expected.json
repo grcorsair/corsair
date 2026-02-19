@@ -1,8 +1,0 @@
-{
-  "format": "securityhub",
-  "controlCount": 6,
-  "passCount": 3,
-  "failCount": 2,
-  "score": 50,
-  "warningCount": 1
-}

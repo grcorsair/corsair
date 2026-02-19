@@ -1,9 +1,0 @@
-{
-  "mappings": [
-    { "controlId": "cis-aws-1.5", "framework": "CIS-Controls-v8", "cisControlId": "6.5", "status": "passed" },
-    { "controlId": "cis-aws-4.1", "framework": "CIS-Controls-v8", "cisControlId": "12.2", "status": "passed" }
-  ],
-  "controlsWithCISMapping": 2,
-  "controlsWithoutCISMapping": 8,
-  "totalControls": 10
-}

@@ -113,10 +113,10 @@ function SignPanel() {
         </p>
         <div className="font-mono text-[11px] leading-relaxed sm:text-[12px]">
           <span className="text-corsair-gold">$</span>{" "}
-          <span className="text-corsair-text">prowler scan --output-format json</span>
+          <span className="text-corsair-text">scanner run --output json</span>
           <div className="mt-2 text-corsair-text-dim">{"{"}</div>
-          <Line k="provider" v={`"prowler"`} />
-          <Line k="version" v={`"3.1.0"`} />
+          <Line k="provider" v={`"toolx"`} />
+          <Line k="version" v={`"1.0.0"`} />
           <Line k="findings" v="[" />
           <div className="ml-6 text-corsair-text-dim">
             {"{ "}
@@ -164,7 +164,7 @@ function SignPanel() {
         </p>
         <div className="font-mono text-[11px] leading-relaxed sm:text-[12px]">
           <span className="text-corsair-gold">$</span>{" "}
-          <span className="text-corsair-text">prowler scan</span>{" "}
+          <span className="text-corsair-text">scanner run</span>{" "}
           <span className="text-corsair-text-dim">|</span>{" "}
           <span className="text-corsair-text">corsair sign</span>
 
@@ -189,7 +189,7 @@ function SignPanel() {
             <div className="ml-2">
               <span className="text-corsair-gold">provenance</span>
               <span className="text-corsair-text-dim">: </span>
-              <span className="text-corsair-green">tool — Prowler v3.1</span>
+              <span className="text-corsair-green">tool — Scanner v1.2</span>
             </div>
             <div className="ml-2">
               <span className="text-corsair-gold">controls</span>

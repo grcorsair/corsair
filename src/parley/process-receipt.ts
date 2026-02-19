@@ -24,12 +24,12 @@ import { sortKeysDeep } from "./marque-generator";
 export type PipelineStep = "evidence" | "classify" | "summarize" | "chart" | "quarter" | "sign";
 
 export interface ToolAttestation {
-  toolName: string;           // "Prowler", "InSpec", "Vanta Monitor"
+  toolName: string;           // "Scanner v1.2", "Compliance Runner"
   toolVersion: string;        // "4.2.1"
   scanTimestamp: string;      // ISO 8601
   scanTarget: string;         // "aws:123456789012", "acme-corp-workspace"
   scanProfile?: string;       // "cis-aws-benchmark-v3.0"
-  outputFormat: string;       // "prowler-jsonl", "inspec-json", "trivy-json"
+  outputFormat: string;       // "scanner-json", "compliance-json"
   registeredMethodologyId?: string;  // Links to methodology registry (future)
 }
 

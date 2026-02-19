@@ -1,7 +1,7 @@
-# Example: Trivy scan + Corsair sign + PR comment
+# Example: Scanner output + Corsair sign + PR comment
 #
-# This workflow scans a container image with Trivy, signs the findings
-# as a CPOE with Corsair, and comments the compliance summary on PRs.
+# This workflow runs a scanner, signs the findings as a CPOE with Corsair,
+# and comments the compliance summary on PRs.
 
 name: Compliance Sign
 
@@ -19,19 +19,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run Trivy scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: config
-          format: json
-          output: trivy-report.json
+      - name: Run scanner
+        run: |
+          ./scripts/run-scanner.sh --output tool-output.json
 
       - name: Sign with Corsair
         id: corsair
         uses: arudjreis/corsair@main
         with:
-          file: trivy-report.json
-          format: trivy
+          file: tool-output.json
           did: "did:web:${{ github.repository_owner }}.github.io"
           scope: "${{ github.repository }} — PR #${{ github.event.pull_request.number }}"
 

@@ -130,7 +130,7 @@ export interface COSEReceipt {
 export interface SCITTProvenance {
   /** Evidence source: self-reported, tool-generated, or auditor-attested */
   source: "self" | "tool" | "auditor" | "unknown";
-  /** Identity of the source (e.g., "Prowler v3.1", "Deloitte LLP") */
+  /** Identity of the source (e.g., "Scanner v1.2", "Deloitte LLP") */
   sourceIdentity?: string;
 }
 

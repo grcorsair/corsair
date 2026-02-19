@@ -2,7 +2,7 @@
  * Ingestion Types — Schema Bridge for Document → CPOE Pipeline
  *
  * The canonical intermediate format between any external document
- * (SOC 2 PDF, Prowler JSON, manual CSV) and the MarqueGeneratorInput.
+ * (SOC 2 PDF, tool JSON, manual CSV) and the MarqueGeneratorInput.
  *
  * Design philosophy:
  *   Layer 1 (Integrity):  Handled by existing MARQUE/Ed25519 — no changes needed
@@ -24,16 +24,14 @@ import type { Severity } from "../types";
 export type DocumentSource =
   | "soc2"
   | "iso27001"
-  | "prowler"
-  | "securityhub"
   | "pentest"
   | "manual"
   | "json"
-  | "ciso-assistant";
+  | "tool";
 
 /**
  * The canonical ingested document format.
- * Every parser (SOC 2, Prowler, manual) must output this shape.
+ * Every parser (SOC 2, tool output, manual) must output this shape.
  */
 export interface IngestedDocument {
   /** Where this document came from */
@@ -76,7 +74,7 @@ export interface DocumentMetadata {
   /** Auditor or assessor name (if applicable) */
   auditor?: string;
 
-  /** Document type for display (e.g., "SOC 2 Type II", "Prowler Scan") */
+  /** Document type for display (e.g., "SOC 2 Type II", "Tool Scan") */
   reportType?: string;
 
   /** SHA-256 hash of the original document for provenance */

@@ -3,7 +3,7 @@
  *
  * POST /sign — Authenticated, rate-limited
  *
- * Accepts raw tool output (any of 8 formats), calls signEvidence(),
+ * Accepts raw tool output (mapping packs or generic), calls signEvidence(),
  * returns signed CPOE + metadata.
  *
  * Follows the same router factory pattern as functions/verify.ts.
@@ -24,10 +24,10 @@ export interface SignRouterDeps {
 }
 
 export interface SignRequest {
-  /** Raw evidence (any of 8 supported formats) */
+  /** Raw evidence (mapping packs or generic JSON) */
   evidence: unknown;
 
-  /** Force a specific parser format */
+  /** Force generic parsing (bypass mapping packs) */
   format?: EvidenceFormat;
 
   /** Issuer DID override */
@@ -131,7 +131,7 @@ function computeIdempotencyHash(
  * Create the sign router.
  *
  * Accepts:
- *   { "evidence": {...}, "format?": "prowler", "did?": "did:web:...", ... }
+ *   { "evidence": {...}, "format?": "generic", "did?": "did:web:...", ... }
  */
 export function createSignRouter(
   deps: SignRouterDeps,
@@ -209,6 +209,10 @@ export function createSignRouter(
     // Reject oversized evidence (500KB)
     if (evidenceStr.length > 500_000) {
       return jsonError(400, "Evidence exceeds maximum size (500KB)");
+    }
+
+    if (body.format && body.format !== "generic") {
+      return jsonError(400, `Unsupported format: ${body.format}. Only "generic" is allowed.`);
     }
 
     // Call sign engine

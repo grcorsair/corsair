@@ -59,90 +59,6 @@ beforeAll(async () => {
   };
   writeFileSync(join(tmpDir, "evidence.json"), JSON.stringify(sampleEvidence, null, 2));
 
-  // Write a sample InSpec JSON report
-  const inspecReport = {
-    platform: { name: "aws", release: "aws-sdk-v3" },
-    profiles: [
-      {
-        name: "aws-cis-level1",
-        title: "CIS AWS Foundations Benchmark Level 1",
-        controls: [
-          {
-            id: "cis-aws-1.1",
-            title: "Avoid the use of the root account",
-            desc: "The root account has unrestricted access to all resources.",
-            impact: 1.0,
-            tags: { nist: ["IA-2"], cis_controls: [{ id: "1.1" }] },
-            results: [{ status: "passed", code_desc: "Root account has no access keys", run_time: 0.5 }],
-          },
-          {
-            id: "cis-aws-1.4",
-            title: "Ensure MFA is enabled for the root account",
-            desc: "Enable MFA on the root account.",
-            impact: 1.0,
-            tags: { nist: ["IA-2(1)"] },
-            results: [{ status: "passed", code_desc: "Root MFA is active", run_time: 0.3 }],
-          },
-          {
-            id: "cis-aws-2.1",
-            title: "Ensure CloudTrail is enabled in all regions",
-            desc: "CloudTrail should be enabled in all regions.",
-            impact: 0.7,
-            tags: { nist: ["AU-2"] },
-            results: [{ status: "failed", code_desc: "CloudTrail not enabled in eu-west-1", run_time: 0.4 }],
-          },
-        ],
-      },
-    ],
-    statistics: { duration: 12.5 },
-    version: "5.22.36",
-  };
-  writeFileSync(join(tmpDir, "inspec-report.json"), JSON.stringify(inspecReport, null, 2));
-
-  // Write a sample Trivy JSON report
-  const trivyReport = {
-    SchemaVersion: 2,
-    ArtifactName: "myapp:latest",
-    Results: [
-      {
-        Target: "Dockerfile",
-        Class: "config",
-        Misconfigurations: [
-          {
-            Type: "dockerfile",
-            ID: "DS001",
-            AVDID: "AVD-DS-0001",
-            Title: "Running as root user",
-            Description: "Running containers as root increases attack surface.",
-            Severity: "HIGH",
-            Status: "FAIL",
-            Resolution: "Use USER instruction to set non-root user",
-          },
-          {
-            Type: "dockerfile",
-            ID: "DS002",
-            AVDID: "AVD-DS-0002",
-            Title: "Image uses latest tag",
-            Description: "Using latest tag can lead to unpredictable builds.",
-            Severity: "MEDIUM",
-            Status: "FAIL",
-            Resolution: "Pin image to specific version",
-          },
-          {
-            Type: "dockerfile",
-            ID: "DS005",
-            AVDID: "AVD-DS-0005",
-            Title: "COPY uses ADD instead",
-            Description: "ADD has extra functionality that can be exploited.",
-            Severity: "LOW",
-            Status: "PASS",
-            Resolution: "Use COPY instead of ADD",
-          },
-        ],
-      },
-    ],
-  };
-  writeFileSync(join(tmpDir, "trivy-report.json"), JSON.stringify(trivyReport, null, 2));
 });
 
 afterAll(() => {
@@ -165,9 +81,8 @@ describe("corsair sign — help", () => {
     expect(output).toContain("--baseline");
     expect(output).toContain("--gate");
     expect(output).toContain("FORMATS");
-    expect(output).toContain("inspec");
-    expect(output).toContain("trivy");
-    expect(output).toContain("prowler");
+    expect(output).toContain("mapping-pack");
+    expect(output).toContain("generic");
   });
 
   test("main help includes sign command", async () => {
@@ -481,22 +396,12 @@ describe("corsair sign — new flags", () => {
   });
 
   test("--format forces parser format", async () => {
-    // Write a prowler-style file
-    const prowlerData = [
-      {
-        StatusCode: "PASS",
-        Severity: "HIGH",
-        FindingInfo: { Uid: "test-001", Title: "Test finding" },
-      },
-    ];
-    writeFileSync(join(tmpDir, "prowler-test.json"), JSON.stringify(prowlerData));
-
     const proc = Bun.spawn(
       [
         "bun", "run", "corsair.ts", "sign",
-        "--file", join(tmpDir, "prowler-test.json"),
+        "--file", join(tmpDir, "evidence.json"),
         "--key-dir", join(tmpDir, "keys"),
-        "--format", "prowler",
+        "--format", "generic",
         "--json",
       ],
       { cwd, stdout: "pipe" },
@@ -506,7 +411,7 @@ describe("corsair sign — new flags", () => {
     expect(code).toBe(0);
 
     const parsed = JSON.parse(stdout);
-    expect(parsed.detectedFormat).toBe("prowler");
+    expect(parsed.detectedFormat).toBe("generic");
   });
 
   test("--verbose prints progress to stderr", async () => {
@@ -615,59 +520,5 @@ describe("corsair sign — invisible UX", () => {
     expect(stdout).toContain("generated");
     expect(existsSync(join(initDir, "keys", "corsair-signing.key"))).toBe(true);
     expect(existsSync(join(initDir, "keys", "corsair-signing.pub"))).toBe(true);
-  });
-});
-
-// =============================================================================
-// E2E SIGNING — INSPEC FORMAT
-// =============================================================================
-
-describe("corsair sign — InSpec format e2e", () => {
-  test("auto-detects and signs InSpec JSON report", async () => {
-    const proc = Bun.spawn(
-      [
-        "bun", "run", "corsair.ts", "sign",
-        "--file", join(tmpDir, "inspec-report.json"),
-        "--key-dir", join(tmpDir, "keys"),
-      ],
-      { cwd, stdout: "pipe" },
-    );
-    const stdout = await new Response(proc.stdout).text();
-    const code = await proc.exited;
-
-    expect(code).toBe(0);
-    expect(stdout.trim()).toMatch(/^eyJ/);
-
-    // Decode and check it has the right number of controls
-    const parts = stdout.trim().split(".");
-    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
-    expect(payload.vc.credentialSubject.type).toBe("CorsairCPOE");
-  });
-});
-
-// =============================================================================
-// E2E SIGNING — TRIVY FORMAT
-// =============================================================================
-
-describe("corsair sign — Trivy format e2e", () => {
-  test("auto-detects and signs Trivy JSON report", async () => {
-    const proc = Bun.spawn(
-      [
-        "bun", "run", "corsair.ts", "sign",
-        "--file", join(tmpDir, "trivy-report.json"),
-        "--key-dir", join(tmpDir, "keys"),
-      ],
-      { cwd, stdout: "pipe" },
-    );
-    const stdout = await new Response(proc.stdout).text();
-    const code = await proc.exited;
-
-    expect(code).toBe(0);
-    expect(stdout.trim()).toMatch(/^eyJ/);
-
-    // Decode and check
-    const parts = stdout.trim().split(".");
-    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
-    expect(payload.vc.credentialSubject.type).toBe("CorsairCPOE");
   });
 });

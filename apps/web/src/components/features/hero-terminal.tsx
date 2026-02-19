@@ -3,7 +3,7 @@
 import { motion } from "motion/react";
 
 const signLines = [
-  { label: "Source", value: "Prowler v3.1", color: "text-corsair-text" },
+  { label: "Source", value: "Scanner v1.2", color: "text-corsair-text" },
   { label: "Controls", value: "22 found, 20 passed", color: "text-corsair-text" },
   { label: "Provenance", value: "tool (automated scan)", color: "text-corsair-text" },
   { label: "Signed", value: "Ed25519 → cpoe.jwt", color: "text-corsair-green" },
@@ -29,7 +29,7 @@ const publishLines = [
 const verifyLines = [
   { label: "Signature", value: "Ed25519 valid", color: "text-corsair-green" },
   { label: "Issuer", value: "did:web:grcorsair.com", color: "text-corsair-text" },
-  { label: "Provenance", value: "tool — Prowler v3.1", color: "text-corsair-text" },
+  { label: "Provenance", value: "tool — Scanner v1.2", color: "text-corsair-text" },
 ];
 
 const signalLines = [
@@ -91,7 +91,7 @@ export function HeroTerminal() {
           transition={{ duration: 0.3, delay: 0.9 }}
         >
           <span className="text-corsair-gold">$</span>{" "}
-          <span className="text-corsair-text">prowler scan</span>{" "}
+          <span className="text-corsair-text">scanner run</span>{" "}
           <span className="text-corsair-text-dim">|</span>{" "}
           <span className="text-corsair-text">corsair sign</span>
         </motion.div>

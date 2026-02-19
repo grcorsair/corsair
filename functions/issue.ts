@@ -311,10 +311,10 @@ export function createIssueRouter(
  */
 function validateIssueRequest(body: IssueRequest): string | null {
   if (!body.source) {
-    return "Missing required field: source (soc2, iso27001, prowler, pentest, manual)";
+    return "Missing required field: source (soc2, iso27001, pentest, manual, json, tool)";
   }
 
-  const validSources: DocumentSource[] = ["soc2", "iso27001", "prowler", "securityhub", "pentest", "manual", "ciso-assistant"];
+  const validSources: DocumentSource[] = ["soc2", "iso27001", "pentest", "manual", "json", "tool"];
   if (!validSources.includes(body.source)) {
     return `Invalid source: "${body.source}". Must be one of: ${validSources.join(", ")}`;
   }

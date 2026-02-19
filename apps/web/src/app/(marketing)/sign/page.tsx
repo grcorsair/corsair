@@ -7,7 +7,7 @@ import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
-  title: "Sign Evidence",
+  title: "Sign Evidence — Create Verifiable Compliance Proofs",
   description:
     "Sign security tool output as a CPOE (Certificate of Proof of Operational Effectiveness). Try the signing flow, then sign with an API key for production use.",
 };
@@ -43,18 +43,15 @@ export default function SignPage() {
               See signing in action
             </h2>
             <p className="mx-auto max-w-xl text-sm text-corsair-text-dim">
-              Paste or select real evidence formats and sign a demo CPOE.
+              Paste JSON evidence or tool output and sign a demo CPOE.
               This is a real JWT-VC signed with a public demo keypair.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               {[
-                "Generic",
-                "Prowler",
-                "SecurityHub",
-                "InSpec",
-                "Trivy",
-                "GitLab",
-                "CISO Assistant",
+                "Generic JSON",
+                "Mapping Packs",
+                "Evidence-Only",
+                "Assessment Context",
               ].map((fmt) => (
                 <Badge
                   key={fmt}
@@ -133,7 +130,7 @@ export default function SignPage() {
                   <span className="text-corsair-text-dim/40"># Sign tool output</span>
                 </div>
                 <div>
-                  <span className="text-corsair-cyan">$</span> bun run corsair.ts sign --file prowler-findings.json --output cpoe.jwt
+                  <span className="text-corsair-cyan">$</span> bun run corsair.ts sign --file tool-output.json --mapping ./mappings/toolx.json --output cpoe.jwt
                 </div>
                 <div className="mt-4">
                   <span className="text-corsair-text-dim/40"># Verify the CPOE</span>

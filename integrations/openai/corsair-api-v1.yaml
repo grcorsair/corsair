@@ -69,16 +69,9 @@ paths:
                       description: JSON string of evidence
                 format:
                   type: string
-                  description: Force evidence format (auto-detected if omitted)
+                  description: Force generic parsing (bypass mapping packs)
                   enum:
                     - generic
-                    - prowler
-                    - securityhub
-                    - inspec
-                    - trivy
-                    - gitlab
-                    - ciso-assistant-api
-                    - ciso-assistant-export
                 scope:
                   type: string
                   description: Human-readable assessment scope
@@ -207,7 +200,7 @@ components:
             detectedFormat:
               type: string
               description: Auto-detected evidence format
-              example: "prowler"
+              example: "generic"
             summary:
               type: object
               properties:

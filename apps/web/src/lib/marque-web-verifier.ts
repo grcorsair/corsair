@@ -602,7 +602,7 @@ const SAMPLE_CPOE_PAYLOAD = {
     credentialSubject: {
       type: "CorsairCPOE",
       scope: "SOC 2 Type II — Example Cloud Platform",
-      provenance: { source: "tool", sourceIdentity: "Prowler" },
+      provenance: { source: "tool", sourceIdentity: "Scanner v1.2" },
       summary: {
         controlsTested: 24,
         controlsPassed: 23,

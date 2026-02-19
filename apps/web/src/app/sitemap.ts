@@ -30,11 +30,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/docs/concepts/pipeline`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/docs/concepts/marque-signing`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/docs/concepts/evidence-chain`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${baseUrl}/docs/concepts/flagship-events`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${baseUrl}/docs/concepts/parley-protocol`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${baseUrl}/docs/concepts/policy`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${baseUrl}/docs/concepts/trust-graph`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
 
     // Docs — Integrations
     { url: `${baseUrl}/docs/integrations/api`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/docs/integrations/sdk`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/docs/integrations/ci-cd`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/docs/integrations/jwt-vc`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${baseUrl}/docs/integrations/oscal-output`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${baseUrl}/docs/integrations/skills`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+
+    // Redirect pages
+    { url: `${baseUrl}/marque`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
   ];
 }
