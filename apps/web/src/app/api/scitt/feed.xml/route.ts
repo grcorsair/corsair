@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import demoEntries from "../../../../../public/demo-scitt-entries.json";
 
 const API_BASE = process.env.CORSAIR_API_URL ?? "https://api.grcorsair.com";
 
@@ -71,13 +70,10 @@ export async function GET() {
       }
     }
   } catch {
-    // Backend unavailable — fall through to demo data
+    // Backend unavailable — fall through to empty feed
   }
 
-  // Fallback: serve demo data RSS feed
-  return new NextResponse(buildRss(demoEntries as FeedEntry[]), {
-    headers: RSS_HEADERS,
-  });
+  return new NextResponse(buildRss([]), { headers: RSS_HEADERS });
 }
 
 function escapeXml(str: string): string {
