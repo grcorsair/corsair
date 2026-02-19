@@ -85,8 +85,8 @@ curl -X POST https://api.grcorsair.com/v1/sign \
 |:------|:-----|:---------|:-----------|
 | `evidence` | object or string | Yes | Raw tool output (mapping pack or generic) |
 | `format` | string | No | Force generic format (bypasses mapping registry) |
-| `did` | string | No | Override issuer DID (e.g., `did:web:acme.com`) |
-| `scope` | string | No | Override scope description |
+| `did` | string | No | Override issuer DID (defaults to `did:web:<CORSAIR_DOMAIN>`) |
+| `scope` | string | Conditional | Required if `evidence.metadata.scope` is missing |
 | `expiryDays` | number | No | CPOE validity in days (default: 7) |
 | `dryRun` | boolean | No | Parse without signing |
 | `dependencies` | array | No | Dependency proofs to attach (trust graph) |

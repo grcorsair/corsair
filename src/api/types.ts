@@ -114,6 +114,7 @@ export interface V1SignRequest {
   evidence: unknown;
   format?: string;
   did?: string;
+  /** Required if evidence.metadata.scope is missing */
   scope?: string;
   expiryDays?: number;
   dryRun?: boolean;

@@ -99,6 +99,14 @@ describe("POST /sign — options", () => {
     expect(payload.iss).toBe("did:web:acme.com");
   });
 
+  test("defaults issuer DID to server domain", async () => {
+    const res = await router(makeRequest({ evidence: genericEvidence }));
+    const data = await res.json();
+    const parts = data.cpoe.split(".");
+    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+    expect(payload.iss).toBe("did:web:test.grcorsair.com");
+  });
+
   test("accepts scope override", async () => {
     const res = await router(makeRequest({ evidence: genericEvidence, scope: "Custom Scope" }));
     const data = await res.json();
@@ -157,5 +165,16 @@ describe("POST /sign — error handling", () => {
     const big = "x".repeat(600_000);
     const res = await router(makeRequest({ evidence: big }));
     expect(res.status).toBe(400);
+  });
+
+  test("rejects missing scope when no override provided", async () => {
+    const evidenceWithoutScope = {
+      metadata: { title: "No Scope", issuer: "Test Corp", date: "2026-02-13" },
+      controls: [{ id: "C-1", description: "MFA", status: "pass", evidence: "OK" }],
+    };
+    const res = await router(makeRequest({ evidence: evidenceWithoutScope }));
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toContain("scope");
   });
 });

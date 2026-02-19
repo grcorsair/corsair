@@ -33,7 +33,7 @@ export interface SignRequest {
   /** Issuer DID override */
   did?: string;
 
-  /** Scope override */
+  /** Scope override (required if evidence.metadata.scope is missing) */
   scope?: string;
 
   /** CPOE validity in days */
@@ -123,6 +123,16 @@ function computeIdempotencyHash(
   return hashString(JSON.stringify(payload));
 }
 
+function extractScopeFromEvidence(evidence: unknown): string | null {
+  if (!evidence || typeof evidence !== "object") return null;
+  const metadata = (evidence as { metadata?: unknown }).metadata;
+  if (!metadata || typeof metadata !== "object") return null;
+  const scope = (metadata as { scope?: unknown }).scope;
+  if (typeof scope !== "string") return null;
+  const trimmed = scope.trim();
+  return trimmed ? trimmed : null;
+}
+
 // =============================================================================
 // ROUTER
 // =============================================================================
@@ -136,7 +146,7 @@ function computeIdempotencyHash(
 export function createSignRouter(
   deps: SignRouterDeps,
 ): (req: Request) => Promise<Response> {
-  const { keyManager, db } = deps;
+  const { keyManager, db, domain } = deps;
 
   return async (req: Request): Promise<Response> => {
     if (req.method !== "POST") {
@@ -159,6 +169,25 @@ export function createSignRouter(
       ? body.evidence
       : JSON.stringify(body.evidence);
     const evidenceHash = hashString(evidenceStr);
+
+    const scopeOverride = typeof body.scope === "string" ? body.scope.trim() : "";
+    let evidenceScope: string | null = null;
+    if (!scopeOverride) {
+      if (typeof body.evidence === "string") {
+        try {
+          evidenceScope = extractScopeFromEvidence(JSON.parse(body.evidence));
+        } catch {
+          evidenceScope = null;
+        }
+      } else {
+        evidenceScope = extractScopeFromEvidence(body.evidence);
+      }
+    }
+    if (!scopeOverride && !evidenceScope) {
+      return jsonError(400, 'Missing required scope. Provide "scope" or "evidence.metadata.scope".');
+    }
+
+    const effectiveDid = body.did || `did:web:${domain}`;
 
     // Check idempotency
     const idempotencyKey = req.headers.get("x-idempotency-key");
@@ -222,8 +251,8 @@ export function createSignRouter(
       const result = await signEvidence({
         evidence: body.evidence,
         format: body.format,
-        did: body.did,
-        scope: body.scope,
+        did: effectiveDid,
+        scope: scopeOverride || undefined,
         expiryDays: body.expiryDays,
         dryRun: body.dryRun,
       }, keyManager);

@@ -105,6 +105,16 @@ export function SignWizard() {
       return;
     }
 
+    const evidenceScope = typeof (parsedEvidence as { metadata?: { scope?: unknown } })?.metadata?.scope === "string"
+      ? (parsedEvidence as { metadata?: { scope?: string } }).metadata?.scope?.trim() || ""
+      : "";
+    const effectiveScope = scope.trim() || evidenceScope;
+    if (!effectiveScope) {
+      setErrorMsg("Scope is required. Add metadata.scope or provide a scope override.");
+      setSignState("error");
+      return;
+    }
+
     storeApiKey(apiKey);
     setSignState("signing");
     setErrorMsg(null);
@@ -260,7 +270,7 @@ export function SignWizard() {
               {/* Scope */}
               <div>
                 <label className="mb-1 block font-mono text-xs uppercase text-muted-foreground">
-                  Scope (optional)
+                  Scope (required if not in evidence)
                 </label>
                 <input
                   type="text"
@@ -269,6 +279,9 @@ export function SignWizard() {
                   placeholder="e.g., SOC 2 Type II - AWS Production"
                   className="w-full rounded border border-input bg-card px-3 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground/40"
                 />
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  Required unless the evidence JSON already includes metadata.scope.
+                </p>
               </div>
 
               {/* DID */}

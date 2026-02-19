@@ -74,7 +74,7 @@ paths:
                     - generic
                 scope:
                   type: string
-                  description: Human-readable assessment scope
+                  description: Required if evidence.metadata.scope is missing
                   example: "SOC 2 Type II — AWS Production"
                 did:
                   type: string
