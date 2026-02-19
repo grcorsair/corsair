@@ -40,8 +40,28 @@ Generate a keypair, sign sample evidence, then verify:
 # Generate a signing keypair
 corsair keygen --output ./keys
 
-# Sign sample evidence into a CPOE
-corsair sign --file examples/generic-evidence.json --output cpoe.jwt
+# Create a minimal evidence file
+cat <<'JSON' > evidence.json
+{
+  "metadata": {
+    "title": "Acme Corp Security Assessment",
+    "date": "2026-02-01",
+    "issuer": "Acme Corp Security Team"
+  },
+  "controls": [
+    {
+      "id": "CTRL-001",
+      "description": "MFA enforced for console access",
+      "status": "pass",
+      "severity": "HIGH",
+      "evidence": "All human users have MFA enabled."
+    }
+  ]
+}
+JSON
+
+# Sign the evidence into a CPOE
+corsair sign --file evidence.json --output cpoe.jwt
 
 # Verify the CPOE
 corsair verify --file cpoe.jwt --pubkey ./keys/corsair-signing.pub
@@ -56,7 +76,7 @@ corsair verify --file cpoe.jwt --evidence ./evidence/corsair-evidence.jsonl
 corsair verify --file cpoe.jwt --receipts ./receipts.json --require-receipts --require-scitt
 
 # Verify raw evidence hash binding
-corsair verify --file cpoe.jwt --source-document examples/generic-evidence.json --require-input-binding
+corsair verify --file cpoe.jwt --source-document evidence.json --require-input-binding
 
 # Apply a policy artifact
 corsair verify --file cpoe.jwt --policy ./policy.json

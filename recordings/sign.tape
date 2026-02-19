@@ -13,7 +13,7 @@ Sleep 1s
 Type "# Sign tool output as a CPOE (Certificate of Proof of Operational Effectiveness)"
 Enter
 Sleep 1s
-Type "corsair sign --file examples/generic-evidence.json --json"
+Type "corsair sign --file fixtures/generic-evidence.json --json"
 Enter
 Sleep 5s
 Type "# The output is a signed JWT-VC — verifiable by anyone with standard JWT libraries"

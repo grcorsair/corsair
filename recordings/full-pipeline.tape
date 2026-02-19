@@ -27,7 +27,7 @@ Sleep 3s
 Type "# Step 2: Sign tool output as a CPOE (Certificate of Proof of Operational Effectiveness)"
 Enter
 Sleep 1s
-Type "corsair sign --file examples/generic-evidence.json --key-dir ./demo-keys --output demo-cpoe.jwt"
+Type "corsair sign --file fixtures/generic-evidence.json --key-dir ./demo-keys --output demo-cpoe.jwt"
 Enter
 Sleep 5s
 
@@ -43,7 +43,7 @@ Sleep 4s
 Type "# Step 4: Sign a second CPOE with updated evidence"
 Enter
 Sleep 1s
-Type "corsair sign --file examples/generic-evidence-v2.json --key-dir ./demo-keys --output demo-cpoe-v2.jwt"
+Type "corsair sign --file fixtures/generic-evidence-v2.json --key-dir ./demo-keys --output demo-cpoe-v2.jwt"
 Enter
 Sleep 5s
 

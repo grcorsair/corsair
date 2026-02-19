@@ -37,6 +37,5 @@ COPY package.json ./
 COPY corsair.ts ./
 COPY src/ ./src/
 COPY bin/ ./bin/
-COPY examples/ ./examples/
 
 ENTRYPOINT ["bun", "run", "corsair.ts"]

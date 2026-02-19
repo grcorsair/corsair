@@ -23,12 +23,11 @@ import type {
 // TEST FIXTURES
 // =============================================================================
 
-const FIXTURES_DIR = path.join(import.meta.dir, "fixtures");
 const TEMP_KEY_DIR = path.join(import.meta.dir, ".test-keys-sdk");
 
 const GENERIC_EVIDENCE_PATH = path.resolve(
   import.meta.dir,
-  "../../../examples/generic-evidence.json",
+  "../../../fixtures/generic-evidence.json",
 );
 
 let genericEvidence: unknown;

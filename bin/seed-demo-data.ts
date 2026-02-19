@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Seed Demo Data — Generate real signed CPOEs from example evidence files.
+ * Seed Demo Data — Generate real signed CPOEs from fixture evidence files.
  *
  * Every entry in the demo SCITT feed is a REAL signed CPOE. Even our demo data
  * is cryptographically verifiable. That's the whole point.
@@ -23,7 +23,7 @@ import { MarqueKeyManager } from "../src/parley/marque-key-manager";
 // =============================================================================
 
 const ROOT = join(import.meta.dir, "..");
-const EXAMPLES_DIR = join(ROOT, "examples");
+const FIXTURES_DIR = join(ROOT, "fixtures");
 const WEB_PUBLIC = join(ROOT, "apps", "web", "public");
 const CPOE_OUT_DIR = join(WEB_PUBLIC, "demo-cpoes");
 const ENTRIES_OUT = join(WEB_PUBLIC, "demo-scitt-entries.json");
@@ -135,10 +135,10 @@ async function main() {
   const entries: Array<Record<string, unknown>> = [];
   let treeSize = 0;
 
-  console.log("\nSigning example evidence files as CPOEs...\n");
+console.log("\nSigning fixture evidence files as CPOEs...\n");
 
   for (const config of EVIDENCE_FILES) {
-    const filePath = join(EXAMPLES_DIR, config.file);
+    const filePath = join(FIXTURES_DIR, config.file);
     if (!existsSync(filePath)) {
       console.log(`  SKIP: ${config.file} (not found)`);
       continue;

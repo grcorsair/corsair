@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "title": "Acme Corp Cloud Platform Security Assessment — Q1 2026",
+    "title": "Acme Corp Cloud Platform Security Assessment \u2014 Q1 2026 (Update)",
     "issuer": "Acme Corp Security Team",
-    "date": "2026-03-01",
-    "scope": "AWS production environment (us-east-1, us-west-2) — customer-facing SaaS platform",
-    "reportType": "Internal Security Assessment (Updated)"
+    "date": "2026-02-10",
+    "scope": "AWS production environment (us-east-1, us-west-2) \u2014 customer-facing SaaS platform",
+    "reportType": "Internal Security Assessment"
   },
   "controls": [
     {
@@ -32,7 +32,7 @@
       "description": "Quarterly access reviews completed for all privileged accounts",
       "status": "pass",
       "severity": "MEDIUM",
-      "evidence": "Q1 2026 access review completed on time (March 1). No stale access detected. Automated deprovisioning removed 3 dormant accounts within 24 hours.",
+      "evidence": "Q4 2025 access review completed on schedule. Former contractor access was revoked within 24 hours of termination. Access review automation now enforces quarterly deadlines.",
       "framework": "NIST-800-53",
       "controlId": "AC-2",
       "controlName": "Account Management"
@@ -44,9 +44,21 @@
       "severity": "HIGH",
       "evidence": "Production VPC (10.0.0.0/16) isolated from staging (10.1.0.0/16) and development (10.2.0.0/16). No VPC peering between production and non-production. Transit Gateway routes verified. Security group audit confirms no cross-environment rules.",
       "frameworks": [
-        { "framework": "NIST-800-53", "controlId": "SC-7", "controlName": "Boundary Protection" },
-        { "framework": "SOC2", "controlId": "CC6.6", "controlName": "Logical and Physical Access Controls" },
-        { "framework": "CIS", "controlId": "12.2", "controlName": "Establish and Maintain a Secure Network Architecture" }
+        {
+          "framework": "NIST-800-53",
+          "controlId": "SC-7",
+          "controlName": "Boundary Protection"
+        },
+        {
+          "framework": "SOC2",
+          "controlId": "CC6.6",
+          "controlName": "Logical and Physical Access Controls"
+        },
+        {
+          "framework": "CIS",
+          "controlId": "12.2",
+          "controlName": "Establish and Maintain a Secure Network Architecture"
+        }
       ]
     },
     {
@@ -66,8 +78,16 @@
       "severity": "MEDIUM",
       "evidence": "CloudTrail (management + data events), VPC Flow Logs, ALB access logs, and application logs shipped to Datadog. Retention: 90 days hot, 1 year cold (S3 Glacier). Log integrity verified via CloudTrail digest files.",
       "frameworks": [
-        { "framework": "NIST-800-53", "controlId": "AU-2", "controlName": "Event Logging" },
-        { "framework": "SOC2", "controlId": "CC7.2", "controlName": "Monitoring Activities" }
+        {
+          "framework": "NIST-800-53",
+          "controlId": "AU-2",
+          "controlName": "Event Logging"
+        },
+        {
+          "framework": "SOC2",
+          "controlId": "CC7.2",
+          "controlName": "Monitoring Activities"
+        }
       ]
     },
     {
@@ -77,9 +97,21 @@
       "severity": "HIGH",
       "evidence": "RDS PostgreSQL encrypted with KMS CMK (aws/rds). S3 buckets use SSE-S3 (AES-256). EBS volumes encrypted by default. DynamoDB tables use AWS-owned keys. Encryption verified via AWS Config rule 'encrypted-volumes' and 'rds-storage-encrypted'.",
       "frameworks": [
-        { "framework": "NIST-800-53", "controlId": "SC-28", "controlName": "Protection of Information at Rest" },
-        { "framework": "SOC2", "controlId": "CC6.7", "controlName": "System Operations" },
-        { "framework": "ISO27001", "controlId": "A.8.24", "controlName": "Use of Cryptography" }
+        {
+          "framework": "NIST-800-53",
+          "controlId": "SC-28",
+          "controlName": "Protection of Information at Rest"
+        },
+        {
+          "framework": "SOC2",
+          "controlId": "CC6.7",
+          "controlName": "System Operations"
+        },
+        {
+          "framework": "ISO27001",
+          "controlId": "A.8.24",
+          "controlName": "Use of Cryptography"
+        }
       ]
     },
     {
@@ -89,8 +121,16 @@
       "severity": "MEDIUM",
       "evidence": "Incident response plan documented (v3.2, last updated October 2025). Plan distributed to security team and on-call engineers. However, the annual tabletop exercise scheduled for Q4 2025 was postponed and has not yet been conducted. Plan references outdated communication channels (Slack channels renamed in Q3 2025).",
       "frameworks": [
-        { "framework": "NIST-800-53", "controlId": "IR-1", "controlName": "Incident Response Policy and Procedures" },
-        { "framework": "SOC2", "controlId": "CC7.4", "controlName": "Response to Identified Security Incidents" }
+        {
+          "framework": "NIST-800-53",
+          "controlId": "IR-1",
+          "controlName": "Incident Response Policy and Procedures"
+        },
+        {
+          "framework": "SOC2",
+          "controlId": "CC7.4",
+          "controlName": "Response to Identified Security Incidents"
+        }
       ]
     },
     {
@@ -100,8 +140,16 @@
       "severity": "HIGH",
       "evidence": "Container scans run in GitHub Actions before push to ECR. Dependabot monitors repositories for dependency vulnerabilities. SAST runs in PR checks. Critical findings block deployment (enforced via GitHub branch protection). SLA: Critical=72h, High=7d, Medium=30d.",
       "frameworks": [
-        { "framework": "NIST-800-53", "controlId": "RA-5", "controlName": "Vulnerability Monitoring and Scanning" },
-        { "framework": "SOC2", "controlId": "CC7.1", "controlName": "Detection and Monitoring" }
+        {
+          "framework": "NIST-800-53",
+          "controlId": "RA-5",
+          "controlName": "Vulnerability Monitoring and Scanning"
+        },
+        {
+          "framework": "SOC2",
+          "controlId": "CC7.1",
+          "controlName": "Detection and Monitoring"
+        }
       ]
     },
     {
@@ -111,19 +159,51 @@
       "severity": "HIGH",
       "evidence": "RDS automated backups enabled (7-day retention) with cross-region replication to us-west-2. S3 cross-region replication configured for customer data buckets. However, full DR failover has never been tested. RTO target is 4 hours but has not been validated. RPO target is 1 hour based on backup frequency but recovery point has not been verified.",
       "frameworks": [
-        { "framework": "NIST-800-53", "controlId": "CP-9", "controlName": "System Backup" },
-        { "framework": "SOC2", "controlId": "A1.2", "controlName": "Recovery Plan Testing" },
-        { "framework": "ISO27001", "controlId": "A.5.30", "controlName": "ICT Readiness for Business Continuity" }
+        {
+          "framework": "NIST-800-53",
+          "controlId": "CP-9",
+          "controlName": "System Backup"
+        },
+        {
+          "framework": "SOC2",
+          "controlId": "A1.2",
+          "controlName": "Recovery Plan Testing"
+        },
+        {
+          "framework": "ISO27001",
+          "controlId": "A.5.30",
+          "controlName": "ICT Readiness for Business Continuity"
+        }
       ]
     }
   ],
   "assessmentContext": {
     "techStack": [
-      { "component": "Primary Cloud", "technology": "AWS", "scope": "All production workloads (us-east-1, us-west-2)" },
-      { "component": "Identity Provider", "technology": "Okta", "scope": "All employee access via SSO" },
-      { "component": "Container Runtime", "technology": "AWS ECS Fargate", "scope": "All microservices (14 services)" },
-      { "component": "Database", "technology": "AWS RDS PostgreSQL 16", "scope": "Customer data, application state" },
-      { "component": "CDN / Edge", "technology": "AWS CloudFront + WAF", "scope": "All public-facing web traffic" }
+      {
+        "component": "Primary Cloud",
+        "technology": "AWS",
+        "scope": "All production workloads (us-east-1, us-west-2)"
+      },
+      {
+        "component": "Identity Provider",
+        "technology": "Okta",
+        "scope": "All employee access via SSO"
+      },
+      {
+        "component": "Container Runtime",
+        "technology": "AWS ECS Fargate",
+        "scope": "All microservices (14 services)"
+      },
+      {
+        "component": "Database",
+        "technology": "AWS RDS PostgreSQL 16",
+        "scope": "Customer data, application state"
+      },
+      {
+        "component": "CDN / Edge",
+        "technology": "AWS CloudFront + WAF",
+        "scope": "All public-facing web traffic"
+      }
     ],
     "compensatingControls": [
       {

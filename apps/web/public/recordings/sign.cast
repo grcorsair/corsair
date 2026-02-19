@@ -1,5 +1,5 @@
 {"version": 2, "width": 100, "height": 24, "timestamp": 1739480400, "env": {"SHELL": "/bin/zsh", "TERM": "xterm-256color"}, "title": "corsair sign — Sign evidence as a CPOE"}
-[0.1, "o", "$ corsair sign --file examples/evidence.json --json\r\n"]
+[0.1, "o", "$ corsair sign --file evidence.json --json\r\n"]
 [0.3, "o", "\r\n"]
 [0.4, "o", "  Parsing evidence...\r\n"]
 [0.6, "o", "  Auto-detected format: generic\r\n"]

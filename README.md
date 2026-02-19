@@ -515,7 +515,7 @@ src/
   evidence.ts              # JSONL evidence engine with SHA-256 hash chain
 
   sign/                    # Sign engine
-  ingestion/               # Evidence parsing (8 formats)
+  ingestion/               # Evidence parsing (mapping packs + generic)
   parley/                  # Parley protocol (JWT-VC, SCITT, DID, COSE, CBOR, Merkle)
   flagship/                # FLAGSHIP real-time signals (SSF/CAEP)
   security/                # URL validation for DID resolver
@@ -526,7 +526,6 @@ src/
 
 bin/                       # Standalone CLIs (verify, DID, MCP)
 functions/                 # Railway API endpoints
-examples/                  # Evidence format examples (8 files)
 apps/web/                  # grcorsair.com (Next.js 15)
 packages/sdk/              # @corsair/sdk
 tests/                     # Test suite

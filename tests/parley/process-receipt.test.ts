@@ -127,7 +127,7 @@ describe("generateReceipt", () => {
   test("should generate receipt with all required fields", () => {
     const receipt = generateReceipt({
       step: "evidence",
-      inputData: { file: "generic-evidence.json" },
+      inputData: { file: "evidence.json" },
       outputData: { controls: [{ id: "CC1.1" }] },
       reproducible: true,
     }, keypair.privateKeyPem);
@@ -397,7 +397,7 @@ describe("ReceiptChain", () => {
 
     const receipt = await chain.captureStep({
       step: "evidence",
-      inputData: { file: "generic-evidence.json" },
+      inputData: { file: "evidence.json" },
       outputData: { controls: [{ id: "CC1.1" }] },
       reproducible: true,
     });
