@@ -163,11 +163,26 @@ Use this routing logic:
    `corsair sign --file <EVIDENCE.json> --mapping <PATH> --json`
 4. Package the mapping(s):
    `corsair mappings pack --id <ID> --version <VER> --mapping <PATH> -o pack.json`
-5. Sign the pack (recommended):
+5. Sign the pack (recommended for vendor-owned packs):
    `corsair mappings sign --file pack.json --key <KEY.pem>`
 6. Publish:
    - Host the pack at a URL **or**
-   - Submit it to a community registry (if provided by the user)
+   - Submit it to the community registry at `https://github.com/grcorsair/mappings`
+
+### MAPPINGS (Registry Submission Workflow)
+
+Use the Corsair mappings registry repo (single skill) for community submissions:
+
+1. Clone `https://github.com/grcorsair/mappings` (if not already).
+2. Create `packs/<tool>/<version>/mappings/` and add mapping JSON files.
+3. Add fixtures under `packs/<tool>/<version>/fixtures/`.
+4. Build the unsigned pack:
+   `corsair mappings pack --id <tool> --version <ver> --mapping ./packs/<tool>/<version>/mappings --out ./packs/<tool>/<version>/pack.json`
+5. Validate:
+   `corsair mappings validate --file ./packs/<tool>/<version>/pack.json`
+   `bun scripts/validate-index.ts index.json`
+6. Update `index.json` with a new entry (pack URL, sha256, signer, source, publicKeyUrl, createdAt).
+7. Open a PR. Maintainers will review, sign, and publish releases.
 
 ### MAPPINGS PACK (Distribution)
 
