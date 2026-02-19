@@ -3,9 +3,6 @@ title: "REST API"
 description: "Corsair REST API for signing and verifying CPOEs programmatically."
 section: "integrations"
 order: 31
-typedoc:
-  - src/api/types.ts#V1VerifyRequest
-  - src/api/types.ts#V1VerifyResponse
 ---
 
 ## Overview
@@ -129,7 +126,6 @@ curl -X POST https://api.grcorsair.com/v1/sign \
 Verify a CPOE signature and extract attestation details. No authentication required.
 Optional policy checks and process receipt verification are supported.
 
-{/* typedoc:src/api/types.ts#V1VerifyRequest */}
 
 Policy fields include:
 - `requireSource` (`self` | `tool` | `auditor`)
