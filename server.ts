@@ -257,10 +257,8 @@ console.log(`  Server listening on :${PORT} (health endpoint active)`);
 // =============================================================================
 
 async function initialize() {
-  // 1. Validate KEY_ENCRYPTION_SECRET (sync, fast)
-  const keySecretRaw =
-    (Bun.env.CORSAIR_KEY_ENCRYPTION_SECRET || "").trim()
-    || (Bun.env.KEY_ENCRYPTION_SECRET || "").trim();
+  // 1. Validate CORSAIR_KEY_ENCRYPTION_SECRET (sync, fast)
+  const keySecretRaw = (Bun.env.CORSAIR_KEY_ENCRYPTION_SECRET || "").trim();
   if (!keySecretRaw) {
     throw new Error(
       "CORSAIR_KEY_ENCRYPTION_SECRET is required (32 bytes). " +

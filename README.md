@@ -82,8 +82,6 @@ corsair diff --current q2.jwt --previous q1.jwt
 | `CORSAIR_DOMAIN` | Public domain for DID:web and trust.txt generation | Recommended |
 | `CORSAIR_MAPPING_PACK_PUBKEY` | Ed25519 public key PEM to verify signed mapping packs | Optional |
 
-`CORSAIR_KEY_ENCRYPTION_SECRET` can also be supplied as `KEY_ENCRYPTION_SECRET` for backwards compatibility.
-
 ---
 
 ## Three Production Pillars
