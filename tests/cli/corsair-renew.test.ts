@@ -9,7 +9,7 @@ import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "fs";
 import { join } from "path";
 
-const cwd = "/Users/ayoubfandi/projects/corsair";
+const cwd = join(import.meta.dir, "../..");
 const tmpDir = join(cwd, "tests", "cli", ".tmp-renew-test");
 
 // =============================================================================

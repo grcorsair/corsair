@@ -4,7 +4,7 @@ import { join } from "path";
 import { VERSION } from "../../src/version";
 
 describe("Corsair CLI", () => {
-  const cwd = "/Users/ayoubfandi/projects/corsair";
+  const cwd = join(import.meta.dir, "../..");
   const tmpDir = join(import.meta.dir, ".tmp-mappings");
 
   beforeAll(() => {
