@@ -245,7 +245,9 @@ export default function VerifyPage() {
                   </p>
                 </div>
                 <div className="rounded-lg border border-corsair-border bg-corsair-surface p-3">
-                  <p className="font-mono text-sm font-bold text-corsair-green">corsair publish</p>
+                  <p className="font-mono text-sm font-bold text-corsair-green">
+                    corsair trust-txt generate
+                  </p>
                   <p className="mt-1 text-xs text-corsair-text-dim">
                     Generate your trust.txt discovery file
                   </p>

@@ -22,7 +22,7 @@ const logLines = [
 
 const publishLines = [
   { label: "DID", value: "did:web:grcorsair.com", color: "text-corsair-text" },
-  { label: "CPOEs", value: "3 found, published", color: "text-corsair-green" },
+  { label: "CPOEs", value: "3 found, listed", color: "text-corsair-green" },
   { label: "Output", value: "/.well-known/trust.txt", color: "text-corsair-gold" },
 ];
 
@@ -78,7 +78,7 @@ export function HeroTerminal() {
           <div className="h-2.5 w-2.5 rounded-full bg-[#28C840]" />
         </div>
         <span className="ml-2 font-mono text-[11px] text-corsair-text-dim">
-          corsair — sign / diff / log / publish / verify / signal
+          corsair — sign / diff / log / trust-txt / verify / signal
         </span>
       </div>
 
@@ -168,14 +168,15 @@ export function HeroTerminal() {
 
         <div className="h-4" />
 
-        {/* Step 4: corsair publish */}
+        {/* Step 4: corsair trust-txt generate */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3, delay: publishStart - 0.2 }}
         >
           <span className="text-corsair-gold">$</span>{" "}
-          <span className="text-corsair-text">corsair publish</span>
+          <span className="text-corsair-text">corsair trust-txt generate</span>{" "}
+          <span className="text-corsair-text-dim">--did did:web:grcorsair.com</span>
         </motion.div>
 
         <div className="h-2" />

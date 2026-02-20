@@ -50,7 +50,7 @@ const props = [
   {
     title: "Log (like git log)",
     description:
-      "corsair log — every CPOE registered in an append-only SCITT transparency log. Tamper-evident. Merkle-proofed. COSE receipts. Anyone can audit the full history of every attestation ever issued.",
+      "corsair log — register CPOEs in an append-only SCITT transparency log via corsair log register. Tamper-evident. Merkle-proofed. COSE receipts. Anyone can audit the full history of every attestation ever issued.",
     accent: "border-t-corsair-turquoise",
     glowColor: "rgba(127,219,202,0.15)",
     icon: <ChartIcon size={36} />,
