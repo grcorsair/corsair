@@ -64,10 +64,13 @@ export default function DocsPage() {
                 <div>
                   <span className="text-corsair-text-dim"># Install</span>
                   <div className="text-corsair-cyan">
-                    git clone https://github.com/Arudjreis/corsair.git
+                    brew install grcorsair/corsair/corsair
                   </div>
                   <div className="text-corsair-cyan">
-                    cd corsair && bun install
+                    npm install -g @grcorsair/cli
+                  </div>
+                  <div className="text-corsair-text-dim">
+                    # Bun is required to run the CLI (Homebrew installs it)
                   </div>
                 </div>
                 <div>

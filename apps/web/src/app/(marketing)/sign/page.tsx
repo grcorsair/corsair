@@ -115,28 +115,34 @@ export default function SignPage() {
               </div>
               <div className="space-y-2 p-5 font-mono text-[12px] text-corsair-text-dim sm:text-[13px]">
                 <div>
-                  <span className="text-corsair-text-dim/40"># Install Corsair</span>
+                  <span className="text-corsair-text-dim/40"># Install Corsair (pick one)</span>
                 </div>
                 <div>
-                  <span className="text-corsair-cyan">$</span> git clone https://github.com/Arudjreis/corsair.git &amp;&amp; cd corsair &amp;&amp; bun install
+                  <span className="text-corsair-cyan">$</span> brew install grcorsair/corsair/corsair
+                </div>
+                <div>
+                  <span className="text-corsair-cyan">$</span> npm install -g @grcorsair/cli
+                </div>
+                <div>
+                  <span className="text-corsair-text-dim/40"># Bun is required to run the CLI</span>
                 </div>
                 <div className="mt-4">
                   <span className="text-corsair-text-dim/40"># Initialize (generates keys + example evidence)</span>
                 </div>
                 <div>
-                  <span className="text-corsair-cyan">$</span> bun run corsair.ts init
+                  <span className="text-corsair-cyan">$</span> corsair init
                 </div>
                 <div className="mt-4">
                   <span className="text-corsair-text-dim/40"># Sign tool output</span>
                 </div>
                 <div>
-                  <span className="text-corsair-cyan">$</span> bun run corsair.ts sign --file tool-output.json --mapping ./mappings/toolx.json --output cpoe.jwt
+                  <span className="text-corsair-cyan">$</span> corsair sign --file tool-output.json --mapping ./mappings/toolx.json --output cpoe.jwt
                 </div>
                 <div className="mt-4">
                   <span className="text-corsair-text-dim/40"># Verify the CPOE</span>
                 </div>
                 <div>
-                  <span className="text-corsair-cyan">$</span> bun run corsair.ts verify cpoe.jwt
+                  <span className="text-corsair-cyan">$</span> corsair verify --file cpoe.jwt
                 </div>
               </div>
             </div>
