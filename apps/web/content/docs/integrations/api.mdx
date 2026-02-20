@@ -91,7 +91,7 @@ curl -X POST https://api.grcorsair.com/v1/sign \
 | `dryRun` | boolean | No | Parse without signing |
 | `dependencies` | array | No | Dependency proofs to attach (trust graph) |
 
-**Response:**
+**Response (issuer defaults to `did:web:<CORSAIR_DOMAIN>` if not provided):**
 
 ```json
 {
