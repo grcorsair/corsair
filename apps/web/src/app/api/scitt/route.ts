@@ -18,6 +18,9 @@ interface SCITTEntry {
 }
 
 /**
+ * Proxy SCITT entries from the API.
+ * Returns an empty list if backend is unavailable.
+ */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
 
