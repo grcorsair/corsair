@@ -7,12 +7,12 @@ import { CheckIcon, CopyIcon } from "lucide-react";
 const TABS = [
   {
     id: "publish",
-    label: "Publish",
+    label: "trust.txt",
     lines: [
-      { text: "brew install grcorsair/corsair/corsair", color: "text-corsair-gold" },
-      { text: "# or: npm install -g @grcorsair/cli", color: "text-corsair-text-dim" },
+      { text: "corsair trust-txt generate --did did:web:acme.com", color: "text-corsair-gold" },
+      { text: "# host at /.well-known/trust.txt", color: "text-corsair-text-dim" },
     ],
-    copyText: "brew install grcorsair/corsair/corsair",
+    copyText: "corsair trust-txt generate --did did:web:acme.com",
     cta: null,
   },
   {

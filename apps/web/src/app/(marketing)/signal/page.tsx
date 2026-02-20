@@ -6,7 +6,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Signal — FLAGSHIP Real-Time Compliance Notifications",
   description:
-    "Subscribe to FLAGSHIP compliance change notifications. Real-time SSF/SET/CAEP events for compliance posture changes.",
+    "Generate and verify FLAGSHIP compliance change signals. SSF/SET/CAEP events for real-time compliance posture changes.",
 };
 
 export default function SignalPage() {
@@ -22,8 +22,8 @@ export default function SignalPage() {
               signal
             </h1>
             <p className="mx-auto max-w-xl text-corsair-text-dim">
-              Subscribe to FLAGSHIP compliance change notifications. Real-time SSF/SET/CAEP events
-              pushed to your webhook when compliance posture changes.
+              Generate and verify FLAGSHIP compliance change signals. SSF/SET/CAEP events are the
+              protocol format; delivery is handled by your SSF/CAEP stream (push or poll).
             </p>
           </div>
         </FadeIn>

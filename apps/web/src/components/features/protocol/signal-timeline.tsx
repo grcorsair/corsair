@@ -111,13 +111,13 @@ export function SignalTimeline() {
           <div>
             <p className="text-sm font-medium text-corsair-text">Push</p>
             <p className="mt-1 text-xs text-corsair-text-dim">
-              Webhook delivery to subscriber endpoint. Exponential backoff on failure. Circuit breaker after 5 consecutive errors.
+              Webhook delivery to subscriber endpoints. Retry and backoff behavior is implementer-defined.
             </p>
           </div>
           <div>
             <p className="text-sm font-medium text-corsair-text">Poll</p>
             <p className="mt-1 text-xs text-corsair-text-dim">
-              Subscriber requests events via GET. Cursor-based pagination. Events retained 30 days.
+              Subscriber requests events via GET. Cursor-based pagination. Retention is defined per stream policy.
             </p>
           </div>
           <div>

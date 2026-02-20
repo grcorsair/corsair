@@ -5,19 +5,12 @@ section: "getting-started"
 order: 1
 ---
 
-## Prerequisites
-
-- [Bun](https://bun.sh/) runtime (v1.0+)
-
 ## Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/Arudjreis/corsair.git
-cd corsair
-
-# Install dependencies
-bun install
+# Install the CLI (pick one)
+brew install grcorsair/corsair/corsair
+npm install -g @grcorsair/cli
 ```
 
 ### AI Agent Skill (Claude Code, Cursor, Copilot)
@@ -30,44 +23,56 @@ npx skills add grcorsair/corsair
 
 Your agent can then sign evidence, verify CPOEs, detect compliance drift, and autonomously assess vendor compliance via `trust.txt`. Works with [25+ AI agents](https://skills.sh).
 
-## Verify a CPOE (No API Key Needed)
+## Sign and Verify Your First CPOE
 
-Generate a keypair, sign sample evidence, then verify:
+Initialize keys + example evidence, then sign and verify:
 
 ```bash
-# Generate a signing keypair
-corsair keygen --output ./keys
+# Initialize (generates keys + example evidence)
+corsair init
 
-# Create a minimal evidence file
-cat <<'JSON' > evidence.json
-{
-  "metadata": {
-    "title": "Acme Corp Security Assessment",
-    "date": "2026-02-01",
-    "issuer": "Acme Corp Security Team",
-    "scope": "Production AWS account"
-  },
-  "controls": [
-    {
-      "id": "CTRL-001",
-      "description": "MFA enforced for console access",
-      "status": "pass",
-      "severity": "HIGH",
-      "evidence": "All human users have MFA enabled."
-    }
-  ]
-}
-JSON
+# Sign the example evidence into a CPOE
+corsair sign --file example-evidence.json --output cpoe.jwt
 
-# Sign the evidence into a CPOE
-corsair sign --file evidence.json --output cpoe.jwt
-
-# Verify the CPOE
+# Verify the CPOE with your local public key
 corsair verify --file cpoe.jwt --pubkey ./keys/corsair-signing.pub
+```
 
-# Or verify via DID:web
+### Publish Your DID Document (Required for DID:web Verification)
+
+To enable `--did` verification, publish a DID document at:
+
+```
+https://<your-domain>/.well-known/did.json
+```
+
+Then verify via DID:web:
+
+```bash
 corsair verify --file cpoe.jwt --did
+```
 
+See [JWT-VC Integration](/docs/integrations/jwt-vc) for the DID document format.
+
+## Publish trust.txt (Discovery)
+
+```bash
+# Generate trust.txt for discovery
+corsair trust-txt generate \
+  --did did:web:your-domain.com \
+  --cpoe-url https://your-domain.com/cpoe/cpoe.jwt \
+  -o trust.txt
+
+# Host at:
+# https://your-domain.com/.well-known/trust.txt
+
+# Validate from the outside
+corsair trust-txt discover your-domain.com --verify
+```
+
+## Advanced Verification (Optional)
+
+```bash
 # Verify against local evidence JSONL (strict)
 corsair verify --file cpoe.jwt --evidence ./evidence/corsair-evidence.jsonl
 
@@ -80,8 +85,6 @@ corsair verify --file cpoe.jwt --source-document evidence.json --require-input-b
 # Apply a policy artifact
 corsair verify --file cpoe.jwt --policy ./policy.json
 ```
-
-This verifies the Ed25519 signature, checks expiry, and displays provenance and control results.
 
 ## Sign Tool Output into a CPOE
 
@@ -106,6 +109,8 @@ corsair diff --current cpoe-v2.jwt --previous cpoe-v1.jwt
 
 ## Generate Signing Keys
 
+If you already ran `corsair init`, your keys live in `./keys`.
+
 ```bash
 # Generate Ed25519 keypair for CPOE signing
 corsair keygen --output ./keys
@@ -129,6 +134,7 @@ corsair renew --file cpoe.jwt --evidence new-findings.json --output renewed.jwt
 | `corsair verify` | Verify a CPOE's Ed25519 signature and check validity |
 | `corsair diff` | Compare two CPOEs and show control-level changes |
 | `corsair log` | List signed CPOEs (local or SCITT log) |
+| `corsair trust-txt generate` | Generate trust.txt for discovery |
 | `corsair renew` | Re-sign a CPOE with fresh dates or new evidence |
 | `corsair signal generate` | Generate/verify FLAGSHIP notifications |
 | `corsair keygen` | Generate Ed25519 signing keypair |
