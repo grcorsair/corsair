@@ -84,6 +84,8 @@ Host the output at `https://<domain>/.well-known/trust.txt`, then verify it from
 corsair trust-txt discover acme.com --verify
 ```
 
+If your GRC team doesn’t control the root domain, use a delegated subdomain (for example `trust.example.com`). See the [IT request template](/docs/getting-started/it-request).
+
 ### VERIFY — Signature + Provenance Verification
 
 Anyone with the issuer's public key (resolved via `did:web`) can verify a CPOE:

@@ -1,0 +1,93 @@
+---
+title: "IT Request: Trust Subdomain"
+description: "A copy-paste request for IT to delegate a trust subdomain for trust.txt and DID hosting."
+section: "getting-started"
+order: 3
+---
+
+## Why This Matters
+
+Corsair proofs are verified against a **domain-controlled DID** and a **trust.txt** file. In most companies, GRC teams don’t control the root domain, so the safest, standard approach is a delegated subdomain (for example, `trust.example.com`). IT keeps control of the root domain, and GRC gets a narrow, auditable surface for compliance proofs.
+
+## What IT Is Being Asked To Do
+
+Create a subdomain that GRC can control and host static files on:
+
+- `https://trust.example.com/.well-known/trust.txt`
+- `https://trust.example.com/.well-known/did.json`
+- `https://trust.example.com/.well-known/jwks.json`
+
+This is a **small, one-time change** and can be implemented with a CNAME or NS delegation.
+
+## Option A — CNAME (Simplest)
+
+IT adds a CNAME record:
+
+```
+trust.example.com  CNAME  grcorsair-trust.hosting-provider.com
+```
+
+GRC then hosts static files on that subdomain. IT retains control of the root domain.
+
+## Option B — NS Delegation (Most Robust)
+
+IT delegates a subdomain to GRC-controlled nameservers:
+
+```
+trust.example.com  NS  ns1.corsair-trust.net
+trust.example.com  NS  ns2.corsair-trust.net
+```
+
+GRC manages DNS only for `trust.example.com`, nothing else.
+
+## Option C — One-Time Domain Proof (Lowest Touch)
+
+If IT won’t delegate a subdomain, they can publish a one-time proof:
+
+- DNS TXT: `_corsair.example.com = <challenge-token>`
+- or HTTP: `https://example.com/.well-known/corsair-challenge`
+
+This is less flexible long-term, but still establishes domain control.
+
+## Security Notes (For IT)
+
+- The subdomain hosts **static files only** under `/.well-known/`
+- No login, no app, no email, no cookies
+- Can be served from a locked-down static host with strict headers
+- Scope is limited to trust and verification artifacts
+
+## Copy-Paste Request Email
+
+```
+Subject: Request to delegate trust subdomain for compliance proofs
+
+Hi IT team,
+
+We need a dedicated subdomain to publish compliance proof metadata (trust.txt + DID) for customer verification. This is a standard, low-risk setup similar to status.example.com or security.example.com.
+
+Requested subdomain:
+  trust.example.com
+
+Preferred DNS option (simple):
+  trust.example.com  CNAME  <our-static-host>
+
+Files we will host:
+  https://trust.example.com/.well-known/trust.txt
+  https://trust.example.com/.well-known/did.json
+  https://trust.example.com/.well-known/jwks.json
+
+This is static content only and does not grant access to the root domain.
+
+Thanks,
+<Your Name>
+GRC / Security
+```
+
+## Next Step
+
+Once the subdomain is live, generate trust.txt:
+
+```bash
+corsair trust-txt generate --did did:web:trust.example.com
+```
+
