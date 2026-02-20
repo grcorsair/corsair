@@ -213,12 +213,14 @@ Corsair supports a discovery layer modeled after `security.txt`. Organizations p
 `/.well-known/trust.txt` so verifiers can discover DID identity, current CPOEs,
 SCITT log endpoints, optional catalog snapshots, policy artifacts, and FLAGSHIP streams.
 For large numbers of proofs, keep trust.txt tiny and point to SCITT + catalog.
+If you don’t run your own SCITT log, you can use the hosted Corsair log at
+`https://api.grcorsair.com/scitt/entries`.
 
 ```bash
 corsair did generate --domain acme.com --output did.json
 corsair did jwks --domain acme.com --output jwks.json
 
-corsair trust-txt generate --did did:web:acme.com --scitt https://log.acme.com/v1/entries?issuer=did:web:acme.com
+corsair trust-txt generate --did did:web:acme.com --scitt https://api.grcorsair.com/scitt/entries?issuer=did:web:acme.com
 corsair trust-txt generate --did did:web:acme.com --catalog https://acme.com/compliance/catalog.json
 corsair trust-txt generate --did did:web:acme.com --policy https://acme.com/.well-known/policy.json
 corsair trust-txt generate --did did:web:acme.com --cpoe-url https://acme.com/soc2.jwt

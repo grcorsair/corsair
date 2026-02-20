@@ -16,7 +16,7 @@ class Corsair < Formula
     system "bun", "install", "--production", "--frozen-lockfile"
 
     # Install everything to libexec (keeps brew's bin/ clean)
-    libexec.install "corsair.ts", "src", "bin", "package.json", "node_modules", "examples"
+    libexec.install "corsair.ts", "src", "bin", "package.json", "node_modules"
 
     # Create wrapper script in brew's bin/
     (bin/"corsair").write <<~EOS

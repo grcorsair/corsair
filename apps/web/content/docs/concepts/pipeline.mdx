@@ -70,6 +70,12 @@ Proof-only mode registers only the hash commitment (no CPOE stored):
 corsair log register --file cpoe.jwt --scitt https://log.example.com/scitt/entries --proof-only
 ```
 
+If you don’t operate your own log, you can use the hosted Corsair log:
+
+```bash
+corsair log register --file cpoe.jwt --scitt https://api.grcorsair.com/scitt/entries --proof-only
+```
+
 ### PUBLISH — trust.txt Discovery
 
 Publish a machine-readable discovery file at `/.well-known/trust.txt` so any agent can find your DID, CPOEs, SCITT log, catalog, and FLAGSHIP stream:

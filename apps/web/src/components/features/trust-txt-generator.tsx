@@ -163,7 +163,7 @@ export function TrustTxtGenerator() {
         "https://acme.com/compliance/soc2-2026-q1.jwt",
         "https://acme.com/compliance/iso27001-2026.jwt",
       ],
-      scitt: "https://log.grcorsair.com/v1/entries?issuer=did:web:acme.com",
+      scitt: "https://api.grcorsair.com/scitt/entries?issuer=did:web:acme.com",
       catalog: "https://acme.com/compliance/catalog.json",
       flagship: "https://signals.grcorsair.com/v1/streams/acme",
       frameworks: ["SOC2", "ISO27001", "NIST-800-53"],
