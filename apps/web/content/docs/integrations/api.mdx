@@ -11,7 +11,7 @@ The Corsair REST API provides programmatic access to CPOE signing and verificati
 
 **Base URL:** `https://api.grcorsair.com`
 
-**Versioned API:** `https://api.grcorsair.com/v1` (recommended)
+**Versioning:** Current public endpoints are unversioned. A `/v1` namespace is planned.
 
 Every response includes:
 - `X-Request-Id` header for tracing
@@ -23,7 +23,7 @@ Every response includes:
 Protected endpoints require a Bearer token in the `Authorization` header. API keys are provisioned per-organization.
 
 ```bash
-curl -X POST https://api.grcorsair.com/v1/sign \
+curl -X POST https://api.grcorsair.com/sign \
   -H "Authorization: Bearer csk_live_abc123..." \
   -H "Content-Type: application/json" \
   -d '{"evidence": {...}}'
@@ -33,9 +33,13 @@ Public endpoints (verify, health) require no authentication.
 
 | Endpoint | Auth Required |
 |:---------|:-------------|
-| `GET /v1/health` | No |
-| `POST /v1/sign` | Yes |
-| `POST /v1/verify` | No |
+| `GET /health` | No |
+| `POST /sign` | Yes |
+| `POST /verify` | No |
+| `POST /issue` | Yes |
+| `GET /scitt/entries` | No |
+| `POST /scitt/entries` | Yes |
+| `POST /ssf/streams` | Yes |
 
 ## Response Envelope
 
@@ -58,13 +62,13 @@ Error responses use the same envelope:
 }
 ```
 
-## POST /v1/sign
+## POST /sign
 
 Sign evidence into a CPOE (JWT-VC). Accepts raw tool output via mapping packs or generic format. Requires authentication.
 To support additional tools without code changes, configure the mapping registry on the API server via `CORSAIR_MAPPING_DIR`, `CORSAIR_MAPPING_FILE`, or `corsair mappings add`. Build packs with `corsair mappings pack` and sign them with `corsair mappings sign`. Mappings are evaluated by priority (higher wins), then filename order. Signed packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set.
 
 ```bash
-curl -X POST https://api.grcorsair.com/v1/sign \
+curl -X POST https://api.grcorsair.com/sign \
   -H "Authorization: Bearer $CORSAIR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -121,7 +125,7 @@ curl -X POST https://api.grcorsair.com/v1/sign \
 }
 ```
 
-## POST /v1/verify
+## POST /verify
 
 Verify a CPOE signature and extract attestation details. No authentication required.
 Optional policy checks and process receipt verification are supported.
@@ -137,7 +141,7 @@ Policy fields include:
 - `requireScitt` (boolean)
 
 ```bash
-curl -X POST https://api.grcorsair.com/v1/verify \
+curl -X POST https://api.grcorsair.com/verify \
   -H "Content-Type: application/json" \
   -d '{
     "cpoe": "eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCIs...",

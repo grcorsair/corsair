@@ -51,6 +51,18 @@ To enable `--did` verification, publish a DID document at:
 https://<your-domain>/.well-known/did.json
 ```
 
+Generate the DID document (and optional JWKS) from your keys:
+
+```bash
+corsair did generate --domain your-domain.com --output did.json
+corsair did jwks --domain your-domain.com --output jwks.json
+```
+
+Host the outputs at:
+
+- `https://your-domain.com/.well-known/did.json`
+- `https://your-domain.com/.well-known/jwks.json`
+
 Then verify via DID:web:
 
 ```bash

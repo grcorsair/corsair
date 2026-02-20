@@ -1,5 +1,5 @@
 /**
- * @corsair/sdk Public Types
+ * @grcorsair/sdk Public Types
  *
  * Re-exports core types and defines SDK-specific types.
  *

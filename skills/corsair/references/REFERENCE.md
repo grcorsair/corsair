@@ -289,6 +289,22 @@ corsair trust-txt discover <DOMAIN> [--json] [--verify] [--scitt-limit <N>]
 
 Exit codes: 0 = found, 1 = not found or failed
 
+### corsair did
+
+DID:web helpers for generating `did.json` and `jwks.json`.
+
+#### generate
+```
+corsair did generate --domain <DOMAIN> [--path <PATH>] [--key-dir <DIR>] [--output <PATH>]
+corsair did generate --did <DID> [--key-dir <DIR>] [--output <PATH>]
+```
+
+#### jwks
+```
+corsair did jwks --domain <DOMAIN> [--path <PATH>] [--key-dir <DIR>] [--output <PATH>]
+corsair did jwks --did <DID> [--key-dir <DIR>] [--output <PATH>]
+```
+
 ### corsair mappings
 
 List, validate, add, and package evidence mappings.

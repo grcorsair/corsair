@@ -114,6 +114,13 @@ Corsair does six things. Like git.
 | **DIFF** | `corsair diff --current <new> --previous <old>` | Compare two CPOEs, detect regressions | `git diff` |
 | **SIGNAL** | `corsair signal generate` | Generate FLAGSHIP SETs for real-time notifications | `git webhooks` |
 
+### DID Helpers
+
+```bash
+corsair did generate --domain example.com --output did.json
+corsair did jwks --domain example.com --output jwks.json
+```
+
 ### Sign Options
 
 ```bash
@@ -201,6 +208,9 @@ SCITT log endpoints, optional catalog snapshots, policy artifacts, and FLAGSHIP 
 For large numbers of proofs, keep trust.txt tiny and point to SCITT + catalog.
 
 ```bash
+corsair did generate --domain acme.com --output did.json
+corsair did jwks --domain acme.com --output jwks.json
+
 corsair trust-txt generate --did did:web:acme.com --scitt https://log.acme.com/v1/entries?issuer=did:web:acme.com
 corsair trust-txt generate --did did:web:acme.com --catalog https://acme.com/compliance/catalog.json
 corsair trust-txt generate --did did:web:acme.com --policy https://acme.com/.well-known/policy.json
@@ -454,7 +464,9 @@ curl -X POST https://api.grcorsair.com/verify \
 ### SDK
 
 ```bash
-bun add @corsair/sdk
+# SDK (monorepo for now)
+# npm publish coming soon
+# bun add @grcorsair/sdk
 ```
 
 ---
@@ -542,7 +554,7 @@ src/
 bin/                       # Standalone CLIs (verify, DID, MCP)
 functions/                 # Railway API endpoints
 apps/web/                  # grcorsair.com (Next.js 15)
-packages/sdk/              # @corsair/sdk
+  packages/sdk/              # @grcorsair/sdk
 tests/                     # Test suite
 ```
 

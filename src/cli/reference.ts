@@ -139,7 +139,37 @@ export const CLI_REFERENCE: CLICommandReference[] = [
       { flag: "--policy <URL>", description: "Policy artifact URL." },
       { flag: "--flagship <URL>", description: "FLAGSHIP stream endpoint." },
       { flag: "--frameworks <CSV>", description: "Framework list." },
-      { flag: "-o, --output <PATH>", description: "Output file path.", defaultValue: ".well-known/trust.txt" },
+      { flag: "-o, --output <PATH>", description: "Output file path (default: stdout)." },
+    ],
+  },
+  {
+    command: "did generate",
+    summary: "Generate a DID document (did.json).",
+    usage: [
+      "corsair did generate --domain <DOMAIN> [options]",
+      "corsair did generate --did <DID> [options]",
+    ],
+    options: [
+      { flag: "--domain <DOMAIN>", description: "Domain for did:web (e.g., example.com)." },
+      { flag: "--path <PATH>", description: "Optional DID path segment." },
+      { flag: "--did <DID>", description: "Full did:web string (overrides domain/path)." },
+      { flag: "--key-dir <DIR>", description: "Ed25519 key directory.", defaultValue: "./keys" },
+      { flag: "-o, --output <PATH>", description: "Write did.json to file (default: stdout)." },
+    ],
+  },
+  {
+    command: "did jwks",
+    summary: "Generate a JWKS (jwks.json) from the public key.",
+    usage: [
+      "corsair did jwks --domain <DOMAIN> [options]",
+      "corsair did jwks --did <DID> [options]",
+    ],
+    options: [
+      { flag: "--domain <DOMAIN>", description: "Domain for did:web (e.g., example.com)." },
+      { flag: "--path <PATH>", description: "Optional DID path segment." },
+      { flag: "--did <DID>", description: "Full did:web string (overrides domain/path)." },
+      { flag: "--key-dir <DIR>", description: "Ed25519 key directory.", defaultValue: "./keys" },
+      { flag: "-o, --output <PATH>", description: "Write jwks.json to file (default: stdout)." },
     ],
   },
   {

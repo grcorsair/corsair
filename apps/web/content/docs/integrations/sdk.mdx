@@ -1,28 +1,30 @@
 ---
 title: "TypeScript SDK"
-description: "Use @corsair/sdk to integrate Corsair signing, verification, and management into your applications."
+description: "Use @grcorsair/sdk to integrate Corsair signing, verification, and management into your applications."
 section: "integrations"
 order: 33
 ---
 
 ## Overview
 
-The `@corsair/sdk` package provides a typed TypeScript client for programmatic access to Corsair's signing and verification capabilities. It wraps the core engines into a clean API surface with full type exports.
+The `@grcorsair/sdk` package provides a typed TypeScript client for programmatic access to Corsair's signing and verification capabilities. It wraps the core engines into a clean API surface with full type exports.
 
 ## Installation
 
 ```bash
-# Bun (recommended)
-bun add @corsair/sdk
+# From the monorepo (recommended until npm release)
+git clone https://github.com/grcorsair/corsair.git
+cd corsair
+bun install
 
-# npm
-npm install @corsair/sdk
+# npm (coming soon)
+# npm install @grcorsair/sdk
 ```
 
 ## Configuration
 
 ```typescript
-import { CorsairClient } from "@corsair/sdk";
+import { CorsairClient } from "@grcorsair/sdk";
 
 const corsair = new CorsairClient({
   keyDir: "./keys",                    // Directory for Ed25519 signing keys
@@ -163,7 +165,7 @@ import type {
 
   // Verification types
   MarqueVerificationResult,
-} from "@corsair/sdk";
+} from "@grcorsair/sdk";
 ```
 
 ## Complete Example
@@ -171,7 +173,7 @@ import type {
 End-to-end workflow: generate keys, sign evidence, and verify the output:
 
 ```typescript
-import { CorsairClient } from "@corsair/sdk";
+import { CorsairClient } from "@grcorsair/sdk";
 import { readFileSync } from "fs";
 
 // Initialize

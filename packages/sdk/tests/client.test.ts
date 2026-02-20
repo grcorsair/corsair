@@ -1,7 +1,7 @@
 /**
  * CorsairClient SDK Tests
  *
- * Tests the public API surface of @corsair/sdk.
+ * Tests the public API surface of @grcorsair/sdk.
  * Historical scoring/query helpers were removed to keep the SDK focused.
  */
 

@@ -54,6 +54,9 @@ switch (subcommand) {
   case "trust-txt":
     await handleTrustTxt();
     break;
+  case "did":
+    await handleDid();
+    break;
   case "mappings":
     await handleMappings();
     break;
@@ -74,7 +77,7 @@ switch (subcommand) {
     break;
   default:
     console.error(`Unknown command: ${subcommand}`);
-    console.error("  Available: init, sign, verify, diff, log, keygen, trust-txt, mappings, policy, receipts, help");
+    console.error("  Available: init, sign, verify, diff, log, keygen, trust-txt, did, mappings, policy, receipts, help");
     console.error('  Run "corsair help" for details');
     process.exit(1);
 }
@@ -3164,6 +3167,282 @@ async function handleTrustTxt(): Promise<void> {
   }
 }
 
+// =============================================================================
+// DID HELPERS
+// =============================================================================
+
+async function handleDid(): Promise<void> {
+  const args = process.argv.slice(3);
+  const subcommand = args[0];
+
+  if (!subcommand || subcommand === "--help" || subcommand === "-h") {
+    console.log(`
+CORSAIR DID — DID:web helpers
+
+USAGE:
+  corsair did <subcommand> [options]
+
+SUBCOMMANDS:
+  generate   Generate a DID document (did.json)
+  jwks       Generate a JWKS (jwks.json) from your public key
+
+EXAMPLES:
+  corsair did generate --domain example.com --output did.json
+  corsair did generate --did did:web:example.com --output did.json
+  corsair did jwks --domain example.com --output jwks.json
+`);
+    return;
+  }
+
+  switch (subcommand) {
+    case "generate":
+      await handleDidGenerate(args.slice(1));
+      return;
+    case "jwks":
+      await handleDidJwks(args.slice(1));
+      return;
+    default:
+      console.error(`Unknown did subcommand: ${subcommand}`);
+      console.error('Run "corsair did --help" for usage');
+  }
+}
+
+async function handleDidGenerate(args: string[]): Promise<void> {
+  let did: string | undefined;
+  let domain: string | undefined;
+  let path: string | undefined;
+  let keyDir = "./keys";
+  let outputPath: string | undefined;
+  let showHelp = false;
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "--did":
+        did = args[++i];
+        break;
+      case "--domain":
+        domain = args[++i];
+        break;
+      case "--path":
+        path = args[++i];
+        break;
+      case "--key-dir":
+        keyDir = args[++i];
+        break;
+      case "--output":
+      case "-o":
+        outputPath = args[++i];
+        break;
+      case "--help":
+      case "-h":
+        showHelp = true;
+        break;
+    }
+  }
+
+  if (showHelp) {
+    console.log(`
+CORSAIR DID GENERATE — Create a DID document
+
+USAGE:
+  corsair did generate --domain <DOMAIN> [options]
+  corsair did generate --did <DID> [options]
+
+OPTIONS:
+  --domain <DOMAIN>       Domain for did:web (e.g., example.com)
+  --path <PATH>           Optional DID path (e.g., "trust")
+  --did <DID>             Full did:web string (overrides domain/path)
+  --key-dir <DIR>         Ed25519 key directory (default: ./keys)
+  -o, --output <PATH>     Write did.json to file (default: stdout)
+  -h, --help              Show this help
+
+EXAMPLES:
+  corsair did generate --domain example.com --output did.json
+  corsair did generate --did did:web:example.com --output did.json
+`);
+    return;
+  }
+
+  const { parseDIDWeb, formatDIDWeb } = await import("./src/parley/did-resolver");
+  const { MarqueKeyManager } = await import("./src/parley/marque-key-manager");
+  const keyManager = new MarqueKeyManager(keyDir);
+
+  let finalDid: string;
+  let hostingUrl: string;
+
+  try {
+    if (did) {
+      finalDid = did;
+      const parsed = parseDIDWeb(did);
+      hostingUrl = parsed.path
+        ? `https://${parsed.domain}/${parsed.path}/did.json`
+        : `https://${parsed.domain}/.well-known/did.json`;
+    } else if (domain) {
+      finalDid = formatDIDWeb(domain, path);
+      hostingUrl = path
+        ? `https://${domain}/${path}/did.json`
+        : `https://${domain}/.well-known/did.json`;
+    } else {
+      console.error("Error: --domain or --did is required");
+      console.error('Run "corsair did generate --help" for usage');
+      process.exit(2);
+    }
+  } catch (err) {
+    console.error(`Error: ${(err as Error).message}`);
+    process.exit(2);
+  }
+
+  let jwk: JsonWebKey;
+  try {
+    jwk = await keyManager.exportJWK();
+  } catch (err) {
+    console.error(`Error: ${(err as Error).message}`);
+    console.error('Generate keys with: corsair keygen --output ' + keyDir);
+    process.exit(2);
+  }
+
+  const keyId = `${finalDid}#key-1`;
+  const didDoc = {
+    "@context": [
+      "https://www.w3.org/ns/did/v1",
+      "https://w3id.org/security/suites/jws-2020/v1",
+    ],
+    id: finalDid,
+    verificationMethod: [
+      {
+        id: keyId,
+        type: "JsonWebKey2020",
+        controller: finalDid,
+        publicKeyJwk: jwk,
+      },
+    ],
+    authentication: [keyId],
+    assertionMethod: [keyId],
+  };
+
+  const output = JSON.stringify(didDoc, null, 2);
+
+  if (outputPath) {
+    const { writeFileSync } = await import("fs");
+    writeFileSync(outputPath, output);
+    console.error("DID document generated successfully.");
+    console.error(`  Output: ${outputPath}`);
+    console.error(`  Host at: ${hostingUrl}`);
+  } else {
+    console.log(output);
+    console.error(`\nHost at: ${hostingUrl}`);
+  }
+}
+
+async function handleDidJwks(args: string[]): Promise<void> {
+  let did: string | undefined;
+  let domain: string | undefined;
+  let path: string | undefined;
+  let keyDir = "./keys";
+  let outputPath: string | undefined;
+  let showHelp = false;
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "--did":
+        did = args[++i];
+        break;
+      case "--domain":
+        domain = args[++i];
+        break;
+      case "--path":
+        path = args[++i];
+        break;
+      case "--key-dir":
+        keyDir = args[++i];
+        break;
+      case "--output":
+      case "-o":
+        outputPath = args[++i];
+        break;
+      case "--help":
+      case "-h":
+        showHelp = true;
+        break;
+    }
+  }
+
+  if (showHelp) {
+    console.log(`
+CORSAIR DID JWKS — Create a JWKS from your public key
+
+USAGE:
+  corsair did jwks --domain <DOMAIN> [options]
+  corsair did jwks --did <DID> [options]
+
+OPTIONS:
+  --domain <DOMAIN>       Domain for did:web (e.g., example.com)
+  --path <PATH>           Optional DID path (e.g., "trust")
+  --did <DID>             Full did:web string (overrides domain/path)
+  --key-dir <DIR>         Ed25519 key directory (default: ./keys)
+  -o, --output <PATH>     Write jwks.json to file (default: stdout)
+  -h, --help              Show this help
+
+EXAMPLES:
+  corsair did jwks --domain example.com --output jwks.json
+  corsair did jwks --did did:web:example.com --output jwks.json
+`);
+    return;
+  }
+
+  const { parseDIDWeb, formatDIDWeb } = await import("./src/parley/did-resolver");
+  const { MarqueKeyManager } = await import("./src/parley/marque-key-manager");
+  const keyManager = new MarqueKeyManager(keyDir);
+
+  let finalDid: string;
+  let jwksUrl: string;
+
+  try {
+    if (did) {
+      finalDid = did;
+      const parsed = parseDIDWeb(did);
+      jwksUrl = `https://${parsed.domain}/.well-known/jwks.json`;
+    } else if (domain) {
+      finalDid = formatDIDWeb(domain, path);
+      jwksUrl = `https://${domain}/.well-known/jwks.json`;
+    } else {
+      console.error("Error: --domain or --did is required");
+      console.error('Run "corsair did jwks --help" for usage');
+      process.exit(2);
+    }
+  } catch (err) {
+    console.error(`Error: ${(err as Error).message}`);
+    process.exit(2);
+  }
+
+  let jwk: JsonWebKey;
+  try {
+    jwk = await keyManager.exportJWK();
+  } catch (err) {
+    console.error(`Error: ${(err as Error).message}`);
+    console.error('Generate keys with: corsair keygen --output ' + keyDir);
+    process.exit(2);
+  }
+
+  jwk.kid = `${finalDid}#key-1`;
+  jwk.use = "sig";
+  jwk.alg = "EdDSA";
+
+  const jwks = { keys: [jwk] };
+  const output = JSON.stringify(jwks, null, 2);
+
+  if (outputPath) {
+    const { writeFileSync } = await import("fs");
+    writeFileSync(outputPath, output);
+    console.error("JWKS generated successfully.");
+    console.error(`  Output: ${outputPath}`);
+    console.error(`  Host at: ${jwksUrl}`);
+  } else {
+    console.log(output);
+    console.error(`\nHost at: ${jwksUrl}`);
+  }
+}
+
 function printTrustTxtHelp(): void {
   console.log(`
 CORSAIR TRUST-TXT -- Compliance proof discovery at /.well-known/
@@ -3916,6 +4195,7 @@ COMMANDS:
   diff            Detect compliance regressions            like git diff
   log             List signed CPOEs (local/SCITT log)      like git log
   trust-txt        Discovery layer (generate/validate/discover)
+  did             DID document helpers (generate/jwks)
   receipts         Evidence inclusion proofs (generate/verify)
   mappings        Manage evidence mappings (list/pack/sign)
   policy          Validate policy artifacts

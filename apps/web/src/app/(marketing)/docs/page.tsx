@@ -83,6 +83,17 @@ export default function DocsPage() {
                 </div>
                 <div>
                   <span className="text-corsair-text-dim">
+                    # Generate DID + JWKS for did:web verification
+                  </span>
+                  <div className="text-corsair-cyan">
+                    corsair did generate --domain acme.com --output did.json
+                  </div>
+                  <div className="text-corsair-cyan">
+                    corsair did jwks --domain acme.com --output jwks.json
+                  </div>
+                </div>
+                <div>
+                  <span className="text-corsair-text-dim">
                     # Verify any CPOE (always free)
                   </span>
                   <div className="text-corsair-gold">

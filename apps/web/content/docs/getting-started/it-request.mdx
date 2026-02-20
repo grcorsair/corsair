@@ -85,9 +85,10 @@ GRC / Security
 
 ## Next Step
 
-Once the subdomain is live, generate trust.txt:
+Once the subdomain is live, generate DID + JWKS + trust.txt:
 
 ```bash
+corsair did generate --domain trust.example.com --output did.json
+corsair did jwks --domain trust.example.com --output jwks.json
 corsair trust-txt generate --did did:web:trust.example.com
 ```
-

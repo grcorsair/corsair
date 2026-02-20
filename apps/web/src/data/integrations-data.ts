@@ -366,9 +366,9 @@ export const INTEGRATIONS: Integration[] = [
     name: "TypeScript SDK",
     category: "sdks",
     status: "available",
-    description: "Full-featured SDK — sign, verify, score, query",
+    description: "TypeScript SDK (monorepo) — sign and verify programmatically",
     docsUrl: "/docs/integrations/sdk",
-    snippet: "bun add @grcorsair/sdk",
+    snippet: "git clone https://github.com/grcorsair/corsair.git",
   },
   {
     id: "sdk-python",

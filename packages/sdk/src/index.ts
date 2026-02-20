@@ -1,5 +1,5 @@
 /**
- * @corsair/sdk — Public API
+ * @grcorsair/sdk — Public API
  *
  * Cryptographic compliance proof infrastructure SDK.
  * Sign and verify compliance evidence (CPOEs).

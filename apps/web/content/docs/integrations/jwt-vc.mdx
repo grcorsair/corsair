@@ -15,16 +15,15 @@ Organizations identify themselves using `did:web` — a DID method that resolves
 
 ### Generate a DID Document
 
-The Corsair CLI generates a DID document alongside your Ed25519 keypair:
+Generate keys, then create a DID document from your public key:
 
 ```bash
-# Generate keypair and DID document
-bun corsair.ts --generate-keys --did-domain example.com
+# Generate keypair
+corsair keygen --output ./keys
 
-# Output:
-#   .corsair/corsair-signing.key (private key — keep secret)
-#   .corsair/corsair-signing.pub (public key)
-#   .corsair/did.json (DID document for publication)
+# Generate DID document + JWKS
+corsair did generate --domain example.com --output did.json
+corsair did jwks --domain example.com --output jwks.json
 ```
 
 ### Publish the DID Document
@@ -35,17 +34,30 @@ Host the DID document at your domain's well-known path:
 https://example.com/.well-known/did.json
 ```
 
-The document contains your Ed25519 public key:
+Publish the JWKS alongside it:
+
+```
+https://example.com/.well-known/jwks.json
+```
+
+The document contains your Ed25519 public key (JWK):
 
 ```json
 {
-  "@context": ["https://www.w3.org/ns/did/v1"],
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://w3id.org/security/suites/jws-2020/v1"
+  ],
   "id": "did:web:example.com",
   "verificationMethod": [{
     "id": "did:web:example.com#key-1",
-    "type": "Ed25519VerificationKey2020",
+    "type": "JsonWebKey2020",
     "controller": "did:web:example.com",
-    "publicKeyMultibase": "z6Mkf5rGMoatrSj1f..."
+    "publicKeyJwk": {
+      "kty": "OKP",
+      "crv": "Ed25519",
+      "x": "..."
+    }
   }],
   "assertionMethod": ["did:web:example.com#key-1"]
 }

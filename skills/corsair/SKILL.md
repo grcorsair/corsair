@@ -99,7 +99,7 @@ Use this routing logic:
 1. If user asks to sign evidence -> SIGN workflow
 2. If user asks to verify a proof -> VERIFY workflow
 3. If user asks to compare changes -> DIFF workflow
-4. If user asks to publish proofs -> PUBLISH workflow
+4. If user asks to publish proofs, DID documents, or JWKS -> PUBLISH workflow
 5. If user asks to discover proofs -> DISCOVER workflow
 6. If user asks to list proofs -> LOG workflow
 7. If user asks about mappings, creating a mapping, or publishing a mapping pack -> MAPPINGS workflow
@@ -129,8 +129,13 @@ Use this routing logic:
 
 ### PUBLISH (trust.txt)
 
-1. `corsair trust-txt generate --did <DID> [options] -o .well-known/trust.txt`
-2. Report output path and hosting requirement `/.well-known/trust.txt`.
+1. `corsair did generate --domain <DOMAIN> --output did.json`
+2. `corsair did jwks --domain <DOMAIN> --output jwks.json`
+3. `corsair trust-txt generate --did <DID> [options] -o .well-known/trust.txt`
+4. Report output paths + hosting requirements:
+   - `/.well-known/did.json`
+   - `/.well-known/jwks.json`
+   - `/.well-known/trust.txt`
 
 ### DISCOVER
 
