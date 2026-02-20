@@ -244,7 +244,7 @@ export const INTEGRATIONS: Integration[] = [
     name: "Agent Skill (skills.sh)",
     category: "ai-assistants",
     status: "available",
-    description: "One-line install for Claude Code, Cursor, Copilot, and 25+ AI agents — sign, verify, diff, discover, audit",
+    description: "One-line install for Claude Code, Cursor, Copilot, and 25+ AI agents — sign, log, trust.txt, verify, diff, signal",
     docsUrl: "/docs/integrations/skills",
     snippet: "npx skills add grcorsair/corsair",
   },

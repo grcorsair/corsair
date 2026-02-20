@@ -29,6 +29,16 @@ const primitives = [
     description: "Sign tool output into a cryptographic CPOE",
   },
   {
+    href: "/log",
+    label: "Log",
+    description: "Browse the local SCITT transparency log",
+  },
+  {
+    href: "/publish",
+    label: "trust.txt",
+    description: "Publish yours, discover theirs",
+  },
+  {
     href: "/verify",
     label: "Verify",
     description: "Verify a CPOE signature and validity",
@@ -39,19 +49,9 @@ const primitives = [
     description: "Compare CPOEs and detect regressions",
   },
   {
-    href: "/log",
-    label: "Log",
-    description: "Browse the local SCITT transparency log",
-  },
-  {
     href: "/signal",
     label: "Signal",
     description: "Real-time compliance event stream",
-  },
-  {
-    href: "/publish",
-    label: "trust.txt",
-    description: "Publish yours, discover theirs",
   },
 ];
 

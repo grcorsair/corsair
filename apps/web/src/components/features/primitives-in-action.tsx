@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Badge } from "@/components/ui/badge";
 import { DEMO_DIFF, DEMO_LOG_ENTRIES } from "@/content/demo-cpoes";
 
-// ─── Tab definitions — Five Primitives ───
+// ─── Tab definitions — Six Primitives ───
 
 interface TabDef {
   id: string;
@@ -17,9 +17,10 @@ interface TabDef {
 
 const tabs: TabDef[] = [
   { id: "sign", label: "SIGN", color: "text-corsair-crimson", bg: "bg-corsair-crimson", desc: "like git commit" },
+  { id: "log", label: "LOG", color: "text-corsair-turquoise", bg: "bg-corsair-turquoise", desc: "SCITT transparency log" },
+  { id: "trust-txt", label: "PUBLISH", color: "text-corsair-green", bg: "bg-corsair-green", desc: "trust.txt discovery" },
   { id: "verify", label: "VERIFY", color: "text-corsair-gold", bg: "bg-corsair-gold", desc: "like HTTPS" },
   { id: "diff", label: "DIFF", color: "text-corsair-green", bg: "bg-corsair-green", desc: "like git diff" },
-  { id: "log", label: "LOG", color: "text-corsair-turquoise", bg: "bg-corsair-turquoise", desc: "SCITT transparency log" },
   { id: "signal", label: "SIGNAL", color: "text-corsair-cyan", bg: "bg-corsair-cyan", desc: "FLAGSHIP events" },
 ];
 
@@ -31,7 +32,7 @@ export function PrimitivesInAction() {
 
   return (
     <div>
-      {/* Tab bar — Five Primitives */}
+      {/* Tab bar — Six Primitives */}
       <div className="flex justify-center">
         <div className="inline-flex gap-1 rounded-lg border border-corsair-border bg-corsair-surface p-1">
           {tabs.map((tab, i) => (
@@ -84,9 +85,10 @@ export function PrimitivesInAction() {
             transition={{ duration: 0.2 }}
           >
             {currentTab.id === "sign" && <SignPanel />}
+            {currentTab.id === "log" && <LogPanel />}
+            {currentTab.id === "trust-txt" && <PublishPanel />}
             {currentTab.id === "verify" && <VerifyPanel />}
             {currentTab.id === "diff" && <DiffPanel />}
-            {currentTab.id === "log" && <LogPanel />}
             {currentTab.id === "signal" && <SignalPanel />}
           </motion.div>
         </AnimatePresence>
@@ -469,6 +471,53 @@ function LogPanel() {
         <span className="text-corsair-border">|</span>
         <span>COSE receipts</span>
         <span className="ml-auto text-corsair-turquoise">Anyone can verify inclusion</span>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// PUBLISH — trust.txt discovery file
+// ═══════════════════════════════════════════════
+
+function PublishPanel() {
+  return (
+    <div className="bg-[#0A0A0A] p-5">
+      <div className="font-mono text-[11px] sm:text-[12px]">
+        <span className="text-corsair-gold">$</span>{" "}
+        <span className="text-corsair-text">corsair trust-txt generate</span>{" "}
+        <span className="text-corsair-text-dim">--did did:web:acme.com</span>
+      </div>
+
+      <div className="mt-4 rounded-lg border border-corsair-border/30 bg-corsair-bg/40 p-4">
+        <p className="mb-2 font-pixel text-[7px] tracking-wider text-corsair-text-dim">
+          /.well-known/trust.txt
+        </p>
+        <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-corsair-text-dim">
+{`# Corsair Trust Discovery
+# Spec: https://grcorsair.com/spec/trust-txt
+
+DID: did:web:acme.com
+
+CPOE: https://acme.com/cpoe/acme-v2.jwt
+CPOE: https://acme.com/cpoe/acme-v1.jwt
+
+SCITT: https://scitt.acme.com
+CATALOG: https://acme.com/.well-known/cpoe-catalog.json
+FLAGSHIP: https://acme.com/flagship/stream
+
+Frameworks: SOC2, ISO27001
+`}
+        </pre>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-corsair-border/30 pt-3 font-mono text-[10px] text-corsair-text-dim">
+        <span>Public discovery</span>
+        <span className="text-corsair-border">|</span>
+        <span>Machine-readable</span>
+        <span className="text-corsair-border">|</span>
+        <span>Zero credentials</span>
+        <span className="ml-auto text-corsair-green">Any agent can crawl it</span>
       </div>
     </div>
   );

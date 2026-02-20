@@ -8,6 +8,7 @@ import {
   ChartIcon,
   QuarterIcon,
   MarqueIcon,
+  MarkIcon,
 } from "@/components/pixel-art/pixel-icons";
 
 /* ─── Stage definitions ──────────────────────────────────── */
@@ -33,6 +34,13 @@ const primitives: Stage[] = [
       "Register in an append-only SCITT transparency log with COSE receipts",
     analogy: "like git log",
     icon: <ChartIcon size={36} />,
+  },
+  {
+    name: "PUBLISH",
+    description:
+      "Generate trust.txt for discovery of CPOEs, SCITT, and catalogs",
+    analogy: "like git push",
+    icon: <MarkIcon size={36} />,
   },
   {
     name: "VERIFY",
@@ -96,7 +104,7 @@ export function PipelineStages() {
             PROTOCOL
           </Badge>
           <span className="font-display text-sm font-semibold tracking-wide text-corsair-gold sm:text-base">
-            Five Primitives
+            Six Primitives
           </span>
           <span className="hidden text-xs text-corsair-text-dim sm:inline">
             Ed25519 signing, SCITT transparency, DID:web identity, SSF/CAEP signals
@@ -104,7 +112,7 @@ export function PipelineStages() {
         </div>
 
         <motion.div
-          className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
+          className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
