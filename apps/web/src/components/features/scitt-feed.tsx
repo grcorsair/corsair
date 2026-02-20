@@ -180,10 +180,10 @@ export function SCITTFeed({ className }: SCITTFeedProps) {
       {!loading && entries.length === 0 && !error && (
         <div className="rounded-lg border border-corsair-border bg-corsair-surface p-8 text-center">
           <p className="text-sm text-corsair-text-dim">
-            No SCITT entries found. Sign your first CPOE to see it here.
+            No SCITT entries found. Register a CPOE to see it here.
           </p>
           <Button variant="outline" size="sm" className="mt-3" asChild>
-            <a href="/sign">Sign your first CPOE</a>
+            <a href="/log">Register a CPOE</a>
           </Button>
         </div>
       )}

@@ -41,7 +41,7 @@ const lines: TerminalLine[] = [
     delayMs: 5500,
   },
   {
-    text: "[SIGN]      Registering in SCITT transparency log...",
+    text: "[LOG]       Register in SCITT transparency log (optional)...",
     className: "text-corsair-green",
     delayMs: 6500,
   },
