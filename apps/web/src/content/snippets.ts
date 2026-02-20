@@ -26,7 +26,7 @@ brew install grcorsair/corsair/corsair         # homebrew
 npx skills add grcorsair/corsair               # AI agent skill
 
 # Runtime
-# Bun is required to run the CLI. Homebrew installs Bun automatically; npm does not.
+# Bun is required to run the CLI. Homebrew installs Bun automatically via the oven-sh/bun tap; npm does not.
 
 # Initialize (generates keys + example evidence)
 corsair init

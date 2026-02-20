@@ -70,7 +70,7 @@ export default function DocsPage() {
                     npm install -g @grcorsair/cli
                   </div>
                   <div className="text-corsair-text-dim">
-                    # Bun is required to run the CLI (Homebrew installs it)
+                    # Bun is required to run the CLI (Homebrew installs it via oven-sh/bun)
                   </div>
                 </div>
                 <div>

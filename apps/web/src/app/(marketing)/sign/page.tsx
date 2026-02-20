@@ -124,7 +124,7 @@ export default function SignPage() {
                   <span className="text-corsair-cyan">$</span> npm install -g @grcorsair/cli
                 </div>
                 <div>
-                  <span className="text-corsair-text-dim/40"># Bun is required to run the CLI</span>
+                  <span className="text-corsair-text-dim/40"># Bun is required to run the CLI (Homebrew installs it via oven-sh/bun)</span>
                 </div>
                 <div className="mt-4">
                   <span className="text-corsair-text-dim/40"># Initialize (generates keys + example evidence)</span>
