@@ -103,6 +103,18 @@ export function DisruptionSection() {
                   <li className="flex items-start gap-2">
                     <span className="mt-0.5 text-corsair-green">&#x2713;</span>
                     <span>
+                      <code className="text-corsair-cyan">corsair log</code> &mdash; register CPOEs in a SCITT transparency log with Merkle proofs and COSE receipts. Like git log.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 text-corsair-green">&#x2713;</span>
+                    <span>
+                      <code className="text-corsair-cyan">corsair trust-txt generate</code> &mdash; publish trust.txt so anyone can discover proofs. Like git push.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-0.5 text-corsair-green">&#x2713;</span>
+                    <span>
                       <code className="text-corsair-cyan">corsair verify</code> &mdash; four-step DID:web verification. Free forever, no account needed. Like HTTPS.
                     </span>
                   </li>
@@ -110,12 +122,6 @@ export function DisruptionSection() {
                     <span className="mt-0.5 text-corsair-green">&#x2713;</span>
                     <span>
                       <code className="text-corsair-cyan">corsair diff</code> &mdash; compare two CPOEs, detect compliance regressions instantly. Like git diff.
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-0.5 text-corsair-green">&#x2713;</span>
-                    <span>
-                      <code className="text-corsair-cyan">corsair log</code> &mdash; SCITT transparency log with Merkle proofs and COSE receipts. Like git log.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">

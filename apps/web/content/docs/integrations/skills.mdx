@@ -7,13 +7,13 @@ order: 40
 
 ## Skills-First Distribution
 
-Corsair ships with a **SKILL.md** that describes how to sign, verify, discover, and diff compliance proofs. Any agent that supports the Agent Skills standard can load the skill and run Corsair workflows without a bespoke SDK.
+Corsair ships with a **SKILL.md** that describes how to sign, log, publish (trust.txt), verify, diff, and signal compliance proofs. Any agent that supports the Agent Skills standard can load the skill and run Corsair workflows without a bespoke SDK.
 
 This keeps integration light:
 
 - No client libraries to install
 - No proprietary API lock-in
-- Deterministic, auditable steps (sign, verify, trust.txt)
+- Deterministic, auditable steps (sign, log, trust.txt, verify, diff, signal)
 
 ## Install the Skill
 
@@ -30,9 +30,11 @@ skills/corsair/SKILL.md
 ## What Agents Can Do
 
 - Sign tool output into CPOEs
+- Publish and discover trust.txt
 - Verify vendor proofs via trust.txt discovery
 - Diff CPOEs to detect drift
 - Register proofs in SCITT logs
+- Generate and verify FLAGSHIP signals
 - Validate policy artifacts
 
 ## Why This Matters

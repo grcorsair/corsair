@@ -7,10 +7,10 @@ order: 10
 
 ## Overview
 
-The Corsair pipeline transforms security tool output into cryptographically signed, universally verifiable Certificates of Proof of Operational Effectiveness (CPOEs). The default signing path is fully deterministic — no AI, no judgment, just provenance recording and Ed25519 signing.
+The Corsair pipeline transforms security tool output into cryptographically signed, universally verifiable Certificates of Proof of Operational Effectiveness (CPOEs). The default path is fully deterministic — no AI, no judgment, just provenance recording, Ed25519 signing, and verifiable transparency.
 
 ```
-EVIDENCE → SIGN → LOG → VERIFY → DIFF
+EVIDENCE → SIGN → LOG → PUBLISH → VERIFY → DIFF → SIGNAL
 ```
 
 FLAGSHIP delivers real-time compliance change notifications via SSF/SET/CAEP.
@@ -70,6 +70,20 @@ Proof-only mode registers only the hash commitment (no CPOE stored):
 corsair log register --file cpoe.jwt --scitt https://log.example.com/scitt/entries --proof-only
 ```
 
+### PUBLISH — trust.txt Discovery
+
+Publish a machine-readable discovery file at `/.well-known/trust.txt` so any agent can find your DID, CPOEs, SCITT log, catalog, and FLAGSHIP stream:
+
+```bash
+corsair trust-txt generate --did did:web:acme.com --scitt https://log.acme.com/scitt/entries
+```
+
+Host the output at `https://<domain>/.well-known/trust.txt`, then verify it from the outside:
+
+```bash
+corsair trust-txt discover acme.com --verify
+```
+
 ### VERIFY — Signature + Provenance Verification
 
 Anyone with the issuer's public key (resolved via `did:web`) can verify a CPOE:
@@ -91,6 +105,10 @@ corsair diff --current cpoe-v2.jwt --previous cpoe-v1.jwt
 
 Shows control-level additions, removals, and status changes.
 
+### SIGNAL — Real-Time Change Notifications
+
+FLAGSHIP delivers standardized compliance change notifications via the OpenID Shared Signals Framework (SSF) and Continuous Access Evaluation Protocol (CAEP). See [FLAGSHIP Events](/docs/concepts/flagship-events) for details.
+
 ### RENEW — Re-sign CPOEs
 
 Re-sign an existing CPOE with fresh dates, or with new evidence while preserving scope and DID:
@@ -99,5 +117,3 @@ Re-sign an existing CPOE with fresh dates, or with new evidence while preserving
 corsair renew --file cpoe.jwt --output renewed.jwt
 corsair renew --file cpoe.jwt --evidence new-findings.json --output renewed.jwt
 ```
-
-FLAGSHIP delivers standardized compliance change notifications via the OpenID Shared Signals Framework (SSF) and Continuous Access Evaluation Protocol (CAEP). See [FLAGSHIP Events](/docs/concepts/flagship-events) for details.

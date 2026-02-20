@@ -8,7 +8,7 @@ import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 const primitives = [
   { name: "sign", desc: "Evidence → CPOE", href: "/sign", color: "text-corsair-gold", borderColor: "hover:border-corsair-gold/40" },
   { name: "log", desc: "Register in SCITT", href: "/log", color: "text-corsair-cyan", borderColor: "hover:border-corsair-cyan/40" },
-  { name: "publish", desc: "Generate trust.txt", href: "/publish", color: "text-corsair-green", borderColor: "hover:border-corsair-green/40" },
+  { name: "trust-txt generate", desc: "Generate trust.txt", href: "/publish", color: "text-corsair-green", borderColor: "hover:border-corsair-green/40" },
   { name: "verify", desc: "Check CPOE signature", href: "/verify", color: "text-corsair-green", borderColor: "hover:border-corsair-green/40" },
   { name: "diff", desc: "Compare two CPOEs", href: "/diff", color: "text-corsair-turquoise", borderColor: "hover:border-corsair-turquoise/40" },
   { name: "signal", desc: "Push change events", href: "/signal", color: "text-corsair-crimson", borderColor: "hover:border-corsair-crimson/40" },

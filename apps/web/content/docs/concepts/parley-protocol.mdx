@@ -65,10 +65,10 @@ See the [FLAGSHIP Events](/docs/concepts/flagship-events) page for details.
 1. EVIDENCE  Corsair accepts structured output from security tools (scanners, CI checks, API exports)
 2. SIGN      Provenance recorded, CPOE signed as JWT-VC with Ed25519
 3. LOG       (Optional) JWT-VC registered in SCITT transparency log
-4. SHARE     Vendor shares JWT-VC with requesting organization
-5. VERIFY    Requestor verifies locally (Web Crypto, CLI, or any VC verifier)
+4. PUBLISH   (Optional) Vendor publishes trust.txt for discovery
+5. VERIFY    Requestor verifies locally (via trust.txt discovery or direct share)
 6. DIFF      Compare CPOEs over time to track compliance changes
-7. MONITOR   (Optional) SSF/CAEP stream delivers real-time compliance signals
+7. SIGNAL    (Optional) SSF/CAEP stream delivers real-time compliance signals
 8. RENEW     Periodic re-assessment produces new JWT-VC, old one expires
 ```
 

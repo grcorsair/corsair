@@ -43,11 +43,7 @@ export function HeroTerminal() {
   const signStagger = 0.13;
   const signEnd = signStart + signLines.length * signStagger + 0.2;
 
-  const diffStart = signEnd + 0.4;
-  const diffStagger = 0.15;
-  const diffEnd = diffStart + diffLines.length * diffStagger + 0.2;
-
-  const logStart = diffEnd + 0.4;
+  const logStart = signEnd + 0.4;
   const logStagger = 0.12;
   const logEnd = logStart + logLines.length * logStagger + 0.2;
 
@@ -59,7 +55,11 @@ export function HeroTerminal() {
   const verifyStagger = 0.13;
   const verifyEnd = verifyStart + verifyLines.length * verifyStagger + 0.2;
 
-  const signalStart = verifyEnd + 0.4;
+  const diffStart = verifyEnd + 0.4;
+  const diffStagger = 0.15;
+  const diffEnd = diffStart + diffLines.length * diffStagger + 0.2;
+
+  const signalStart = diffEnd + 0.4;
   const signalStagger = 0.13;
   const signalEnd = signalStart + signalLines.length * signalStagger + 0.2;
 
@@ -78,7 +78,7 @@ export function HeroTerminal() {
           <div className="h-2.5 w-2.5 rounded-full bg-[#28C840]" />
         </div>
         <span className="ml-2 font-mono text-[11px] text-corsair-text-dim">
-          corsair — sign / diff / log / trust-txt / verify / signal
+          corsair — sign / log / trust-txt / verify / diff / signal
         </span>
       </div>
 
@@ -114,34 +114,7 @@ export function HeroTerminal() {
 
         <div className="h-4" />
 
-        {/* Step 2: corsair diff */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: diffStart - 0.2 }}
-        >
-          <span className="text-corsair-gold">$</span>{" "}
-          <span className="text-corsair-text">corsair diff</span>{" "}
-          <span className="text-corsair-text-dim">--current cpoe-v2.jwt --previous cpoe-v1.jwt</span>
-        </motion.div>
-
-        <div className="h-2" />
-
-        {diffLines.map((line, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, x: -4 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.2, delay: diffStart + i * diffStagger }}
-            className={line.color}
-          >
-            {line.text}
-          </motion.div>
-        ))}
-
-        <div className="h-4" />
-
-        {/* Step 3: corsair log */}
+        {/* Step 2: corsair log */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -168,7 +141,7 @@ export function HeroTerminal() {
 
         <div className="h-4" />
 
-        {/* Step 4: corsair trust-txt generate */}
+        {/* Step 3: corsair trust-txt generate */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -197,7 +170,7 @@ export function HeroTerminal() {
 
         <div className="h-4" />
 
-        {/* Step 5: corsair verify */}
+        {/* Step 4: corsair verify */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -221,6 +194,33 @@ export function HeroTerminal() {
             <span className="text-corsair-green">{"  \u2713 "}</span>
             <span className="w-[100px] shrink-0 text-corsair-text-dim">{line.label}</span>
             <span className={line.color}>{line.value}</span>
+          </motion.div>
+        ))}
+
+        <div className="h-4" />
+
+        {/* Step 5: corsair diff */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: diffStart - 0.2 }}
+        >
+          <span className="text-corsair-gold">$</span>{" "}
+          <span className="text-corsair-text">corsair diff</span>{" "}
+          <span className="text-corsair-text-dim">--current cpoe-v2.jwt --previous cpoe-v1.jwt</span>
+        </motion.div>
+
+        <div className="h-2" />
+
+        {diffLines.map((line, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, x: -4 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.2, delay: diffStart + i * diffStagger }}
+            className={line.color}
+          >
+            {line.text}
           </motion.div>
         ))}
 

@@ -14,6 +14,7 @@ import {
   RaidIcon,
   ChartIcon,
   SpyglassIcon,
+  MarkIcon,
 } from "@/components/pixel-art/pixel-icons";
 
 const props = [
@@ -26,6 +27,26 @@ const props = [
     icon: <MarqueIcon size={36} />,
     label: "SIGN",
     labelColor: "text-corsair-crimson",
+  },
+  {
+    title: "Log (like git log)",
+    description:
+      "corsair log — register CPOEs in an append-only SCITT transparency log via corsair log register. Tamper-evident. Merkle-proofed. COSE receipts. Anyone can audit the full history of every attestation ever issued.",
+    accent: "border-t-corsair-turquoise",
+    glowColor: "rgba(127,219,202,0.15)",
+    icon: <ChartIcon size={36} />,
+    label: "LOG",
+    labelColor: "text-corsair-turquoise",
+  },
+  {
+    title: "Publish (trust.txt)",
+    description:
+      "corsair trust-txt generate — publish trust.txt so any agent can discover your DID, CPOEs, SCITT log, and FLAGSHIP stream. Like git push.",
+    accent: "border-t-corsair-green",
+    glowColor: "rgba(46,204,113,0.15)",
+    icon: <MarkIcon size={36} />,
+    label: "PUBLISH",
+    labelColor: "text-corsair-green",
   },
   {
     title: "Verify (like HTTPS)",
@@ -46,16 +67,6 @@ const props = [
     icon: <RaidIcon size={36} />,
     label: "DIFF",
     labelColor: "text-corsair-green",
-  },
-  {
-    title: "Log (like git log)",
-    description:
-      "corsair log — register CPOEs in an append-only SCITT transparency log via corsair log register. Tamper-evident. Merkle-proofed. COSE receipts. Anyone can audit the full history of every attestation ever issued.",
-    accent: "border-t-corsair-turquoise",
-    glowColor: "rgba(127,219,202,0.15)",
-    icon: <ChartIcon size={36} />,
-    label: "LOG",
-    labelColor: "text-corsair-turquoise",
   },
   {
     title: "Signal (like git webhooks)",
