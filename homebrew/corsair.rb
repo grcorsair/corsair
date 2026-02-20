@@ -10,7 +10,7 @@ class Corsair < Formula
   # HEAD install (always latest from main)
   head "https://github.com/grcorsair/corsair.git", branch: "main"
 
-  depends_on "bun"
+  depends_on "oven-sh/bun/bun"
 
   def install
     system "bun", "install", "--production", "--frozen-lockfile"
