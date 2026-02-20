@@ -92,6 +92,12 @@ export function HeroSection() {
               >
                 Read the docs &rarr;
               </Link>
+              <Link
+                href="/for-grc"
+                className="inline-flex items-center rounded-lg border border-corsair-border/60 px-6 py-3 font-display text-sm font-semibold text-corsair-text-dim transition-all hover:border-corsair-green hover:text-corsair-green"
+              >
+                For GRC leaders
+              </Link>
             </motion.div>
 
             {/* Route selector */}

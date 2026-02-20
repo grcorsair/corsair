@@ -142,6 +142,10 @@ export default function DocsPage() {
                 </div>
               </div>
             </div>
+            <p className="mt-4 text-xs text-corsair-text-dim">
+              Persistence: CLI/local use is file-based. Hosted API/production requires Postgres via
+              <span className="ml-1 font-mono text-[11px] text-corsair-text">DATABASE_URL</span>.
+            </p>
           </div>
         </FadeIn>
 
