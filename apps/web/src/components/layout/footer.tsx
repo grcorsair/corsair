@@ -10,6 +10,7 @@ const productLinks = [
   { href: "/diff", label: "Diff" },
   { href: "/signal", label: "Signal" },
   { href: "/how-it-works", label: "How It Works" },
+  { href: "/for-grc", label: "For GRC Leaders" },
   { href: "/docs", label: "Documentation" },
   { href: "/blog", label: "Blog" },
 ];

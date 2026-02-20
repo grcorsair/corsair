@@ -18,6 +18,10 @@ Every response includes:
 - `X-Corsair-Version` header with the API version
 - CORS headers (`Access-Control-Allow-Origin: *`)
 
+## Persistence
+
+The hosted API requires Postgres for key storage, SCITT entries, and audit trails. Set `DATABASE_URL` in production. CLI-only usage is file-based and does not require a database.
+
 ## Authentication
 
 Protected endpoints require a Bearer token in the `Authorization` header. API keys are provisioned per-organization.

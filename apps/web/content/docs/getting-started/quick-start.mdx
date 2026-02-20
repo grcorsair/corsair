@@ -28,6 +28,11 @@ npx skills add grcorsair/corsair
 
 Your agent can then sign evidence, verify CPOEs, detect compliance drift, and autonomously assess vendor compliance via `trust.txt`. Works with [25+ AI agents](https://skills.sh).
 
+## Persistence
+
+- **CLI / local use:** file-based, no database required.
+- **Hosted API / production:** Postgres required via `DATABASE_URL` for keys, SCITT, and audit trails.
+
 ## Sign and Verify Your First CPOE
 
 Initialize keys + example evidence, then sign and verify:

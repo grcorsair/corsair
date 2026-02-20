@@ -1,6 +1,6 @@
 ---
 title: "TypeScript SDK"
-description: "Use @grcorsair/sdk to integrate Corsair signing, verification, and management into your applications."
+description: "Monorepo-only SDK for programmatic signing and verification with Corsair."
 section: "integrations"
 order: 33
 ---
@@ -9,17 +9,19 @@ order: 33
 
 The `@grcorsair/sdk` package provides a typed TypeScript client for programmatic access to Corsair's signing and verification capabilities. It wraps the core engines into a clean API surface with full type exports.
 
+**Status:** The SDK is currently available **only inside the Corsair monorepo**.
+
 ## Installation
 
+The SDK is **monorepo-only for now**. Clone the repo and use it as a workspace:
+
 ```bash
-# From the monorepo (recommended until npm release)
 git clone https://github.com/grcorsair/corsair.git
 cd corsair
 bun install
-
-# npm (coming soon)
-# npm install @grcorsair/sdk
 ```
+
+If you need a packaged dependency today, use the CLI or API instead.
 
 ## Configuration
 

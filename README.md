@@ -87,6 +87,13 @@ corsair diff --current q2.jwt --previous q1.jwt
 
 ---
 
+## Persistence
+
+- **CLI / local use:** file-based, no database required.
+- **Hosted API / production:** Postgres is required via `DATABASE_URL` for keys, SCITT, and audit trails.
+
+---
+
 ## Three Production Pillars
 
 Corsair ships with a simple, shareable surface that maps directly to how people verify compliance in the real world.
@@ -464,9 +471,9 @@ curl -X POST https://api.grcorsair.com/verify \
 ### SDK
 
 ```bash
-# SDK (monorepo for now)
-# npm publish coming soon
-# bun add @grcorsair/sdk
+# SDK is monorepo-only for now
+# Clone the repo and use packages/sdk as a workspace
+# If you need a packaged dependency today, use the CLI or API.
 ```
 
 ---
@@ -554,7 +561,7 @@ src/
 bin/                       # Standalone CLIs (verify, DID, MCP)
 functions/                 # Railway API endpoints
 apps/web/                  # grcorsair.com (Next.js 15)
-  packages/sdk/              # @grcorsair/sdk
+  packages/sdk/              # @grcorsair/sdk (monorepo-only)
 tests/                     # Test suite
 ```
 
