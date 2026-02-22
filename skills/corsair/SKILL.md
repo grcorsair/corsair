@@ -137,6 +137,12 @@ Use this routing logic:
    - `/.well-known/jwks.json`
    - `/.well-known/trust.txt`
 
+### ONBOARD (API)
+
+1. If the user wants machine-actionable onboarding artifacts, use the API.
+2. `POST /onboard` with a Bearer token (API key or OIDC token).
+3. Return `files.didJson`, `files.jwksJson`, and `files.trustTxt` from the response.
+
 ### DISCOVER
 
 1. Confirm the domain with the user.

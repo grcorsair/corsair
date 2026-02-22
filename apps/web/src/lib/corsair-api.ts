@@ -114,6 +114,7 @@ export type APISignResult =
 /**
  * Sign evidence via the Corsair API.
  * POST /sign with evidence + options. 15s timeout. Never throws.
+ * Pass an API key or OIDC token as the Bearer auth value.
  */
 export async function signViaAPI(request: APISignRequest, apiKey?: string): Promise<APISignResult> {
   const controller = new AbortController();

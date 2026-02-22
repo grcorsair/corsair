@@ -74,6 +74,31 @@ describe("signEvidence — generic", () => {
     const result = await signEvidence({ evidence: genericEvidence, source: "manual" }, keyManager);
     expect(result.provenance.source).toBe("self");
   });
+
+  test("attaches OIDC delegation metadata when provided", async () => {
+    const result = await signEvidence({
+      evidence: genericEvidence,
+      authContext: {
+        oidc: {
+          issuer: "https://issuer.example.com",
+          subject: "agent-123",
+          subjectHash: "hash-subject",
+          audience: ["corsair-sign"],
+          tokenHash: "hash-token",
+          verifiedAt: "2026-02-22T00:00:00Z",
+          identity: { email: "agent@example.com", name: "Agent 123" },
+        },
+      },
+    }, keyManager);
+    const ext = result.extensions as Record<string, unknown>;
+    expect(ext).toBeDefined();
+    const oidc = ext["ext.oidc"] as Record<string, unknown>;
+    expect(oidc).toBeDefined();
+    expect(oidc.issuer).toBe("https://issuer.example.com");
+    expect(oidc.subjectHash).toBe("hash-subject");
+    expect(oidc.tokenHash).toBe("hash-token");
+    expect(oidc.identity).toEqual({ email: "agent@example.com", name: "Agent 123" });
+  });
 });
 
 describe("signEvidence — mapping registry", () => {

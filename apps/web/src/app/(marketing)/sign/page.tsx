@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 export const metadata: Metadata = {
   title: "Sign Evidence — Create Verifiable Compliance Proofs",
   description:
-    "Sign security tool output as a CPOE (Certificate of Proof of Operational Effectiveness). Try the signing flow, then sign with an API key for production use.",
+    "Sign security tool output as a CPOE (Certificate of Proof of Operational Effectiveness). Try the signing flow, then sign with an API key or OIDC token for production use.",
 };
 
 export default function SignPage() {
@@ -28,7 +28,7 @@ export default function SignPage() {
             <p className="mx-auto max-w-xl text-corsair-text-dim">
               Turn security tool output into a{" "}
               <span className="font-semibold text-corsair-gold">CPOE</span>. Try the signing flow
-              below using demo keys, then sign with an API key when you&apos;re ready for production.
+              below using demo keys, then sign with an API key or OIDC token when you&apos;re ready for production.
             </p>
           </div>
         </FadeIn>
@@ -82,7 +82,7 @@ export default function SignPage() {
               PRODUCTION
             </p>
             <h2 className="mb-3 font-display text-2xl font-bold text-corsair-text">
-              Sign with an API key
+              Sign with an API key or OIDC token
             </h2>
             <p className="mx-auto max-w-xl text-sm text-corsair-text-dim">
               Use the signing API to generate verifiable CPOEs for your organization.

@@ -5,15 +5,22 @@
  * Covers: generic format, format hint validation, DID override, dry-run, error cases.
  */
 
-import { describe, test, expect, beforeAll, afterAll } from "bun:test";
+import { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } from "bun:test";
 import { existsSync, mkdirSync, rmSync } from "fs";
 import { join } from "path";
+import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import { createSignRouter } from "../../functions/sign";
+import { requireAuth, invalidateApiKeyCache } from "../../src/middleware/auth";
+import { resetOIDCCacheForTests } from "../../src/middleware/oidc";
 import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
+import { MockSCITTRegistry } from "../../src/parley/scitt-registry";
 
 const tmpDir = join(import.meta.dir, ".tmp-sign-api");
 let keyManager: MarqueKeyManager;
 let router: (req: Request) => Promise<Response>;
+let originalFetch: typeof fetch | undefined;
+let originalOidcConfig: string | undefined;
+let originalApiKeys: string | undefined;
 
 // =============================================================================
 // SETUP
@@ -31,6 +38,23 @@ beforeAll(async () => {
 
 afterAll(() => {
   if (existsSync(tmpDir)) rmSync(tmpDir, { recursive: true });
+});
+
+beforeEach(() => {
+  originalFetch = globalThis.fetch;
+  originalOidcConfig = process.env.CORSAIR_OIDC_CONFIG;
+  originalApiKeys = process.env.CORSAIR_API_KEYS;
+  resetOIDCCacheForTests();
+});
+
+afterEach(() => {
+  if (originalFetch) globalThis.fetch = originalFetch;
+  if (originalOidcConfig !== undefined) process.env.CORSAIR_OIDC_CONFIG = originalOidcConfig;
+  else delete process.env.CORSAIR_OIDC_CONFIG;
+  if (originalApiKeys !== undefined) process.env.CORSAIR_API_KEYS = originalApiKeys;
+  else delete process.env.CORSAIR_API_KEYS;
+  invalidateApiKeyCache();
+  resetOIDCCacheForTests();
 });
 
 // =============================================================================
@@ -127,6 +151,76 @@ describe("POST /sign — options", () => {
     const data = await res.json();
     expect(data.expiresAt).toBeDefined();
     expect(new Date(data.expiresAt).getTime()).toBeGreaterThan(Date.now());
+  });
+});
+
+// =============================================================================
+// OIDC + SCITT
+// =============================================================================
+
+describe("POST /sign — OIDC keyless + SCITT", () => {
+  test("accepts OIDC token via requireAuth wrapper", async () => {
+    const issuer = "https://issuer.example.com";
+    const audience = "corsair-sign";
+    const jwksUrl = "https://issuer.example.com/jwks";
+
+    const { publicKey, privateKey } = await generateKeyPair("EdDSA");
+    const jwk = await exportJWK(publicKey);
+    jwk.kid = "kid-oidc";
+
+    process.env.CORSAIR_OIDC_CONFIG = JSON.stringify({
+      providers: [
+        {
+          issuer,
+          audiences: [audience],
+          jwksUri: jwksUrl,
+          claimMapping: { email: "email" },
+          requireJti: true,
+        },
+      ],
+    });
+    process.env.CORSAIR_API_KEYS = "";
+    invalidateApiKeyCache();
+
+    globalThis.fetch = async (url: string | URL) => {
+      if (String(url) === jwksUrl) {
+        return new Response(JSON.stringify({ keys: [jwk] }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      return new Response("not found", { status: 404 });
+    };
+
+    const token = await new SignJWT({ email: "agent@example.com" })
+      .setProtectedHeader({ alg: "EdDSA", kid: "kid-oidc" })
+      .setIssuer(issuer)
+      .setAudience(audience)
+      .setSubject("agent-123")
+      .setIssuedAt()
+      .setJti("jti-123")
+      .setExpirationTime("2h")
+      .sign(privateKey);
+
+    const protectedRouter = requireAuth(router);
+    const res = await protectedRouter(makeRequest(
+      { evidence: genericEvidence },
+      { Authorization: `Bearer ${token}` },
+    ));
+
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.extensions?.["ext.oidc"]?.identity?.email).toBe("agent@example.com");
+  });
+
+  test("registers SCITT entry when requested", async () => {
+    const scittRegistry = new MockSCITTRegistry();
+    const scittRouter = createSignRouter({ keyManager, domain: "test.grcorsair.com", scittRegistry });
+    const res = await scittRouter(makeRequest({ evidence: genericEvidence, registerScitt: true }));
+
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.scittEntryId).toMatch(/^entry-/);
   });
 });
 

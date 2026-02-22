@@ -11,7 +11,7 @@
 
 import { createHash } from "crypto";
 import type { KeyManager } from "../src/parley/marque-key-manager";
-import type { EvidenceFormat, SignOutput } from "../src/sign/sign-core";
+import type { EvidenceFormat, SignAuthContext, SignOutput } from "../src/sign/sign-core";
 
 // =============================================================================
 // TYPES
@@ -21,6 +21,7 @@ export interface SignRouterDeps {
   keyManager: KeyManager;
   domain: string;
   db?: SignIdempotencyDb;
+  scittRegistry?: import("../src/parley/scitt-types").SCITTRegistry;
 }
 
 export interface SignRequest {
@@ -41,6 +42,9 @@ export interface SignRequest {
 
   /** Dry-run: parse + classify but don't sign */
   dryRun?: boolean;
+
+  /** Register signed CPOE in SCITT log (default: false) */
+  registerScitt?: boolean;
 }
 
 export interface SignResponse {
@@ -52,6 +56,7 @@ export interface SignResponse {
   warnings: string[];
   extensions?: Record<string, unknown>;
   expiresAt?: string;
+  scittEntryId?: string;
   demo?: boolean;
 }
 
@@ -62,6 +67,10 @@ const MAX_JWT_SIZE = 100_000; // 100KB
 // =============================================================================
 
 type SignIdempotencyDb = (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown[]>;
+
+type RequestWithAuth = Request & {
+  corsairAuth?: import("../src/middleware/auth").CorsairAuthContext;
+};
 
 function jsonError(status: number, message: string): Response {
   return Response.json(
@@ -111,6 +120,8 @@ function hashString(input: string): string {
 function computeIdempotencyHash(
   evidenceHash: string,
   body: SignRequest,
+  authTokenHash?: string,
+  registerScitt?: boolean,
 ): string {
   const payload = {
     evidenceHash,
@@ -119,6 +130,8 @@ function computeIdempotencyHash(
     scope: body.scope || null,
     expiryDays: body.expiryDays || null,
     dryRun: body.dryRun === true,
+    registerScitt: registerScitt === true,
+    authTokenHash: authTokenHash || null,
   };
   return hashString(JSON.stringify(payload));
 }
@@ -131,6 +144,23 @@ function extractScopeFromEvidence(evidence: unknown): string | null {
   if (typeof scope !== "string") return null;
   const trimmed = scope.trim();
   return trimmed ? trimmed : null;
+}
+
+function extractAuthContext(req: Request): SignAuthContext | undefined {
+  const auth = (req as RequestWithAuth).corsairAuth;
+  if (!auth || auth.type !== "oidc") return undefined;
+  const oidc = auth.oidc;
+  return {
+    oidc: {
+      issuer: oidc.issuer,
+      subject: oidc.subject,
+      subjectHash: oidc.subjectHash,
+      audience: oidc.audience,
+      tokenHash: oidc.tokenHash,
+      verifiedAt: oidc.verifiedAt,
+      identity: oidc.identity,
+    },
+  };
 }
 
 // =============================================================================
@@ -146,7 +176,7 @@ function extractScopeFromEvidence(evidence: unknown): string | null {
 export function createSignRouter(
   deps: SignRouterDeps,
 ): (req: Request) => Promise<Response> {
-  const { keyManager, db, domain } = deps;
+  const { keyManager, db, domain, scittRegistry } = deps;
 
   return async (req: Request): Promise<Response> => {
     if (req.method !== "POST") {
@@ -188,10 +218,16 @@ export function createSignRouter(
     }
 
     const effectiveDid = body.did || `did:web:${domain}`;
+    const authContext = extractAuthContext(req);
+
+    const registerScittHeader = req.headers.get("x-corsair-register-scitt");
+    const registerScitt = body.registerScitt === true ||
+      (registerScittHeader ? ["true", "1", "yes"].includes(registerScittHeader.toLowerCase()) : false);
 
     // Check idempotency
     const idempotencyKey = req.headers.get("x-idempotency-key");
-    const requestHash = idempotencyKey ? computeIdempotencyHash(evidenceHash, body) : null;
+    const authTokenHash = authContext?.oidc?.tokenHash;
+    const requestHash = idempotencyKey ? computeIdempotencyHash(evidenceHash, body, authTokenHash, registerScitt) : null;
     if (idempotencyKey && db) {
       try {
         const inserted = await db`
@@ -255,6 +291,7 @@ export function createSignRouter(
         scope: scopeOverride || undefined,
         expiryDays: body.expiryDays,
         dryRun: body.dryRun,
+        authContext,
       }, keyManager);
 
       if (result.jwt && Buffer.byteLength(result.jwt) > MAX_JWT_SIZE) {
@@ -283,6 +320,23 @@ export function createSignRouter(
         } catch { /* non-critical */ }
       }
 
+      let scittEntryId: string | undefined;
+      if (registerScitt) {
+        if (!result.jwt) {
+          return jsonError(400, "Cannot register SCITT entry for dry-run or empty JWT.");
+        }
+        if (!scittRegistry) {
+          return jsonError(400, "SCITT registry not configured on this server.");
+        }
+        try {
+          const registration = await scittRegistry.register(result.jwt);
+          scittEntryId = registration.entryId;
+        } catch (err) {
+          console.error("SCITT registration failed:", err);
+          return jsonError(500, "SCITT registration failed");
+        }
+      }
+
       const response: SignResponse = {
         cpoe: result.jwt,
         marqueId: result.marqueId,
@@ -292,6 +346,7 @@ export function createSignRouter(
         warnings: result.warnings,
         extensions: result.extensions,
         ...(expiresAt ? { expiresAt } : {}),
+        ...(scittEntryId ? { scittEntryId } : {}),
       };
 
       // Cache for idempotency (1 hour TTL)

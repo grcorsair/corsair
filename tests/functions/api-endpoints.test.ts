@@ -7,6 +7,7 @@ import { createDIDJsonHandler } from "../../functions/did-json";
 import { createJWKSJsonHandler } from "../../functions/jwks-json";
 import { createIssueRouter, type IssueRequest, type IssueResponse } from "../../functions/issue";
 import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
+import { MockSCITTRegistry } from "../../src/parley/scitt-registry";
 import type { DIDDocument } from "../../src/parley/did-resolver";
 
 // =============================================================================
@@ -341,6 +342,25 @@ describe("POST /issue", () => {
     expect(body.marqueId).toContain("marque-");
     expect(body.provenance.source).toBe("auditor"); // SOC 2 = auditor provenance
     expect(body.expiresAt).toBeTruthy();
+  });
+
+  test("registers SCITT entry when requested", async () => {
+    const scittRegistry = new MockSCITTRegistry();
+    const router = createIssueRouter({
+      keyManager: keyManager as any,
+      domain: TEST_DOMAIN,
+      scittRegistry,
+    });
+    const req = new Request("http://localhost/issue", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...validIssueBody, registerScitt: true }),
+    });
+
+    const res = await router(req);
+    expect(res.status).toBe(201);
+    const body: IssueResponse = await res.json();
+    expect(body.scittEntryId).toMatch(/^entry-/);
   });
 
   test("issued CPOE verifies successfully", async () => {

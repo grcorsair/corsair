@@ -123,6 +123,29 @@ export default function PublishPage() {
           </FadeIn>
 
           <FadeIn>
+            <div className="rounded-xl border border-corsair-border bg-corsair-surface p-5">
+              <p className="mb-2 font-pixel text-[7px] tracking-wider text-corsair-cyan/60">
+                API
+              </p>
+              <h2 className="mb-2 font-display text-xl font-bold text-corsair-text">
+                Machine-actionable onboarding
+              </h2>
+              <p className="text-sm text-corsair-text-dim">
+                Prefer an API instead of manual steps? Use{" "}
+                <code className="text-corsair-cyan">POST /onboard</code> to
+                receive <code className="text-corsair-cyan">did.json</code>,{" "}
+                <code className="text-corsair-cyan">jwks.json</code>, and{" "}
+                <code className="text-corsair-cyan">trust.txt</code> in one
+                machine-readable response.
+              </p>
+              <div className="mt-3 rounded-lg border border-corsair-border bg-[#0A0A0A] px-4 py-3 font-mono text-[11px] text-corsair-text-dim">
+                curl -X POST https://api.grcorsair.com/onboard -H \"Authorization: Bearer
+                $AUTH_TOKEN\"
+              </div>
+            </div>
+          </FadeIn>
+
+          <FadeIn>
             <div>
               <p className="mb-2 font-pixel text-[7px] tracking-wider text-corsair-green/60">
                 SPEC

@@ -29,10 +29,10 @@ Connect Corsair to 6,000+ apps via Zapier.
 
 ## Authentication
 
-Use **API Key** authentication:
-1. Get your API key from your Corsair account
+Use a Bearer token (API key or OIDC token when configured):
+1. Get your API key from your Corsair account (or use an OIDC token)
 2. In Zapier, add a Custom Request step
-3. Set header: `Authorization: Bearer YOUR_API_KEY`
+3. Set header: `Authorization: Bearer YOUR_TOKEN`
 
 ## Custom Request Setup
 
@@ -41,7 +41,7 @@ Use **API Key** authentication:
 Method: POST
 URL: https://api.grcorsair.com/v1/sign
 Headers:
-  Authorization: Bearer {{api_key}}
+  Authorization: Bearer {{token}}
   Content-Type: application/json
 Body:
 {

@@ -70,6 +70,14 @@ export const TOOL_DEFINITIONS: MCPToolDefinition[] = [
           type: "boolean",
           description: "Parse + classify but don't sign",
         },
+        oidc_token: {
+          type: "string",
+          description: "OIDC token for keyless signing (uses API endpoint)",
+        },
+        endpoint: {
+          type: "string",
+          description: "Optional API base URL for keyless signing (defaults to CORSAIR_API_URL)",
+        },
       },
       required: ["evidence"],
     },
@@ -147,6 +155,46 @@ async function handleSign(
   deps: MCPServerDeps,
 ): Promise<MCPToolResult> {
   try {
+    const oidcToken = args.oidc_token as string | undefined;
+    if (oidcToken) {
+      const endpoint = (args.endpoint as string | undefined) || Bun.env.CORSAIR_API_URL;
+      if (!endpoint) {
+        return {
+          content: [{ type: "text", text: "Missing endpoint. Provide endpoint or set CORSAIR_API_URL." }],
+          isError: true,
+        };
+      }
+
+      const base = endpoint.endsWith("/") ? endpoint.slice(0, -1) : endpoint;
+      const res = await fetch(`${base}/sign`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${oidcToken}`,
+        },
+        body: JSON.stringify({
+          evidence: args.evidence,
+          format: args.format,
+          did: args.did,
+          scope: args.scope,
+          dryRun: args.dryRun,
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        return {
+          content: [{ type: "text", text: `Sign error: ${res.status} ${errText}` }],
+          isError: true,
+        };
+      }
+
+      const output = await res.json();
+      return {
+        content: [{ type: "text", text: JSON.stringify(output, null, 2) }],
+      };
+    }
+
     const { signEvidence } = await import("../sign/sign-core");
 
     const result = await signEvidence({

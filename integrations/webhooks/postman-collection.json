@@ -22,7 +22,7 @@
     },
     {
       "key": "api_key",
-      "value": "YOUR_API_KEY_HERE"
+      "value": "YOUR_TOKEN_HERE"
     }
   ],
   "item": [
@@ -51,14 +51,36 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"evidence\": {\n    \"metadata\": {\n      \"tool\": \"scanner\",\n      \"version\": \"1.2\",\n      \"timestamp\": \"2026-02-14T00:00:00Z\"\n    },\n    \"controls\": [\n      {\n        \"id\": \"iam-mfa-root\",\n        \"name\": \"MFA Enabled for Root Account\",\n        \"status\": \"effective\",\n        \"evidence\": \"Hardware MFA device attached to root account\"\n      }\n    ]\n  },\n  \"scope\": \"SOC 2 Type II — AWS Production\"\n}"
+          "raw": "{\n  \"evidence\": {\n    \"metadata\": {\n      \"tool\": \"scanner\",\n      \"version\": \"1.2\",\n      \"timestamp\": \"2026-02-14T00:00:00Z\"\n    },\n    \"controls\": [\n      {\n        \"id\": \"iam-mfa-root\",\n        \"name\": \"MFA Enabled for Root Account\",\n        \"status\": \"effective\",\n        \"evidence\": \"Hardware MFA device attached to root account\"\n      }\n    ]\n  },\n  \"scope\": \"SOC 2 Type II — AWS Production\",\n  \"registerScitt\": true\n}"
         },
         "url": {
           "raw": "{{base_url}}/sign",
           "host": ["{{base_url}}"],
           "path": ["sign"]
         },
-        "description": "Sign compliance evidence as a CPOE (JWT-VC). Requires API key."
+        "description": "Sign compliance evidence as a CPOE (JWT-VC). Requires API key or OIDC token."
+      }
+    },
+    {
+      "name": "Onboard",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"contact\": \"security@acme.com\",\n  \"frameworks\": [\"SOC2\"],\n  \"includeDefaults\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/onboard",
+          "host": ["{{base_url}}"],
+          "path": ["onboard"]
+        },
+        "description": "Generate did.json, jwks.json, and trust.txt for onboarding. Requires API key or OIDC token."
       }
     },
     {

@@ -115,4 +115,28 @@ describe("rateLimit middleware", () => {
     const res = await handler(req);
     expect(res.status).toBe(200);
   });
+
+  test("uses override rate limit key when provided", async () => {
+    const handler = rateLimit(1)(echoHandler);
+
+    const req1 = new Request("http://localhost/test", {
+      headers: { "x-forwarded-for": "1.2.3.4" },
+    });
+    (req1 as Request & { corsairRateLimitKey?: string }).corsairRateLimitKey = "oidc:user-1";
+
+    const req2 = new Request("http://localhost/test", {
+      headers: { "x-forwarded-for": "1.2.3.4" },
+    });
+    (req2 as Request & { corsairRateLimitKey?: string }).corsairRateLimitKey = "oidc:user-2";
+
+    const res1 = await handler(req1);
+    expect(res1.status).toBe(200);
+    const res2 = await handler(req2);
+    expect(res2.status).toBe(200);
+
+    const res3 = await handler(req1);
+    expect(res3.status).toBe(429);
+    const res4 = await handler(req2);
+    expect(res4.status).toBe(429);
+  });
 });

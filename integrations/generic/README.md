@@ -19,7 +19,7 @@ Connect FLAGSHIP compliance events to any tool with a webhook URL.
 
 ```bash
 curl -X POST https://api.grcorsair.com/v1/webhooks \
-  -H "Authorization: Bearer $CORSAIR_API_KEY" \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://your-tool.example.com/webhook/corsair",

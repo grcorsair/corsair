@@ -118,6 +118,8 @@ export interface V1SignRequest {
   scope?: string;
   expiryDays?: number;
   dryRun?: boolean;
+  /** Register signed CPOE in SCITT log (default: false) */
+  registerScitt?: boolean;
   /** Optional dependency proofs (trust graph) */
   dependencies?: DependencyProof[];
 }
@@ -141,6 +143,7 @@ export interface V1SignResponse {
   warnings: string[];
   extensions?: Record<string, unknown>;
   expiresAt?: string;
+  scittEntryId?: string;
 }
 
 // =============================================================================

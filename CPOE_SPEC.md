@@ -119,7 +119,8 @@ record exists in the chain without disclosing the record. Receipts verify agains
 `evidenceChain.chainDigest`.
 
 **Extensions namespace rules:** `extensions` keys must be `mapping`, `passthrough`, or namespaced with
-`x-` / `ext.`. Unknown un-namespaced keys are invalid.
+`x-` / `ext.`. Unknown un-namespaced keys are invalid. `ext.oidc` is reserved for keyless signing
+delegation metadata (issuer, subject hash, audience, token hash, verification timestamp).
 
 ## 4. Verification Flow
 
@@ -239,6 +240,10 @@ These are not required for verification but enable advanced trust workflows.
 - **FLAGSHIP**: Real-time compliance change signals via OpenID SSF/CAEP (drift, revocation, tier changes).
 - **SD-JWT**: Selective disclosure -- prove compliance without exposing the full assessment.
 - **Verifiable Presentations**: Bundle multiple VCs for third-party attestations.
+- **OIDC Delegation**: `extensions["ext.oidc"]` captures keyless signing provenance:
+  `{ issuer, subject, subjectHash, audience[], tokenHash, verifiedAt, identity? }`,
+  where `identity` may include mapped claims (e.g., `email`, `name`, `organization`, `username`)
+  when configured server-side.
 
 ---
 

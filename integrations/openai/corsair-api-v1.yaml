@@ -50,6 +50,7 @@ paths:
       description: |
         Parse compliance evidence, record provenance, and sign as a JWT-VC (W3C Verifiable Credential)
         with Ed25519 signature. Auto-detects evidence format from JSON structure.
+        Requires a Bearer token (API key or OIDC token when configured).
       security:
         - BearerAuth: []
       requestBody:
@@ -84,6 +85,10 @@ paths:
                   type: integer
                   description: Days until CPOE expires (default 7)
                   example: 7
+                registerScitt:
+                  type: boolean
+                  description: Register signed CPOE in SCITT log (default: false). Also accepts x-corsair-register-scitt header.
+                  default: false
                 dryRun:
                   type: boolean
                   description: Preview without signing
@@ -106,7 +111,45 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "401":
-          description: Missing or invalid API key
+          description: Missing or invalid API key or OIDC token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /onboard:
+    post:
+      operationId: onboardAgent
+      summary: Generate onboarding artifacts
+      description: |
+        Generate machine-actionable onboarding files for publishing:
+        - did.json
+        - jwks.json
+        - trust.txt
+        Requires a Bearer token (API key or OIDC token when configured).
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardRequest"
+      responses:
+        "200":
+          description: Onboarding artifacts generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardResponse"
+        "400":
+          description: Invalid onboarding parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid API key or OIDC token
           content:
             application/json:
               schema:
@@ -178,9 +221,99 @@ components:
     BearerAuth:
       type: http
       scheme: bearer
-      description: API key for authenticated endpoints (sign, issue). Verify is always free.
+      description: API key or OIDC token for authenticated endpoints (sign, issue, onboard). Verify is always free.
 
   schemas:
+    OnboardRequest:
+      type: object
+      properties:
+        domain:
+          type: string
+          description: Domain for onboarding (must match server domain)
+        did:
+          type: string
+          description: DID override (must match domain; no path support)
+        cpoes:
+          type: array
+          items:
+            type: string
+          description: CPOE URLs to list in trust.txt
+        scitt:
+          type: string
+          description: SCITT endpoint override
+        catalog:
+          type: string
+          description: Catalog snapshot URL
+        policy:
+          type: string
+          description: Policy artifact URL
+        flagship:
+          type: string
+          description: FLAGSHIP stream endpoint override
+        frameworks:
+          type: array
+          items:
+            type: string
+          description: Compliance frameworks in scope
+        contact:
+          type: string
+          description: Compliance contact
+        expiryDays:
+          type: integer
+          description: trust.txt expiry window in days (default: 365)
+        includeDefaults:
+          type: boolean
+          description: Populate default SCITT/FLAGSHIP URLs (default: true)
+    OnboardResponse:
+      type: object
+      properties:
+        domain:
+          type: string
+        did:
+          type: string
+        urls:
+          type: object
+          properties:
+            didJson:
+              type: string
+            jwksJson:
+              type: string
+            trustTxt:
+              type: string
+        files:
+          type: object
+          properties:
+            didJson:
+              type: object
+              properties:
+                path:
+                  type: string
+                mediaType:
+                  type: string
+                content:
+                  type: object
+            jwksJson:
+              type: object
+              properties:
+                path:
+                  type: string
+                mediaType:
+                  type: string
+                content:
+                  type: object
+            trustTxt:
+              type: object
+              properties:
+                path:
+                  type: string
+                mediaType:
+                  type: string
+                content:
+                  type: string
+                parsed:
+                  type: object
+                validation:
+                  type: object
     SignResponse:
       type: object
       properties:
@@ -197,6 +330,9 @@ components:
               type: string
               description: Unique CPOE identifier
               example: "marque-a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+            scittEntryId:
+              type: string
+              description: SCITT entry ID when registered
             detectedFormat:
               type: string
               description: Auto-detected evidence format

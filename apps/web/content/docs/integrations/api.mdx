@@ -24,11 +24,12 @@ The hosted API requires Postgres for key storage, SCITT entries, and audit trail
 
 ## Authentication
 
-Protected endpoints require a Bearer token in the `Authorization` header. API keys are provisioned per-organization.
+Protected endpoints require a Bearer token in the `Authorization` header. Use an API key or an OIDC token (when OIDC is configured).
+OIDC issuers are configured via `CORSAIR_OIDC_CONFIG` and may include `claimMapping` and `requireJti`.
 
 ```bash
 curl -X POST https://api.grcorsair.com/sign \
-  -H "Authorization: Bearer csk_live_abc123..." \
+  -H "Authorization: Bearer <api-key-or-oidc-token>" \
   -H "Content-Type: application/json" \
   -d '{"evidence": {...}}'
 ```
@@ -41,6 +42,7 @@ Public endpoints (verify, health) require no authentication.
 | `POST /sign` | Yes |
 | `POST /verify` | No |
 | `POST /issue` | Yes |
+| `POST /onboard` | Yes |
 | `GET /scitt/entries` | No |
 | `POST /scitt/entries` | Yes |
 | `POST /ssf/streams` | Yes |
@@ -68,12 +70,12 @@ Error responses use the same envelope:
 
 ## POST /sign
 
-Sign evidence into a CPOE (JWT-VC). Accepts raw tool output via mapping packs or generic format. Requires authentication.
+Sign evidence into a CPOE (JWT-VC). Accepts raw tool output via mapping packs or generic format. Requires authentication (API key or OIDC token).
 To support additional tools without code changes, configure the mapping registry on the API server via `CORSAIR_MAPPING_DIR`, `CORSAIR_MAPPING_FILE`, or `corsair mappings add`. Build packs with `corsair mappings pack` and sign them with `corsair mappings sign`. Mappings are evaluated by priority (higher wins), then filename order. Signed packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set.
 
 ```bash
 curl -X POST https://api.grcorsair.com/sign \
-  -H "Authorization: Bearer $CORSAIR_API_KEY" \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "evidence": {
@@ -98,6 +100,7 @@ curl -X POST https://api.grcorsair.com/sign \
 | `expiryDays` | number | No | CPOE validity in days (default: 7) |
 | `dryRun` | boolean | No | Parse without signing |
 | `dependencies` | array | No | Dependency proofs to attach (trust graph) |
+| `registerScitt` | boolean | No | Register signed CPOE in SCITT log (default: false). Also accepts header `x-corsair-register-scitt: true`. |
 
 **Response (issuer defaults to `did:web:<CORSAIR_DOMAIN>` if not provided):**
 
@@ -124,7 +127,75 @@ curl -X POST https://api.grcorsair.com/sign \
       "passthrough": { "summary": { "passed": 12, "failed": 2 } }
     },
     "warnings": [],
-    "expiresAt": "2026-05-14T00:00:00.000Z"
+    "expiresAt": "2026-05-14T00:00:00.000Z",
+    "scittEntryId": "entry-acde1234-..."
+  }
+}
+```
+
+Note: `registerScitt` is also supported by `POST /issue` and returns `scittEntryId` when enabled.
+
+## POST /onboard
+
+Generate machine-actionable onboarding artifacts (`did.json`, `jwks.json`, `trust.txt`) for your domain.
+Requires authentication (API key or OIDC token).
+
+```bash
+curl -X POST https://api.grcorsair.com/onboard \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contact": "security@acme.com",
+    "frameworks": ["SOC2", "ISO27001"],
+    "includeDefaults": true
+  }'
+```
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|:------|:-----|:---------|:-----------|
+| `domain` | string | No | Domain for onboarding (must match server domain) |
+| `did` | string | No | DID override (must match domain; no path support) |
+| `cpoes` | array | No | CPOE URLs to list in trust.txt |
+| `scitt` | string | No | SCITT endpoint override |
+| `catalog` | string | No | Catalog snapshot URL |
+| `policy` | string | No | Policy artifact URL |
+| `flagship` | string | No | FLAGSHIP stream endpoint override |
+| `frameworks` | array | No | Compliance frameworks in scope |
+| `contact` | string | No | Compliance contact |
+| `expiryDays` | number | No | trust.txt expiry window in days (default: 365) |
+| `includeDefaults` | boolean | No | Populate default SCITT/FLAGSHIP URLs (default: true) |
+
+**Response (machine-actionable files):**
+
+```json
+{
+  "domain": "acme.com",
+  "did": "did:web:acme.com",
+  "urls": {
+    "didJson": "https://acme.com/.well-known/did.json",
+    "jwksJson": "https://acme.com/.well-known/jwks.json",
+    "trustTxt": "https://acme.com/.well-known/trust.txt"
+  },
+  "files": {
+    "didJson": {
+      "path": "/.well-known/did.json",
+      "mediaType": "application/did+ld+json",
+      "content": { "@context": ["https://www.w3.org/ns/did/v1"] }
+    },
+    "jwksJson": {
+      "path": "/.well-known/jwks.json",
+      "mediaType": "application/jwk-set+json",
+      "content": { "keys": [] }
+    },
+    "trustTxt": {
+      "path": "/.well-known/trust.txt",
+      "mediaType": "text/plain",
+      "content": "DID: did:web:acme.com\\n...",
+      "parsed": { "did": "did:web:acme.com", "cpoes": [], "frameworks": [] },
+      "validation": { "valid": true, "errors": [] }
+    }
   }
 }
 ```

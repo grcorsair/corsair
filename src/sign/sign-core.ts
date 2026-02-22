@@ -22,6 +22,20 @@ import { computeSummaryFromControls, computeSeverityDistribution } from "../inge
 /** Supported evidence format identifiers */
 export type EvidenceFormat = "generic";
 
+export interface OIDCDelegation {
+  issuer: string;
+  subject: string;
+  subjectHash: string;
+  audience: string[];
+  tokenHash: string;
+  verifiedAt: string;
+  identity?: Record<string, string>;
+}
+
+export interface SignAuthContext {
+  oidc?: OIDCDelegation;
+}
+
 export interface SignInput {
   /** Raw JSON string or parsed object */
   evidence: string | object;
@@ -52,6 +66,9 @@ export interface SignInput {
 
   /** Optional dependency proofs to embed (trust graph) */
   dependencies?: DependencyProof[];
+
+  /** Optional auth context (e.g., OIDC delegation) */
+  authContext?: SignAuthContext;
 }
 
 export interface SignDocumentInput {
@@ -81,6 +98,9 @@ export interface SignDocumentInput {
 
   /** Optional dependency proofs to embed (trust graph) */
   dependencies?: DependencyProof[];
+
+  /** Optional auth context (e.g., OIDC delegation) */
+  authContext?: SignAuthContext;
 }
 
 export interface SignOutput {
@@ -159,6 +179,7 @@ export async function signEvidence(
       sdJwt: input.sdJwt,
       sdFields: input.sdFields,
       dependencies: input.dependencies,
+      authContext: input.authContext,
     },
     keyManager,
   );
@@ -177,6 +198,25 @@ export async function signDocument(
 
   // Detect format name for output
   const detectedFormat = detectFormatName(doc, input.format);
+
+  // Attach auth context (if present) to document extensions
+  if (input.authContext?.oidc) {
+    const existing = doc.extensions && typeof doc.extensions === "object"
+      ? doc.extensions
+      : {};
+    doc.extensions = {
+      ...existing,
+      "ext.oidc": {
+        issuer: input.authContext.oidc.issuer,
+        subject: input.authContext.oidc.subject,
+        subjectHash: input.authContext.oidc.subjectHash,
+        audience: input.authContext.oidc.audience,
+        tokenHash: input.authContext.oidc.tokenHash,
+        verifiedAt: input.authContext.oidc.verifiedAt,
+        ...(input.authContext.oidc.identity ? { identity: input.authContext.oidc.identity } : {}),
+      },
+    };
+  }
 
   // Apply scope override
   if (input.scope) {

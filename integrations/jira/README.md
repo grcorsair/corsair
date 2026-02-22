@@ -41,7 +41,7 @@ Register the Jira automation webhook URL with Corsair:
 
 ```bash
 curl -X POST https://api.grcorsair.com/v1/webhooks \
-  -H "Authorization: Bearer $CORSAIR_API_KEY" \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://automation.atlassian.com/pro/hooks/YOUR_HOOK_ID",

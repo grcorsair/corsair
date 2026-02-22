@@ -20,7 +20,7 @@ const FORMAT_OPTIONS = [
   { value: "generic", label: "Generic (controls array)" },
 ];
 
-/** Persist and retrieve API key from localStorage */
+/** Persist and retrieve auth token (API key or OIDC) from localStorage */
 function getStoredApiKey(): string {
   if (typeof window === "undefined") return "";
   return localStorage.getItem("corsair-api-key") ?? "";
@@ -317,16 +317,16 @@ export function SignWizard() {
 
           <Separator className="bg-corsair-border/50" />
 
-          {/* API Key */}
+          {/* API Key / OIDC Token */}
           <div>
             <label className="mb-1 block font-mono text-xs uppercase text-muted-foreground">
-              API Key
+              API Key or OIDC Token
             </label>
             <input
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Enter your Corsair API key..."
+              placeholder="Enter your Corsair API key or OIDC token..."
               className="w-full rounded border border-input bg-card px-3 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground/40"
             />
             <p className="mt-1 text-[10px] text-muted-foreground">

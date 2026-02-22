@@ -14,12 +14,14 @@
 import { createHash } from "crypto";
 import type { KeyManager } from "../src/parley/marque-key-manager";
 import type { IngestedDocument, IngestedControl, DocumentSource, DocumentMetadata } from "../src/ingestion/types";
+import type { SignAuthContext } from "../src/sign/sign-core";
 import { signDocument } from "../src/sign/sign-core";
 
 export interface IssueRouterDeps {
   keyManager: KeyManager;
   domain: string;
   db?: IssueIdempotencyDb;
+  scittRegistry?: import("../src/parley/scitt-types").SCITTRegistry;
 }
 
 function jsonError(status: number, message: string): Response {
@@ -85,6 +87,9 @@ export interface IssueRequest {
 
   /** Optional CPOE expiry in days (default: 90) */
   expiryDays?: number;
+
+  /** Register signed CPOE in SCITT log (default: false) */
+  registerScitt?: boolean;
 }
 
 export interface IssueResponse {
@@ -95,11 +100,16 @@ export interface IssueResponse {
     sourceIdentity?: string;
   };
   expiresAt: string;
+  scittEntryId?: string;
 }
 
 const MAX_JWT_SIZE = 100_000; // 100KB
 
 type IssueIdempotencyDb = (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown[]>;
+
+type RequestWithAuth = Request & {
+  corsairAuth?: import("../src/middleware/auth").CorsairAuthContext;
+};
 
 const idempotencyCache = new Map<string, { response: IssueResponse; expiresAt: number }>();
 
@@ -118,8 +128,29 @@ function hashString(input: string): string {
   return createHash("sha256").update(input).digest("hex");
 }
 
-function computeRequestHash(body: IssueRequest): string {
-  return hashString(JSON.stringify(body));
+function computeRequestHash(body: IssueRequest, authTokenHash?: string, registerScitt?: boolean): string {
+  return hashString(JSON.stringify({
+    ...body,
+    registerScitt: registerScitt === true,
+    authTokenHash: authTokenHash || null,
+  }));
+}
+
+function extractAuthContext(req: Request): SignAuthContext | undefined {
+  const auth = (req as RequestWithAuth).corsairAuth;
+  if (!auth || auth.type !== "oidc") return undefined;
+  const oidc = auth.oidc;
+  return {
+    oidc: {
+      issuer: oidc.issuer,
+      subject: oidc.subject,
+      subjectHash: oidc.subjectHash,
+      audience: oidc.audience,
+      tokenHash: oidc.tokenHash,
+      verifiedAt: oidc.verifiedAt,
+      identity: oidc.identity,
+    },
+  };
 }
 
 /**
@@ -128,7 +159,7 @@ function computeRequestHash(body: IssueRequest): string {
 export function createIssueRouter(
   deps: IssueRouterDeps,
 ): (req: Request) => Promise<Response> {
-  const { keyManager, domain, db } = deps;
+  const { keyManager, domain, db, scittRegistry } = deps;
 
   return async (req: Request): Promise<Response> => {
     if (req.method !== "POST") {
@@ -149,9 +180,15 @@ export function createIssueRouter(
       return jsonError(400, validation);
     }
 
+    const registerScittHeader = req.headers.get("x-corsair-register-scitt");
+    const registerScitt = body.registerScitt === true ||
+      (registerScittHeader ? ["true", "1", "yes"].includes(registerScittHeader.toLowerCase()) : false);
+
     // Idempotency handling
     const idempotencyKey = req.headers.get("x-idempotency-key");
-    const requestHash = idempotencyKey ? computeRequestHash(body) : null;
+    const authContext = extractAuthContext(req);
+    const authTokenHash = authContext?.oidc?.tokenHash;
+    const requestHash = idempotencyKey ? computeRequestHash(body, authTokenHash, registerScitt) : null;
     if (idempotencyKey && db) {
       try {
         const inserted = await db`
@@ -231,6 +268,7 @@ export function createIssueRouter(
         document: doc,
         did,
         expiryDays: body.expiryDays || 90,
+        authContext,
       }, keyManager);
 
       if (!output.jwt) {
@@ -258,6 +296,23 @@ export function createIssueRouter(
       const cs = vc?.credentialSubject as Record<string, unknown>;
       const provenance = cs?.provenance as { source: string; sourceIdentity?: string };
 
+      let scittEntryId: string | undefined;
+      if (registerScitt) {
+        if (!output.jwt) {
+          return jsonError(400, "Cannot register SCITT entry for empty JWT.");
+        }
+        if (!scittRegistry) {
+          return jsonError(400, "SCITT registry not configured on this server.");
+        }
+        try {
+          const registration = await scittRegistry.register(output.jwt);
+          scittEntryId = registration.entryId;
+        } catch (err) {
+          console.error("SCITT registration failed:", err);
+          return jsonError(500, "SCITT registration failed");
+        }
+      }
+
       const response: IssueResponse = {
         cpoe: output.jwt,
         marqueId: output.marqueId,
@@ -266,6 +321,7 @@ export function createIssueRouter(
           sourceIdentity: provenance?.sourceIdentity,
         },
         expiresAt: vc?.validUntil as string || new Date(Date.now() + 90 * 86400000).toISOString(),
+        ...(scittEntryId ? { scittEntryId } : {}),
       };
 
       if (idempotencyKey && db && requestHash) {

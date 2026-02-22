@@ -81,9 +81,28 @@ corsair diff --current q2.jwt --previous q1.jwt
 |:--|:--|:--|
 | `DATABASE_URL` | Postgres connection string for persistence | Yes (server) |
 | `CORSAIR_KEY_ENCRYPTION_SECRET` | 32-byte key for AES-256-GCM signing key encryption (64 hex chars or base64) | Yes (server) |
-| `CORSAIR_API_KEYS` | Comma-separated API keys for authenticated endpoints | Yes (prod) |
+| `CORSAIR_API_KEYS` | Comma-separated API keys for authenticated endpoints | Yes (prod, unless OIDC is configured) |
+| `CORSAIR_OIDC_CONFIG` | JSON config for OIDC issuers (keyless signing) | No |
 | `CORSAIR_DOMAIN` | Public domain for DID:web and trust.txt generation | Recommended |
 | `CORSAIR_MAPPING_PACK_PUBKEY` | Ed25519 public key PEM to verify signed mapping packs | Optional |
+
+`CORSAIR_OIDC_CONFIG` example:
+```json
+{
+  "providers": [
+    {
+      "issuer": "https://accounts.google.com",
+      "audiences": ["corsair-sign"],
+      "requireJti": true,
+      "claimMapping": {
+        "subject": "sub",
+        "email": "email",
+        "organization": "hd"
+      }
+    }
+  ]
+}
+```
 
 ---
 
@@ -460,10 +479,15 @@ Tools: `corsair_sign`, `corsair_verify`, `corsair_diff`, `corsair_formats`
 ### API
 
 ```bash
-# Sign (requires auth)
+# Sign (requires auth: API key or OIDC token)
 curl -X POST https://api.grcorsair.com/sign \
-  -H "Authorization: Bearer $API_KEY" \
-  -d '{"evidence": {...}}'
+  -H "Authorization: Bearer $AUTH_TOKEN" \
+  -d '{"evidence": {...}, "registerScitt": true}'
+
+# Onboard (generate did.json, jwks.json, trust.txt)
+curl -X POST https://api.grcorsair.com/onboard \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
+  -d '{"contact":"security@acme.com","frameworks":["SOC2"]}'
 
 # Verify (no auth required)
 curl -X POST https://api.grcorsair.com/verify \

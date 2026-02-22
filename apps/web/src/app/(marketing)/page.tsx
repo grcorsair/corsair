@@ -87,7 +87,7 @@ export default function Home() {
               Quick Start
             </h2>
             <p className="mb-8 text-center text-corsair-text-dim">
-              Sign tool output. Verify any CPOE. Diff over time. Log and publish proofs. Signal changes in real time. No API keys needed to get started.
+              Sign tool output. Verify any CPOE. Diff over time. Log and publish proofs. Signal changes in real time. No API keys needed to get started (OIDC tokens work for production).
             </p>
           </FadeIn>
           <SlideIn from="right" delay={0.2}>

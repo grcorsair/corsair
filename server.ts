@@ -9,6 +9,7 @@
  * PRODUCT LAYER (customer-facing):
  *   POST /verify                        — Free CPOE verification (adoption driver)
  *   POST /issue                         — CPOE issuance (revenue)
+ *   POST /onboard                       — Machine-actionable onboarding artifacts
  *
  * TRUST ANCHORS:
  *   GET /.well-known/did.json           — DID Document (Ed25519 public key)
@@ -44,6 +45,7 @@ import { createJWKSJsonHandler } from "./functions/jwks-json";
 import { createIssueRouter } from "./functions/issue";
 import { createSignRouter } from "./functions/sign";
 import { createDemoSignRouter } from "./functions/sign-demo";
+import { createOnboardRouter } from "./functions/onboard";
 import { requireAuth } from "./src/middleware/auth";
 import { rateLimitPg } from "./src/middleware/rate-limit";
 import { withSecurityHeaders } from "./src/middleware/security-headers";
@@ -79,6 +81,7 @@ let verifyRouter: ((req: Request) => Promise<Response>) | null = null;
 let signRouter: ((req: Request) => Response | Promise<Response>) | null = null;
 let demoSignRouter: ((req: Request) => Response | Promise<Response>) | null = null;
 let issueRouter: ((req: Request) => Response | Promise<Response>) | null = null;
+let onboardRouter: ((req: Request) => Promise<Response>) | null = null;
 let didJsonHandler: ((req: Request) => Promise<Response>) | null = null;
 let jwksJsonHandler: ((req: Request) => Promise<Response>) | null = null;
 let ssfConfigHandler: ((req: Request) => Response) | null = null;
@@ -188,6 +191,10 @@ const server = Bun.serve({
       return issueRouter!(req);
     }
 
+    if (path === "/onboard" || path === "/v1/onboard") {
+      return onboardRouter!(req);
+    }
+
     // =========================================================================
     // TRUST ANCHORS
     // =========================================================================
@@ -241,6 +248,7 @@ const server = Bun.serve({
           product: ["POST /verify", "POST /sign", "POST /issue"],
           trust: ["GET /.well-known/did.json", "GET /.well-known/jwks.json"],
           infrastructure: ["GET /scitt/entries", "POST /scitt/entries", "POST /ssf/streams"],
+          onboarding: ["POST /onboard"],
           public: ["GET /badge/<id>.svg", "GET /badge/did/<domain>.svg", "GET /profile/<domain>"],
           ops: ["GET /health"],
         },
@@ -332,13 +340,17 @@ async function initialize() {
     }
   }, 10 * 60 * 1000);
 
-  // 7. Validate API keys in production
+  // 7. Validate auth configuration in production
   const configuredApiKeys = (Bun.env.CORSAIR_API_KEYS || "").split(",").filter((k: string) => k.trim());
-  if (configuredApiKeys.length === 0) {
+  const hasApiKeys = configuredApiKeys.length > 0;
+  const hasOidc = (Bun.env.CORSAIR_OIDC_CONFIG || "").trim().length > 0;
+  if (!hasApiKeys && !hasOidc) {
     if (Bun.env.RAILWAY_ENVIRONMENT === "production") {
-      throw new Error("CORSAIR_API_KEYS required in production");
+      throw new Error("CORSAIR_API_KEYS or CORSAIR_OIDC_CONFIG required in production");
     }
-    console.warn("  Init: WARNING — No CORSAIR_API_KEYS set");
+    console.warn("  Init: WARNING — No CORSAIR_API_KEYS or CORSAIR_OIDC_CONFIG set");
+  } else if (!hasApiKeys) {
+    console.warn("  Init: API keys not configured — OIDC auth only");
   }
 
   // 8. Wire up routers
@@ -372,12 +384,23 @@ async function initialize() {
     getIssuerProfile: (issuerDID) => registry.getIssuerProfile(issuerDID),
   }));
 
-  signRouter = requireAuth(rateLimitPg(db as any, 10)(createSignRouter({ keyManager, domain: DOMAIN, db })));
+  signRouter = requireAuth(rateLimitPg(db as any, 10)(createSignRouter({
+    keyManager,
+    domain: DOMAIN,
+    db,
+    scittRegistry: registry,
+  })));
   demoSignRouter = rateLimitPg(db as any, 5)(createDemoSignRouter({
     keyManager: demoKeyManager,
     demoDid: Bun.env.CORSAIR_DEMO_DID || `did:web:${DOMAIN}:demo`,
   }));
-  issueRouter = requireAuth(rateLimitPg(db as any, 10)(createIssueRouter({ keyManager, domain: DOMAIN, db })));
+  issueRouter = requireAuth(rateLimitPg(db as any, 10)(createIssueRouter({
+    keyManager,
+    domain: DOMAIN,
+    db,
+    scittRegistry: registry,
+  })));
+  onboardRouter = requireAuth(rateLimitPg(db as any, 5)(createOnboardRouter({ keyManager, domain: DOMAIN })));
   ssfRouter = requireAuth(rateLimitPg(db as any, 30)(createSSFStreamRouter({ streamManager })));
   scittRouter = requireAuth(rateLimitPg(db as any, 30)(createSCITTRouter({ registry })));
 

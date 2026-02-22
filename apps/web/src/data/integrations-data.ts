@@ -191,7 +191,7 @@ export const INTEGRATIONS: Integration[] = [
     name: "Hosted API",
     category: "sign-verify",
     status: "available",
-    description: "REST API at api.grcorsair.com — free verification, auth for signing",
+    description: "REST API at api.grcorsair.com — free verification, auth for signing/onboarding",
     docsUrl: "/docs/integrations/api",
     snippet: "curl -X POST https://api.grcorsair.com/v1/verify -d '{\"cpoe\":\"eyJ...\"}'",
   },
@@ -391,7 +391,7 @@ export const INTEGRATIONS: Integration[] = [
     status: "available",
     description: "Direct HTTP calls — works with any language",
     docsUrl: "/docs/integrations/api",
-    snippet: "curl -X POST https://api.grcorsair.com/v1/sign -H 'Authorization: Bearer $KEY'",
+    snippet: "curl -X POST https://api.grcorsair.com/v1/sign -H 'Authorization: Bearer $AUTH_TOKEN'",
   },
   {
     id: "openapi",

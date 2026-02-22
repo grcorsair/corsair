@@ -34,6 +34,17 @@ function getClientIp(req: Request): string {
   return "unknown";
 }
 
+function getRateLimitKey(req: Request, includePath = false): string {
+  const override = (req as Request & { corsairRateLimitKey?: string }).corsairRateLimitKey;
+  if (override && typeof override === "string" && override.trim().length > 0) {
+    return override;
+  }
+  const ip = getClientIp(req);
+  if (!includePath) return ip;
+  const path = new URL(req.url).pathname;
+  return `${ip}:${req.method}:${path}`;
+}
+
 type RateLimitDb = (strings: TemplateStringsArray, ...values: unknown[]) => Promise<Array<{ count: number }>>;
 
 /**
@@ -49,7 +60,7 @@ export function rateLimit(
 ): (handler: (req: Request) => Response | Promise<Response>) => (req: Request) => Response | Promise<Response> {
   return (handler) => {
     return async (req: Request) => {
-      const ip = getClientIp(req);
+      const ip = getRateLimitKey(req);
       const now = Date.now();
       const entry = store.get(ip);
 
@@ -90,9 +101,7 @@ export function rateLimitPg(
 ): (handler: (req: Request) => Response | Promise<Response>) => (req: Request) => Response | Promise<Response> {
   return (handler) => {
     return async (req: Request) => {
-      const ip = getClientIp(req);
-      const path = new URL(req.url).pathname;
-      const key = `${ip}:${req.method}:${path}`;
+      const key = getRateLimitKey(req, true);
       const now = Date.now();
       const windowStartMs = Math.floor(now / windowMs) * windowMs;
       const windowStart = new Date(windowStartMs);

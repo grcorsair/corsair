@@ -4,7 +4,7 @@
  * Tests for the MCP tool handlers.
  */
 
-import { describe, test, expect, beforeAll, afterAll } from "bun:test";
+import { describe, test, expect, beforeAll, afterAll, afterEach } from "bun:test";
 import { existsSync, mkdirSync, rmSync } from "fs";
 import { join } from "path";
 import { TOOL_DEFINITIONS, handleToolCall } from "../../src/mcp/corsair-mcp-server";
@@ -12,16 +12,22 @@ import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
 
 const tmpDir = join(import.meta.dir, ".tmp-mcp-test");
 let keyManager: MarqueKeyManager;
+let originalFetch: typeof fetch | undefined;
 
 beforeAll(async () => {
   if (existsSync(tmpDir)) rmSync(tmpDir, { recursive: true });
   mkdirSync(tmpDir, { recursive: true });
   keyManager = new MarqueKeyManager(join(tmpDir, "keys"));
   await keyManager.generateKeypair();
+  originalFetch = globalThis.fetch;
 });
 
 afterAll(() => {
   if (existsSync(tmpDir)) rmSync(tmpDir, { recursive: true });
+});
+
+afterEach(() => {
+  if (originalFetch) globalThis.fetch = originalFetch;
 });
 
 const deps = { get keyManager() { return keyManager; } };
@@ -87,6 +93,37 @@ describe("corsair_sign tool", () => {
     const result = await handleToolCall("corsair_sign", { evidence: "not json {" }, deps);
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain("error");
+  });
+
+  test("supports keyless signing via oidc_token + endpoint", async () => {
+    let capturedAuth = "";
+    let capturedUrl = "";
+    let capturedBody = "";
+
+    globalThis.fetch = async (url: string | URL, init?: RequestInit) => {
+      capturedUrl = String(url);
+      capturedAuth = String((init?.headers as Record<string, string>)?.Authorization || "");
+      capturedBody = String(init?.body || "");
+      return new Response(JSON.stringify({ cpoe: "eyJ.test.jwt", detectedFormat: "generic" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    };
+
+    const result = await handleToolCall(
+      "corsair_sign",
+      {
+        evidence: genericEvidence,
+        oidc_token: "oidc-token-123",
+        endpoint: "https://api.example.com",
+      },
+      deps,
+    );
+
+    expect(result.isError).toBeUndefined();
+    expect(capturedUrl).toBe("https://api.example.com/sign");
+    expect(capturedAuth).toBe("Bearer oidc-token-123");
+    expect(capturedBody).toContain("\"evidence\"");
   });
 });
 
