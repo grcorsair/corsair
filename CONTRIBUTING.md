@@ -1,4 +1,4 @@
-# Contributing to CORSAIR
+# Contributing to Corsair
 
 **Welcome aboard, future crew member!**
 
@@ -34,23 +34,46 @@ bun test
 6. Update documentation if needed
 7. Submit PR with clear description
 
+## Repo Guardrails (Must Follow)
+
+- **Follow `AGENTS.md`** — it is the source of truth for workflow and commands.
+- **Bun only** for scripts/tests unless explicitly requested otherwise.
+- **No new dependencies** without asking first.
+- **Never commit secrets** or `.env` files.
+- **Use `import type`** for type-only imports.
+- **Avoid destructive git commands** unless explicitly requested.
+
+## Commit Messages (Conventional Commits)
+
+Use one of:
+- `feat:` new feature
+- `fix:` bug fix
+- `docs:` documentation only
+- `chore:` tooling/maintenance
+- `refactor:` code change without behavior change
+- `test:` tests only
+- `style:` formatting/no logic change
+
+Scope is optional, e.g. `feat(web): add trust.txt generator page`.
+
 ## Code Style
 
 - **TypeScript strict mode** - No implicit any
 - **Explicit types** over inference where it improves clarity
-- **Pirate terminology** in protocol concepts (MARQUE, CHART, QUARTER, FLAGSHIP)
+- **Protocol terminology** in spec-aligned concepts (MARQUE, CHART, QUARTER, FLAGSHIP)
 - **Professional terminology** in code internals (functions, variables, types)
-- **Comprehensive tests** - Aim for >80% coverage
+- **Comprehensive tests** - favor clear, targeted tests over blanket coverage goals
 
 ## Adding Document Parsers
 
-CORSAIR uses an ingestion pipeline to extract compliance data from documents. See `src/ingestion/` for reference implementations.
+Corsair uses an ingestion pipeline and mapping registry to extract compliance data from documents. See `src/ingestion/` for reference implementations.
 
 **Parser Requirements:**
 1. Implement `IngestedDocument` output format
 2. Add your source to the `DocumentSource` type
-3. Map extracted controls to framework identifiers
-4. Write comprehensive tests
+3. Add a mapping pack or mapping rule in `src/ingestion/mapping-registry.ts`
+4. Map extracted controls to framework identifiers
+5. Write comprehensive tests
 
 ## Testing Guidelines
 
@@ -59,10 +82,20 @@ CORSAIR uses an ingestion pipeline to extract compliance data from documents. Se
 - **Protocol tests**: Test Parley exchange, SCITT registration, FLAGSHIP signals
 - **Evidence validation**: Verify Ed25519 signatures and hash chain integrity
 
-Run tests with coverage:
+Run targeted tests first, then the full suite:
 ```bash
-bun test --coverage
+bun test
 ```
+
+## Full-Codebase Sync Rule (Mandatory)
+
+When you change **any command, flag, format, or terminology**, you must update all references across the repo.
+
+1. Grep the whole repo for the old term.
+2. Update every hit (docs, marketing, specs, tests, CLI, web).
+3. Re‑grep to confirm zero stale references.
+
+This prevents drift between CLI, docs, marketing pages, and specs.
 
 ## Reporting Issues
 
