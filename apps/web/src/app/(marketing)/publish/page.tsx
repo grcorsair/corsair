@@ -139,8 +139,8 @@ export default function PublishPage() {
                 machine-readable response.
               </p>
               <div className="mt-3 rounded-lg border border-corsair-border bg-[#0A0A0A] px-4 py-3 font-mono text-[11px] text-corsair-text-dim">
-                curl -X POST https://api.grcorsair.com/onboard -H \"Authorization: Bearer
-                $AUTH_TOKEN\"
+                curl -X POST https://api.grcorsair.com/onboard -H &quot;Authorization: Bearer
+                $AUTH_TOKEN&quot;
               </div>
             </div>
           </FadeIn>
