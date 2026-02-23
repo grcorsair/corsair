@@ -604,6 +604,8 @@ tests/                     # Test suite
 
 See [SECURITY.md](SECURITY.md) for vulnerability reporting.
 
+**Network access notice:** the CLI and libraries perform outbound HTTPS requests for DID:web resolution, trust.txt discovery, SCITT, and SSF/CAEP endpoints. Offline usage is supported by providing local CPOEs and public keys and avoiding discovery calls.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the Pirate's Code.
