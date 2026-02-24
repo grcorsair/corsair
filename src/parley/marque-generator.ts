@@ -40,6 +40,9 @@ import {
 // =============================================================================
 
 export interface MarqueGeneratorInput {
+  /** Optional stable CPOE identifier (marque-UUID) */
+  marqueId?: string;
+
   /** New primary input (from ingestion pipeline) */
   document?: IngestedDocument;
 
@@ -113,6 +116,7 @@ export class MarqueGenerator {
   async generate(input: MarqueGeneratorInput): Promise<MarqueDocument> {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + this.expiryDays * 24 * 60 * 60 * 1000);
+    const marqueId = input.marqueId || `marque-${crypto.randomUUID()}`;
 
     // Build all sections with sanitization
     const frameworks = this.buildFrameworks(input.chartResults);
@@ -123,7 +127,7 @@ export class MarqueGenerator {
 
     // Build the marque payload
     const marque: MarqueDocument["marque"] = {
-      id: `marque-${crypto.randomUUID()}`,
+      id: marqueId,
       version: "1.0.0",
       issuer: input.issuer,
       generatedAt: now.toISOString(),
@@ -157,9 +161,10 @@ export class MarqueGenerator {
    * Uses the format set in constructor options.
    */
   async generateOutput(input: MarqueGeneratorInput): Promise<MarqueOutput> {
+    const marqueId = input.marqueId || `marque-${crypto.randomUUID()}`;
     if (this.format === "vc") {
       const { generateVCJWT } = await import("./vc-generator");
-      const jwt = await generateVCJWT(input, this.keyManager, { expiryDays: this.expiryDays });
+      const jwt = await generateVCJWT({ ...input, marqueId }, this.keyManager, { expiryDays: this.expiryDays });
 
       const now = new Date();
       const expiresAt = new Date(now.getTime() + this.expiryDays * 24 * 60 * 60 * 1000);
@@ -167,14 +172,14 @@ export class MarqueGenerator {
       return {
         format: "vc",
         jwt,
-        marqueId: `marque-${crypto.randomUUID()}`,
+        marqueId,
         issuedAt: now.toISOString(),
         expiresAt: expiresAt.toISOString(),
       };
     }
 
     // JSON envelope path
-    const doc = await this.generate(input);
+    const doc = await this.generate({ ...input, marqueId });
     return {
       format: "v1",
       v1: doc,

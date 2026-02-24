@@ -65,6 +65,14 @@ describe("signEvidence — generic", () => {
     expect(result.warnings).toHaveLength(0);
   });
 
+  test("uses a single marqueId across response and JWT", async () => {
+    const result = await signEvidence({ evidence: genericEvidence }, keyManager);
+    const parts = result.jwt.split(".");
+    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+    expect(payload.sub).toBe(result.marqueId);
+    expect(payload.jti).toBe(result.marqueId);
+  });
+
   test("accepts JSON string input", async () => {
     const result = await signEvidence({ evidence: JSON.stringify(genericEvidence) }, keyManager);
     expect(result.jwt).toMatch(/^eyJ/);

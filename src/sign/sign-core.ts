@@ -258,9 +258,14 @@ export async function signDocument(
     ...(severityDistribution ? { severityDistribution } : {}),
   };
 
+  // Generate marqueId once for this issuance
+  const crypto = await import("crypto");
+  const marqueId = `marque-${crypto.randomUUID()}`;
+
   // 2. Map to MarqueGeneratorInput
   const { mapToMarqueInput } = await import("../ingestion/mapper");
   const marqueInput = mapToMarqueInput(doc, { did: input.did });
+  marqueInput.marqueId = marqueId;
   if (input.dependencies && input.dependencies.length > 0) {
     marqueInput.dependencies = input.dependencies;
   }
@@ -319,9 +324,6 @@ export async function signDocument(
     sourceDate: prov.sourceDate,
   };
 
-  // Generate marqueId
-  const crypto = await import("crypto");
-  const marqueId = `marque-${crypto.randomUUID()}`;
   const sanitizedExtensions = doc.extensions ? sanitize(doc.extensions) as Record<string, unknown> : undefined;
 
   // 4. Dry-run: skip signing, return would-be subject

@@ -132,6 +132,7 @@ describe("VC Generator - JWT-VC Generation", () => {
       evidencePaths: [evidencePath],
       issuer: { id: "corsair-test", name: "Corsair Test Engine", did: "did:web:grcorsair.com" },
       providers: ["aws-cognito"],
+      marqueId: "marque-test-001",
     };
 
     return { keyManager, input, keyDir };
@@ -182,10 +183,10 @@ describe("VC Generator - JWT-VC Generation", () => {
 
     const payload = jose.decodeJwt(jwt);
     expect(payload.iss).toBe("did:web:grcorsair.com");
-    expect(payload.sub).toBeDefined();
+    expect(payload.sub).toBe(input.marqueId);
     expect(payload.exp).toBeDefined();
     expect(payload.iat).toBeDefined();
-    expect(payload.jti).toBeDefined();
+    expect(payload.jti).toBe(input.marqueId);
     expect(typeof payload.exp).toBe("number");
     expect(typeof payload.iat).toBe("number");
     expect((payload.exp as number) > (payload.iat as number)).toBe(true);

@@ -51,7 +51,7 @@ export async function generateVCJWT(
   const now = new Date();
   const expiresAt = new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000);
 
-  const marqueId = `marque-${crypto.randomUUID()}`;
+  const marqueId = input.marqueId || `marque-${crypto.randomUUID()}`;
   const issuerDid = input.issuer.did || input.issuer.id;
 
   // Build CPOE credential subject
