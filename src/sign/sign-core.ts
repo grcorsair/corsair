@@ -7,6 +7,7 @@
  * Pipeline: parseJSON → mapToMarqueInput → ReceiptChain → generateVCJWT
  */
 
+import { createHash, randomUUID } from "crypto";
 import { readFileSync } from "fs";
 import type { IngestedDocument, DocumentSource } from "../ingestion/types";
 import type { DependencyProof } from "../parley/vc-types";
@@ -201,6 +202,7 @@ export async function signDocument(
 
   // Attach auth context (if present) to document extensions
   if (input.authContext?.oidc) {
+    const hashedIdentity = hashOidcIdentity(input.authContext.oidc.identity);
     const existing = doc.extensions && typeof doc.extensions === "object"
       ? doc.extensions
       : {};
@@ -213,7 +215,7 @@ export async function signDocument(
         audience: input.authContext.oidc.audience,
         tokenHash: input.authContext.oidc.tokenHash,
         verifiedAt: input.authContext.oidc.verifiedAt,
-        ...(input.authContext.oidc.identity ? { identity: input.authContext.oidc.identity } : {}),
+        ...(hashedIdentity ? { identity: hashedIdentity } : {}),
       },
     };
   }
@@ -259,8 +261,7 @@ export async function signDocument(
   };
 
   // Generate marqueId once for this issuance
-  const crypto = await import("crypto");
-  const marqueId = `marque-${crypto.randomUUID()}`;
+  const marqueId = `marque-${randomUUID()}`;
 
   // 2. Map to MarqueGeneratorInput
   const { mapToMarqueInput } = await import("../ingestion/mapper");
@@ -456,6 +457,20 @@ function detectMetadataWarnings(evidence: string | object): string[] {
   }
 
   return warnings;
+}
+
+function hashOidcIdentity(
+  identity?: Record<string, string>,
+): Record<string, string> | undefined {
+  if (!identity) return undefined;
+  const hashed: Record<string, string> = {};
+  for (const [key, value] of Object.entries(identity)) {
+    if (typeof value !== "string") continue;
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+    hashed[key] = createHash("sha256").update(trimmed).digest("hex");
+  }
+  return Object.keys(hashed).length > 0 ? hashed : undefined;
 }
 
 // =============================================================================

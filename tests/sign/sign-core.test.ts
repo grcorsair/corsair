@@ -6,6 +6,7 @@
  */
 
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
+import { createHash } from "crypto";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { signEvidence, SignError } from "../../src/sign/sign-core";
@@ -84,6 +85,10 @@ describe("signEvidence — generic", () => {
   });
 
   test("attaches OIDC delegation metadata when provided", async () => {
+    const expectedIdentity = {
+      email: createHash("sha256").update("agent@example.com").digest("hex"),
+      name: createHash("sha256").update("Agent 123").digest("hex"),
+    };
     const result = await signEvidence({
       evidence: genericEvidence,
       authContext: {
@@ -105,7 +110,7 @@ describe("signEvidence — generic", () => {
     expect(oidc.issuer).toBe("https://issuer.example.com");
     expect(oidc.subjectHash).toBe("hash-subject");
     expect(oidc.tokenHash).toBe("hash-token");
-    expect(oidc.identity).toEqual({ email: "agent@example.com", name: "Agent 123" });
+    expect(oidc.identity).toEqual(expectedIdentity);
   });
 });
 

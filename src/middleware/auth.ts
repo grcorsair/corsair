@@ -8,6 +8,7 @@
  *   const protectedHandler = requireAuth(originalHandler);
  */
 
+import { createHash } from "crypto";
 import { verifyOIDCToken } from "./oidc";
 
 let cachedKeys: Set<string> | null = null;
@@ -22,6 +23,10 @@ function loadApiKeys(): Set<string> {
   const keys = raw.split(",").map((k) => k.trim()).filter((k) => k.length > 0);
   cachedKeys = new Set(keys);
   return cachedKeys;
+}
+
+function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
 }
 
 /** Invalidate cached API keys (for testing or key rotation) */
@@ -58,7 +63,12 @@ export function requireAuth(
     const token = authHeader.slice("Bearer ".length).trim();
     const apiKeys = loadApiKeys();
     if (apiKeys.has(token)) {
-      (req as Request & { corsairAuth?: CorsairAuthContext }).corsairAuth = { type: "api_key", key: token };
+      const reqWithAuth = req as Request & {
+        corsairAuth?: CorsairAuthContext;
+        corsairRateLimitKey?: string;
+      };
+      reqWithAuth.corsairAuth = { type: "api_key", key: token };
+      reqWithAuth.corsairRateLimitKey = `api:${hashToken(token)}`;
       return handler(req);
     }
 

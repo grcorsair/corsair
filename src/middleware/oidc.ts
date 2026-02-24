@@ -271,23 +271,24 @@ export async function verifyOIDCToken(
   }
 
   const kid = header.kid;
-  const jwk = kid
-    ? keys.find((k) => k.kid === kid)
-    : keys[0];
-  if (!jwk) return null;
+  const candidates = kid ? keys.filter((k) => k.kid === kid) : keys;
+  if (candidates.length === 0) return null;
 
-  const key = await importJWK(jwk, header.alg || "EdDSA");
-
-  let verified;
-  try {
-    verified = await jwtVerify(token, key, {
-      issuer: issuerRaw,
-      audience: provider.audiences,
-      clockTolerance: provider.clockSkewSeconds ?? 60,
-    });
-  } catch {
-    return null;
+  let verified: Awaited<ReturnType<typeof jwtVerify>> | undefined;
+  for (const candidate of candidates) {
+    try {
+      const key = await importJWK(candidate, header.alg || "EdDSA");
+      verified = await jwtVerify(token, key, {
+        issuer: issuerRaw,
+        audience: provider.audiences,
+        clockTolerance: provider.clockSkewSeconds ?? 60,
+      });
+      break;
+    } catch {
+      // Try next key
+    }
   }
+  if (!verified) return null;
 
   const subjectClaim = provider.claimMapping?.subject || provider.subjectClaim || "sub";
   const subject = verified.payload[subjectClaim];

@@ -6,6 +6,7 @@
  */
 
 import { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } from "bun:test";
+import { createHash } from "crypto";
 import { existsSync, mkdirSync, rmSync } from "fs";
 import { join } from "path";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
@@ -210,7 +211,9 @@ describe("POST /sign — OIDC keyless + SCITT", () => {
 
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data.extensions?.["ext.oidc"]?.identity?.email).toBe("agent@example.com");
+    expect(data.extensions?.["ext.oidc"]?.identity?.email).toBe(
+      createHash("sha256").update("agent@example.com").digest("hex"),
+    );
   });
 
   test("registers SCITT entry when requested", async () => {

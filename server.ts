@@ -121,17 +121,6 @@ const server = Bun.serve({
 
     // /health ALWAYS returns 200 — even during startup
     if (path === "/health") {
-      if (!ready) {
-        return Response.json(
-          {
-            status: "starting",
-            version: VERSION,
-            timestamp: new Date().toISOString(),
-            checks: { database: "initializing" },
-          },
-          { status: 200, headers: { "content-type": "application/json" } },
-        );
-      }
       if (initError) {
         return Response.json(
           {
@@ -141,6 +130,17 @@ const server = Bun.serve({
             error: initError,
           },
           { status: 503, headers: { "content-type": "application/json" } },
+        );
+      }
+      if (!ready) {
+        return Response.json(
+          {
+            status: "starting",
+            version: VERSION,
+            timestamp: new Date().toISOString(),
+            checks: { database: "initializing" },
+          },
+          { status: 200, headers: { "content-type": "application/json" } },
         );
       }
       return healthHandler!(req);
@@ -384,25 +384,31 @@ async function initialize() {
     getIssuerProfile: (issuerDID) => registry.getIssuerProfile(issuerDID),
   }));
 
-  signRouter = requireAuth(rateLimitPg(db as any, 10)(createSignRouter({
+  const preAuthLimit = 60;
+  const withAuthRateLimit = (
+    handler: (req: Request) => Response | Promise<Response>,
+    limit: number,
+  ) => rateLimitPg(db as any, preAuthLimit)(requireAuth(rateLimitPg(db as any, limit)(handler)));
+
+  signRouter = withAuthRateLimit(createSignRouter({
     keyManager,
     domain: DOMAIN,
     db,
     scittRegistry: registry,
-  })));
+  }), 10);
   demoSignRouter = rateLimitPg(db as any, 5)(createDemoSignRouter({
     keyManager: demoKeyManager,
     demoDid: Bun.env.CORSAIR_DEMO_DID || `did:web:${DOMAIN}:demo`,
   }));
-  issueRouter = requireAuth(rateLimitPg(db as any, 10)(createIssueRouter({
+  issueRouter = withAuthRateLimit(createIssueRouter({
     keyManager,
     domain: DOMAIN,
     db,
     scittRegistry: registry,
-  })));
-  onboardRouter = requireAuth(rateLimitPg(db as any, 5)(createOnboardRouter({ keyManager, domain: DOMAIN })));
-  ssfRouter = requireAuth(rateLimitPg(db as any, 30)(createSSFStreamRouter({ streamManager })));
-  scittRouter = requireAuth(rateLimitPg(db as any, 30)(createSCITTRouter({ registry })));
+  }), 10);
+  onboardRouter = withAuthRateLimit(createOnboardRouter({ keyManager, domain: DOMAIN }), 5);
+  ssfRouter = withAuthRateLimit(createSSFStreamRouter({ streamManager }), 30);
+  scittRouter = withAuthRateLimit(createSCITTRouter({ registry }), 30);
 
   // 9. Start delivery worker if enabled
   if (Bun.env.ENABLE_DELIVERY_WORKER === "true") {
