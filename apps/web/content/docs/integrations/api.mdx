@@ -11,12 +11,7 @@ The Corsair REST API provides programmatic access to CPOE signing and verificati
 
 **Base URL:** `https://api.grcorsair.com`
 
-**Versioning:** Current public endpoints are unversioned. A `/v1` namespace is planned.
-
-Every response includes:
-- `X-Request-Id` header for tracing
-- `X-Corsair-Version` header with the API version
-- CORS headers (`Access-Control-Allow-Origin: *`)
+**Versioning:** Unversioned endpoints and `/v1` paths are both supported today and behave the same. Use `/v1` for forward compatibility.
 
 ## Persistence
 
@@ -47,25 +42,13 @@ Public endpoints (verify, health) require no authentication.
 | `POST /scitt/entries` | Yes |
 | `POST /ssf/streams` | Yes |
 
-## Response Envelope
+## Response Format
+
+Successful responses return a JSON object specific to the endpoint.
+Errors return a JSON object with an `error` string.
 
 ```json
-{
-  "ok": true,
-  "data": { ... }
-}
-```
-
-Error responses use the same envelope:
-
-```json
-{
-  "ok": false,
-  "error": {
-    "code": "validation_error",
-    "message": "Missing required field: \"evidence\""
-  }
-}
+{ "error": "Missing required field: \"evidence\"" }
 ```
 
 ## POST /sign
@@ -97,7 +80,7 @@ curl -X POST https://api.grcorsair.com/sign \
 | `format` | string | No | Force generic format (bypasses mapping registry) |
 | `did` | string | No | Override issuer DID (defaults to `did:web:<CORSAIR_DOMAIN>`) |
 | `scope` | string | Conditional | Required if `evidence.metadata.scope` is missing |
-| `expiryDays` | number | No | CPOE validity in days (default: 7) |
+| `expiryDays` | number | No | CPOE validity in days (default: 90) |
 | `dryRun` | boolean | No | Parse without signing |
 | `dependencies` | array | No | Dependency proofs to attach (trust graph) |
 | `registerScitt` | boolean | No | Register signed CPOE in SCITT log (default: false). Also accepts header `x-corsair-register-scitt: true`. |
@@ -134,6 +117,7 @@ curl -X POST https://api.grcorsair.com/sign \
 ```
 
 Note: `registerScitt` is also supported by `POST /issue` and returns `scittEntryId` when enabled.
+If the request is authenticated with an OIDC token, `extensions.ext.oidc.identity` (when present) contains **hashed** claim values.
 
 ## POST /onboard
 
