@@ -31,8 +31,9 @@ bun test
 3. Write tests first (TDD approach)
 4. Implement the feature
 5. Ensure all tests pass: `bun test`
-6. Update documentation if needed
-7. Submit PR with clear description
+6. Ensure typecheck passes: `bun run typecheck`
+7. Update documentation if needed
+8. Submit PR with clear description
 
 ## Repo Guardrails (Must Follow)
 

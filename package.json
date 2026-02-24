@@ -13,6 +13,7 @@
     "build:web": "bun run --filter '@corsair/web' build",
     "dev:web": "bun run --filter '@corsair/web' dev",
     "lint:web": "bun run --filter '@corsair/web' lint",
+    "typecheck": "bunx tsc -p tsconfig.json",
     "test": "bun test",
     "test:parley": "bun test tests/parley/",
     "test:flagship": "bun test tests/flagship/",

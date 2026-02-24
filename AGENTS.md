@@ -16,6 +16,7 @@ bun test tests/api/
 bun test tests/functions/
 bun test tests/distribution/
 bun test packages/sdk/tests/
+bun run typecheck
 
 bun run lint:web
 bun run build:web
