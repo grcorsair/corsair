@@ -1,40 +1,6 @@
 import type { Metadata } from "next";
-import { Rajdhani, Manrope, JetBrains_Mono, Press_Start_2P, Pixelify_Sans } from "next/font/google";
 
 import "./globals.css";
-
-const manrope = Manrope({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  display: "swap",
-});
-
-const rajdhani = Rajdhani({
-  weight: ["400", "500", "600", "700"],
-  subsets: ["latin"],
-  variable: "--font-display",
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-  display: "swap",
-});
-
-const pressStart2P = Press_Start_2P({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-pixel",
-  display: "swap",
-});
-
-const pixelifySans = Pixelify_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-pixel-display",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -92,10 +58,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${manrope.variable} ${rajdhani.variable} ${jetbrainsMono.variable} ${pressStart2P.variable} ${pixelifySans.variable}`}
-    >
+    <html lang="en">
       <body className="bg-noise min-h-screen bg-corsair-deep text-corsair-text antialiased">
         {children}
       </body>
