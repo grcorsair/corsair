@@ -43,6 +43,9 @@ export interface SignOptions {
   /** CPOE validity in days (default: 90) */
   expiryDays?: number;
 
+  /** Enforce minimum ingestion contract (fail on missing metadata) */
+  strict?: boolean;
+
   /** Parse + classify but don't sign */
   dryRun?: boolean;
 

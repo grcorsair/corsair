@@ -44,6 +44,9 @@ corsair init
 # Sign the example evidence into a CPOE
 corsair sign --file example-evidence.json --output cpoe.jwt
 
+# Enforce minimum ingestion contract (issuer/auditor, date, scope)
+corsair sign --file example-evidence.json --strict
+
 # Keyless sign via API (OIDC or API key)
 corsair sign --file example-evidence.json --auth-token $OIDC_TOKEN --api-url https://api.grcorsair.com
 

@@ -40,6 +40,9 @@ export interface SignRequest {
   /** CPOE validity in days */
   expiryDays?: number;
 
+  /** Enforce minimum ingestion contract (fail on missing metadata) */
+  strict?: boolean;
+
   /** Dry-run: parse + classify but don't sign */
   dryRun?: boolean;
 
@@ -290,6 +293,7 @@ export function createSignRouter(
         did: effectiveDid,
         scope: scopeOverride || undefined,
         expiryDays: body.expiryDays,
+        strict: body.strict,
         dryRun: body.dryRun,
         authContext,
       }, keyManager);

@@ -100,6 +100,7 @@ async function handleSign(): Promise<void> {
   let source: string | undefined;
   let verbose = false;
   let dryRun = false;
+  let strict = false;
   let jsonOutput = false;
   let quiet = false;
   let showVersion = false;
@@ -151,6 +152,9 @@ async function handleSign(): Promise<void> {
         break;
       case "--dry-run":
         dryRun = true;
+        break;
+      case "--strict":
+        strict = true;
         break;
       case "--json":
         jsonOutput = true;
@@ -231,6 +235,7 @@ OPTIONS:
       --register-scitt      Register signed CPOE in SCITT log (API only)
       --scope <TEXT>        Override scope string
       --expiry-days <N>     CPOE validity in days (default: 90)
+      --strict              Enforce minimum ingestion contract (fail on missing metadata)
       --dry-run             Parse + classify but don't sign. Output would-be subject.
       --json                Output structured JSON (jwt + metadata) to stdout
       --baseline <PATH>     Compare against a baseline CPOE for regression detection
@@ -254,6 +259,7 @@ EXAMPLES:
   corsair sign --file evidence.json --output cpoe.jwt
   corsair sign --file evidence.json --did did:web:acme.com --scope "AWS Production"
   corsair sign --file evidence.json --dry-run
+  corsair sign --file evidence.json --strict
   corsair sign --file evidence.json --auth-token $OIDC_TOKEN --api-url https://api.grcorsair.com
   corsair sign --file evidence.json --json | jq .summary
   corsair sign --file evidence.json --sd-jwt --sd-fields summary,provenance
@@ -358,6 +364,7 @@ EXAMPLES:
       ...(scope ? { scope } : {}),
       ...(expiryDays ? { expiryDays } : {}),
       ...(dryRun ? { dryRun } : {}),
+      ...(strict ? { strict } : {}),
       ...(registerScitt ? { registerScitt } : {}),
     };
 
@@ -521,6 +528,7 @@ EXAMPLES:
       did,
       scope,
       expiryDays,
+      strict,
       dryRun,
       sdJwt,
       sdFields,

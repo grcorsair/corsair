@@ -423,6 +423,7 @@ function createV1SignHandler(deps: V1RouterDeps): (req: Request) => Promise<Resp
         did: body.did as string | undefined,
         scope: body.scope as string | undefined,
         expiryDays: body.expiryDays as number | undefined,
+        strict: body.strict as boolean | undefined,
         dryRun: body.dryRun as boolean | undefined,
         dependencies: dependencies as import("../parley/vc-types").DependencyProof[] | undefined,
       }, keyManager);

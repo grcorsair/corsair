@@ -139,6 +139,12 @@ export default function SignPage() {
                   <span className="text-corsair-cyan">$</span> corsair sign --file tool-output.json --mapping ./mappings/toolx.json --output cpoe.jwt
                 </div>
                 <div>
+                  <span className="text-corsair-text-dim/40"># Enforce minimum ingestion contract (issuer/auditor, date, scope)</span>
+                </div>
+                <div>
+                  <span className="text-corsair-cyan">$</span> corsair sign --file tool-output.json --mapping ./mappings/toolx.json --strict --output cpoe.jwt
+                </div>
+                <div>
                   <span className="text-corsair-cyan">$</span> corsair sign --file tool-output.json --auth-token $OIDC_TOKEN --api-url https://api.grcorsair.com
                 </div>
                 <div className="mt-4">

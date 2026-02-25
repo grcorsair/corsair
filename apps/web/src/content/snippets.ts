@@ -38,6 +38,7 @@ corsair did jwks --domain your-domain.com --output jwks.json
 # Sign tool output into a CPOE (like git commit)
 # Keys are auto-generated on first use — no setup needed
 corsair sign --file evidence.json
+corsair sign --file evidence.json --strict
 
 # Verify any CPOE (always free, no account needed)
 corsair verify --file evidence.cpoe.jwt

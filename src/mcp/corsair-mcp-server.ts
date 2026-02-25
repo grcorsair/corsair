@@ -178,6 +178,7 @@ async function handleSign(
           did: args.did,
           scope: args.scope,
           dryRun: args.dryRun,
+          strict: args.strict,
         }),
       });
 
@@ -202,6 +203,7 @@ async function handleSign(
       format: args.format as EvidenceFormat | undefined,
       did: args.did as string | undefined,
       scope: args.scope as string | undefined,
+      strict: args.strict as boolean | undefined,
       dryRun: args.dryRun as boolean | undefined,
     }, deps.keyManager);
 

@@ -81,9 +81,12 @@ curl -X POST https://api.grcorsair.com/sign \
 | `did` | string | No | Override issuer DID (defaults to `did:web:<CORSAIR_DOMAIN>`) |
 | `scope` | string | Conditional | Required if `evidence.metadata.scope` is missing |
 | `expiryDays` | number | No | CPOE validity in days (default: 90) |
+| `strict` | boolean | No | Enforce minimum ingestion contract (fail on missing metadata) |
 | `dryRun` | boolean | No | Parse without signing |
 | `dependencies` | array | No | Dependency proofs to attach (trust graph) |
 | `registerScitt` | boolean | No | Register signed CPOE in SCITT log (default: false). Also accepts header `x-corsair-register-scitt: true`. |
+
+`strict` enforces the minimum ingestion contract (issuer/auditor, assessment date, scope). If false or omitted, the API returns warnings instead of failing the request.
 
 **Response (issuer defaults to `did:web:<CORSAIR_DOMAIN>` if not provided):**
 

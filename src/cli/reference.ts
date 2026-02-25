@@ -51,6 +51,7 @@ export const CLI_REFERENCE: CLICommandReference[] = [
       { flag: "--scope <SCOPE>", description: "Override scope string." },
       { flag: "--source <SOURCE>", description: "Override provenance source." },
       { flag: "--expiry-days <N>", description: "CPOE validity in days.", defaultValue: "90" },
+      { flag: "--strict", description: "Enforce minimum ingestion contract (fail on missing metadata)." },
       { flag: "--baseline <PATH>", description: "Baseline CPOE to compare against." },
       { flag: "--gate", description: "Exit non-zero on regression when using --baseline." },
       { flag: "--sd-jwt", description: "Enable SD-JWT selective disclosure." },

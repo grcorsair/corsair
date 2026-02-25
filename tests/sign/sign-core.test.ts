@@ -335,6 +335,12 @@ describe("signEvidence — warnings", () => {
     const result = await signEvidence({ evidence: invalidDate }, keyManager);
     expect(result.warnings.join(" ")).toContain("Missing or invalid assessment date");
   });
+
+  test("strict mode fails ingestion contract", async () => {
+    const empty = { metadata: { title: "Empty" }, controls: [] };
+    await expect(signEvidence({ evidence: empty, strict: true }, keyManager))
+      .rejects.toThrow("Ingestion contract failed");
+  });
 });
 
 // =============================================================================

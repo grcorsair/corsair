@@ -81,6 +81,9 @@ export default function DocsPage() {
                     corsair sign --file tool-output.json --mapping ./mappings/toolx.json
                   </div>
                   <div className="text-corsair-gold">
+                    corsair sign --file tool-output.json --mapping ./mappings/toolx.json --strict
+                  </div>
+                  <div className="text-corsair-gold">
                     corsair sign --file tool-output.json --auth-token $OIDC_TOKEN --api-url https://api.grcorsair.com
                   </div>
                 </div>

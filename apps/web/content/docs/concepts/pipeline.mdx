@@ -29,6 +29,10 @@ Accepts structured output from security scanning tools and compliance platforms,
 
 **Output:** Structured controls with evidence references, provenance metadata, and pass/fail status.
 
+**Minimum ingestion contract:** evidence must include an issuer (or auditor), assessment date, and scope. Use `--strict` to fail fast when any of these are missing; otherwise Corsair returns warnings.
+
+**Source tiers (deterministic):** Corsair derives a source tier from the document source. Tool outputs (`tool`, `json`) map to the **tool** tier, while audits and manual evidence (`soc2`, `iso27001`, `pentest`, `manual`) map to the **human** tier.
+
 ```bash
 corsair sign --file tool-output.json --mapping ./mappings/toolx.json
 ```

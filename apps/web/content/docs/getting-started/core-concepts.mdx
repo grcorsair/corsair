@@ -48,6 +48,10 @@ Mappings are JSON files loaded via `CORSAIR_MAPPING_DIR`, `CORSAIR_MAPPING_FILE`
 | `mapping-pack` | Auto-detected via mapping registry (tool-specific) |
 | `generic` | Any JSON with `{ metadata, controls[] }` |
 
+**Minimum ingestion contract:** evidence must include an issuer (or auditor), assessment date, and scope. Use `--strict` to fail fast when any of these are missing; otherwise Corsair returns warnings.
+
+**Source tiers (deterministic):** Tool outputs (`tool`, `json`) map to the **tool** tier. Audits and manual evidence (`soc2`, `iso27001`, `pentest`, `manual`) map to the **human** tier.
+
 ## Provenance Model
 
 Every CPOE records **provenance** — where the evidence came from. Corsair does not judge evidence quality. It records provenance, signs the result, and lets buyers decide what's sufficient.

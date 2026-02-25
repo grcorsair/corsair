@@ -56,6 +56,9 @@ export interface SignInput {
   /** CPOE validity in days (default: 90) */
   expiryDays?: number;
 
+  /** Enforce minimum ingestion contract (fail on missing metadata) */
+  strict?: boolean;
+
   /** Parse + classify but don't sign. Returns would-be credentialSubject */
   dryRun?: boolean;
 
@@ -88,6 +91,9 @@ export interface SignDocumentInput {
   /** CPOE validity in days (default: 90) */
   expiryDays?: number;
 
+  /** Enforce minimum ingestion contract (fail on missing metadata) */
+  strict?: boolean;
+
   /** Parse + classify but don't sign. Returns would-be credentialSubject */
   dryRun?: boolean;
 
@@ -102,6 +108,9 @@ export interface SignDocumentInput {
 
   /** Optional auth context (e.g., OIDC delegation) */
   authContext?: SignAuthContext;
+
+  /** Internal metadata warnings from raw input (ingestion contract) */
+  inputMetadataWarnings?: string[];
 }
 
 export interface SignOutput {
@@ -176,17 +185,16 @@ export async function signEvidence(
       did: input.did,
       scope: input.scope,
       expiryDays: input.expiryDays,
+      strict: input.strict,
       dryRun: input.dryRun,
       sdJwt: input.sdJwt,
       sdFields: input.sdFields,
       dependencies: input.dependencies,
       authContext: input.authContext,
+      inputMetadataWarnings: metaWarnings,
     },
     keyManager,
   );
-  if (metaWarnings.length > 0) {
-    result.warnings = [...metaWarnings, ...result.warnings];
-  }
   return result;
 }
 
@@ -225,6 +233,17 @@ export async function signDocument(
     doc.metadata.scope = input.scope;
   }
 
+  // Enforce minimum ingestion contract (warnings or errors)
+  const { validateIngestionContract } = await import("../ingestion/contract");
+  const contract = validateIngestionContract(doc, {
+    strict: input.strict,
+    inputMetadataWarnings: input.inputMetadataWarnings,
+  });
+  if (contract.errors.length > 0) {
+    throw new SignError(`Ingestion contract failed: ${contract.errors.join(" ")}`);
+  }
+  warnings.push(...contract.warnings);
+
   // Warn on zero controls
   if (doc.controls.length === 0) {
     warnings.push("No controls found in evidence. CPOE will have empty summary.");
@@ -233,23 +252,6 @@ export async function signDocument(
   const evidenceOnly = (doc.extensions as { mapping?: { evidenceOnly?: boolean } } | undefined)?.mapping?.evidenceOnly;
   if (evidenceOnly) {
     warnings.push("Evidence-only mapping used; no control-level results were extracted.");
-  }
-
-  // Warn on weak metadata (provenance + scope signals)
-  const issuer = doc.metadata.issuer?.trim();
-  if (!issuer || issuer === "Unknown") {
-    warnings.push("Missing issuer in evidence metadata; provenance identity will be weak.");
-  }
-
-  const scope = doc.metadata.scope?.trim();
-  if (!scope || scope === "Unknown") {
-    warnings.push("Missing scope in evidence metadata; subject scope will be weak.");
-  }
-
-  const assessmentDate = doc.metadata.date?.trim();
-  const parsedDate = assessmentDate ? new Date(assessmentDate) : null;
-  if (!assessmentDate || !parsedDate || isNaN(parsedDate.getTime())) {
-    warnings.push("Missing or invalid assessment date in metadata; freshness cannot be assessed.");
   }
 
   // Compute summary + severity distribution

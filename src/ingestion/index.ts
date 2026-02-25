@@ -27,6 +27,12 @@ export type { MapperOptions } from "./mapper";
 export { parseJSON } from "./json-parser";
 export type { ParseJSONOptions } from "./json-parser";
 
+export { validateIngestionContract } from "./contract";
+export type { IngestionContractOptions, IngestionContractResult } from "./contract";
+
+export { deriveSourceTier } from "./source-tier";
+export type { SourceTier } from "./source-tier";
+
 export {
   deriveProvenance,
   assessFreshness,

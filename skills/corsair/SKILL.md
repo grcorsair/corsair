@@ -45,7 +45,7 @@ Guardrails that MUST be followed:
 
 The agent may perform these capabilities when invoked:
 
-- `sign_cpoe(evidence_path, format?, mapping?, dependency?, source?, did?, scope?, expiry_days?, sd_jwt?, sd_fields?, auth_token?, api_url?)`
+- `sign_cpoe(evidence_path, format?, mapping?, dependency?, source?, did?, scope?, expiry_days?, strict?, sd_jwt?, sd_fields?, auth_token?, api_url?)`
 - `verify_cpoe(cpoe_path, did?, require_issuer?, require_framework?, max_age_days?, min_score?, require_source?, require_source_identity?, require_tool_attestation?, require_input_binding?, require_evidence_chain?, require_receipts?, require_scitt?, source_document?, policy_path?, dependencies?, dependency_depth?, url?, domain?, all?)`
 - `policy_validate(policy_path?)`
 - `diff_cpoe(current_path, previous_path, verify?, domain?)`
@@ -130,8 +130,9 @@ Use this routing logic:
 
 1. `corsair sign --file <PATH>`
 2. For keyless signing: `corsair sign --file <PATH> --auth-token <TOKEN> --api-url <URL>`
-3. If needed: `--format`, `--mapping`, `--dependency`, `--sd-jwt`, `--sd-fields`
+3. If needed: `--format`, `--mapping`, `--dependency`, `--strict`, `--sd-jwt`, `--sd-fields`
 4. Report CPOE path, detected format, summary.
+5. `--strict` enforces the minimum ingestion contract (issuer/auditor, date, scope).
 
 ### VERIFY
 

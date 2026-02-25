@@ -29,6 +29,7 @@ corsair sign [options]
 | `--did <DID>` | Issuer DID | Derived from key |
 | `--scope <TEXT>` | Override scope string | From evidence |
 | `--expiry-days <N>` | CPOE validity in days | 90 |
+| `--strict` | Enforce minimum ingestion contract (fail on missing metadata) | false |
 | `--key-dir <DIR>` | Ed25519 key directory | ./keys |
 | `--source <SOURCE>` | Override provenance source | derived from evidence |
 | `--auth-token <TOKEN>` | Use API signing with a Bearer token | - |

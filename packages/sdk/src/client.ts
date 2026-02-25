@@ -98,6 +98,7 @@ export class CorsairClient {
         did: options?.did ?? this.defaultDid,
         scope: options?.scope,
         expiryDays: options?.expiryDays,
+        strict: options?.strict,
         dryRun: options?.dryRun,
         sdJwt: options?.sdJwt,
         sdFields: options?.sdFields,

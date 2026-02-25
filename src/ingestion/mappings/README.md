@@ -9,6 +9,10 @@ Each mapping file can define:
 - how to pass through small fields for evidence-only CPOEs (`passthrough`)
 - optional `priority` to control match precedence (higher wins)
 
+Minimum ingestion contract:
+- Include issuer (or auditor), assessment date, and scope in `metadata`.
+- Missing fields yield warnings by default; `corsair sign --strict` fails fast.
+
 Mappings are loaded at runtime from:
 - this directory
 - `CORSAIR_MAPPING_DIR` (comma-separated list of directories)

@@ -82,6 +82,7 @@ export interface APISignRequest {
   did?: string;
   scope?: string;
   expiryDays?: number;
+  strict?: boolean;
   enrich?: boolean;
   dryRun?: boolean;
 }

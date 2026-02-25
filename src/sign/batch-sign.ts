@@ -20,6 +20,7 @@ export interface BatchSignOptions {
   did?: string;
   scope?: string;
   expiryDays?: number;
+  strict?: boolean;
   verbose?: boolean;
 }
 
@@ -82,6 +83,7 @@ export async function signBatch(
         ...(did && { did }),
         ...(scope && { scope }),
         ...(expiryDays && { expiryDays }),
+        ...(options.strict ? { strict: true } : {}),
       };
 
       const output = await signEvidence(input, keyManager);

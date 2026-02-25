@@ -159,6 +159,7 @@ corsair did jwks --domain example.com --output jwks.json
 corsair sign --file evidence.json              # Auto-detect mapping pack, sign
 corsair sign --file evidence.json --json       # Structured JSON output
 corsair sign --file evidence.json --dry-run    # Preview without signing
+corsair sign --file evidence.json --strict     # Enforce minimum ingestion contract
 corsair sign --file evidence.json --sd-jwt     # SD-JWT selective disclosure
 corsair sign --file evidence.json --sd-jwt --sd-fields scope  # Disclose only scope
 corsair sign --file evidence.json --mapping ./mappings/toolx.json  # Apply mapping file
@@ -284,6 +285,13 @@ then filename order.
 |:-------|:--------|:----------|
 | `mapping-pack` | Tool-specific mappings (config-driven) | Auto-detected via `--mapping` or `CORSAIR_MAPPING_*` |
 | `generic` | Any JSON with `{ metadata, controls[] }` | Default fallback |
+
+**Minimum ingestion contract:** evidence must include an issuer (or auditor), assessment date, and scope.
+Use `--strict` to fail fast when any of these are missing; otherwise Corsair returns warnings.
+
+**Source tiers (deterministic):** Corsair derives a source tier from the document source.
+Tool outputs (`tool`, `json`) map to the **tool** tier, while audits and manual evidence
+(`soc2`, `iso27001`, `pentest`, `manual`) map to the **human** tier.
 
 ---
 

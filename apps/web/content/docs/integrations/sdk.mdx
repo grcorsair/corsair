@@ -68,6 +68,7 @@ const result = await corsair.sign(evidence, {
   source: "tool",             // Override provenance source
   scope: "AWS Production",    // Assessment scope
   expiryDays: 90,             // CPOE validity (default: 90)
+  strict: false,              // Enforce minimum ingestion contract
   dryRun: false,              // Set true to preview without signing
   sdJwt: false,               // Enable SD-JWT selective disclosure
   sdFields: ["summary"],      // Fields to disclose when sdJwt=true
@@ -91,6 +92,7 @@ console.log(result.extensions);       // Optional passthrough fields + mapping m
 | `source` | `DocumentSource` | from evidence | Override provenance source |
 | `scope` | `string` | from evidence | Override scope string |
 | `expiryDays` | `number` | `90` | CPOE validity in days |
+| `strict` | `boolean` | `false` | Enforce minimum ingestion contract |
 | `dryRun` | `boolean` | `false` | Parse without signing |
 | `sdJwt` | `boolean` | `false` | Enable SD-JWT selective disclosure |
 | `sdFields` | `string[]` | `["summary","frameworks"]` | Disclosable credentialSubject fields |
