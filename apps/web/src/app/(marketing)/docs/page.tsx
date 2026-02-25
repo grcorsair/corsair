@@ -212,7 +212,7 @@ export default function DocsPage() {
               Full documentation is available in the GitHub repository.
             </p>
             <a
-              href="https://github.com/Arudjreis/corsair"
+              href="https://github.com/grcorsair/corsair"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block rounded-lg border border-corsair-gold/30 bg-corsair-surface px-8 py-4 font-display text-sm font-semibold text-corsair-text transition-all hover:border-corsair-gold hover:text-corsair-gold hover:shadow-[0_0_20px_rgba(212,168,83,0.1)]"

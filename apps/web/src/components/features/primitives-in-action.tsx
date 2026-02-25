@@ -118,7 +118,7 @@ function SignPanel() {
           <span className="text-corsair-text">scanner run --output json</span>
           <div className="mt-2 text-corsair-text-dim">{"{"}</div>
           <Line k="provider" v={`"toolx"`} />
-          <Line k="version" v={`"1.0.0"`} />
+          <Line k="version" v={`"1.1.0"`} />
           <Line k="findings" v="[" />
           <div className="ml-6 text-corsair-text-dim">
             {"{ "}

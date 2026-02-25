@@ -195,3 +195,130 @@ export async function signDemoViaAPI(request: APISignRequest): Promise<APISignRe
     };
   }
 }
+
+// =============================================================================
+// HOSTED TRUST.TXT API
+// =============================================================================
+
+export interface APIHostedTrustTxtRequest {
+  domain: string;
+  did?: string;
+  cpoes?: string[];
+  scitt?: string;
+  catalog?: string;
+  policy?: string;
+  flagship?: string;
+  frameworks?: string[];
+  contact?: string;
+  expiryDays?: number;
+  includeDefaults?: boolean;
+}
+
+export interface APIHostedTrustTxtResponse {
+  domain: string;
+  did: string;
+  status: "pending" | "active" | "revoked";
+  trustTxt: { content: string; hash: string; expires?: string };
+  urls: { hosted: string };
+  dns: { txt: string; hashTxt: string };
+  verifiedAt?: string | null;
+}
+
+export interface APIHostedTrustTxtVerifyResponse {
+  domain: string;
+  status: "pending" | "active" | "revoked";
+  verifiedAt?: string | null;
+}
+
+export type APIHostedTrustTxtResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: { type: "network" | "timeout" | "server"; message: string } };
+
+async function apiPost<T>(path: string, body: unknown, token: string): Promise<APIHostedTrustTxtResult<T>> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body ?? {}),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({ error: res.statusText }));
+      return {
+        ok: false,
+        error: { type: "server", message: data.error || `HTTP ${res.status}` },
+      };
+    }
+
+    return { ok: true, data: await res.json() as T };
+  } catch (err) {
+    clearTimeout(timeout);
+    if (err instanceof DOMException && err.name === "AbortError") {
+      return { ok: false, error: { type: "timeout", message: "Request timed out (15s)" } };
+    }
+    return { ok: false, error: { type: "network", message: "Could not reach API" } };
+  }
+}
+
+async function apiGet<T>(path: string, token: string): Promise<APIHostedTrustTxtResult<T>> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({ error: res.statusText }));
+      return {
+        ok: false,
+        error: { type: "server", message: data.error || `HTTP ${res.status}` },
+      };
+    }
+
+    return { ok: true, data: await res.json() as T };
+  } catch (err) {
+    clearTimeout(timeout);
+    if (err instanceof DOMException && err.name === "AbortError") {
+      return { ok: false, error: { type: "timeout", message: "Request timed out (15s)" } };
+    }
+    return { ok: false, error: { type: "network", message: "Could not reach API" } };
+  }
+}
+
+export async function hostTrustTxtViaAPI(
+  request: APIHostedTrustTxtRequest,
+  token: string,
+): Promise<APIHostedTrustTxtResult<APIHostedTrustTxtResponse>> {
+  return apiPost<APIHostedTrustTxtResponse>("/trust-txt/host", request, token);
+}
+
+export async function getHostedTrustTxtViaAPI(
+  domain: string,
+  token: string,
+): Promise<APIHostedTrustTxtResult<APIHostedTrustTxtResponse>> {
+  return apiGet<APIHostedTrustTxtResponse>(`/trust-txt/host/${domain}`, token);
+}
+
+export async function verifyHostedTrustTxtViaAPI(
+  domain: string,
+  token: string,
+): Promise<APIHostedTrustTxtResult<APIHostedTrustTxtVerifyResponse>> {
+  return apiPost<APIHostedTrustTxtVerifyResponse>(`/trust-txt/host/${domain}/verify`, {}, token);
+}

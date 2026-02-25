@@ -9,7 +9,7 @@
 <br/>
 
 ![Tests](https://img.shields.io/github/actions/workflow/status/arudjreis/corsair/test.yml?style=for-the-badge&label=TESTS&labelColor=0A0E17&color=2ECC71)
-![Version](https://img.shields.io/badge/v1.0.0-D4A853?style=for-the-badge&label=VERSION&labelColor=0A0E17)
+![Version](https://img.shields.io/badge/v1.1.0-D4A853?style=for-the-badge&label=VERSION&labelColor=0A0E17)
 ![License](https://img.shields.io/badge/Apache_2.0-D4A853?style=for-the-badge&label=LICENSE&labelColor=0A0E17)
 ![Runtime](https://img.shields.io/badge/Bun-E8E2D6?style=for-the-badge&label=RUNTIME&labelColor=0A0E17&logo=bun&logoColor=E8E2D6)
 ![Language](https://img.shields.io/badge/TypeScript-D4A853?style=for-the-badge&label=LANG&labelColor=0A0E17&logo=typescript&logoColor=D4A853)
@@ -90,6 +90,7 @@ corsair diff --current q2.jwt --previous q1.jwt
 | `CORSAIR_API_KEYS` | Comma-separated API keys for authenticated endpoints | Yes (prod, unless OIDC is configured) |
 | `CORSAIR_OIDC_CONFIG` | JSON config for OIDC issuers (keyless signing) | No |
 | `CORSAIR_DOMAIN` | Public domain for DID:web and trust.txt generation | Recommended |
+| `CORSAIR_TRUST_HOST` | Hostname for hosted trust.txt URLs (defaults to `trust.<CORSAIR_DOMAIN>`) | Optional |
 | `CORSAIR_MAPPING_PACK_PUBKEY` | Ed25519 public key PEM to verify signed mapping packs | Optional |
 
 `CORSAIR_OIDC_CONFIG` example:
@@ -178,7 +179,7 @@ corsair mappings list                          # Show loaded mappings
 corsair mappings list --json                   # Machine-readable output
 corsair mappings validate --json               # Validate mappings
 corsair mappings add https://example.com/pack.json  # Add a mapping pack
-corsair mappings pack --id wiz --version 1.0.0 --mapping ./mappings  # Build a pack
+corsair mappings pack --id wiz --version 1.1.0 --mapping ./mappings  # Build a pack
 corsair mappings sign --file pack.json --key ./keys/mapping-pack.key  # Sign a pack
 ```
 
@@ -271,6 +272,8 @@ corsair trust-txt generate --did did:web:acme.com --policy https://acme.com/.wel
 corsair trust-txt generate --did did:web:acme.com --cpoe-url https://acme.com/soc2.jwt
 corsair trust-txt discover acme.com --verify
 ```
+
+Hosted option: use `POST /trust-txt/host` on the API to generate a hosted trust.txt URL plus DNS TXT records for delegation.
 
 ---
 
@@ -504,7 +507,7 @@ Tools: `corsair_sign`, `corsair_verify`, `corsair_diff`, `corsair_formats`
 ### GitHub Action
 
 ```yaml
-- uses: Arudjreis/corsair@main
+- uses: grcorsair/corsair@main
   with:
     file: evidence.json
   id: sign

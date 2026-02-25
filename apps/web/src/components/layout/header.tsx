@@ -131,7 +131,7 @@ export function Header() {
 
           <Button variant="outline" size="sm" asChild>
             <a
-              href="https://github.com/Arudjreis/corsair"
+              href="https://github.com/grcorsair/corsair"
               target="_blank"
               rel="noopener noreferrer"
               className="ml-2 gap-2"
@@ -213,7 +213,7 @@ export function Header() {
               <Separator className="my-1 bg-corsair-border" />
 
               <a
-                href="https://github.com/Arudjreis/corsair"
+                href="https://github.com/grcorsair/corsair"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-corsair-text-dim transition-colors hover:bg-corsair-surface hover:text-corsair-gold"

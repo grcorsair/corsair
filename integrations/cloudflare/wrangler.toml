@@ -1,0 +1,7 @@
+name = "corsair-trust-txt"
+main = "worker.ts"
+compatibility_date = "2026-02-25"
+
+[vars]
+# TRUST_TXT = ""          # Raw trust.txt content
+# TRUST_TXT_URL = ""      # Proxy to hosted trust.txt

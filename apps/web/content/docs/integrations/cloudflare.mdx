@@ -1,0 +1,60 @@
+---
+title: "Cloudflare (trust.txt)"
+description: "One-click trust.txt hosting on Cloudflare Workers."
+section: "integrations"
+order: 37
+---
+
+## Overview
+
+Deploy a Cloudflare Worker that serves `/.well-known/trust.txt` (or any path you choose) from an environment variable or a hosted URL. This makes trust.txt a single-click deployment for domains already on Cloudflare.
+
+## Quick Start
+
+1. Copy the Worker template from `integrations/cloudflare/worker.ts`.
+2. Set `TRUST_TXT` (raw content) or `TRUST_TXT_URL` (proxy to hosted trust.txt).
+3. Bind the Worker to `/.well-known/trust.txt` or a route of your choice.
+
+## Recommended: Proxy to Hosted trust.txt
+
+If you’re using Corsair hosted trust.txt, set:
+
+- `TRUST_TXT_URL`: `https://trust.grcorsair.com/trust/<your-domain>/trust.txt`
+
+The Worker will fetch and return the hosted trust.txt on every request.
+
+## Example Worker
+
+```ts
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    if (url.pathname !== "/.well-known/trust.txt") {
+      return new Response("Not found", { status: 404 });
+    }
+
+    if (env.TRUST_TXT_URL) {
+      const res = await fetch(env.TRUST_TXT_URL, { redirect: "error" });
+      if (!res.ok) return new Response("Upstream error", { status: 502 });
+      const text = await res.text();
+      return new Response(text, { headers: { "content-type": "text/plain" } });
+    }
+
+    return new Response(env.TRUST_TXT || "", { headers: { "content-type": "text/plain" } });
+  },
+};
+```
+
+## DNS Delegation
+
+If you can’t host at the root domain, delegate with a TXT record:
+
+```
+_corsair.example.com TXT "corsair-trusttxt=https://trust.grcorsair.com/trust/example.com/trust.txt"
+```
+
+For hash pinning, add:
+
+```
+_corsair.example.com TXT "corsair-trusttxt-sha256=<hash>"
+```

@@ -30,7 +30,7 @@ jobs:
 
       - name: Install Corsair
         run: |
-          git clone https://github.com/Arudjreis/corsair.git /tmp/corsair
+          git clone https://github.com/grcorsair/corsair.git /tmp/corsair
           cd /tmp/corsair && bun install
 
       - name: Run scanner
@@ -70,7 +70,7 @@ corsair:
   only:
     - schedules
   script:
-    - git clone https://github.com/Arudjreis/corsair.git /tmp/corsair
+    - git clone https://github.com/grcorsair/corsair.git /tmp/corsair
     - cd /tmp/corsair && bun install
     - corsair sign --file scan-results/tool-output.json --mapping ./mappings/toolx.json --output cpoe.jwt
     - corsair verify --file cpoe.jwt

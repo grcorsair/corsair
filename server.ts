@@ -10,6 +10,9 @@
  *   POST /verify                        — Free CPOE verification (adoption driver)
  *   POST /issue                         — CPOE issuance (revenue)
  *   POST /onboard                       — Machine-actionable onboarding artifacts
+ *   POST /trust-txt/host                — Hosted trust.txt + DNS delegation
+ *   POST /trust-txt/host/:domain/verify — Verify hosted trust.txt delegation
+ *   GET  /trust/:domain/trust.txt       — Public hosted trust.txt
  *
  * TRUST ANCHORS:
  *   GET /.well-known/did.json           — DID Document (Ed25519 public key)
@@ -46,6 +49,7 @@ import { createIssueRouter } from "./functions/issue";
 import { createSignRouter } from "./functions/sign";
 import { createDemoSignRouter } from "./functions/sign-demo";
 import { createOnboardRouter } from "./functions/onboard";
+import { createHostedTrustTxtRouter, createHostedTrustTxtPublicHandler } from "./functions/hosted-trust-txt";
 import { requireAuth } from "./src/middleware/auth";
 import { rateLimitPg } from "./src/middleware/rate-limit";
 import { withSecurityHeaders } from "./src/middleware/security-headers";
@@ -56,6 +60,7 @@ import { PgSCITTRegistry } from "./src/parley/pg-scitt-registry";
 import { PgKeyManager } from "./src/parley/pg-key-manager";
 import { EnvKeyManager } from "./src/parley/env-key-manager";
 import { processDeliveryQueue } from "./functions/ssf-delivery-worker";
+import { createHostedTrustTxtStore } from "./src/parley/hosted-trust-store";
 
 // =============================================================================
 // CONFIGURATION
@@ -63,6 +68,7 @@ import { processDeliveryQueue } from "./functions/ssf-delivery-worker";
 
 const PORT = parseInt(Bun.env.PORT || "3000");
 const DOMAIN = Bun.env.CORSAIR_DOMAIN || "grcorsair.com";
+const TRUST_HOST = Bun.env.CORSAIR_TRUST_HOST || `trust.${DOMAIN}`;
 const ALLOWED_ORIGINS = (Bun.env.CORSAIR_ALLOWED_ORIGINS || `https://${DOMAIN}`)
   .split(",")
   .map((o: string) => o.trim())
@@ -90,6 +96,8 @@ let scittRouter: ((req: Request) => Response | Promise<Response>) | null = null;
 let scittListRouter: ((req: Request) => Promise<Response>) | null = null;
 let badgeRouter: ((req: Request) => Promise<Response>) | null = null;
 let profileRouter: ((req: Request) => Promise<Response>) | null = null;
+let hostedTrustTxtRouter: ((req: Request) => Promise<Response>) | null = null;
+let hostedTrustTxtPublicHandler: ((req: Request) => Promise<Response>) | null = null;
 
 // =============================================================================
 // CORS HELPER
@@ -160,6 +168,7 @@ const server = Bun.serve({
         path === "/sign/demo" || path === "/v1/sign/demo" ||
         path.startsWith("/.well-known/") ||
         path.startsWith("/badge/") || path.startsWith("/profile/") ||
+        (path.startsWith("/trust/") && path.endsWith("/trust.txt")) ||
         ((path === "/scitt/entries" || path === "/v1/scitt/entries") && req.method === "GET");
       const corsOrigin = getCorsOrigin(req, isPublic);
       const headers: Record<string, string> = {
@@ -195,6 +204,11 @@ const server = Bun.serve({
       return onboardRouter!(req);
     }
 
+    if (path === "/trust-txt/host" || path.startsWith("/trust-txt/host/") ||
+      path === "/v1/trust-txt/host" || path.startsWith("/v1/trust-txt/host/")) {
+      return hostedTrustTxtRouter!(req);
+    }
+
     // =========================================================================
     // TRUST ANCHORS
     // =========================================================================
@@ -209,6 +223,10 @@ const server = Bun.serve({
 
     if (path === "/.well-known/ssf-configuration") {
       return ssfConfigHandler!(req);
+    }
+
+    if (path.startsWith("/trust/") && path.endsWith("/trust.txt")) {
+      return hostedTrustTxtPublicHandler!(req);
     }
 
     // =========================================================================
@@ -407,6 +425,12 @@ async function initialize() {
     scittRegistry: registry,
   }), 10);
   onboardRouter = withAuthRateLimit(createOnboardRouter({ keyManager, domain: DOMAIN }), 5);
+  const hostedTrustStore = createHostedTrustTxtStore(db);
+  hostedTrustTxtRouter = withAuthRateLimit(createHostedTrustTxtRouter({
+    store: hostedTrustStore,
+    trustHost: TRUST_HOST,
+  }), 5);
+  hostedTrustTxtPublicHandler = createHostedTrustTxtPublicHandler({ store: hostedTrustStore });
   ssfRouter = withAuthRateLimit(createSSFStreamRouter({ streamManager }), 30);
   scittRouter = withAuthRateLimit(createSCITTRouter({ registry }), 30);
 

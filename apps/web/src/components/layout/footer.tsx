@@ -6,6 +6,7 @@ const productLinks = [
   { href: "/sign", label: "Sign" },
   { href: "/log", label: "Log" },
   { href: "/publish", label: "Publish" },
+  { href: "/setup", label: "Hosted Setup" },
   { href: "/verify", label: "Verify" },
   { href: "/diff", label: "Diff" },
   { href: "/signal", label: "Signal" },
@@ -27,9 +28,9 @@ const resourceLinks = [
 const communityLinks = [
   { href: "https://grcengineer.com", label: "GRC Engineer", external: true },
   { href: "https://grcengineer.com/subscribe", label: "Newsletter", external: true },
-  { href: "https://github.com/Arudjreis/corsair", label: "GitHub", external: true },
-  { href: "https://github.com/Arudjreis/corsair/blob/main/CONTRIBUTING.md", label: "Contributing Guide", external: true },
-  { href: "https://github.com/Arudjreis/corsair/blob/main/SECURITY.md", label: "Security Policy", external: true },
+  { href: "https://github.com/grcorsair/corsair", label: "GitHub", external: true },
+  { href: "https://github.com/grcorsair/corsair/blob/main/CONTRIBUTING.md", label: "Contributing Guide", external: true },
+  { href: "https://github.com/grcorsair/corsair/blob/main/SECURITY.md", label: "Security Policy", external: true },
 ];
 
 export function Footer() {

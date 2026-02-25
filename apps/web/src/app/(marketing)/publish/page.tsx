@@ -53,6 +53,29 @@ export default function PublishPage() {
           <TrustTxtGenerator />
         </FadeIn>
 
+        <FadeIn delay={0.3}>
+          <div className="mt-10 rounded-xl border border-corsair-border bg-corsair-surface p-6 text-center">
+            <p className="mb-2 font-pixel text-[7px] tracking-wider text-corsair-cyan/60">
+              HOSTED
+            </p>
+            <h2 className="mb-3 font-display text-xl font-bold text-corsair-text">
+              Host trust.txt in 60 seconds
+            </h2>
+            <p className="mx-auto max-w-2xl text-sm text-corsair-text-dim">
+              Corsair can host your trust.txt and give you a single DNS record to publish.
+              No CLI, no infra changes, instant discovery for buyers.
+            </p>
+            <div className="mt-4 flex justify-center">
+              <a
+                href="/setup"
+                className="rounded-lg border border-corsair-gold/40 bg-corsair-deep px-4 py-2 text-xs font-mono text-corsair-gold transition-colors hover:border-corsair-gold hover:text-corsair-gold"
+              >
+                Launch hosted setup →
+              </a>
+            </div>
+          </div>
+        </FadeIn>
+
         <PixelDivider variant="swords" className="my-16" />
 
         {/* How it works */}

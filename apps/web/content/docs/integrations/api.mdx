@@ -38,6 +38,10 @@ Public endpoints (verify, health) require no authentication.
 | `POST /verify` | No |
 | `POST /issue` | Yes |
 | `POST /onboard` | Yes |
+| `POST /trust-txt/host` | Yes |
+| `GET /trust-txt/host/:domain` | Yes |
+| `POST /trust-txt/host/:domain/verify` | Yes |
+| `GET /trust/:domain/trust.txt` | No |
 | `GET /scitt/entries` | No |
 | `POST /scitt/entries` | Yes |
 | `POST /ssf/streams` | Yes |
@@ -190,6 +194,68 @@ curl -X POST https://api.grcorsair.com/onboard \
 > **Note:** The API outputs the standard `/.well-known/trust.txt` path. If your org can’t host at the root domain, you can host trust.txt elsewhere and delegate discovery via DNS:
 >
 > `_corsair.example.com TXT "corsair-trusttxt=https://trust.example.com/trust.txt"`
+
+## POST /trust-txt/host
+
+Create or update a hosted trust.txt for a domain. Corsair returns a hosted URL plus the DNS TXT records required for delegation.
+Requires authentication (API key or OIDC token).
+
+```bash
+curl -X POST https://api.grcorsair.com/trust-txt/host \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "domain": "acme.com",
+    "frameworks": ["SOC2", "ISO27001"],
+    "contact": "compliance@acme.com"
+  }'
+```
+
+**Request Body:** Same fields as `POST /onboard`, except `domain` is required and may be any verified domain.
+
+**Response (hosted + DNS delegation):**
+
+```json
+{
+  "domain": "acme.com",
+  "did": "did:web:acme.com",
+  "status": "pending",
+  "trustTxt": { "content": "DID: did:web:acme.com\\n...", "hash": "..." },
+  "urls": { "hosted": "https://trust.grcorsair.com/trust/acme.com/trust.txt" },
+  "dns": {
+    "txt": "_corsair.acme.com TXT \"corsair-trusttxt=https://trust.grcorsair.com/trust/acme.com/trust.txt\"",
+    "hashTxt": "_corsair.acme.com TXT \"corsair-trusttxt-sha256=<hash>\""
+  }
+}
+```
+
+Hosted URLs use `CORSAIR_TRUST_HOST` (defaults to `trust.<CORSAIR_DOMAIN>`).
+
+## POST /trust-txt/host/:domain/verify
+
+Verify the DNS delegation for a hosted trust.txt. Marks the record active when the DNS TXT record resolves to the hosted URL.
+
+```bash
+curl -X POST https://api.grcorsair.com/trust-txt/host/acme.com/verify \
+  -H "Authorization: Bearer $AUTH_TOKEN"
+```
+
+## GET /trust-txt/host/:domain
+
+Fetch the current hosted trust.txt configuration and DNS records for a domain.
+
+```bash
+curl https://api.grcorsair.com/trust-txt/host/acme.com \
+  -H "Authorization: Bearer $AUTH_TOKEN"
+```
+
+## GET /trust/:domain/trust.txt
+
+Public endpoint for hosted trust.txt content. Useful for delegated DNS records and template deployments.
+
+```bash
+curl https://trust.grcorsair.com/trust/acme.com/trust.txt
+```
 
 ## POST /verify
 

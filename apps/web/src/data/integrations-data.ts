@@ -204,7 +204,7 @@ export const INTEGRATIONS: Integration[] = [
     status: "available",
     description: "Sign evidence on every push — 3 lines in your workflow",
     docsUrl: "/docs/integrations/ci-cd",
-    snippet: "- uses: Arudjreis/corsair@v1\n  with:\n    file: evidence.json",
+    snippet: "- uses: grcorsair/corsair@v1\n  with:\n    file: evidence.json",
   },
   {
     id: "gitlab-ci",
@@ -293,6 +293,15 @@ export const INTEGRATIONS: Integration[] = [
     category: "automation",
     status: "beta",
     description: "Sign evidence and verify CPOEs from 6,000+ apps",
+  },
+  {
+    id: "cloudflare-trust-txt",
+    name: "Cloudflare Workers (trust.txt)",
+    category: "automation",
+    status: "beta",
+    description: "One-click trust.txt hosting on Cloudflare Workers",
+    docsUrl: "/docs/integrations/cloudflare",
+    snippet: "wrangler deploy integrations/cloudflare/worker.ts",
   },
   {
     id: "n8n",

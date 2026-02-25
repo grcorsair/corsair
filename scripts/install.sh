@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # =============================================================================
 # Corsair Installer — curl-pipeable install script
-# Usage: curl -fsSL https://raw.githubusercontent.com/Arudjreis/corsair/main/scripts/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/grcorsair/corsair/main/scripts/install.sh | bash
 # =============================================================================
 set -e
 
-REPO="https://github.com/Arudjreis/corsair.git"
+REPO="https://github.com/grcorsair/corsair.git"
 INSTALL_DIR="${CORSAIR_INSTALL_DIR:-$HOME/corsair}"
 
 # ---------------------------------------------------------------------------
