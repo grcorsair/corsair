@@ -11,7 +11,7 @@
  * Usage:
  *   bun run worker.ts
  *
- * Railway cron: */1 * * * * (every minute)
+ * Railway cron: * /1 * * * * (every minute)
  */
 
 import { getDb } from "./src/db/connection";
