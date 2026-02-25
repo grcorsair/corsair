@@ -184,6 +184,10 @@ curl -X POST https://api.grcorsair.com/onboard \
 }
 ```
 
+> **Note:** The API outputs the standard `/.well-known/trust.txt` path. If your org can’t host at the root domain, you can host trust.txt elsewhere and delegate discovery via DNS:
+>
+> `_corsair.example.com TXT "corsair-trusttxt=https://trust.example.com/trust.txt"`
+
 ## POST /verify
 
 Verify a CPOE signature and extract attestation details. No authentication required.

@@ -8,7 +8,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Core pages
     { url: baseUrl, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${baseUrl}/how-it-works`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${baseUrl}/for`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
     { url: `${baseUrl}/for-grc`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${baseUrl}/for-auditors`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${baseUrl}/for-security-tools`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${baseUrl}/for-grc-platforms`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${baseUrl}/docs`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     { url: `${baseUrl}/verify`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
     { url: `${baseUrl}/publish`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },

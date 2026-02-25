@@ -9,6 +9,7 @@
  */
 
 import { describe, test, expect } from "bun:test";
+import { createHash } from "crypto";
 import {
   parseTrustTxt,
   generateTrustTxt,
@@ -510,11 +511,99 @@ Expires: 2030-12-31T23:59:59Z
       } as unknown as Response;
     };
 
-    const result = await resolveTrustTxt("acme.com", mockFetch);
+    const result = await resolveTrustTxt("acme.com", { fetchFn: mockFetch, dns: null });
     expect(result.trustTxt).not.toBeNull();
     expect(result.trustTxt!.did).toBe("did:web:acme.com");
     expect(result.trustTxt!.cpoes).toEqual(["https://acme.com/soc2.jwt"]);
     expect(result.error).toBeUndefined();
+    expect(result.source).toBe("well-known");
+  });
+
+  test("falls back to delegated TXT when well-known is missing", async () => {
+    const mockTxt = `DID: did:web:acme.com\n`;
+    const delegatedUrl = "https://trust.example.com/trust.txt";
+
+    const mockFetch = async (url: string) => {
+      if (url === "https://acme.com/.well-known/trust.txt") {
+        return { ok: false, status: 404, statusText: "Not Found" } as unknown as Response;
+      }
+      if (url === delegatedUrl) {
+        return { ok: true, text: async () => mockTxt } as unknown as Response;
+      }
+      throw new Error("Unexpected URL");
+    };
+
+    const mockDns = {
+      resolveTxt: async (hostname: string) => {
+        expect(hostname).toBe("_corsair.acme.com");
+        return [["corsair-trusttxt=" + delegatedUrl]];
+      },
+      resolveCname: async () => {
+        return [];
+      },
+    };
+
+    const result = await resolveTrustTxt("acme.com", { fetchFn: mockFetch, dns: mockDns });
+    expect(result.trustTxt).not.toBeNull();
+    expect(result.source).toBe("delegated-txt");
+    expect(result.url).toBe(delegatedUrl);
+  });
+
+  test("validates delegated TXT hash pin when provided", async () => {
+    const mockTxt = `DID: did:web:acme.com\n`;
+    const delegatedUrl = "https://trust.example.com/trust.txt";
+    const hash = createHash("sha256").update(mockTxt).digest("hex");
+
+    const mockFetch = async (url: string) => {
+      if (url === "https://acme.com/.well-known/trust.txt") {
+        return { ok: false, status: 404, statusText: "Not Found" } as unknown as Response;
+      }
+      if (url === delegatedUrl) {
+        return { ok: true, text: async () => mockTxt } as unknown as Response;
+      }
+      throw new Error("Unexpected URL");
+    };
+
+    const mockDns = {
+      resolveTxt: async () => [
+        ["corsair-trusttxt=" + delegatedUrl],
+        ["corsair-trusttxt-sha256=" + hash],
+      ],
+      resolveCname: async () => [],
+    };
+
+    const result = await resolveTrustTxt("acme.com", { fetchFn: mockFetch, dns: mockDns });
+    expect(result.trustTxt).not.toBeNull();
+    expect(result.delegated?.hashPinned).toBe(true);
+    expect(result.delegated?.hashValid).toBe(true);
+  });
+
+  test("falls back to delegated CNAME when TXT is missing", async () => {
+    const mockTxt = `DID: did:web:acme.com\n`;
+    const delegatedUrl = "https://trust.acme.com/.well-known/trust.txt";
+
+    const mockFetch = async (url: string) => {
+      if (url === "https://acme.com/.well-known/trust.txt") {
+        return { ok: false, status: 404, statusText: "Not Found" } as unknown as Response;
+      }
+      if (url === delegatedUrl) {
+        return { ok: true, text: async () => mockTxt } as unknown as Response;
+      }
+      throw new Error("Unexpected URL");
+    };
+
+    const mockDns = {
+      resolveTxt: async () => [],
+      resolveCname: async (hostname: string) => {
+        expect(hostname).toBe("trust.acme.com");
+        return ["trust.example.net"];
+      },
+    };
+
+    const result = await resolveTrustTxt("acme.com", { fetchFn: mockFetch, dns: mockDns });
+    expect(result.trustTxt).not.toBeNull();
+    expect(result.source).toBe("delegated-cname");
+    expect(result.url).toBe(delegatedUrl);
   });
 
   test("constructs correct URL for domain", async () => {
@@ -527,7 +616,7 @@ Expires: 2030-12-31T23:59:59Z
       } as unknown as Response;
     };
 
-    await resolveTrustTxt("example.com", mockFetch);
+    await resolveTrustTxt("example.com", { fetchFn: mockFetch, dns: null });
     expect(capturedUrl).toBe("https://example.com/.well-known/trust.txt");
   });
 
@@ -538,7 +627,7 @@ Expires: 2030-12-31T23:59:59Z
       statusText: "Not Found",
     }) as unknown as Response;
 
-    const result = await resolveTrustTxt("unknown.example.com", mockFetch);
+    const result = await resolveTrustTxt("unknown.example.com", { fetchFn: mockFetch, dns: null });
     expect(result.trustTxt).toBeNull();
     expect(result.error).toBeDefined();
     expect(result.error).toContain("404");
@@ -549,7 +638,7 @@ Expires: 2030-12-31T23:59:59Z
       throw new Error("Network error");
     };
 
-    const result = await resolveTrustTxt("unreachable.example.com", mockFetch);
+    const result = await resolveTrustTxt("unreachable.example.com", { fetchFn: mockFetch, dns: null });
     expect(result.trustTxt).toBeNull();
     expect(result.error).toBeDefined();
   });

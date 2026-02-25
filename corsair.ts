@@ -3460,6 +3460,7 @@ ABOUT:
   security.txt (RFC 9116). Organizations publish /.well-known/trust.txt
   to advertise their DID identity, CPOE proofs, SCITT log, optional catalog snapshot,
   policy artifact, and signal endpoints.
+  Delegation is supported via DNS for low-friction adoption.
 
   Standard           | Discovery for...
   ------------------- | ----------------
@@ -3476,6 +3477,13 @@ EXAMPLES:
   corsair trust-txt validate acme.com
   corsair trust-txt discover acme.com
   corsair trust-txt discover acme.com --verify
+
+DELEGATED HOSTING (DNS):
+  TXT record (recommended):
+    _corsair.example.com TXT "corsair-trusttxt=https://trust.example.com/trust.txt"
+    _corsair.example.com TXT "corsair-trusttxt-sha256=<sha256>"
+  CNAME (if you can host a custom domain):
+    trust.example.com CNAME trust.your-host.com
 
 OPTIONS:
   --json            Output structured JSON (validate/discover)
@@ -3665,7 +3673,7 @@ async function handleTrustTxtValidate(args: string[]): Promise<void> {
   const { verifyVCJWTViaDID } = await import("./src/parley/vc-verifier");
   const { createHash } = await import("crypto");
 
-  console.error(`Fetching https://${domain}/.well-known/trust.txt ...`);
+  console.error(`Resolving trust.txt for ${domain} (/.well-known or delegated DNS) ...`);
 
   const resolution = await resolveTrustTxt(domain);
 
@@ -3807,6 +3815,11 @@ async function handleTrustTxtValidate(args: string[]): Promise<void> {
   if (jsonOutput) {
     process.stdout.write(JSON.stringify({
       domain,
+      resolution: {
+        source: resolution.source,
+        url: resolution.url,
+        delegated: resolution.delegated,
+      },
       trustTxt: ct,
       validation,
       catalog: catalogSummary,
@@ -3817,6 +3830,15 @@ async function handleTrustTxtValidate(args: string[]): Promise<void> {
 
   console.log(`TRUST.TXT VALIDATION: ${domain}`);
   console.log("=".repeat(50));
+  console.log("");
+  console.log(`  Source:     ${resolution.source || "unknown"}`);
+  console.log(`  URL:        ${resolution.url || `https://${domain}/.well-known/trust.txt`}`);
+  if (resolution.delegated) {
+    console.log(`  Delegated:  ${resolution.delegated.method}`);
+    if (resolution.delegated.hashPinned) {
+      console.log(`  Hash pin:   ${resolution.delegated.hashValid ? "valid" : "mismatch"}`);
+    }
+  }
   console.log("");
   console.log(`  DID:        ${resolution.trustTxt.did || "(missing)"}`);
   console.log(`  CPOEs:      ${resolution.trustTxt.cpoes.length}`);
@@ -3889,7 +3911,7 @@ async function handleTrustTxtDiscover(args: string[]): Promise<void> {
   const { resolveTrustTxt, validateTrustTxt } = await import("./src/parley/trust-txt");
 
   console.error(`Discovering compliance proofs for ${domain}...`);
-  console.error(`Fetching https://${domain}/.well-known/trust.txt ...`);
+  console.error(`Resolving trust.txt for ${domain} (/.well-known or delegated DNS) ...`);
 
   const resolution = await resolveTrustTxt(domain);
 
@@ -3973,6 +3995,11 @@ async function handleTrustTxtDiscover(args: string[]): Promise<void> {
   if (jsonOutput) {
     process.stdout.write(JSON.stringify({
       domain,
+      resolution: {
+        source: resolution.source,
+        url: resolution.url,
+        delegated: resolution.delegated,
+      },
       trustTxt: ct,
       validation,
       cpoeCount: ct.cpoes.length,
@@ -3985,6 +4012,15 @@ async function handleTrustTxtDiscover(args: string[]): Promise<void> {
 
   console.log(`COMPLIANCE DISCOVERY: ${domain}`);
   console.log("=".repeat(50));
+  console.log("");
+  console.log(`  Source:   ${resolution.source || "unknown"}`);
+  console.log(`  URL:      ${resolution.url || `https://${domain}/.well-known/trust.txt`}`);
+  if (resolution.delegated) {
+    console.log(`  Delegated: ${resolution.delegated.method}`);
+    if (resolution.delegated.hashPinned) {
+      console.log(`  Hash pin:  ${resolution.delegated.hashValid ? "valid" : "mismatch"}`);
+    }
+  }
   console.log("");
   console.log(`  Identity: ${ct.did || "(none)"}`);
   console.log(`  Status:   ${validation.valid ? "VALID" : "INVALID"}`);

@@ -90,7 +90,12 @@ Host the output at `https://<domain>/.well-known/trust.txt`, then verify it from
 corsair trust-txt discover acme.com --verify
 ```
 
-> **Note:** If your GRC team doesn’t control the root domain, request a delegated subdomain (for example `trust.example.com`) and publish trust.txt there. Use the [IT request template](/docs/getting-started/it-request).
+> **Delegation (low-friction option):**
+> - **TXT**: `_corsair.example.com TXT "corsair-trusttxt=https://trust.example.com/trust.txt"`
+> - **TXT (hash pin)**: `_corsair.example.com TXT "corsair-trusttxt-sha256=<sha256>"`
+> - **CNAME**: `trust.example.com CNAME trust.your-host.com`
+>
+> Corsair resolves `/.well-known/trust.txt` first, then checks delegated DNS. Use the [IT request template](/docs/getting-started/it-request) to get DNS approval.
 
 ### VERIFY — Signature + Provenance Verification
 

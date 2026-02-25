@@ -11,6 +11,7 @@ const TABS = [
     lines: [
       { text: "corsair trust-txt generate --did did:web:acme.com", color: "text-corsair-gold" },
       { text: "# host at /.well-known/trust.txt", color: "text-corsair-text-dim" },
+      { text: "# or delegate via DNS (TXT/CNAME)", color: "text-corsair-text-dim" },
     ],
     copyText: "corsair trust-txt generate --did did:web:acme.com",
     cta: null,
@@ -21,7 +22,7 @@ const TABS = [
     lines: [
       { text: "# No install needed.", color: "text-corsair-text-dim" },
       { text: "grcorsair.com/verify", color: "text-corsair-cyan", href: "/verify" },
-      { text: "# or: curl vendor.com/.well-known/trust.txt", color: "text-corsair-text-dim" },
+      { text: "# or: curl vendor.com/.well-known/trust.txt (or delegated DNS)", color: "text-corsair-text-dim" },
     ],
     copyText: "https://grcorsair.com/verify",
     cta: { label: "Open verify →", href: "/verify" },

@@ -2,7 +2,7 @@
  * trust.txt — Compliance Proof Discovery
  *
  * A discovery layer for compliance proofs, modeled after security.txt (RFC 9116).
- * Organizations publish /.well-known/trust.txt to advertise their
+ * Organizations publish /.well-known/trust.txt (or delegate via DNS) to advertise their
  * DID identity, CPOE proofs, SCITT log, optional catalog snapshot,
  * policy artifacts, and FLAGSHIP signal endpoints.
  *
@@ -63,6 +63,15 @@ export interface TrustTxtValidation {
 export interface TrustTxtResolution {
   trustTxt: TrustTxt | null;
   error?: string;
+  source?: "well-known" | "delegated-txt" | "delegated-cname";
+  url?: string;
+  delegated?: {
+    method: "txt" | "cname";
+    record?: string;
+    url?: string;
+    hashPinned?: boolean;
+    hashValid?: boolean;
+  };
 }
 
 // =============================================================================
@@ -312,10 +321,178 @@ function validateHttpsUrl(url: string, fieldName: string): string | undefined {
  * Includes SSRF protection via isBlockedHost.
  * Accepts an optional fetchFn for testing/mocking.
  */
+export interface TrustTxtResolverDeps {
+  fetchFn?: typeof fetch;
+  dns?: {
+    resolveTxt: (hostname: string) => Promise<string[][]>;
+    resolveCname: (hostname: string) => Promise<string[]>;
+  } | null;
+}
+
+function normalizeResolverDeps(
+  deps?: TrustTxtResolverDeps | typeof fetch,
+): TrustTxtResolverDeps {
+  if (typeof deps === "function") {
+    return { fetchFn: deps };
+  }
+  return deps || {};
+}
+
+function extractDelegationRecords(records: string[]): { url?: string; hash?: string } {
+  let url: string | undefined;
+  let hash: string | undefined;
+
+  for (const record of records) {
+    const trimmed = record.trim();
+    const lower = trimmed.toLowerCase();
+    if (lower.startsWith("corsair-trusttxt=")) {
+      url = trimmed.slice("corsair-trusttxt=".length).trim();
+    } else if (lower.startsWith("corsair-trusttxt-sha256=")) {
+      hash = trimmed.slice("corsair-trusttxt-sha256=".length).trim();
+    }
+  }
+
+  return { url, hash };
+}
+
+async function resolveDelegatedTxt(
+  domain: string,
+  fetchFn: typeof fetch,
+  dns: TrustTxtResolverDeps["dns"],
+): Promise<TrustTxtResolution | null> {
+  if (!dns) return null;
+
+  const recordName = `_corsair.${domain}`;
+  let records: string[] = [];
+  try {
+    const txt = await dns.resolveTxt(recordName);
+    records = txt.map(parts => parts.join("")).filter(Boolean);
+  } catch {
+    return null;
+  }
+
+  const { url, hash } = extractDelegationRecords(records);
+  if (!url) return null;
+
+  const urlError = validateHttpsUrl(url, "Delegated trust.txt URL");
+  if (urlError) {
+    return { trustTxt: null, error: urlError };
+  }
+
+  try {
+    const response = await fetchFn(url, {
+      signal: AbortSignal.timeout(5000),
+      redirect: "error",
+    });
+    if (!response.ok) {
+      return {
+        trustTxt: null,
+        error: `HTTP ${(response as Response).status}: ${(response as Response).statusText}`,
+      };
+    }
+
+    const text = await response.text();
+    if (hash) {
+      const { createHash } = await import("crypto");
+      const computed = createHash("sha256").update(text).digest("hex");
+      const normalizedExpected = hash.toLowerCase().replace(/^sha256:/, "");
+      if (computed.toLowerCase() !== normalizedExpected) {
+        return {
+          trustTxt: null,
+          error: "Delegated trust.txt hash pin mismatch",
+        };
+      }
+    }
+
+    return {
+      trustTxt: parseTrustTxt(text),
+      source: "delegated-txt",
+      url,
+      delegated: {
+        method: "txt",
+        record: recordName,
+        url,
+        hashPinned: Boolean(hash),
+        hashValid: hash ? true : undefined,
+      },
+    };
+  } catch (e) {
+    return {
+      trustTxt: null,
+      error: `Resolution failed: ${(e as Error).message}`,
+    };
+  }
+}
+
+async function resolveDelegatedCname(
+  domain: string,
+  fetchFn: typeof fetch,
+  dns: TrustTxtResolverDeps["dns"],
+): Promise<TrustTxtResolution | null> {
+  if (!dns) return null;
+
+  const delegatedHost = `trust.${domain}`;
+  try {
+    const cnames = await dns.resolveCname(delegatedHost);
+    if (!cnames || cnames.length === 0) return null;
+  } catch {
+    return null;
+  }
+
+  const url = `https://${delegatedHost}/.well-known/trust.txt`;
+  const urlError = validateHttpsUrl(url, "Delegated trust.txt URL");
+  if (urlError) {
+    return { trustTxt: null, error: urlError };
+  }
+
+  try {
+    const response = await fetchFn(url, {
+      signal: AbortSignal.timeout(5000),
+      redirect: "error",
+    });
+    if (!response.ok) {
+      return {
+        trustTxt: null,
+        error: `HTTP ${(response as Response).status}: ${(response as Response).statusText}`,
+      };
+    }
+
+    const text = await response.text();
+    return {
+      trustTxt: parseTrustTxt(text),
+      source: "delegated-cname",
+      url,
+      delegated: {
+        method: "cname",
+        record: delegatedHost,
+        url,
+      },
+    };
+  } catch (e) {
+    return {
+      trustTxt: null,
+      error: `Resolution failed: ${(e as Error).message}`,
+    };
+  }
+}
+
+async function getDnsResolver(): Promise<TrustTxtResolverDeps["dns"] | undefined> {
+  try {
+    const dns = await import("dns/promises");
+    return {
+      resolveTxt: dns.resolveTxt,
+      resolveCname: dns.resolveCname,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 export async function resolveTrustTxt(
   domain: string,
-  fetchFn?: typeof fetch,
+  deps?: TrustTxtResolverDeps | typeof fetch,
 ): Promise<TrustTxtResolution> {
+  const { fetchFn, dns } = normalizeResolverDeps(deps);
   // SSRF protection: block private/reserved hosts
   if (isBlockedHost(domain)) {
     return {
@@ -351,20 +528,33 @@ export async function resolveTrustTxt(
     });
 
     if (!response.ok) {
-      return {
-        trustTxt: null,
-        error: `HTTP ${(response as Response).status}: ${(response as Response).statusText}`,
-      };
+      throw new Error(`HTTP ${(response as Response).status}: ${(response as Response).statusText}`);
     }
 
     const text = await response.text();
     const trustTxt = parseTrustTxt(text);
 
-    return { trustTxt };
+    return { trustTxt, source: "well-known", url };
   } catch (e) {
+    const wellKnownError = (e as Error).message;
+    const dnsResolver = dns === undefined ? await getDnsResolver() : dns || undefined;
+
+    const delegatedTxt = await resolveDelegatedTxt(domain, doFetch, dnsResolver);
+    if (delegatedTxt && delegatedTxt.trustTxt) {
+      return delegatedTxt;
+    }
+
+    const delegatedCname = await resolveDelegatedCname(domain, doFetch, dnsResolver);
+    if (delegatedCname && delegatedCname.trustTxt) {
+      return delegatedCname;
+    }
+
+    const delegatedError = delegatedTxt?.error || delegatedCname?.error;
     return {
       trustTxt: null,
-      error: `Resolution failed: ${(e as Error).message}`,
+      error: delegatedError
+        ? `Resolution failed: ${wellKnownError}; delegated: ${delegatedError}`
+        : `Resolution failed: ${wellKnownError}`,
     };
   }
 }

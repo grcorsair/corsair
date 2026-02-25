@@ -88,6 +88,11 @@ corsair trust-txt generate \
 # Host at:
 # https://your-domain.com/.well-known/trust.txt
 
+# Delegated DNS (low-friction option):
+# _corsair.your-domain.com TXT "corsair-trusttxt=https://trust.your-domain.com/trust.txt"
+# _corsair.your-domain.com TXT "corsair-trusttxt-sha256=<sha256>"
+# trust.your-domain.com CNAME trust.your-host.com
+
 # Validate from the outside
 corsair trust-txt discover your-domain.com --verify
 ```

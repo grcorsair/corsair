@@ -6,85 +6,84 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "For GRC Leaders - Trust You Can Verify",
+  title: "For Security Tools - Portable, Verifiable Outputs",
   description:
-    "A practical, non-technical explanation of how Corsair turns compliance evidence into cryptographic proof for faster vendor trust.",
+    "Turn your tool output into signed, verifiable proofs that vendors and relying parties can trust anywhere.",
 };
 
 const outcomes = [
   {
-    title: "Faster vendor reviews",
-    body: "Verify proofs in seconds instead of chasing PDFs, screenshots, and portals.",
+    title: "Make findings portable",
+    body: "Export signed CPOEs that can be verified with any standard JWT library.",
   },
   {
-    title: "Continuous assurance",
-    body: "Evidence isn’t a point-in-time report. It’s signed and refreshable.",
+    title: "Reduce buyer friction",
+    body: "Give customers proof they can verify without portals, screenshots, or vendor lock-in.",
   },
   {
-    title: "Audit-ready trail",
-    body: "Every proof is cryptographically signed and linked to provenance.",
+    title: "Differentiate your product",
+    body: "Cryptographic proof elevates your outputs from reports to verifiable evidence.",
   },
 ];
 
 const fit = [
   {
-    title: "Use what you already have",
-    body: "Sign tool outputs and reports you already collect. No new scanners required.",
+    title: "No new UI",
+    body: "Keep your current exports. Corsair signs the output you already generate.",
   },
   {
-    title: "No lock-in",
-    body: "Proofs are portable JWT-VCs. Verify without a Corsair account.",
+    title: "Works in CI/CD",
+    body: "Automate signing after each run, then publish or share proofs instantly.",
   },
   {
-    title: "Policy-driven trust",
-    body: "Relying parties set their own acceptance criteria. Corsair stays opinion-free.",
+    title: "Neutral protocol",
+    body: "No platform dependency. Evidence is portable across any workflow.",
   },
 ];
 
 const steps = [
   {
-    title: "Collect evidence",
-    body: "Pull telemetry or exports from your tools or GRC platform.",
+    title: "Run your tool",
+    body: "Generate the same JSON you already output today.",
   },
   {
-    title: "Sign a CPOE",
-    body: "Corsair signs the evidence as a verifiable credential (JWT-VC).",
+    title: "Sign the output",
+    body: "Corsair signs it into a CPOE (JWT-VC) with provenance metadata.",
   },
   {
-    title: "Publish or share",
-    body: "Share directly or publish via trust.txt (/.well-known or delegated DNS) for automated discovery.",
+    title: "Share or publish",
+    body: "Distribute directly or publish via trust.txt (/.well-known or delegated DNS) for discovery.",
   },
 ];
 
-export default function ForGrcPage() {
+export default function ForSecurityToolsPage() {
   return (
     <main className="pb-20">
       <section className="relative flex min-h-[55dvh] flex-col items-center justify-center overflow-hidden px-6 py-20">
-        <div className="pointer-events-none absolute left-1/2 top-1/3 h-[420px] w-[620px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-corsair-green/[0.04] blur-[130px]" />
+        <div className="pointer-events-none absolute left-1/2 top-1/3 h-[420px] w-[620px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-corsair-green/[0.05] blur-[130px]" />
 
         <FadeIn>
           <p className="mb-4 text-center font-pixel text-[8px] tracking-widest text-corsair-green/70">
-            FOR GRC LEADERS
+            FOR SECURITY TOOLS
           </p>
           <h1 className="mb-4 text-center font-pixel-display text-[10vw] font-bold leading-[0.9] tracking-tighter text-corsair-text sm:text-[8vw] lg:text-[5vw]">
-            trust you can verify
+            verifiable outputs
           </h1>
           <p className="mx-auto max-w-2xl text-center text-lg text-corsair-text-dim sm:text-xl">
-            Corsair turns evidence into cryptographic proof so you can verify vendors without
-            portals, PDFs, or guesswork.
+            Corsair turns your tool output into a cryptographic proof that buyers, auditors, and platforms can verify anywhere.
           </p>
         </FadeIn>
 
         <FadeIn delay={0.2}>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Badge variant="outline" className="font-mono text-xs text-corsair-green border-corsair-border">
-              Proof over PDFs
+              Portable proofs
             </Badge>
             <Badge variant="outline" className="font-mono text-xs text-corsair-green border-corsair-border">
-              Policy-driven decisions
+              No lock-in
             </Badge>
             <Badge variant="outline" className="font-mono text-xs text-corsair-green border-corsair-border">
-              Verifiable in seconds
+              CI-ready
             </Badge>
           </div>
         </FadeIn>
@@ -92,10 +91,10 @@ export default function ForGrcPage() {
         <FadeIn delay={0.3}>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Button asChild size="sm">
-              <Link href="/docs/getting-started/quick-start">Start in 5 minutes</Link>
+              <Link href="/sign">Sign tool output</Link>
             </Button>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/how-it-works">How it works</Link>
+              <Link href="/docs/integrations/api">Integration guide</Link>
             </Button>
           </div>
         </FadeIn>
@@ -110,7 +109,7 @@ export default function ForGrcPage() {
               OUTCOMES
             </p>
             <h2 className="mb-8 text-center font-display text-3xl font-bold text-corsair-text">
-              What changes for your program
+              What changes for tool builders
             </h2>
           </FadeIn>
           <div className="grid gap-4 md:grid-cols-3">
@@ -137,7 +136,7 @@ export default function ForGrcPage() {
               THE FLOW
             </p>
             <h2 className="mb-8 text-center font-display text-3xl font-bold text-corsair-text">
-              Simple, auditable, non-technical
+              Drop-in, no re-platforming
             </h2>
           </FadeIn>
           <div className="grid gap-4 md:grid-cols-3">
@@ -165,7 +164,7 @@ export default function ForGrcPage() {
               WHY IT FITS
             </p>
             <h2 className="mb-8 text-center font-display text-3xl font-bold text-corsair-text">
-              It slots into existing programs
+              It expands your reach
             </h2>
           </FadeIn>
           <div className="grid gap-4 md:grid-cols-3">
@@ -190,20 +189,17 @@ export default function ForGrcPage() {
           <FadeIn>
             <div className="rounded-2xl border border-corsair-border bg-corsair-surface p-8 text-center">
               <h2 className="mb-3 font-display text-2xl font-bold text-corsair-text">
-                Start with direct share, then automate discovery
+                Make your outputs verifiable by default
               </h2>
               <p className="mx-auto mb-6 max-w-2xl text-sm text-corsair-text-dim">
-                You can share signed proofs directly today. When you&apos;re ready, publish trust.txt
-                at{" "}
-                <code className="text-corsair-cyan">/.well-known/trust.txt</code>{" "}
-                or via delegated DNS to make verification agent-friendly and automatic.
+                Corsair lets your customers verify your findings without trusting a portal or PDF. It&apos;s proof they can take anywhere.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <Button asChild size="sm">
-                  <Link href="/docs/getting-started/quick-start">Quick start</Link>
+                  <Link href="/sign">Sign tool output</Link>
                 </Button>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href="/publish">Publish trust.txt</Link>
+                  <Link href="/docs/integrations/api">Read the API docs</Link>
                 </Button>
               </div>
             </div>

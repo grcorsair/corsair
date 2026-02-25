@@ -133,6 +133,12 @@ export function TrustTxtGenerator() {
     return lines.join("\n");
   }, [form]);
 
+  const didDomain = useMemo(() => {
+    const raw = form.did.trim();
+    if (!raw.startsWith("did:web:")) return "";
+    return raw.replace("did:web:", "").split(":")[0];
+  }, [form.did]);
+
   const hasContent = form.did.trim().length > 0;
 
   const handleCopy = useCallback(async () => {
@@ -400,7 +406,7 @@ export function TrustTxtGenerator() {
               </p>
               <div className="overflow-x-auto rounded-lg bg-corsair-surface p-3">
                 <code className="font-mono text-[11px] text-corsair-gold">
-                  curl https://{form.did.replace("did:web:", "") || "your-domain.com"}/.well-known/trust.txt
+                  curl https://{didDomain || "your-domain.com"}/.well-known/trust.txt
                 </code>
               </div>
               <p className="text-[10px] text-muted-foreground">
@@ -408,6 +414,20 @@ export function TrustTxtGenerator() {
                 <code className="text-corsair-text-dim">security.txt</code>
                 {" "}for compliance proofs. Agents and tools can auto-discover your CPOEs.
               </p>
+              <div className="mt-2 space-y-1 text-[10px] text-muted-foreground">
+                <p className="font-mono text-[10px] uppercase tracking-wide text-corsair-green/80">
+                  Delegated DNS (optional)
+                </p>
+                <p>
+                  _corsair.{didDomain || "your-domain.com"} TXT &quot;corsair-trusttxt=https://trust.{didDomain || "your-domain.com"}/trust.txt&quot;
+                </p>
+                <p>
+                  _corsair.{didDomain || "your-domain.com"} TXT &quot;corsair-trusttxt-sha256=&lt;sha256&gt;&quot;
+                </p>
+                <p>
+                  trust.{didDomain || "your-domain.com"} CNAME trust.your-host.com
+                </p>
+              </div>
             </CardContent>
           </Card>
         )}

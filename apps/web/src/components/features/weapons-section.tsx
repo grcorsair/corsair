@@ -13,7 +13,7 @@ const weapons = [
   {
     id: "trust",
     title: "trust.txt",
-    subtitle: "Discovery layer for compliance proofs.",
+    subtitle: "Discovery layer for compliance proofs (self-hosted or delegated DNS).",
     accent: "border-corsair-gold/40",
     snippet: TRUST_TXT_SNIPPET,
     cta: { label: "Generate yours", href: "/publish" },

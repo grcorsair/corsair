@@ -117,7 +117,7 @@ corsair diff --current q2.jwt --previous q1.jwt
 
 Corsair ships with a simple, shareable surface that maps directly to how people verify compliance in the real world.
 
-- **trust.txt** — publish discoverable proofs at `/.well-known/trust.txt`
+- **trust.txt** — publish discoverable proofs at `/.well-known/trust.txt` or via delegated DNS
 - **4-line verification** — verify any CPOE with standard JWT libs (see `CPOE_SPEC.md`)
 - **corsair diff** — drift detection that reads like `git diff`
 
@@ -234,6 +234,12 @@ SCITT log endpoints, optional catalog snapshots, policy artifacts, and FLAGSHIP 
 For large numbers of proofs, keep trust.txt tiny and point to SCITT + catalog.
 If you don’t run your own SCITT log, you can use the hosted Corsair log at
 `https://api.grcorsair.com/scitt/entries`.
+
+If you can’t host at the root domain, delegate discovery via DNS:
+
+- TXT: `_corsair.example.com TXT "corsair-trusttxt=https://trust.example.com/trust.txt"`
+- TXT (optional hash pin): `_corsair.example.com TXT "corsair-trusttxt-sha256=<sha256>"`
+- CNAME: `trust.example.com CNAME trust.your-host.com`
 
 ```bash
 corsair did generate --domain acme.com --output did.json

@@ -30,7 +30,7 @@ export default function PublishPage() {
               <span className="font-semibold text-corsair-gold">
                 /.well-known/trust.txt
               </span>{" "}
-              so anyone can discover and verify your compliance posture.
+              or delegate via DNS so anyone can discover and verify your compliance posture.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               {["DID:web", "CPOE", "SCITT", "CATALOG", "FLAGSHIP", "Frameworks"].map(
@@ -108,7 +108,7 @@ export default function PublishPage() {
                     <code className="text-corsair-cyan">
                       /.well-known/trust.txt
                     </code>{" "}
-                    on your domain.
+                    on your domain, or delegate via DNS (TXT or CNAME).
                   </li>
                   <li className="flex gap-3">
                     <span className="text-corsair-gold">3.</span>
@@ -118,6 +118,29 @@ export default function PublishPage() {
                     </code>
                   </li>
                 </ol>
+              </div>
+            </div>
+          </FadeIn>
+
+          <FadeIn>
+            <div className="rounded-xl border border-corsair-border bg-corsair-surface p-5">
+              <p className="mb-2 font-pixel text-[7px] tracking-wider text-corsair-gold/60">
+                DELEGATED DNS
+              </p>
+              <h2 className="mb-2 font-display text-xl font-bold text-corsair-text">
+                Low-friction publishing
+              </h2>
+              <p className="text-sm text-corsair-text-dim">
+                If you can’t touch the root domain, delegate discovery with a single DNS record.
+                Corsair resolves <code className="text-corsair-cyan">/.well-known/trust.txt</code> first,
+                then checks delegated DNS.
+              </p>
+              <div className="mt-3 rounded-lg border border-corsair-border bg-[#0A0A0A] px-4 py-3 font-mono text-[11px] text-corsair-text-dim">
+                _corsair.example.com TXT &quot;corsair-trusttxt=https://trust.example.com/trust.txt&quot;
+                <br />
+                _corsair.example.com TXT &quot;corsair-trusttxt-sha256=&lt;sha256&gt;&quot;
+                <br />
+                trust.example.com CNAME trust.your-host.com
               </div>
             </div>
           </FadeIn>

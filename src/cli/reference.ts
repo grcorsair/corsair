@@ -174,7 +174,7 @@ export const CLI_REFERENCE: CLICommandReference[] = [
   },
   {
     command: "trust-txt discover",
-    summary: "Discover trust.txt for a domain.",
+    summary: "Discover trust.txt for a domain (/.well-known or delegated DNS).",
     usage: ["corsair trust-txt discover <domain> [options]"],
     options: [
       { flag: "--verify", description: "Verify discovered CPOEs." },

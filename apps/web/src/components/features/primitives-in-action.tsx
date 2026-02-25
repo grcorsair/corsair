@@ -491,7 +491,7 @@ function PublishPanel() {
 
       <div className="mt-4 rounded-lg border border-corsair-border/30 bg-corsair-bg/40 p-4">
         <p className="mb-2 font-pixel text-[7px] tracking-wider text-corsair-text-dim">
-          /.well-known/trust.txt
+          /.well-known/trust.txt (or delegated DNS)
         </p>
         <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-corsair-text-dim">
 {`# Corsair Trust Discovery

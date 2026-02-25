@@ -179,6 +179,12 @@ SCITT log endpoint, optional catalog snapshot, and FLAGSHIP stream. For scale, k
 trust.txt tiny and point to SCITT + catalog instead of listing many CPOEs. You can
 also publish a `POLICY` URL to share deterministic acceptance criteria.
 
+If you cannot host at the root domain, discovery can be delegated via DNS:
+
+- TXT: `_corsair.example.com TXT "corsair-trusttxt=https://trust.example.com/trust.txt"`
+- TXT (optional hash pin): `_corsair.example.com TXT "corsair-trusttxt-sha256=<sha256>"`
+- CNAME: `trust.example.com CNAME trust.your-host.com`
+
 trust.txt is a plain-text file with `KEY: value` pairs (keys are case-insensitive). The
 `CPOE` key is repeatable.
 For large sets of proofs, keep trust.txt minimal and link to a catalog snapshot.

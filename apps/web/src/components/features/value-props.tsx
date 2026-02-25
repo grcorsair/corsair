@@ -41,7 +41,7 @@ const props = [
   {
     title: "Publish (trust.txt)",
     description:
-      "corsair trust-txt generate — publish trust.txt so any agent can discover your DID, CPOEs, SCITT log, and FLAGSHIP stream. Like git push.",
+      "corsair trust-txt generate — publish trust.txt at /.well-known or via delegated DNS so any agent can discover your DID, CPOEs, SCITT log, and FLAGSHIP stream. Like git push.",
     accent: "border-t-corsair-green",
     glowColor: "rgba(46,204,113,0.15)",
     icon: <MarkIcon size={36} />,

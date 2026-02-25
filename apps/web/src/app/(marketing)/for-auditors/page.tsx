@@ -6,85 +6,84 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "For GRC Leaders - Trust You Can Verify",
+  title: "For Auditors - Independent Assurance With Verifiable Evidence",
   description:
-    "A practical, non-technical explanation of how Corsair turns compliance evidence into cryptographic proof for faster vendor trust.",
+    "Corsair delivers signed, scoped evidence so audits start with verified inputs instead of screenshots and portals.",
 };
 
 const outcomes = [
   {
-    title: "Faster vendor reviews",
-    body: "Verify proofs in seconds instead of chasing PDFs, screenshots, and portals.",
+    title: "Less evidence chasing",
+    body: "Start with cryptographically signed evidence that can be verified in seconds.",
   },
   {
-    title: "Continuous assurance",
-    body: "Evidence isn’t a point-in-time report. It’s signed and refreshable.",
+    title: "Clear population + scope",
+    body: "Scope metadata defines what was actually tested and when, making sampling defensible.",
   },
   {
-    title: "Audit-ready trail",
-    body: "Every proof is cryptographically signed and linked to provenance.",
+    title: "Stronger audit trail",
+    body: "Signed proofs and optional transparency logs provide a tamper-evident record.",
   },
 ];
 
 const fit = [
   {
-    title: "Use what you already have",
-    body: "Sign tool outputs and reports you already collect. No new scanners required.",
+    title: "Keeps your methodology",
+    body: "Corsair doesn&apos;t change how you audit. It makes the evidence verifiable and portable.",
   },
   {
-    title: "No lock-in",
-    body: "Proofs are portable JWT-VCs. Verify without a Corsair account.",
+    title: "Independent by design",
+    body: "You can verify proofs without trusting the vendor or any platform account.",
   },
   {
-    title: "Policy-driven trust",
-    body: "Relying parties set their own acceptance criteria. Corsair stays opinion-free.",
+    title: "Repeatable across clients",
+    body: "Standardized evidence lets you apply consistent procedures across engagements.",
   },
 ];
 
 const steps = [
   {
-    title: "Collect evidence",
-    body: "Pull telemetry or exports from your tools or GRC platform.",
+    title: "Receive signed proofs",
+    body: "Vendors or platforms share CPOEs that represent tool outputs or exports.",
   },
   {
-    title: "Sign a CPOE",
-    body: "Corsair signs the evidence as a verifiable credential (JWT-VC).",
+    title: "Verify + evaluate scope",
+    body: "Confirm signatures and review scope coverage before selecting samples.",
   },
   {
-    title: "Publish or share",
-    body: "Share directly or publish via trust.txt (/.well-known or delegated DNS) for automated discovery.",
+    title: "Document procedures",
+    body: "Perform testing and link results to the verified evidence you reviewed.",
   },
 ];
 
-export default function ForGrcPage() {
+export default function ForAuditorsPage() {
   return (
     <main className="pb-20">
       <section className="relative flex min-h-[55dvh] flex-col items-center justify-center overflow-hidden px-6 py-20">
-        <div className="pointer-events-none absolute left-1/2 top-1/3 h-[420px] w-[620px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-corsair-green/[0.04] blur-[130px]" />
+        <div className="pointer-events-none absolute left-1/2 top-1/3 h-[420px] w-[620px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-corsair-cyan/[0.05] blur-[130px]" />
 
         <FadeIn>
-          <p className="mb-4 text-center font-pixel text-[8px] tracking-widest text-corsair-green/70">
-            FOR GRC LEADERS
+          <p className="mb-4 text-center font-pixel text-[8px] tracking-widest text-corsair-cyan/70">
+            FOR AUDITORS
           </p>
           <h1 className="mb-4 text-center font-pixel-display text-[10vw] font-bold leading-[0.9] tracking-tighter text-corsair-text sm:text-[8vw] lg:text-[5vw]">
-            trust you can verify
+            assurance you can verify
           </h1>
           <p className="mx-auto max-w-2xl text-center text-lg text-corsair-text-dim sm:text-xl">
-            Corsair turns evidence into cryptographic proof so you can verify vendors without
-            portals, PDFs, or guesswork.
+            Corsair turns evidence into signed, scoped proofs so audits begin with verified inputs, not screenshots and portals.
           </p>
         </FadeIn>
 
         <FadeIn delay={0.2}>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <Badge variant="outline" className="font-mono text-xs text-corsair-green border-corsair-border">
-              Proof over PDFs
+            <Badge variant="outline" className="font-mono text-xs text-corsair-cyan border-corsair-border">
+              Verifiable inputs
             </Badge>
-            <Badge variant="outline" className="font-mono text-xs text-corsair-green border-corsair-border">
-              Policy-driven decisions
+            <Badge variant="outline" className="font-mono text-xs text-corsair-cyan border-corsair-border">
+              Scope-aware sampling
             </Badge>
-            <Badge variant="outline" className="font-mono text-xs text-corsair-green border-corsair-border">
-              Verifiable in seconds
+            <Badge variant="outline" className="font-mono text-xs text-corsair-cyan border-corsair-border">
+              Stronger workpapers
             </Badge>
           </div>
         </FadeIn>
@@ -92,10 +91,10 @@ export default function ForGrcPage() {
         <FadeIn delay={0.3}>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Button asChild size="sm">
-              <Link href="/docs/getting-started/quick-start">Start in 5 minutes</Link>
+              <Link href="/verify">Verify a CPOE</Link>
             </Button>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/how-it-works">How it works</Link>
+              <Link href="/docs/concepts/pipeline">CPOE lifecycle</Link>
             </Button>
           </div>
         </FadeIn>
@@ -106,11 +105,11 @@ export default function ForGrcPage() {
       <section className="px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
-            <p className="mb-3 text-center font-pixel text-[8px] tracking-widest text-corsair-green/70">
+            <p className="mb-3 text-center font-pixel text-[8px] tracking-widest text-corsair-cyan/70">
               OUTCOMES
             </p>
             <h2 className="mb-8 text-center font-display text-3xl font-bold text-corsair-text">
-              What changes for your program
+              What changes for audit teams
             </h2>
           </FadeIn>
           <div className="grid gap-4 md:grid-cols-3">
@@ -137,7 +136,7 @@ export default function ForGrcPage() {
               THE FLOW
             </p>
             <h2 className="mb-8 text-center font-display text-3xl font-bold text-corsair-text">
-              Simple, auditable, non-technical
+              Simple, defensible, repeatable
             </h2>
           </FadeIn>
           <div className="grid gap-4 md:grid-cols-3">
@@ -161,11 +160,11 @@ export default function ForGrcPage() {
       <section className="px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
-            <p className="mb-3 text-center font-pixel text-[8px] tracking-widest text-corsair-cyan/60">
+            <p className="mb-3 text-center font-pixel text-[8px] tracking-widest text-corsair-green/60">
               WHY IT FITS
             </p>
             <h2 className="mb-8 text-center font-display text-3xl font-bold text-corsair-text">
-              It slots into existing programs
+              It respects independence
             </h2>
           </FadeIn>
           <div className="grid gap-4 md:grid-cols-3">
@@ -190,20 +189,17 @@ export default function ForGrcPage() {
           <FadeIn>
             <div className="rounded-2xl border border-corsair-border bg-corsair-surface p-8 text-center">
               <h2 className="mb-3 font-display text-2xl font-bold text-corsair-text">
-                Start with direct share, then automate discovery
+                Start with verification, not trust
               </h2>
               <p className="mx-auto mb-6 max-w-2xl text-sm text-corsair-text-dim">
-                You can share signed proofs directly today. When you&apos;re ready, publish trust.txt
-                at{" "}
-                <code className="text-corsair-cyan">/.well-known/trust.txt</code>{" "}
-                or via delegated DNS to make verification agent-friendly and automatic.
+                Corsair doesn&apos;t replace audit procedures. It gives you verifiable evidence inputs and clear scope so your testing is faster and more defensible.
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <Button asChild size="sm">
-                  <Link href="/docs/getting-started/quick-start">Quick start</Link>
+                  <Link href="/verify">Verify a proof</Link>
                 </Button>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href="/publish">Publish trust.txt</Link>
+                  <Link href="/docs/concepts/policy">Policy evaluation</Link>
                 </Button>
               </div>
             </div>

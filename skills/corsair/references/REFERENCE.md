@@ -251,7 +251,7 @@ corsair log register --file <CPOE.jwt> --domain <DOMAIN> [--proof-only]
 
 ### corsair trust-txt
 
-Compliance proof discovery via `/.well-known/trust.txt`.
+Compliance proof discovery via `/.well-known/trust.txt` or delegated DNS. Resolver checks `/.well-known` first, then TXT/CNAME delegation.
 
 **Subcommands:**
 
@@ -398,4 +398,8 @@ Contact: compliance@example.com
 Expires: 2027-01-01T00:00:00Z
 ```
 
-Hosted at `https://<domain>/.well-known/trust.txt`
+Hosted at `https://<domain>/.well-known/trust.txt`, or delegated via DNS:
+
+- TXT: `_corsair.example.com TXT "corsair-trusttxt=https://trust.example.com/trust.txt"`
+- TXT (optional hash pin): `_corsair.example.com TXT "corsair-trusttxt-sha256=<sha256>"`
+- CNAME: `trust.example.com CNAME trust.your-host.com`

@@ -109,7 +109,7 @@ export function DisruptionSection() {
                   <li className="flex items-start gap-2">
                     <span className="mt-0.5 text-corsair-green">&#x2713;</span>
                     <span>
-                      <code className="text-corsair-cyan">corsair trust-txt generate</code> &mdash; publish trust.txt so anyone can discover proofs. Like git push.
+                      <code className="text-corsair-cyan">corsair trust-txt generate</code> &mdash; publish trust.txt at /.well-known or via delegated DNS so anyone can discover proofs. Like git push.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
