@@ -48,4 +48,19 @@ describe("validateIngestionContract", () => {
     });
     expect(result.warnings.join(" ")).toContain("Missing or invalid assessment date");
   });
+
+  test("warns when human evidence is missing auditor", () => {
+    const doc: IngestedDocument = {
+      source: "soc2",
+      metadata: {
+        title: "SOC 2 Report",
+        issuer: "Acme",
+        date: "2026-01-01",
+        scope: "Prod",
+      },
+      controls: [{ id: "C1", description: "Control", status: "effective" }],
+    };
+    const result = validateIngestionContract(doc);
+    expect(result.warnings.join(" ")).toContain("Missing auditor for human-reviewed evidence");
+  });
 });

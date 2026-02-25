@@ -207,7 +207,8 @@ Use this routing logic:
    `corsair mappings pack --id <ID> --version <VER> --mapping <PATH> -o pack.json`
 5. Sign the pack (recommended for vendor-owned packs):
    `corsair mappings sign --file pack.json --key <KEY.pem>`
-6. Publish:
+6. Optional: set `sourceTier` in mapping JSON to override tier classification (`native|tool|platform|human`).
+7. Publish:
    - Host the pack at a URL **or**
    - Submit it to the community registry at `https://github.com/grcorsair/mappings`
 

@@ -8,6 +8,8 @@ export interface EvidenceMapping {
   id: string;
   name?: string;
   source?: string;
+  /** Optional source tier override (native|tool|platform|human) */
+  sourceTier?: "native" | "tool" | "platform" | "human" | "unknown";
   /** Higher priority mappings are evaluated first */
   priority?: number;
   match?: {
@@ -131,6 +133,13 @@ export function validateMappingSchema(mapping: EvidenceMapping): string[] {
         errors.push("controls.severityMap values must be CRITICAL|HIGH|MEDIUM|LOW");
         break;
       }
+    }
+  }
+
+  if (mapping.sourceTier) {
+    const allowed = new Set(["native", "tool", "platform", "human", "unknown"]);
+    if (!allowed.has(mapping.sourceTier)) {
+      errors.push("sourceTier must be native|tool|platform|human|unknown");
     }
   }
 

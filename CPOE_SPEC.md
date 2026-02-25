@@ -123,6 +123,9 @@ record exists in the chain without disclosing the record. Receipts verify agains
 delegation metadata (issuer, subject hash, audience, token hash, verification timestamp, and optional
 hashed identity claims).
 
+`extensions.mapping` may include optional metadata such as `sourceTier` (`native|tool|platform|human`)
+to override tier classification derived from document source.
+
 ## 4. Verification Flow
 
 Verifying a CPOE takes four steps.

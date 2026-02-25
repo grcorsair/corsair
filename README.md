@@ -280,6 +280,7 @@ Corsair auto-detects evidence via mapping packs or falls back to the generic for
 Use the mapping registry to extract controls or passthrough fields without code changes
 (see `--mapping` and `CORSAIR_MAPPING_DIR`). Mappings are evaluated by priority (higher wins),
 then filename order.
+Mappings may set `sourceTier` (`native|tool|platform|human`) to override tier classification.
 
 | Format | Purpose | Detection |
 |:-------|:--------|:----------|

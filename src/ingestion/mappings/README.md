@@ -7,6 +7,7 @@ Each mapping file can define:
 - how to extract metadata (`metadata`)
 - how to map findings into `controls[]` (`controls`)
 - how to pass through small fields for evidence-only CPOEs (`passthrough`)
+- optional `sourceTier` override (`native`, `tool`, `platform`, `human`)
 - optional `priority` to control match precedence (higher wins)
 
 Minimum ingestion contract:

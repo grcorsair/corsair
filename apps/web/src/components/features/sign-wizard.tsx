@@ -69,6 +69,7 @@ export function SignWizard() {
   const [did, setDid] = useState("");
   const [expiryDays, setExpiryDays] = useState("90");
   const [apiKey, setApiKey] = useState(() => getStoredApiKey());
+  const [strict, setStrict] = useState(false);
 
   // Step 3: Result
   const [result, setResult] = useState<APISignResponse | null>(null);
@@ -125,6 +126,7 @@ export function SignWizard() {
       ...(scope && { scope }),
       ...(did && { did }),
       ...(expiryDays && { expiryDays: parseInt(expiryDays, 10) }),
+      ...(strict ? { strict } : {}),
     };
 
     const apiResult = await signViaAPI(request, apiKey || undefined);
@@ -311,6 +313,20 @@ export function SignWizard() {
                   max="365"
                   className="w-32 rounded border border-input bg-card px-3 py-2 font-mono text-xs text-foreground"
                 />
+              </div>
+
+              {/* Strict */}
+              <div className="flex items-start gap-3 rounded-lg border border-corsair-border/60 bg-corsair-deep/40 p-3">
+                <input
+                  id="strict-ingestion"
+                  type="checkbox"
+                  checked={strict}
+                  onChange={(e) => setStrict(e.target.checked)}
+                  className="mt-1 h-4 w-4 accent-corsair-gold"
+                />
+                <label htmlFor="strict-ingestion" className="text-xs text-corsair-text-dim">
+                  Enforce minimum ingestion contract (issuer/auditor, date, scope). Fail fast if missing.
+                </label>
               </div>
             </CardContent>
           </Card>

@@ -130,6 +130,29 @@ describe("mapping registry", () => {
     expect(doc.controls[1].status).toBe("ineffective");
   });
 
+  test("captures mapping sourceTier metadata", () => {
+    const mapping = [
+      {
+        id: "platform-export",
+        priority: 7,
+        sourceTier: "platform",
+        match: { allOf: ["$.platformExport"] },
+        metadata: {
+          title: "Platform Export",
+          issuer: "Platform X",
+          date: "2026-01-01",
+          scope: "Prod",
+        },
+        passthrough: { paths: { note: "$.platformExport" } },
+      },
+    ];
+    writeFileSync(join(tmpDir, "platform.json"), JSON.stringify(mapping, null, 2));
+    resetMappingRegistry();
+
+    const doc = parseJSON({ platformExport: true });
+    expect((doc.extensions?.mapping as { sourceTier?: string })?.sourceTier).toBe("platform");
+  });
+
   test("uses higher priority mapping when multiple match", () => {
     const input = {
       priority: true,

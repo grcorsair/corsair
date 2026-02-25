@@ -282,6 +282,7 @@ function applyMapping(
       id: mapping.id,
       name: mapping.name,
       evidenceOnly: controls.length === 0,
+      ...(mapping.sourceTier ? { sourceTier: mapping.sourceTier } : {}),
     },
   };
 

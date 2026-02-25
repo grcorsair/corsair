@@ -41,7 +41,7 @@ Every `corsair sign` invocation flows through the core primitives. No flags requ
 
 Corsair accepts structured output from security scanning tools and compliance platforms via **mapping packs**. Each mapping translates tool-native formats into the canonical evidence format for signing. You can still force the generic parser with `--format generic`, which bypasses mapping detection.
 
-Mappings are JSON files loaded via `CORSAIR_MAPPING_DIR`, `CORSAIR_MAPPING_FILE`, the CLI `--mapping` flag, or `corsair mappings add`. Evidence-only mappings still produce a valid CPOE and surface data in `credentialSubject.extensions`. Use `corsair mappings list` to see what’s loaded and `corsair mappings validate` to verify mappings. Build packs with `corsair mappings pack` and sign them with `corsair mappings sign`. Mappings are evaluated by priority (higher wins), then filename order. Signed packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set.
+Mappings are JSON files loaded via `CORSAIR_MAPPING_DIR`, `CORSAIR_MAPPING_FILE`, the CLI `--mapping` flag, or `corsair mappings add`. Evidence-only mappings still produce a valid CPOE and surface data in `credentialSubject.extensions`. Use `corsair mappings list` to see what’s loaded and `corsair mappings validate` to verify mappings. Build packs with `corsair mappings pack` and sign them with `corsair mappings sign`. Mappings are evaluated by priority (higher wins), then filename order. Signed packs are verified when `CORSAIR_MAPPING_PACK_PUBKEY` is set. Mappings may set `sourceTier` (`native|tool|platform|human`) to override tier classification.
 
 | Input | How It Works |
 |-------|---------------|

@@ -43,7 +43,8 @@ export function validateIngestionContract(
     else warnings.push(message);
   };
 
-  const sourceTier = deriveSourceTier(doc.source);
+  const sourceTierOverride = resolveSourceTierOverride(doc.extensions);
+  const sourceTier = deriveSourceTier(doc.source, sourceTierOverride);
   const metadata = doc.metadata;
 
   let missingIssuer = isBlankOrUnknown(metadata.auditor) && isBlankOrUnknown(metadata.issuer);
@@ -63,6 +64,18 @@ export function validateIngestionContract(
   }
   if (invalidDate) {
     addIssue("Missing or invalid assessment date in metadata; freshness cannot be assessed.");
+  }
+
+  // Tier-specific guidance (warnings only)
+  if (sourceTier === "human") {
+    const missingAuditor = isBlankOrUnknown(metadata.auditor);
+    if (missingAuditor) {
+      warnings.push("Missing auditor for human-reviewed evidence; include metadata.auditor when available.");
+    }
+  }
+
+  if (sourceTier === "unknown") {
+    warnings.push("Unknown source tier; set mapping.sourceTier for clearer classification.");
   }
 
   return {
@@ -85,4 +98,14 @@ function isInvalidDate(value?: string): boolean {
   if (!value) return true;
   const parsed = new Date(value);
   return isNaN(parsed.getTime());
+}
+
+function resolveSourceTierOverride(extensions?: Record<string, unknown>): SourceTier | undefined {
+  if (!extensions || typeof extensions !== "object") return undefined;
+  const mapping = (extensions as { mapping?: { sourceTier?: unknown } }).mapping;
+  if (!mapping) return undefined;
+  const tier = mapping.sourceTier;
+  if (typeof tier !== "string") return undefined;
+  const allowed: SourceTier[] = ["native", "tool", "platform", "human", "unknown"];
+  return allowed.includes(tier as SourceTier) ? (tier as SourceTier) : undefined;
 }
