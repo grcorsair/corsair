@@ -29,7 +29,7 @@ export default function VerifyPage() {
               <span className="font-semibold text-corsair-gold">
                 Signature verified via DID:web
               </span>
-              . No account needed.
+              . Verify by file, URL, or domain. No account needed.
             </p>
             <p className="mx-auto mt-3 max-w-md text-sm text-corsair-text-dim/60">
               First time? Click{" "}
@@ -133,7 +133,7 @@ export default function VerifyPage() {
                   </li>
                   <li className="flex gap-3">
                     <span className="text-corsair-gold">3.</span>
-                    Anyone pastes the CPOE here. DID:web resolved, Ed25519 signature verified via Corsair API.
+                    Anyone pastes the CPOE here (or verifies via trust.txt). DID:web resolved, Ed25519 signature verified.
                   </li>
                   <li className="flex gap-3">
                     <span className="text-corsair-gold">4.</span>

@@ -80,6 +80,9 @@ export default function DocsPage() {
                   <div className="text-corsair-gold">
                     corsair sign --file tool-output.json --mapping ./mappings/toolx.json
                   </div>
+                  <div className="text-corsair-gold">
+                    corsair sign --file tool-output.json --auth-token $OIDC_TOKEN --api-url https://api.grcorsair.com
+                  </div>
                 </div>
                 <div>
                   <span className="text-corsair-text-dim">
@@ -99,6 +102,9 @@ export default function DocsPage() {
                   <div className="text-corsair-gold">
                     corsair verify --file cpoe.jwt
                   </div>
+                  <div className="text-corsair-gold">
+                    corsair verify --domain acme.com
+                  </div>
                 </div>
                 <div>
                   <span className="text-corsair-text-dim">
@@ -106,6 +112,9 @@ export default function DocsPage() {
                   </span>
                   <div className="text-corsair-turquoise">
                     corsair diff --current new-cpoe.jwt --previous old-cpoe.jwt --verify
+                  </div>
+                  <div className="text-corsair-turquoise">
+                    corsair diff --domain acme.com --verify
                   </div>
                 </div>
                 <div>

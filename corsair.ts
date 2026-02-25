@@ -109,6 +109,9 @@ async function handleSign(): Promise<void> {
   let mappingDirs: string[] = [];
   let dependencyRefs: string[] = [];
   let gate = false;
+  let authToken: string | undefined;
+  let apiUrl = process.env.CORSAIR_API_URL || "https://api.grcorsair.com";
+  let registerScitt = false;
 
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -183,6 +186,18 @@ async function handleSign(): Promise<void> {
           if (value) dependencyRefs.push(value);
         }
         break;
+      case "--auth-token":
+      case "--api-key":
+      case "--oidc-token":
+        authToken = args[++i];
+        break;
+      case "--api-url":
+      case "--endpoint":
+        apiUrl = args[++i];
+        break;
+      case "--register-scitt":
+        registerScitt = true;
+        break;
       case "--help":
       case "-h":
         showHelp = true;
@@ -211,6 +226,9 @@ OPTIONS:
   -F, --format <NAME>       Force generic format (bypass mapping registry)
       --key-dir <DIR>       Ed25519 key directory (default: ./keys)
       --did <DID>           Issuer DID (default: derived from key)
+      --auth-token <TOKEN>  Use API signing with a Bearer token (API key or OIDC)
+      --api-url <URL>       API base URL for keyless signing (default: CORSAIR_API_URL)
+      --register-scitt      Register signed CPOE in SCITT log (API only)
       --scope <TEXT>        Override scope string
       --expiry-days <N>     CPOE validity in days (default: 90)
       --dry-run             Parse + classify but don't sign. Output would-be subject.
@@ -236,6 +254,7 @@ EXAMPLES:
   corsair sign --file evidence.json --output cpoe.jwt
   corsair sign --file evidence.json --did did:web:acme.com --scope "AWS Production"
   corsair sign --file evidence.json --dry-run
+  corsair sign --file evidence.json --auth-token $OIDC_TOKEN --api-url https://api.grcorsair.com
   corsair sign --file evidence.json --json | jq .summary
   corsair sign --file evidence.json --sd-jwt --sd-fields summary,provenance
   corsair sign --file evidence.json --mapping ./mappings/toolx.json
@@ -300,6 +319,105 @@ EXAMPLES:
   if (baselinePath && !existsSync(baselinePath)) {
     console.error(`Error: Baseline file not found: ${baselinePath}`);
     process.exit(2);
+  }
+
+  if (authToken) {
+    if (mappingFiles.length > 0 || mappingDirs.length > 0) {
+      console.error("Error: --mapping is not supported with API signing");
+      process.exit(2);
+    }
+    if (baselinePath || gate) {
+      console.error("Error: --baseline/--gate are not supported with API signing");
+      process.exit(2);
+    }
+    if (dependencyRefs.length > 0) {
+      console.error("Error: --dependency is not supported with API signing");
+      process.exit(2);
+    }
+    if (sdJwt || (sdFields && sdFields.length > 0)) {
+      console.error("Error: --sd-jwt is not supported with API signing");
+      process.exit(2);
+    }
+    if (format && format !== "generic") {
+      console.error("Error: only --format generic is supported with API signing");
+      process.exit(2);
+    }
+
+    let evidence: unknown;
+    try {
+      evidence = JSON.parse(rawJson);
+    } catch {
+      console.error("Error: Evidence input is not valid JSON");
+      process.exit(2);
+    }
+
+    const body: Record<string, unknown> = {
+      evidence,
+      ...(format ? { format } : {}),
+      ...(did ? { did } : {}),
+      ...(scope ? { scope } : {}),
+      ...(expiryDays ? { expiryDays } : {}),
+      ...(dryRun ? { dryRun } : {}),
+      ...(registerScitt ? { registerScitt } : {}),
+    };
+
+    const base = apiUrl.replace(/\/+$/, "");
+    try {
+      const res = await fetch(`${base}/sign`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error(`Error: API signing failed (${res.status})`);
+        if (text) console.error(text);
+        process.exit(1);
+      }
+
+      const data = await res.json() as Record<string, unknown>;
+
+      if (jsonOutput) {
+        process.stdout.write(JSON.stringify(data, null, 2));
+        return;
+      }
+
+      const jwt = typeof data.cpoe === "string" ? data.cpoe : "";
+      if (!jwt) {
+        console.error("Error: API response missing cpoe");
+        process.exit(1);
+      }
+
+      const isTTY = process.stdout.isTTY;
+      const effectiveOutputPath = outputPath
+        ?? (filePath && filePath !== "-" && isTTY
+          ? filePath.replace(/\.json$/i, "") + ".cpoe.jwt"
+          : undefined);
+
+      if (effectiveOutputPath) {
+        const { writeFileSync } = await import("fs");
+        writeFileSync(effectiveOutputPath, jwt);
+        if (!quiet) {
+          const size = Buffer.byteLength(jwt);
+          console.error(`\nCPOE signed successfully (API).`);
+          console.error(`  Output:     ${effectiveOutputPath} (${size.toLocaleString()} bytes)`);
+          console.error(`  Verify:     corsair verify --file ${effectiveOutputPath}`);
+        }
+      } else {
+        process.stdout.write(jwt);
+      }
+
+      return;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`Error: API signing failed (${message})`);
+      process.exit(1);
+    }
   }
 
   // Apply mapping registry overrides (CLI only)
@@ -590,6 +708,7 @@ async function handleDiff(): Promise<void> {
   const args = process.argv.slice(3);
   let currentPath: string | undefined;
   let previousPath: string | undefined;
+  let domain: string | undefined;
   let showHelp = false;
   let jsonOutput = false;
   let verify = false;
@@ -603,6 +722,9 @@ async function handleDiff(): Promise<void> {
       case "--previous":
       case "-p":
         previousPath = args[++i];
+        break;
+      case "--domain":
+        domain = args[++i];
         break;
       case "--json":
         jsonOutput = true;
@@ -623,10 +745,12 @@ CORSAIR DIFF — Detect compliance regressions between CPOEs
 
 USAGE:
   corsair diff --current <cpoe.jwt> --previous <cpoe.jwt>
+  corsair diff --domain <domain>
 
 OPTIONS:
   -c, --current <PATH>      Path to the current (new) CPOE
   -p, --previous <PATH>     Path to the previous (baseline) CPOE
+      --domain <DOMAIN>     Resolve trust.txt + catalog to diff latest CPOEs
       --verify              Verify signatures via DID:web before diffing
       --json                Output structured JSON
   -h, --help                Show this help
@@ -642,35 +766,96 @@ ALIASES:
 EXAMPLES:
   corsair diff --current cpoe-v2.jwt --previous cpoe-v1.jwt
   corsair diff -c pipeline-latest.jwt -p pipeline-previous.jwt
+  corsair diff --domain acme.com
 `);
     return;
   }
 
-  if (!currentPath) {
-    console.error("Error: --current is required");
-    console.error('Run "corsair drift --help" for usage');
+  if (domain && (currentPath || previousPath)) {
+    console.error("Error: --domain cannot be combined with --current/--previous");
     process.exit(2);
   }
 
-  if (!previousPath) {
-    console.error("Error: --previous is required");
-    console.error('Run "corsair drift --help" for usage');
-    process.exit(2);
+  let currentJwt: string | undefined;
+  let previousJwt: string | undefined;
+  let currentLabel: string | undefined;
+  let previousLabel: string | undefined;
+  let sourceLabel: string | undefined;
+  let catalogWarning: string | undefined;
+
+  if (domain) {
+    const { resolveCpoeList, fetchCpoeJwt } = await import("./src/parley/cpoe-resolver");
+    const resolution = await resolveCpoeList(domain);
+    if (resolution.error) {
+      console.error(`Error: ${resolution.error}`);
+      process.exit(1);
+    }
+
+    if (resolution.catalogError) {
+      catalogWarning = resolution.catalogError;
+    }
+
+    if (resolution.cpoes.length < 2) {
+      console.error("Error: Need at least 2 CPOEs to diff");
+      process.exit(2);
+    }
+
+    const currentEntry = resolution.cpoes[0];
+    const previousEntry = resolution.cpoes[1];
+
+    const currentFetch = await fetchCpoeJwt(currentEntry.url);
+    if (!currentFetch.jwt) {
+      console.error(`Error: Failed to fetch current CPOE (${currentFetch.error || "unknown"})`);
+      process.exit(1);
+    }
+
+    const previousFetch = await fetchCpoeJwt(previousEntry.url);
+    if (!previousFetch.jwt) {
+      console.error(`Error: Failed to fetch previous CPOE (${previousFetch.error || "unknown"})`);
+      process.exit(1);
+    }
+
+    currentJwt = currentFetch.jwt;
+    previousJwt = previousFetch.jwt;
+    currentLabel = currentEntry.url;
+    previousLabel = previousEntry.url;
+    sourceLabel = resolution.source === "catalog" ? "catalog" : "trust.txt";
   }
 
-  if (!existsSync(currentPath)) {
-    console.error(`Error: File not found: ${currentPath}`);
-    process.exit(2);
+  if (!domain) {
+    if (!currentPath) {
+      console.error("Error: --current is required");
+      console.error('Run "corsair drift --help" for usage');
+      process.exit(2);
+    }
+
+    if (!previousPath) {
+      console.error("Error: --previous is required");
+      console.error('Run "corsair drift --help" for usage');
+      process.exit(2);
+    }
+
+    if (!existsSync(currentPath)) {
+      console.error(`Error: File not found: ${currentPath}`);
+      process.exit(2);
+    }
+
+    if (!existsSync(previousPath)) {
+      console.error(`Error: File not found: ${previousPath}`);
+      process.exit(2);
+    }
+
+    // Decode both JWTs (just base64url decode, no signature verification needed)
+    currentJwt = readFileSync(currentPath, "utf-8").trim();
+    previousJwt = readFileSync(previousPath, "utf-8").trim();
+    currentLabel = currentPath;
+    previousLabel = previousPath;
   }
 
-  if (!existsSync(previousPath)) {
-    console.error(`Error: File not found: ${previousPath}`);
+  if (!currentJwt || !previousJwt) {
+    console.error("Error: Missing CPOE inputs for diff");
     process.exit(2);
   }
-
-  // Decode both JWTs (just base64url decode, no signature verification needed)
-  const currentJwt = readFileSync(currentPath, "utf-8").trim();
-  const previousJwt = readFileSync(previousPath, "utf-8").trim();
 
   if (verify) {
     const { verifyVCJWTViaDID } = await import("./src/parley/vc-verifier");
@@ -697,13 +882,31 @@ EXAMPLES:
   const hasRegression = result === "regression";
 
   if (jsonOutput) {
-    process.stdout.write(JSON.stringify(report, null, 2));
+    process.stdout.write(JSON.stringify({
+      ...report,
+      ...(domain ? {
+        domain,
+        source: sourceLabel,
+        current: currentLabel,
+        previous: previousLabel,
+        ...(catalogWarning ? { catalogWarning } : {}),
+      } : {}),
+    }, null, 2));
     process.exit(hasRegression ? 1 : 0);
   }
 
   console.log("CORSAIR DIFF REPORT");
   console.log("===================");
   console.log("");
+
+  if (domain) {
+    console.log(`  Domain:   ${domain}`);
+    if (sourceLabel) console.log(`  Source:   ${sourceLabel}`);
+    if (currentLabel) console.log(`  Current:  ${currentLabel}`);
+    if (previousLabel) console.log(`  Previous: ${previousLabel}`);
+    if (catalogWarning) console.log(`  Warning:  ${catalogWarning}`);
+    console.log("");
+  }
 
   if (score.change !== 0) {
     const arrow = score.change > 0 ? "↑" : "↓";
@@ -1878,6 +2081,7 @@ USAGE:
 COMMANDS:
   generate   Generate a signed SET from a FLAGSHIP event
   verify     Verify a SET signature
+  stream     Manage SSF streams (create/get/update/delete)
 
 GENERATE OPTIONS:
   --event <PATH>       Path to FLAGSHIP event JSON (required)
@@ -1890,6 +2094,22 @@ GENERATE OPTIONS:
 VERIFY OPTIONS:
   --file <PATH>        Path to SET JWT file (required)
   --key-dir <DIR>      Key directory (default: ./keys)
+  --json               Output structured JSON
+
+STREAM COMMANDS:
+  corsair signal stream create --delivery <push|poll> --events <CSV> [options]
+  corsair signal stream get --stream-id <ID> [options]
+  corsair signal stream update --stream-id <ID> [options]
+  corsair signal stream delete --stream-id <ID> [options]
+
+STREAM OPTIONS:
+  --auth-token <TOKEN> API key or OIDC token
+  --api-url <URL>      API base URL (default: CORSAIR_API_URL)
+  --delivery <TYPE>    Delivery method: push or poll
+  --endpoint <URL>     Push delivery endpoint (required for push)
+  --events <CSV>       Event list (aliases or URIs)
+  --audience <DID>     Audience DID
+  --stream-id <ID>     Stream ID for get/update/delete
   --json               Output structured JSON
 
 ABOUT:
@@ -1986,6 +2206,11 @@ ABOUT:
     return;
   }
 
+  if (sub === "stream") {
+    await handleSignalStream(args.slice(1));
+    return;
+  }
+
   if (sub === "verify") {
     let filePath: string | undefined;
     let keyDir = "./keys";
@@ -2042,6 +2267,232 @@ ABOUT:
   process.exit(1);
 }
 
+async function handleSignalStream(args: string[]): Promise<void> {
+  const action = args[0] && !args[0].startsWith("-") ? args[0] : "";
+  const showHelp = args.includes("--help") || args.includes("-h") || !action;
+
+  let authToken: string | undefined;
+  let apiUrl = process.env.CORSAIR_API_URL || "https://api.grcorsair.com";
+  let delivery: "push" | "poll" | undefined;
+  let endpoint: string | undefined;
+  let eventsCsv: string | undefined;
+  let audience: string | undefined;
+  let streamId: string | undefined;
+  let jsonOutput = false;
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case "--auth-token":
+      case "--api-key":
+        authToken = args[++i];
+        break;
+      case "--api-url":
+      case "--endpoint-url":
+        apiUrl = args[++i];
+        break;
+      case "--delivery":
+        delivery = args[++i] as "push" | "poll";
+        break;
+      case "--endpoint":
+        endpoint = args[++i];
+        break;
+      case "--events":
+        eventsCsv = args[++i];
+        break;
+      case "--audience":
+        audience = args[++i];
+        break;
+      case "--stream-id":
+      case "--stream":
+        streamId = args[++i];
+        break;
+      case "--json":
+        jsonOutput = true;
+        break;
+    }
+  }
+
+  if (showHelp) {
+    console.log(`
+CORSAIR SIGNAL STREAM — Manage SSF streams
+
+USAGE:
+  corsair signal stream create --delivery <push|poll> --events <CSV> [options]
+  corsair signal stream get --stream-id <ID> [options]
+  corsair signal stream update --stream-id <ID> [options]
+  corsair signal stream delete --stream-id <ID> [options]
+
+OPTIONS:
+  --auth-token <TOKEN>   API key or OIDC token (required)
+  --api-url <URL>        API base URL (default: CORSAIR_API_URL)
+  --delivery <TYPE>      push or poll (create/update)
+  --endpoint <URL>       Push delivery endpoint (required for push)
+  --events <CSV>         Event list (aliases or URIs)
+  --audience <DID>       Audience DID for stream
+  --stream-id <ID>       Stream ID for get/update/delete
+  --json                 Output structured JSON
+
+EVENT ALIASES:
+  colors-changed, compliance-change, credential-change, session-revoked
+`);
+    return;
+  }
+
+  if (!authToken) {
+    console.error("Error: --auth-token is required");
+    process.exit(2);
+  }
+
+  const { FLAGSHIP_EVENTS } = await import("./src/flagship/flagship-types");
+  const aliasMap: Record<string, string> = {
+    "colors-changed": FLAGSHIP_EVENTS.COLORS_CHANGED,
+    "compliance-change": FLAGSHIP_EVENTS.FLEET_ALERT,
+    "credential-change": FLAGSHIP_EVENTS.PAPERS_CHANGED,
+    "session-revoked": FLAGSHIP_EVENTS.MARQUE_REVOKED,
+    "fleet-alert": FLAGSHIP_EVENTS.FLEET_ALERT,
+    "papers-changed": FLAGSHIP_EVENTS.PAPERS_CHANGED,
+    "marque-revoked": FLAGSHIP_EVENTS.MARQUE_REVOKED,
+  };
+
+  const normalizeEvents = (raw?: string): string[] | undefined => {
+    if (!raw) return undefined;
+    const tokens = raw.split(",").map((t) => t.trim()).filter(Boolean);
+    const values = Object.values(FLAGSHIP_EVENTS);
+    const normalized: string[] = [];
+    for (const token of tokens) {
+      if (values.includes(token as any)) {
+        normalized.push(token);
+        continue;
+      }
+      if (aliasMap[token]) {
+        normalized.push(aliasMap[token]);
+        continue;
+      }
+      const keyMatch = (FLAGSHIP_EVENTS as Record<string, string>)[token.toUpperCase()];
+      if (keyMatch) {
+        normalized.push(keyMatch);
+        continue;
+      }
+      console.error(`Error: Unknown event type: ${token}`);
+      process.exit(2);
+    }
+    return normalized;
+  };
+
+  const { createSSFStream, getSSFStream, updateSSFStream, deleteSSFStream } = await import("./src/flagship/ssf-client");
+  const clientOptions = { apiUrl, authToken };
+
+  if (action === "create") {
+    const events = normalizeEvents(eventsCsv);
+    if (!delivery || !events || events.length === 0) {
+      console.error("Error: --delivery and --events are required");
+      process.exit(2);
+    }
+    if (delivery === "push" && !endpoint) {
+      console.error("Error: --endpoint is required for push delivery");
+      process.exit(2);
+    }
+
+    const config = {
+      delivery: {
+        method: delivery,
+        ...(endpoint ? { endpoint_url: endpoint } : {}),
+      },
+      events_requested: events,
+      format: "jwt" as const,
+      ...(audience ? { audience } : {}),
+    };
+
+    const stream = await createSSFStream(config, clientOptions);
+    if (jsonOutput) {
+      process.stdout.write(JSON.stringify(stream, null, 2));
+      return;
+    }
+    console.log("STREAM CREATED");
+    console.log(`  ID:       ${stream.streamId}`);
+    console.log(`  Status:   ${stream.status}`);
+    console.log(`  Delivery: ${stream.config.delivery.method}${stream.config.delivery.endpoint_url ? ` (${stream.config.delivery.endpoint_url})` : ""}`);
+    console.log(`  Events:   ${stream.config.events_requested.length}`);
+    return;
+  }
+
+  if (action === "get") {
+    if (!streamId) {
+      console.error("Error: --stream-id is required");
+      process.exit(2);
+    }
+    const stream = await getSSFStream(streamId, clientOptions);
+    if (jsonOutput) {
+      process.stdout.write(JSON.stringify(stream, null, 2));
+      return;
+    }
+    console.log("STREAM");
+    console.log(`  ID:       ${stream.streamId}`);
+    console.log(`  Status:   ${stream.status}`);
+    console.log(`  Delivery: ${stream.config.delivery.method}${stream.config.delivery.endpoint_url ? ` (${stream.config.delivery.endpoint_url})` : ""}`);
+    console.log(`  Events:   ${stream.config.events_requested.length}`);
+    return;
+  }
+
+  if (action === "update") {
+    if (!streamId) {
+      console.error("Error: --stream-id is required");
+      process.exit(2);
+    }
+    const events = normalizeEvents(eventsCsv);
+    if (delivery === "push" && !endpoint) {
+      console.error("Error: --endpoint is required for push delivery");
+      process.exit(2);
+    }
+
+    const updates: Partial<import("./src/flagship/flagship-types").SSFStreamConfig> = {};
+    if (delivery) {
+      updates.delivery = {
+        method: delivery,
+        ...(endpoint ? { endpoint_url: endpoint } : {}),
+      };
+    }
+    if (events) updates.events_requested = events as any;
+    if (audience) updates.audience = audience;
+
+    if (!updates.delivery && !updates.events_requested && !updates.audience) {
+      console.error("Error: Provide at least one of --delivery, --endpoint, --events, or --audience");
+      process.exit(2);
+    }
+
+    const stream = await updateSSFStream(streamId, updates, clientOptions);
+    if (jsonOutput) {
+      process.stdout.write(JSON.stringify(stream, null, 2));
+      return;
+    }
+    console.log("STREAM UPDATED");
+    console.log(`  ID:       ${stream.streamId}`);
+    console.log(`  Status:   ${stream.status}`);
+    console.log(`  Delivery: ${stream.config.delivery.method}${stream.config.delivery.endpoint_url ? ` (${stream.config.delivery.endpoint_url})` : ""}`);
+    console.log(`  Events:   ${stream.config.events_requested.length}`);
+    return;
+  }
+
+  if (action === "delete") {
+    if (!streamId) {
+      console.error("Error: --stream-id is required");
+      process.exit(2);
+    }
+    const result = await deleteSSFStream(streamId, clientOptions);
+    if (jsonOutput) {
+      process.stdout.write(JSON.stringify(result, null, 2));
+      return;
+    }
+    console.log("STREAM DELETED");
+    console.log(`  ID: ${result.streamId}`);
+    return;
+  }
+
+  console.error(`Unknown signal stream command: ${action}`);
+  console.error('Run "corsair signal --help" for usage');
+  process.exit(1);
+}
+
 // =============================================================================
 // VERIFY
 // =============================================================================
@@ -2049,6 +2500,9 @@ ABOUT:
 async function handleVerify(): Promise<void> {
   const args = process.argv.slice(3);
   let filePath: string | undefined;
+  let url: string | undefined;
+  let domain: string | undefined;
+  let verifyAll = false;
   let pubkeyPath: string | undefined;
   let showHelp = false;
   let jsonOutput = false;
@@ -2076,6 +2530,12 @@ async function handleVerify(): Promise<void> {
       case "--file":
       case "-f":
         filePath = args[++i];
+        break;
+      case "--url":
+        url = args[++i];
+        break;
+      case "--domain":
+        domain = args[++i];
         break;
       case "--pubkey":
       case "-k":
@@ -2139,6 +2599,9 @@ async function handleVerify(): Promise<void> {
       case "--evidence":
         evidencePaths.push(args[++i]);
         break;
+      case "--all":
+        verifyAll = true;
+        break;
       case "--help":
       case "-h":
         showHelp = true;
@@ -2152,9 +2615,13 @@ CORSAIR VERIFY — Verify a CPOE (JWT-VC or JSON envelope)
 
 USAGE:
   corsair verify --file <path> [--pubkey <path>]
+  corsair verify --url <https://...>
+  corsair verify --domain <domain>
 
 OPTIONS:
   -f, --file <PATH>     Path to the CPOE file (JWT or JSON)
+      --url <URL>       Fetch and verify a CPOE from a URL
+      --domain <DOMAIN> Resolve trust.txt/catalog and verify latest CPOE
   -k, --pubkey <PATH>   Path to Ed25519 public key PEM (default: ./keys/corsair-signing.pub)
       --did             Verify via DID:web resolution (no local key needed)
       --require-issuer <DID>      Require a specific issuer DID
@@ -2174,20 +2641,20 @@ OPTIONS:
       --policy <PATH>             Apply policy artifact JSON
       --evidence <PATH>           Verify evidence chain against JSONL (repeatable)
       --source-document <PATH>    Verify provenance.sourceDocument against raw evidence JSON
+      --all             Verify all CPOEs when using --domain
       --json            Output structured JSON
   -h, --help            Show this help
 `);
     return;
   }
 
-  if (!filePath) {
-    console.error("Error: --file is required");
-    console.error('Run "corsair verify --help" for usage');
+  if (filePath && (url || domain)) {
+    console.error("Error: --file cannot be combined with --url or --domain");
     process.exit(2);
   }
 
-  if (!existsSync(filePath)) {
-    console.error(`Error: File not found: ${filePath}`);
+  if (url && domain) {
+    console.error("Error: --url and --domain cannot be combined");
     process.exit(2);
   }
 
@@ -2196,8 +2663,86 @@ OPTIONS:
     process.exit(2);
   }
 
-  const content = readFileSync(filePath, "utf-8").trim();
-  const format = content.startsWith("eyJ") ? "JWT-VC" : "JSON Envelope";
+  if (verifyAll && !domain) {
+    console.error("Error: --all requires --domain");
+    process.exit(2);
+  }
+
+  const remoteMode = Boolean(url || domain);
+  if (remoteMode && (receiptsPath || evidencePaths.length > 0 || sourceDocumentPath)) {
+    console.error("Error: --receipts, --evidence, and --source-document are not supported with --url/--domain");
+    process.exit(2);
+  }
+
+  if (!filePath && !url && !domain) {
+    console.error("Error: --file, --url, or --domain is required");
+    console.error('Run "corsair verify --help" for usage');
+    process.exit(2);
+  }
+
+  if (remoteMode && !useDid && !pubkeyPath) {
+    useDid = true;
+  }
+
+  type VerificationTarget = {
+    label: string;
+    content?: string;
+    format?: "JWT-VC" | "JSON Envelope";
+    error?: string;
+  };
+
+  const targets: VerificationTarget[] = [];
+  let discoverySource: string | undefined;
+  let trustTxtUrl: string | undefined;
+  let catalogUrl: string | undefined;
+  let catalogWarning: string | undefined;
+
+  if (filePath) {
+    if (!existsSync(filePath)) {
+      console.error(`Error: File not found: ${filePath}`);
+      process.exit(2);
+    }
+    const content = readFileSync(filePath, "utf-8").trim();
+    const format = content.startsWith("eyJ") ? "JWT-VC" : "JSON Envelope";
+    targets.push({ label: filePath, content, format });
+  } else if (url) {
+    const { fetchCpoeJwt } = await import("./src/parley/cpoe-resolver");
+    const resolved = await fetchCpoeJwt(url);
+    if (!resolved.jwt) {
+      console.error(`Error: Failed to fetch CPOE (${resolved.error || "unknown error"})`);
+      process.exit(1);
+    }
+    targets.push({ label: url, content: resolved.jwt, format: "JWT-VC" });
+  } else if (domain) {
+    const { resolveCpoeList, fetchCpoeJwt } = await import("./src/parley/cpoe-resolver");
+    const resolution = await resolveCpoeList(domain);
+    if (resolution.error) {
+      console.error(`Error: ${resolution.error}`);
+      process.exit(1);
+    }
+    discoverySource = resolution.source;
+    trustTxtUrl = resolution.trustTxtUrl;
+    catalogUrl = resolution.catalogUrl;
+    catalogWarning = resolution.catalogError;
+
+    if (resolution.cpoes.length === 0) {
+      console.error("Error: No CPOEs found for domain");
+      process.exit(1);
+    }
+
+    const selected = verifyAll ? resolution.cpoes : resolution.cpoes.slice(0, 1);
+    for (const entry of selected) {
+      const resolved = await fetchCpoeJwt(entry.url);
+      if (!resolved.jwt) {
+        targets.push({
+          label: entry.url,
+          error: resolved.error || "Failed to fetch CPOE",
+        });
+      } else {
+        targets.push({ label: entry.url, content: resolved.jwt, format: "JWT-VC" });
+      }
+    }
+  }
 
   let publicKey: Buffer | undefined;
   if (!useDid || receiptsPath) {
@@ -2212,25 +2757,6 @@ OPTIONS:
 
   const { MarqueVerifier } = await import("./src/parley/marque-verifier");
   const verifier = publicKey ? new MarqueVerifier([publicKey]) : new MarqueVerifier([]);
-
-  // Auto-detect format (JWT starts with eyJ, JSON starts with {)
-  let result;
-  let doc: any | null = null;
-  if (content.startsWith("eyJ")) {
-    if (useDid) {
-      const { verifyVCJWTViaDID } = await import("./src/parley/vc-verifier");
-      result = await verifyVCJWTViaDID(content);
-    } else {
-      result = await verifier.verify(content);
-    }
-  } else {
-    doc = JSON.parse(content);
-    if (useDid) {
-      console.error("Error: --did is only supported for JWT-VC verification");
-      process.exit(2);
-    }
-    result = await verifier.verify(doc);
-  }
 
   let policyFromFile: import("./src/parley/verification-policy").VerificationPolicy | undefined;
   if (policyPath) {
@@ -2271,16 +2797,8 @@ OPTIONS:
     || requireReceipts
     || requireScitt
   );
-  let policyResult: { ok: boolean; errors: string[] } | undefined;
-  let processResult: import("./src/parley/receipt-verifier").ProcessVerificationResult | undefined;
-  let evidenceResult: import("./src/evidence").EvidenceChainMatchResult | undefined;
-  let inputBindingResult: { ok: boolean; errors: string[]; expected?: string; actual?: string } | undefined;
 
-  let payload: Record<string, unknown> | null = null;
-  if (format === "JWT-VC") {
-    payload = decodeJwtPayload(content);
-  }
-
+  let receiptsData: Array<import("./src/parley/process-receipt").ProcessReceipt> | undefined;
   if (receiptsPath) {
     if (!publicKey) {
       console.error("Error: receipts verification requires a public key");
@@ -2288,32 +2806,21 @@ OPTIONS:
     }
     try {
       const raw = readFileSync(receiptsPath, "utf-8");
-      const receipts = JSON.parse(raw) as Array<import("./src/parley/process-receipt").ProcessReceipt>;
-      const { verifyProcessChain } = await import("./src/parley/receipt-verifier");
-      processResult = verifyProcessChain(receipts, publicKey.toString());
-      if (payload) {
-        const cs = (payload.vc as any)?.credentialSubject as Record<string, unknown> | undefined;
-        const chainDigest = cs?.processProvenance && (cs.processProvenance as any).chainDigest;
-        if (chainDigest && processResult.chainDigest !== chainDigest) {
-          processResult = { ...processResult, chainValid: false };
-        }
-      }
+      receiptsData = JSON.parse(raw);
     } catch (err) {
-      console.error(`Error: failed to verify receipts: ${err instanceof Error ? err.message : String(err)}`);
+      console.error(`Error: failed to parse receipts file: ${err instanceof Error ? err.message : String(err)}`);
       process.exit(2);
     }
   }
 
+  let evidenceSummary: import("./src/evidence").EvidenceChainAggregate | null | undefined;
   if (evidencePaths.length > 0) {
-    const { EvidenceEngine, compareEvidenceChain } = await import("./src/evidence");
+    const { EvidenceEngine } = await import("./src/evidence");
     const engine = new EvidenceEngine();
-    const summary = engine.summarizeChains(evidencePaths);
-    const expectedChain = format === "JWT-VC"
-      ? ((payload?.vc as any)?.credentialSubject as any)?.evidenceChain
-      : doc?.marque?.evidenceChain;
-    evidenceResult = compareEvidenceChain(expectedChain, summary);
+    evidenceSummary = engine.summarizeChains(evidencePaths);
   }
 
+  let sourceDocumentHash: string | undefined;
   if (sourceDocumentPath) {
     if (!existsSync(sourceDocumentPath)) {
       console.error(`Error: Source document not found: ${sourceDocumentPath}`);
@@ -2323,7 +2830,89 @@ OPTIONS:
       const raw = readFileSync(sourceDocumentPath, "utf-8");
       const parsed = JSON.parse(raw);
       const { hashData } = await import("./src/parley/process-receipt");
-      const actualHash = hashData(parsed);
+      sourceDocumentHash = hashData(parsed);
+    } catch (err) {
+      console.error(`Error: failed to compute source document hash: ${err instanceof Error ? err.message : String(err)}`);
+      process.exit(2);
+    }
+  }
+
+  type VerificationOutcome = {
+    ok: boolean;
+    format?: string;
+    label: string;
+    error?: string;
+    response?: Record<string, unknown>;
+    result?: any;
+    policyResult?: { ok: boolean; errors: string[] };
+    processResult?: import("./src/parley/receipt-verifier").ProcessVerificationResult;
+    evidenceResult?: import("./src/evidence").EvidenceChainMatchResult;
+    inputBindingResult?: { ok: boolean; errors: string[]; expected?: string; actual?: string };
+    dependencyStatus?: { ok: boolean; errors: string[]; results: import("./src/parley/dependency-proofs").DependencyVerificationResult[] } | null;
+  };
+
+  const verifyTarget = async (target: VerificationTarget): Promise<VerificationOutcome> => {
+    if (target.error) {
+      return { ok: false, label: target.label, error: target.error };
+    }
+
+    const content = target.content || "";
+    const format = target.format || (content.startsWith("eyJ") ? "JWT-VC" : "JSON Envelope");
+    let result;
+    let doc: any | null = null;
+
+    try {
+      if (format === "JWT-VC") {
+        if (useDid) {
+          const { verifyVCJWTViaDID } = await import("./src/parley/vc-verifier");
+          result = await verifyVCJWTViaDID(content);
+        } else {
+          result = await verifier.verify(content);
+        }
+      } else {
+        doc = JSON.parse(content);
+        if (useDid) {
+          return { ok: false, label: target.label, error: "--did is only supported for JWT-VC verification" };
+        }
+        result = await verifier.verify(doc);
+      }
+    } catch (err) {
+      return { ok: false, label: target.label, error: err instanceof Error ? err.message : String(err) };
+    }
+
+    let payload: Record<string, unknown> | null = null;
+    if (format === "JWT-VC") {
+      payload = decodeJwtPayload(content);
+    }
+
+    let processResult: import("./src/parley/receipt-verifier").ProcessVerificationResult | undefined;
+    let evidenceResult: import("./src/evidence").EvidenceChainMatchResult | undefined;
+    let inputBindingResult: { ok: boolean; errors: string[]; expected?: string; actual?: string } | undefined;
+    let dependencyStatus:
+      | { ok: boolean; errors: string[]; results: import("./src/parley/dependency-proofs").DependencyVerificationResult[] }
+      | null = null;
+
+    if (receiptsData && publicKey) {
+      const { verifyProcessChain } = await import("./src/parley/receipt-verifier");
+      processResult = verifyProcessChain(receiptsData, publicKey.toString());
+      if (payload) {
+        const cs = (payload.vc as any)?.credentialSubject as Record<string, unknown> | undefined;
+        const chainDigest = cs?.processProvenance && (cs.processProvenance as any).chainDigest;
+        if (chainDigest && processResult.chainDigest !== chainDigest) {
+          processResult = { ...processResult, chainValid: false };
+        }
+      }
+    }
+
+    if (evidenceSummary) {
+      const { compareEvidenceChain } = await import("./src/evidence");
+      const expectedChain = format === "JWT-VC"
+        ? ((payload?.vc as any)?.credentialSubject as any)?.evidenceChain
+        : doc?.marque?.evidenceChain;
+      evidenceResult = compareEvidenceChain(expectedChain, evidenceSummary);
+    }
+
+    if (sourceDocumentHash) {
       const expectedHash = (payload?.vc as any)?.credentialSubject?.provenance?.sourceDocument as string | undefined;
       const errors: string[] = [];
       if (!payload) {
@@ -2331,93 +2920,85 @@ OPTIONS:
       }
       if (!expectedHash) {
         errors.push("missing provenance.sourceDocument in CPOE");
-      } else if (expectedHash !== actualHash) {
+      } else if (expectedHash !== sourceDocumentHash) {
         errors.push("source document hash does not match provenance.sourceDocument");
       }
       inputBindingResult = {
         ok: errors.length === 0,
         errors,
         expected: expectedHash,
-        actual: actualHash,
+        actual: sourceDocumentHash,
       };
-    } catch (err) {
-      console.error(`Error: failed to compute source document hash: ${err instanceof Error ? err.message : String(err)}`);
-      process.exit(2);
     }
-  }
 
-  let dependencyStatus:
-    | { ok: boolean; errors: string[]; results: import("./src/parley/dependency-proofs").DependencyVerificationResult[] }
-    | null = null;
-
-  if (verifyDependencies) {
-    if (!payload) {
-      dependencyStatus = {
-        ok: false,
-        errors: ["Dependency verification requires JWT-VC input"],
-        results: [],
-      };
-    } else {
-      const { parseDependencyProofs, verifyDependencyChain } = await import("./src/parley/dependency-proofs");
-      const parsed = parseDependencyProofs(payload);
-      if (parsed.dependencies.length === 0) {
+    if (verifyDependencies) {
+      if (!payload) {
         dependencyStatus = {
           ok: false,
-          errors: [...parsed.errors, "No dependencies declared in CPOE"],
+          errors: ["Dependency verification requires JWT-VC input"],
           results: [],
         };
       } else {
-        const results = await verifyDependencyChain(parsed.dependencies, { depth: dependencyDepth });
-        const ok = parsed.errors.length === 0 && results.every((r) => r.ok);
-        dependencyStatus = {
-          ok,
-          errors: parsed.errors,
-          results,
-        };
+        const { parseDependencyProofs, verifyDependencyChain } = await import("./src/parley/dependency-proofs");
+        const parsed = parseDependencyProofs(payload);
+        if (parsed.dependencies.length === 0) {
+          dependencyStatus = {
+            ok: false,
+            errors: [...parsed.errors, "No dependencies declared in CPOE"],
+            results: [],
+          };
+        } else {
+          const results = await verifyDependencyChain(parsed.dependencies, { depth: dependencyDepth });
+          const ok = parsed.errors.length === 0 && results.every((r) => r.ok);
+          dependencyStatus = {
+            ok,
+            errors: parsed.errors,
+            results,
+          };
+        }
       }
     }
-  }
 
-  if (policyRequested) {
-    if (!payload) {
-      policyResult = { ok: false, errors: ["Policy checks require JWT-VC input"] };
-    } else {
-      const { evaluateVerificationPolicy } = await import("./src/parley/verification-policy");
-      const mergedPolicy = {
-        requireIssuer: requireIssuer ?? policyFromFile?.requireIssuer,
-        requireFramework: requireFrameworks.length > 0 ? requireFrameworks : policyFromFile?.requireFramework,
-        maxAgeDays: maxAgeDays ?? policyFromFile?.maxAgeDays,
-        minScore: minScore ?? policyFromFile?.minScore,
-        requireSource: requireSource ?? policyFromFile?.requireSource,
-        requireSourceIdentity: requireSourceIdentities.length > 0
-          ? requireSourceIdentities
-          : policyFromFile?.requireSourceIdentity,
-        requireToolAttestation: requireToolAttestation || policyFromFile?.requireToolAttestation,
-        requireInputBinding: requireInputBinding || policyFromFile?.requireInputBinding,
-        requireEvidenceChain: requireEvidenceChain || policyFromFile?.requireEvidenceChain,
-        requireReceipts: requireReceipts || policyFromFile?.requireReceipts,
-        requireScitt: requireScitt || policyFromFile?.requireScitt,
-      };
+    let policyResult: { ok: boolean; errors: string[] } | undefined;
+    if (policyRequested) {
+      if (!payload) {
+        policyResult = { ok: false, errors: ["Policy checks require JWT-VC input"] };
+      } else {
+        const { evaluateVerificationPolicy } = await import("./src/parley/verification-policy");
+        const mergedPolicy = {
+          requireIssuer: requireIssuer ?? policyFromFile?.requireIssuer,
+          requireFramework: requireFrameworks.length > 0 ? requireFrameworks : policyFromFile?.requireFramework,
+          maxAgeDays: maxAgeDays ?? policyFromFile?.maxAgeDays,
+          minScore: minScore ?? policyFromFile?.minScore,
+          requireSource: requireSource ?? policyFromFile?.requireSource,
+          requireSourceIdentity: requireSourceIdentities.length > 0
+            ? requireSourceIdentities
+            : policyFromFile?.requireSourceIdentity,
+          requireToolAttestation: requireToolAttestation || policyFromFile?.requireToolAttestation,
+          requireInputBinding: requireInputBinding || policyFromFile?.requireInputBinding,
+          requireEvidenceChain: requireEvidenceChain || policyFromFile?.requireEvidenceChain,
+          requireReceipts: requireReceipts || policyFromFile?.requireReceipts,
+          requireScitt: requireScitt || policyFromFile?.requireScitt,
+        };
 
-      policyResult = evaluateVerificationPolicy(payload, mergedPolicy, {
-        process: processResult
-          ? {
-            chainValid: processResult.chainValid,
-            receiptsTotal: processResult.receiptsTotal,
-            receiptsVerified: processResult.receiptsVerified,
-            toolAttestedVerified: processResult.toolAttestedVerified,
-            scittRegistered: processResult.scittRegistered,
-          }
-          : null,
-        evidence: evidenceResult ? { ok: evidenceResult.ok, errors: evidenceResult.errors } : null,
-        inputBinding: inputBindingResult
-          ? { ok: inputBindingResult.ok, errors: inputBindingResult.errors }
-          : null,
-      });
+        policyResult = evaluateVerificationPolicy(payload, mergedPolicy, {
+          process: processResult
+            ? {
+              chainValid: processResult.chainValid,
+              receiptsTotal: processResult.receiptsTotal,
+              receiptsVerified: processResult.receiptsVerified,
+              toolAttestedVerified: processResult.toolAttestedVerified,
+              scittRegistered: processResult.scittRegistered,
+            }
+            : null,
+          evidence: evidenceResult ? { ok: evidenceResult.ok, errors: evidenceResult.errors } : null,
+          inputBinding: inputBindingResult
+            ? { ok: inputBindingResult.ok, errors: inputBindingResult.errors }
+            : null,
+        });
+      }
     }
-  }
 
-  if (jsonOutput) {
     const response = {
       valid: result.valid,
       issuer: result.signedBy ?? null,
@@ -2438,15 +3019,103 @@ OPTIONS:
       inputBinding: inputBindingResult ?? null,
       dependencies: dependencyStatus,
     };
-    process.stdout.write(JSON.stringify(response, null, 2));
+
     const ok = result.valid
       && (!policyResult || policyResult.ok)
       && (!processResult || processResult.chainValid)
       && (!evidenceResult || evidenceResult.ok)
       && (!inputBindingResult || inputBindingResult.ok)
       && (!dependencyStatus || dependencyStatus.ok);
-    process.exit(ok ? 0 : 1);
+
+    return {
+      ok,
+      format,
+      label: target.label,
+      response,
+      result,
+      policyResult,
+      processResult,
+      evidenceResult,
+      inputBindingResult,
+      dependencyStatus,
+    };
+  };
+
+  const outcomes: VerificationOutcome[] = [];
+  for (const target of targets) {
+    outcomes.push(await verifyTarget(target));
   }
+
+  const overallOk = outcomes.every((o) => o.ok);
+
+  if (jsonOutput) {
+    if (outcomes.length === 1 && !domain && !url) {
+      process.stdout.write(JSON.stringify(outcomes[0].response ?? { error: outcomes[0].error }, null, 2));
+      process.exit(overallOk ? 0 : 1);
+    }
+
+    process.stdout.write(JSON.stringify({
+      ...(domain ? {
+        domain,
+        source: discoverySource,
+        trustTxtUrl,
+        catalogUrl,
+        ...(catalogWarning ? { catalogWarning } : {}),
+      } : {}),
+      ...(url ? { url } : {}),
+      results: outcomes.map((o) => ({
+        label: o.label,
+        ok: o.ok,
+        ...(o.error ? { error: o.error } : {}),
+        ...(o.response ? o.response : {}),
+      })),
+    }, null, 2));
+    process.exit(overallOk ? 0 : 1);
+  }
+
+  if (outcomes.length > 1) {
+    console.log("CORSAIR VERIFY");
+    console.log("==============");
+    if (domain) {
+      console.log(`  Domain:   ${domain}`);
+      if (discoverySource) console.log(`  Source:   ${discoverySource}`);
+      if (trustTxtUrl) console.log(`  trust.txt: ${trustTxtUrl}`);
+      if (catalogUrl) console.log(`  Catalog:  ${catalogUrl}`);
+      if (catalogWarning) console.log(`  Warning:  ${catalogWarning}`);
+    }
+    if (url) {
+      console.log(`  URL:      ${url}`);
+    }
+    console.log("");
+    for (const outcome of outcomes) {
+      if (outcome.error) {
+        console.log(`  ✗ ${outcome.label} — ${outcome.error}`);
+        continue;
+      }
+      const summary = (outcome.response?.summary as any) || null;
+      const score = summary?.overallScore !== undefined ? `${summary.overallScore}%` : "n/a";
+      console.log(`  ${outcome.ok ? "✓" : "✗"} ${outcome.label} (${score})`);
+      if (!outcome.ok && outcome.response?.reason) {
+        console.log(`    Reason: ${outcome.response.reason}`);
+      }
+    }
+    process.exit(overallOk ? 0 : 1);
+  }
+
+  const outcome = outcomes[0];
+  if (!outcome || outcome.error) {
+    console.error("VERIFICATION FAILED");
+    if (outcome?.error) console.error(`  Reason: ${outcome.error}`);
+    process.exit(1);
+  }
+
+  const result = outcome.result;
+  const format = outcome.format;
+  const policyResult = outcome.policyResult;
+  const processResult = outcome.processResult;
+  const evidenceResult = outcome.evidenceResult;
+  const inputBindingResult = outcome.inputBindingResult;
+  const dependencyStatus = outcome.dependencyStatus;
 
   if (result.valid) {
     console.log("VERIFIED");
@@ -2508,12 +3177,7 @@ OPTIONS:
         }
       }
     }
-    const ok = (!policyResult || policyResult.ok)
-      && (!processResult || processResult.chainValid)
-      && (!evidenceResult || evidenceResult.ok)
-      && (!inputBindingResult || inputBindingResult.ok)
-      && (!dependencyStatus || dependencyStatus.ok);
-    process.exit(ok ? 0 : 1);
+    process.exit(overallOk ? 0 : 1);
   } else {
     console.error("VERIFICATION FAILED");
     console.error(`  Reason: ${result.reason}`);

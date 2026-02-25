@@ -44,8 +44,14 @@ corsair init
 # Sign the example evidence into a CPOE
 corsair sign --file example-evidence.json --output cpoe.jwt
 
+# Keyless sign via API (OIDC or API key)
+corsair sign --file example-evidence.json --auth-token $OIDC_TOKEN --api-url https://api.grcorsair.com
+
 # Verify the CPOE with your local public key
 corsair verify --file cpoe.jwt --pubkey ./keys/corsair-signing.pub
+
+# Verify by domain (resolves trust.txt + catalog)
+corsair verify --domain your-domain.com
 ```
 
 ### Publish Your DID Document (Required for DID:web Verification)
@@ -132,6 +138,9 @@ Track how your compliance posture changes between assessments:
 ```bash
 # Compare two CPOEs (like git diff for compliance)
 corsair diff --current cpoe-v2.jwt --previous cpoe-v1.jwt
+
+# Diff latest proofs by domain
+corsair diff --domain your-domain.com --verify
 ```
 
 ## Generate Signing Keys

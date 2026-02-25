@@ -138,6 +138,9 @@ export default function SignPage() {
                 <div>
                   <span className="text-corsair-cyan">$</span> corsair sign --file tool-output.json --mapping ./mappings/toolx.json --output cpoe.jwt
                 </div>
+                <div>
+                  <span className="text-corsair-cyan">$</span> corsair sign --file tool-output.json --auth-token $OIDC_TOKEN --api-url https://api.grcorsair.com
+                </div>
                 <div className="mt-4">
                   <span className="text-corsair-text-dim/40"># Verify the CPOE</span>
                 </div>

@@ -66,8 +66,14 @@ corsair init
 # Sign your tool output as a CPOE (keys auto-generate on first use)
 corsair sign --file evidence.json
 
+# Keyless sign via API (OIDC or API key)
+corsair sign --file evidence.json --auth-token $OIDC_TOKEN --api-url https://api.grcorsair.com
+
 # Verify any CPOE (always free, no account needed)
 corsair verify --file cpoe.jwt
+
+# Verify by domain (resolves trust.txt + catalog)
+corsair verify --domain acme.com
 
 # Compare two CPOEs over time (like git diff)
 corsair diff --current q2.jwt --previous q1.jwt
@@ -160,6 +166,7 @@ corsair sign --file evidence.json --mapping ./mappings/            # Apply mappi
 corsair sign --file evidence.json --dependency https://vendor.com/cpoe.jwt  # Attach dependency proof
 corsair sign --file evidence.json --source tool  # Override provenance source
 corsair sign --file evidence.json --baseline baseline.cpoe.jwt --gate  # Fail on regression vs baseline
+corsair sign --file evidence.json --auth-token $OIDC_TOKEN --api-url https://api.grcorsair.com  # Keyless sign
 corsair sign --file - < data.json              # Sign from stdin
 ```
 
@@ -182,6 +189,9 @@ Mapping packs can be signed. If a pack includes a `signature`, set
 ```bash
 corsair verify --file cpoe.jwt --json          # Structured JSON output
 corsair verify --file cpoe.jwt --did           # Verify via DID:web
+corsair verify --url https://acme.com/cpoe.jwt  # Verify remote CPOE
+corsair verify --domain acme.com               # Resolve trust.txt + catalog
+corsair verify --domain acme.com --all         # Verify all published CPOEs
 corsair verify --file cpoe.jwt --require-issuer did:web:acme.com
 corsair verify --file cpoe.jwt --require-framework SOC2,ISO27001
 corsair verify --file cpoe.jwt --max-age 30 --min-score 90
@@ -224,6 +234,15 @@ corsair receipts verify --file receipt.json --cpoe cpoe.jwt
 corsair diff --current new.jwt --previous old.jwt
 corsair diff --current new.jwt --previous old.jwt --verify
 corsair diff --current new.jwt --previous old.jwt --json
+corsair diff --domain acme.com --verify
+```
+
+### Signal Streams (FLAGSHIP)
+
+```bash
+corsair signal stream create --auth-token $API_KEY --api-url https://api.grcorsair.com \\
+  --delivery push --endpoint https://receiver.example.com/ssf \\
+  --events colors-changed,compliance-change --audience did:web:buyer.com
 ```
 
 ### Trust Discovery (trust.txt)

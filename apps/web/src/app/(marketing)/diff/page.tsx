@@ -22,7 +22,8 @@ export default function DiffPage() {
               diff
             </h1>
             <p className="mx-auto max-w-xl text-corsair-text-dim">
-              Compare two CPOEs. See regressions and improvements in your compliance posture over time.
+              Compare two CPOEs. See regressions and improvements in your compliance posture over time,
+              or diff the latest proofs directly from a domain.
             </p>
           </div>
         </FadeIn>
@@ -40,6 +41,11 @@ export default function DiffPage() {
                 <span className="text-corsair-gold">$</span>{" "}
                 <span className="text-corsair-text">corsair diff</span>{" "}
                 <span className="text-corsair-text-dim">--current cpoe-v2.jwt --previous cpoe-v1.jwt</span>
+              </div>
+              <div>
+                <span className="text-corsair-gold">$</span>{" "}
+                <span className="text-corsair-text">corsair diff</span>{" "}
+                <span className="text-corsair-text-dim">--domain acme.com --verify</span>
               </div>
               <div className="h-2" />
               <div className="text-corsair-green">  + CC7.2  Audit logging       pass → pass  (fixed)</div>

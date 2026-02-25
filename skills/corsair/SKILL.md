@@ -45,10 +45,10 @@ Guardrails that MUST be followed:
 
 The agent may perform these capabilities when invoked:
 
-- `sign_cpoe(evidence_path, format?, mapping?, dependency?, source?, did?, scope?, expiry_days?, sd_jwt?, sd_fields?)`
-- `verify_cpoe(cpoe_path, did?, require_issuer?, require_framework?, max_age_days?, min_score?, require_source?, require_source_identity?, require_tool_attestation?, require_input_binding?, require_evidence_chain?, require_receipts?, require_scitt?, source_document?, policy_path?, dependencies?, dependency_depth?)`
+- `sign_cpoe(evidence_path, format?, mapping?, dependency?, source?, did?, scope?, expiry_days?, sd_jwt?, sd_fields?, auth_token?, api_url?)`
+- `verify_cpoe(cpoe_path, did?, require_issuer?, require_framework?, max_age_days?, min_score?, require_source?, require_source_identity?, require_tool_attestation?, require_input_binding?, require_evidence_chain?, require_receipts?, require_scitt?, source_document?, policy_path?, dependencies?, dependency_depth?, url?, domain?, all?)`
 - `policy_validate(policy_path?)`
-- `diff_cpoe(current_path, previous_path, verify?)`
+- `diff_cpoe(current_path, previous_path, verify?, domain?)`
 - `publish_trust_txt(did, cpoes?, base_url?, scitt?, catalog?, flagship?, frameworks?, contact?, expiry_days?)`
 - `discover_trust_txt(domain, verify?)`
 - `log_cpoes(dir?, last?, scitt?, issuer?, domain?, framework?)`
@@ -68,8 +68,8 @@ The agent may perform these capabilities when invoked:
 Ask explicitly for missing inputs:
 
 - SIGN: evidence file path (or `-` for stdin)
-- VERIFY: CPOE file path (JWT string or JSON envelope)
-- DIFF: two CPOE paths (current, previous)
+- VERIFY: CPOE file path, URL, or domain (trust.txt)
+- DIFF: two CPOE paths (current, previous) or domain
 - PUBLISH: DID and at least one of CPOEs, SCITT, or catalog
 - DISCOVER: domain
 - LOG: directory or SCITT endpoint (optional)
@@ -129,19 +129,22 @@ Use this routing logic:
 ### SIGN
 
 1. `corsair sign --file <PATH>`
-2. If needed: `--format`, `--mapping`, `--dependency`, `--sd-jwt`, `--sd-fields`
-3. Report CPOE path, detected format, summary.
+2. For keyless signing: `corsair sign --file <PATH> --auth-token <TOKEN> --api-url <URL>`
+3. If needed: `--format`, `--mapping`, `--dependency`, `--sd-jwt`, `--sd-fields`
+4. Report CPOE path, detected format, summary.
 
 ### VERIFY
 
 1. `corsair verify --file <PATH>`
-2. If needed: `--did`, `--policy`, `--receipts`, `--evidence`, `--source-document`, `--dependencies`
-3. Report validity, trust tier, summary, and any policy errors.
+2. For remote proofs: `corsair verify --url <URL>` or `corsair verify --domain <DOMAIN> [--all]`
+3. If needed: `--did`, `--policy`, `--receipts`, `--evidence`, `--source-document`, `--dependencies`
+4. Report validity, trust tier, summary, and any policy errors.
 
 ### DIFF
 
 1. `corsair diff --current <NEW> --previous <OLD> [--verify]`
-2. Report regressions and score delta.
+2. Or: `corsair diff --domain <DOMAIN> [--verify]`
+3. Report regressions and score delta.
 
 ### PUBLISH (trust.txt)
 
@@ -178,6 +181,13 @@ Use this routing logic:
 
 1. `corsair log register --file <CPOE.jwt> --scitt <URL> [--proof-only]`
 2. Report entry id and registration time.
+
+### SIGNAL STREAMS (FLAGSHIP)
+
+1. Create: `corsair signal stream create --auth-token <TOKEN> --delivery push --endpoint <URL> --events <CSV> --audience <DID>`
+2. Get: `corsair signal stream get --stream-id <ID> --auth-token <TOKEN>`
+3. Update: `corsair signal stream update --stream-id <ID> --events <CSV> --auth-token <TOKEN>`
+4. Delete: `corsair signal stream delete --stream-id <ID> --auth-token <TOKEN>`
 
 ### MAPPINGS (Use Existing Packs)
 
@@ -278,8 +288,14 @@ For detailed command flags, JSON outputs, and example payloads, use:
 Sign evidence:
 `corsair sign --file evidence.json`
 
+Keyless sign:
+`corsair sign --file evidence.json --auth-token $OIDC_TOKEN --api-url https://api.grcorsair.com`
+
 Verify:
 `corsair verify --file cpoe.jwt --did`
+
+Verify by domain:
+`corsair verify --domain acme.com --all`
 
 Discover:
 `corsair trust-txt discover acme.com --verify`

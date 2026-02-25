@@ -42,6 +42,11 @@ export default function SignalPage() {
                 <span className="text-corsair-text">corsair signal generate</span>{" "}
                 <span className="text-corsair-text-dim">--event flagship.json</span>
               </div>
+              <div>
+                <span className="text-corsair-gold">$</span>{" "}
+                <span className="text-corsair-text">corsair signal stream create</span>{" "}
+                <span className="text-corsair-text-dim">--delivery push --endpoint https://receiver.example.com/ssf</span>
+              </div>
               <div className="h-2" />
               <div className="flex">
                 <span className="text-corsair-green">{"  \u2713 "}</span>

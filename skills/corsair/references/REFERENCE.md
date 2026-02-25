@@ -31,6 +31,9 @@ corsair sign [options]
 | `--expiry-days <N>` | CPOE validity in days | 90 |
 | `--key-dir <DIR>` | Ed25519 key directory | ./keys |
 | `--source <SOURCE>` | Override provenance source | derived from evidence |
+| `--auth-token <TOKEN>` | Use API signing with a Bearer token | - |
+| `--api-url <URL>` | API base URL for keyless signing | CORSAIR_API_URL |
+| `--register-scitt` | Register signed CPOE in SCITT log (API only) | false |
 | `--mapping <PATH>` | Mapping file or directory (repeatable) | none |
 | `--dependency <PATH>` | Dependency CPOE path or URL (repeatable) | none |
 | `--dry-run` | Parse + classify without signing | false |
@@ -93,6 +96,8 @@ corsair verify [options]
 | Flag | Description | Default |
 |------|-------------|---------|
 | `-f, --file <PATH>` | CPOE file path (JWT or JSON) | Required |
+| `--url <URL>` | Fetch and verify a CPOE from URL | - |
+| `--domain <DOMAIN>` | Resolve trust.txt/catalog and verify latest | - |
 | `-k, --pubkey <PATH>` | Ed25519 public key PEM | ./keys/corsair-signing.pub |
 | `--did` | Verify via DID:web resolution | false |
 | `--require-issuer <DID>` | Require issuer DID | - |
@@ -112,6 +117,7 @@ corsair verify [options]
 | `--policy <PATH>` | Apply policy artifact JSON | - |
 | `--evidence <PATH>` | Verify evidence chain against JSONL (repeatable) | - |
 | `--source-document <PATH>` | Verify provenance.sourceDocument against raw evidence JSON | - |
+| `--all` | Verify all CPOEs when using --domain | false |
 | `--json` | Output structured JSON | false |
 
 **Exit codes:** 0 = VERIFIED, 1 = FAILED
@@ -171,6 +177,7 @@ corsair drift [options]   # alias
 |------|-------------|---------|
 | `-c, --current <PATH>` | Current (new) CPOE JWT | Required |
 | `-p, --previous <PATH>` | Previous (baseline) CPOE JWT | Required |
+| `--domain <DOMAIN>` | Resolve trust.txt/catalog and diff latest | - |
 | `--verify` | Verify signatures before diffing | false |
 | `--json` | Output structured JSON | false |
 
@@ -332,6 +339,14 @@ corsair signal generate --event <PATH> --issuer <DID> --audience <DID> [--key-di
 #### verify
 ```
 corsair signal verify --file <PATH> [--key-dir <DIR>] [--json]
+```
+
+#### stream
+```
+corsair signal stream create --delivery <push|poll> --events <CSV> --auth-token <TOKEN> [--endpoint <URL>] [--audience <DID>] [--api-url <URL>] [--json]
+corsair signal stream get --stream-id <ID> --auth-token <TOKEN> [--api-url <URL>] [--json]
+corsair signal stream update --stream-id <ID> [--delivery <push|poll>] [--endpoint <URL>] [--events <CSV>] [--audience <DID>] --auth-token <TOKEN> [--api-url <URL>] [--json]
+corsair signal stream delete --stream-id <ID> --auth-token <TOKEN> [--api-url <URL>] [--json]
 ```
 
 FLAGSHIP delivers SSF/CAEP events as Ed25519-signed SETs:

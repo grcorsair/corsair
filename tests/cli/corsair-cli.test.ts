@@ -77,7 +77,7 @@ describe("Corsair CLI", () => {
     const stderr = await new Response(proc.stderr).text();
     const code = await proc.exited;
     expect(code).toBe(2);
-    expect(stderr).toContain("--file is required");
+    expect(stderr).toContain("--file, --url, or --domain is required");
   });
 
   test("version matches package.json", async () => {
