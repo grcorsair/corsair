@@ -534,7 +534,7 @@ curl -X POST https://api.grcorsair.com/verify \
 # Roast a trust center (crawls public trust/security/compliance pages; no auth required)
 curl -X POST https://api.grcorsair.com/roast \
   -H "Content-Type: application/json" \
-  -d '{"domain":"trust.gitlab.com"}'
+  -d '{"domain":"trust.acme.com"}'
 
 # Fetch a saved roast report (no auth required)
 curl https://api.grcorsair.com/roast/<report-id>

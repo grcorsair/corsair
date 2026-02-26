@@ -10,7 +10,7 @@ import {
 describe("web roast helpers", () => {
   test("normalizes domains", () => {
     expect(normalizeDomain(" Acme.COM. ")).toBe("acme.com");
-    expect(normalizeDomain("https://trust.gitlab.com/security")).toBe("trust.gitlab.com");
+    expect(normalizeDomain("https://trust.acme.com/security")).toBe("trust.acme.com");
   });
 
   test("validates domains", () => {

@@ -120,12 +120,12 @@ describe("roast router", () => {
         summaryRoast: "summary",
         fixPreview: "fix",
       }),
-      generateTrustTxtExample: () => "DID: did:web:trust.gitlab.com",
+      generateTrustTxtExample: () => "DID: did:web:trust.acme.com",
       now: () => new Date("2026-02-26T00:00:00Z"),
     });
 
-    const res = await router(jsonRequest("/roast", "POST", { domain: "https://trust.gitlab.com/" }));
+    const res = await router(jsonRequest("/roast", "POST", { domain: "https://trust.acme.com/" }));
     expect(res.status).toBe(200);
-    expect(seen[0]).toBe("trust.gitlab.com");
+    expect(seen[0]).toBe("trust.acme.com");
   });
 });

@@ -47,7 +47,7 @@ export default function RoastPage() {
               roast my trust center
             </h1>
             <p className="mx-auto max-w-2xl text-corsair-text-dim">
-              Enter a trust-center domain (for example <span className="text-corsair-gold">trust.gitlab.com</span>) and Corsair
+              Enter a trust-center domain (for example <span className="text-corsair-gold">trust.acme.com</span>) and Corsair
               will scrape public pages, score the posture, and generate a funny but evidence-backed roast. Then use the fix
               path to publish `trust.txt` and verifiable proof artifacts.
             </p>

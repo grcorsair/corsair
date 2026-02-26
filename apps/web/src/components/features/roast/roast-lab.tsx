@@ -11,7 +11,7 @@ import {
   type RoastResult,
 } from "@/lib/roast";
 
-const EXAMPLE_DOMAINS = ["trust.gitlab.com", "example.com", "grcorsair.com"];
+const EXAMPLE_DOMAINS = ["trust.acme.com", "example.com", "grcorsair.com"];
 
 type RoastState = "idle" | "loading" | "ready" | "error";
 
@@ -28,7 +28,7 @@ export function RoastLab() {
 
     if (!isValidDomain(normalized)) {
       setState("error");
-      setError("Enter a valid domain like trust.gitlab.com.");
+      setError("Enter a valid domain like trust.acme.com.");
       setResult(null);
       return;
     }
@@ -88,7 +88,7 @@ export function RoastLab() {
             type="text"
             value={domain}
             onChange={(event) => setDomain(event.target.value)}
-            placeholder="trust.gitlab.com"
+            placeholder="trust.acme.com"
             autoComplete="off"
             className="w-full rounded-lg border border-input bg-card px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/30"
           />
