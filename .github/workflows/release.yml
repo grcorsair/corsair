@@ -44,7 +44,7 @@ jobs:
           --generate-notes || echo "Release $TAG_NAME already exists"
 
   publish-npm:
-    needs: test
+    needs: release
     runs-on: ubuntu-latest
     permissions:
       id-token: write   # OIDC token for npm trusted publishing
