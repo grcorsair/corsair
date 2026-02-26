@@ -34,7 +34,7 @@ bun run corsair.ts keygen
 ## Tech Stack
 - **Runtime**: Bun (default for scripts/tests)
 - **Language**: TypeScript (strict, ESM)
-- **Web**: Next.js 15 + Tailwind CSS v4 + shadcn/ui (`apps/web/`)
+- **Web**: Next.js 16 + Tailwind CSS v4 + shadcn/ui (`apps/web/`)
 - **Crypto**: `jose` + platform crypto (Ed25519 JWT-VC)
 - **Database**: Railway Postgres via `Bun.sql`
 - **Deployment**: Railway (`railway.json`)

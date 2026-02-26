@@ -555,7 +555,7 @@ bun test   # 1184 tests, 64 files — all passing
 | Runtime | [Bun](https://bun.sh/) — TypeScript, no build step |
 | Crypto | Ed25519 via Node.js `crypto` + [jose](https://github.com/panva/jose) |
 | Database | Postgres via [Bun.sql](https://bun.sh/docs/api/sql) — zero-dep driver |
-| Web | [Next.js 15](https://nextjs.org/) + Tailwind 4 + shadcn/ui |
+| Web | [Next.js 16](https://nextjs.org/) + Tailwind 4 + shadcn/ui |
 | Standards | W3C VC 2.0, IETF SCITT, OpenID SSF/CAEP |
 
 > **Dependencies**: 1 runtime dep — `jose` (JWT/JWK). Everything else is hand-rolled.
@@ -622,7 +622,7 @@ src/
 
 bin/                       # Standalone CLIs (verify, DID, MCP)
 functions/                 # Railway API endpoints
-apps/web/                  # grcorsair.com (Next.js 15)
+apps/web/                  # grcorsair.com (Next.js 16)
   packages/sdk/              # @grcorsair/sdk (coming soon, not actively maintained)
 tests/                     # Test suite
 ```
