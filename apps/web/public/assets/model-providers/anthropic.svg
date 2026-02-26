@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Anthropic</title>
+  <desc id="desc">Anthropic provider mark</desc>
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="#F4E9D8"/>
+  <path d="M32 15 46 49h-7.7l-2.8-7.1H28.6L25.8 49H18L32 15Zm.1 11.5-3 8h6.1l-3.1-8Z" fill="#1C1C1C"/>
+</svg>

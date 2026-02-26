@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,44 @@ const EXAMPLE_JSON = `{
   "owner": "security@acme.com",
   "assessmentDate": "2026-02-20"
 }`;
+
+const PROVIDER_LOGOS: Record<string, { src: string; alt: string }> = {
+  "google": { src: "/assets/model-providers/google.svg", alt: "Google logo" },
+  "x-ai": { src: "/assets/model-providers/x-ai.svg", alt: "xAI logo" },
+  "anthropic": { src: "/assets/model-providers/anthropic.svg", alt: "Anthropic logo" },
+  "minimax": { src: "/assets/model-providers/minimax.svg", alt: "MiniMax logo" },
+  "moonshotai": { src: "/assets/model-providers/moonshotai.svg", alt: "Moonshot AI logo" },
+  "openai": { src: "/assets/model-providers/openai.svg", alt: "OpenAI logo" },
+};
+
+function getProviderName(modelId: string): string {
+  return modelId.split("/")[0] || modelId;
+}
+
+function getProviderMark(modelId: string): { src?: string; alt: string; initials: string } {
+  const provider = getProviderName(modelId).toLowerCase();
+  const configured = PROVIDER_LOGOS[provider];
+  if (configured) {
+    return {
+      src: configured.src,
+      alt: configured.alt,
+      initials: provider.slice(0, 2).toUpperCase(),
+    };
+  }
+
+  const initials = provider
+    .split(/[^a-z0-9]+/g)
+    .filter(Boolean)
+    .map((chunk) => chunk[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "AI";
+
+  return {
+    alt: `${provider} logo`,
+    initials,
+  };
+}
 
 export function GrcTranslatorLab() {
   const [payloadText, setPayloadText] = useState(EXAMPLE_JSON);
@@ -140,32 +179,50 @@ export function GrcTranslatorLab() {
           </div>
 
           <div className="grid gap-3">
-            {result.results.map((entry) => (
-              <article key={`${entry.model}-${entry.latencyMs}`} className="rounded-xl border border-corsair-border bg-corsair-surface p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-display text-lg text-corsair-text">{entry.label}</p>
-                  <p className="font-mono text-[10px] text-corsair-text-dim">
-                    {entry.status} · {entry.latencyMs}ms · {entry.model}
-                  </p>
-                </div>
-                <p className="mt-2 text-sm text-corsair-text">{entry.output.roast}</p>
-                <p className="mt-2 text-xs text-corsair-text-dim">{entry.output.plainEnglish}</p>
+            {result.results.map((entry) => {
+              const providerMark = getProviderMark(entry.model);
+              return (
+                <article key={`${entry.model}-${entry.latencyMs}`} className="rounded-xl border border-corsair-border bg-corsair-surface p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex h-7 w-7 items-center justify-center overflow-hidden rounded-md border border-corsair-border bg-corsair-deep">
+                        {providerMark.src ? (
+                          <Image
+                            src={providerMark.src}
+                            alt={providerMark.alt}
+                            width={20}
+                            height={20}
+                            className="h-5 w-5"
+                          />
+                        ) : (
+                          <span className="font-mono text-[10px] text-corsair-text-dim">{providerMark.initials}</span>
+                        )}
+                      </span>
+                      <p className="font-display text-lg text-corsair-text">{entry.label}</p>
+                    </div>
+                    <p className="font-mono text-[10px] text-corsair-text-dim">
+                      {entry.status} · {entry.latencyMs}ms · {entry.model}
+                    </p>
+                  </div>
+                  <p className="mt-2 text-sm text-corsair-text">{entry.output.roast}</p>
+                  <p className="mt-2 text-xs text-corsair-text-dim">{entry.output.plainEnglish}</p>
 
-                <p className="mt-3 font-mono text-[10px] uppercase tracking-wider text-corsair-gold/70">Findings</p>
-                <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-corsair-text-dim">
-                  {entry.output.grcFindings.map((finding, idx) => (
-                    <li key={`${entry.model}-f-${idx}`}>{finding}</li>
-                  ))}
-                </ul>
+                  <p className="mt-3 font-mono text-[10px] uppercase tracking-wider text-corsair-gold/70">Findings</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-corsair-text-dim">
+                    {entry.output.grcFindings.map((finding, idx) => (
+                      <li key={`${entry.model}-f-${idx}`}>{finding}</li>
+                    ))}
+                  </ul>
 
-                <p className="mt-3 font-mono text-[10px] uppercase tracking-wider text-corsair-cyan/70">Next actions</p>
-                <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-corsair-text-dim">
-                  {entry.output.nextActions.map((action, idx) => (
-                    <li key={`${entry.model}-a-${idx}`}>{action}</li>
-                  ))}
-                </ul>
-              </article>
-            ))}
+                  <p className="mt-3 font-mono text-[10px] uppercase tracking-wider text-corsair-cyan/70">Next actions</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-corsair-text-dim">
+                    {entry.output.nextActions.map((action, idx) => (
+                      <li key={`${entry.model}-a-${idx}`}>{action}</li>
+                    ))}
+                  </ul>
+                </article>
+              );
+            })}
           </div>
 
           <div className="rounded-xl border border-corsair-gold/20 bg-corsair-surface p-4">

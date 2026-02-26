@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Moonshot AI</title>
+  <desc id="desc">Moonshot AI provider mark</desc>
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="#1D4ED8"/>
+  <path d="M18 18h7.4v11.2L37.4 18H47L34.6 31 47 46h-9.4L28 34.7 25.4 37.6V46H18V18Z" fill="#FFFFFF"/>
+</svg>

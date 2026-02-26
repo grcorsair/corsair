@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">xAI</title>
+  <desc id="desc">xAI provider mark</desc>
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="#0A0A0A"/>
+  <path d="M18 18h8.5L32 26.1 37.5 18H46l-9.8 14L47 46h-8.6L32 36.8 25.6 46H17l10.9-14L18 18Z" fill="#FFFFFF"/>
+</svg>
