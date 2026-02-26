@@ -92,6 +92,7 @@ corsair diff --current q2.jwt --previous q1.jwt
 | `CORSAIR_DOMAIN` | Public domain for DID:web and trust.txt generation | Recommended |
 | `CORSAIR_TRUST_HOST` | Hostname for hosted trust.txt URLs (defaults to `trust.<CORSAIR_DOMAIN>`) | Optional |
 | `CORSAIR_MAPPING_PACK_PUBKEY` | Ed25519 public key PEM to verify signed mapping packs | Optional |
+| `OPENROUTER_API_KEY` | Enables multi-model GRC JSON translator endpoint (`POST /grc/translate`) | Optional |
 
 `CORSAIR_OIDC_CONFIG` example:
 ```json
@@ -538,6 +539,11 @@ curl -X POST https://api.grcorsair.com/roast \
 
 # Fetch a saved roast report (no auth required)
 curl https://api.grcorsair.com/roast/<report-id>
+
+# Multi-model GRC JSON translator (no auth required)
+curl -X POST https://api.grcorsair.com/grc/translate \
+  -H "Content-Type: application/json" \
+  -d '{"payload":{"framework":"SOC2","controls":[{"id":"CC6.1","status":"pass"}]},"mode":"quick","redact":true}'
 
 # Then publish trust.txt + onboarding artifacts
 curl -X POST https://api.grcorsair.com/onboard \

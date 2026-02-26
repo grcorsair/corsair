@@ -29,7 +29,7 @@ curl -X POST https://api.grcorsair.com/sign \
   -d '{"evidence": {...}}'
 ```
 
-Public endpoints (verify, roast, health) require no authentication.
+Public endpoints (verify, roast, grc translate, health) require no authentication.
 
 | Endpoint | Auth Required |
 |:---------|:-------------|
@@ -38,6 +38,7 @@ Public endpoints (verify, roast, health) require no authentication.
 | `POST /verify` | No |
 | `POST /roast` | No |
 | `GET /roast/:id` | No |
+| `POST /grc/translate` | No |
 | `POST /issue` | Yes |
 | `POST /onboard` | Yes |
 | `POST /trust-txt/host` | Yes |
@@ -185,6 +186,37 @@ Fetch a previously generated roast report by ID. Reports are retained for a limi
 ```bash
 curl https://api.grcorsair.com/roast/6f9f2b13-6c76-47d2-9658-0d4d6c7f2a2e
 ```
+
+## POST /grc/translate
+
+Translate one GRC/security JSON payload through multiple low-cost models and return side-by-side commentary.
+This endpoint is for interpretation only. It does not issue or verify cryptographic proof.
+No authentication required.
+
+```bash
+curl -X POST https://api.grcorsair.com/grc/translate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "payload": {
+      "framework": "SOC2",
+      "controls": [{ "id": "CC6.1", "status": "pass" }]
+    },
+    "mode": "quick",
+    "redact": true,
+    "style": "funny"
+  }'
+```
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|:------|:-----|:---------|:-----------|
+| `payload` | object or array | Yes | JSON evidence to interpret |
+| `mode` | string | No | `quick` (default) or `compare` |
+| `models` | array | No | Optional explicit model IDs (max 10) |
+| `style` | string | No | `funny` (default) or `plain` |
+| `redact` | boolean | No | Redact sensitive values before model calls (default: true) |
+| `audience` | string | No | Output audience hint (default: `grc-buyer`) |
 
 ## POST /onboard
 

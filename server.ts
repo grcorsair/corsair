@@ -10,6 +10,7 @@
  *   POST /verify                        — Free CPOE verification (adoption driver)
  *   POST /roast                         — Trust center roast scanner (public)
  *   GET  /roast/:id                     — Fetch stored roast result
+ *   POST /grc/translate                 — Multi-model funny GRC JSON translator (public)
  *   POST /issue                         — CPOE issuance (revenue)
  *   POST /onboard                       — Machine-actionable onboarding artifacts
  *   POST /trust-txt/host                — Hosted trust.txt + DNS delegation
@@ -53,6 +54,7 @@ import { createDemoSignRouter } from "./functions/sign-demo";
 import { createOnboardRouter } from "./functions/onboard";
 import { createHostedTrustTxtRouter, createHostedTrustTxtPublicHandler } from "./functions/hosted-trust-txt";
 import { createRoastRouter } from "./functions/roast";
+import { createGrcTranslateRouter } from "./functions/grc-translate";
 import { requireAuth } from "./src/middleware/auth";
 import { rateLimitPg } from "./src/middleware/rate-limit";
 import { withSecurityHeaders } from "./src/middleware/security-headers";
@@ -107,6 +109,7 @@ let hostedTrustTxtRouter: Handler | null = null;
 let hostedTrustTxtPublicHandler: Handler | null = null;
 let roastCreateRouter: Handler | null = null;
 let roastReadRouter: Handler | null = null;
+let grcTranslateRouter: Handler | null = null;
 
 // =============================================================================
 // CORS HELPER
@@ -177,6 +180,7 @@ const server = Bun.serve({
         path === "/sign/demo" || path === "/v1/sign/demo" ||
         path === "/roast" || path === "/v1/roast" ||
         path.startsWith("/roast/") || path.startsWith("/v1/roast/") ||
+        path === "/grc/translate" || path === "/v1/grc/translate" ||
         path.startsWith("/.well-known/") ||
         path.startsWith("/badge/") || path.startsWith("/profile/") ||
         (path.startsWith("/trust/") && path.endsWith("/trust.txt")) ||
@@ -225,6 +229,12 @@ const server = Bun.serve({
       const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
       (req as Request & { corsairRateLimitKey?: string }).corsairRateLimitKey = `${ip}:GET:/roast`;
       return roastReadRouter!(req);
+    }
+
+    if (path === "/grc/translate" || path === "/v1/grc/translate") {
+      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+      (req as Request & { corsairRateLimitKey?: string }).corsairRateLimitKey = `${ip}:POST:/grc/translate`;
+      return grcTranslateRouter!(req);
     }
 
     if (path === "/trust-txt/host" || path.startsWith("/trust-txt/host/") ||
@@ -284,9 +294,9 @@ const server = Bun.serve({
 
     return Response.json(
       {
-        error: "Not found",
-        endpoints: {
-          product: ["POST /verify", "POST /sign", "POST /issue", "POST /roast", "GET /roast/:id"],
+          error: "Not found",
+          endpoints: {
+          product: ["POST /verify", "POST /sign", "POST /issue", "POST /roast", "GET /roast/:id", "POST /grc/translate"],
           trust: ["GET /.well-known/did.json", "GET /.well-known/jwks.json"],
           infrastructure: ["GET /scitt/entries", "POST /scitt/entries", "POST /ssf/streams"],
           onboarding: ["POST /onboard"],
@@ -490,6 +500,7 @@ async function initialize() {
   });
   roastCreateRouter = rateLimitPg(db as any, 10, 60 * 60 * 1000)(roastRouter);
   roastReadRouter = rateLimitPg(db as any, 60)(roastRouter);
+  grcTranslateRouter = rateLimitPg(db as any, 20, 60 * 60 * 1000)(createGrcTranslateRouter());
 
   // 9. Start delivery worker if enabled
   if (Bun.env.ENABLE_DELIVERY_WORKER === "true") {

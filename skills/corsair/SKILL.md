@@ -174,6 +174,13 @@ Use this routing logic:
 3. Return `result.id`, `result.compositeScore`, `result.verdict`, and key findings.
 4. For share links/retrieval, use `GET /roast/:id`.
 
+### GRC TRANSLATE (API)
+
+1. If the user wants fast narrative interpretation of evidence JSON, use the public translator endpoint.
+2. `POST /grc/translate` with `{ "payload": <JSON>, "mode": "quick", "redact": true }`.
+3. Return model outputs as commentary only; do not treat translator output as cryptographic proof.
+4. For proof-grade workflows, hand off to `sign`, `verify`, and `trust-txt` publishing.
+
 ### DISCOVER
 
 1. Confirm the domain with the user.
