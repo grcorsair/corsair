@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@200..800&family=Pixelify+Sans:wght@400;500;600;700&family=Press+Start+2P&family=Rajdhani:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@200..800&family=Pixelify+Sans:wght@400;500;600;700&family=Press+Start+2P&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -36,7 +36,7 @@
 
   /* ── Typography ──────────────────────────────────────── */
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Rajdhani", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Pixelify Sans", "Press Start 2P", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Geist Mono", ui-monospace, monospace;
   --font-pixel: "Press Start 2P", monospace;
   --font-pixel-display: "Pixelify Sans", "Press Start 2P", monospace;
