@@ -5,10 +5,11 @@
  */
 
 import { decodeProtectedHeader, importJWK, exportSPKI } from "jose";
-import type { KeyLike } from "jose";
 import type { KeyManager } from "./marque-key-manager";
 import { resolveDIDDocument } from "./did-resolver";
 import type { FetchLike } from "../types/fetch";
+
+type ExportableKey = Parameters<typeof exportSPKI>[0];
 
 export async function resolveReceiptPublicKeyPem(
   jwt: string,
@@ -35,7 +36,7 @@ export async function resolveReceiptPublicKeyPem(
     if (vm?.publicKeyJwk) {
       try {
         const key = await importJWK(vm.publicKeyJwk, "EdDSA");
-        return await exportSPKI(key as unknown as KeyLike);
+        return await exportSPKI(key as unknown as ExportableKey);
       } catch {
         // fall through to local keys
       }

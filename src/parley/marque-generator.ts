@@ -204,6 +204,7 @@ export class MarqueGenerator {
       if (!chart.frameworks) continue;
 
       for (const [frameworkName, frameworkData] of Object.entries(chart.frameworks)) {
+        if (!frameworkData) continue;
         if (!result[frameworkName]) {
           result[frameworkName] = {
             controlsMapped: 0,

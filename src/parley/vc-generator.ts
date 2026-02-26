@@ -113,6 +113,7 @@ function buildCredentialSubject(input: MarqueGeneratorInput): CPOECredentialSubj
   for (const chart of input.chartResults) {
     if (!chart.frameworks) continue;
     for (const [frameworkName, frameworkData] of Object.entries(chart.frameworks)) {
+      if (!frameworkData) continue;
       if (!frameworks[frameworkName]) {
         frameworks[frameworkName] = { controlsMapped: 0, passed: 0, failed: 0, controls: [] };
       }

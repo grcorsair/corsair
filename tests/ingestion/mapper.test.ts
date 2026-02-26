@@ -131,19 +131,19 @@ describe("Ingestion Mapper", () => {
       expect(chart.frameworks).toBeDefined();
 
       // SOC2 framework should have controls from multiple findings
-      const soc2 = chart.frameworks!["SOC2"];
+      const soc2 = chart.frameworks?.["SOC2"];
       expect(soc2).toBeDefined();
-      expect(soc2.controls.length).toBeGreaterThanOrEqual(2);
+      expect((soc2?.controls ?? []).length).toBeGreaterThanOrEqual(2);
 
       // NIST should also be present
-      const nist = chart.frameworks!["NIST-800-53"];
+      const nist = chart.frameworks?.["NIST-800-53"];
       expect(nist).toBeDefined();
     });
 
     test("should map control status to framework control status", () => {
       const result = mapToMarqueInput(minimalDocument);
       const chart = result.chartResults[0];
-      const soc2Controls = chart.frameworks!["SOC2"].controls;
+      const soc2Controls = chart.frameworks?.["SOC2"]?.controls ?? [];
 
       // CC6.1 should be passed (effective)
       const cc61 = soc2Controls.find(c => c.controlId === "CC6.1");
