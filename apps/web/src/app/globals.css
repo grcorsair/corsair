@@ -44,10 +44,10 @@
 
   /* ── Typography ──────────────────────────────────────── */
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Pixelify Sans Local", "Pixelify Sans", "Press Start 2P", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Pixelify Sans Local", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Geist Mono", ui-monospace, monospace;
   --font-pixel: "Press Start 2P", monospace;
-  --font-pixel-display: "Pixelify Sans Local", "Pixelify Sans", "Press Start 2P", monospace;
+  --font-pixel-display: "Pixelify Sans Local", monospace;
 }
 
 /* ── Base styles ───────────────────────────────────────── */
