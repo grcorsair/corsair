@@ -129,6 +129,18 @@ describe("parseJSON — generic format", () => {
     expect(result.controls[4].severity).toBe("LOW");
   });
 
+  test("drops unrecognized severity values in generic format", () => {
+    const input = {
+      metadata: { title: "T", issuer: "I", date: "2026-01-01", scope: "S" },
+      controls: [
+        { id: "C1", description: "D", status: "fail", severity: "weird-severity" },
+      ],
+    };
+
+    const result = parseJSON(input);
+    expect(result.controls[0].severity).toBeUndefined();
+  });
+
   test("should extract framework references", () => {
     const input = {
       metadata: { title: "T", issuer: "I", date: "2026-01-01", scope: "S" },

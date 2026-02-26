@@ -304,7 +304,7 @@ function buildMetadata(
   return {
     title: (pick(meta.titlePath, input) ?? meta.title ?? "JSON Evidence Import") as string,
     issuer: (pick(meta.issuerPath, input) ?? meta.issuer ?? "Unknown") as string,
-    date: (pick(meta.datePath, input) ?? meta.date ?? new Date().toISOString().split("T")[0]) as string,
+    date: (pick(meta.datePath, input) ?? meta.date ?? "Unknown") as string,
     scope: (pick(meta.scopePath, input) ?? meta.scope ?? "Unknown") as string,
     reportType: (pick(meta.reportTypePath, input) ?? meta.reportType ?? "JSON") as string,
     rawTextHash: rawHash,

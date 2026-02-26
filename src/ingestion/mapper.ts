@@ -126,12 +126,13 @@ function buildChartResults(controls: IngestedControl[]): ChartResult[] {
       if (!frameworkMap.has(ref.framework)) {
         frameworkMap.set(ref.framework, new Map());
       }
-      const controls = frameworkMap.get(ref.framework)!;
-      // Use controlId as key to avoid duplicates; last write wins for status
-      controls.set(ref.controlId, {
+      const frameworkControls = frameworkMap.get(ref.framework)!;
+      const existing = frameworkControls.get(ref.controlId);
+
+      frameworkControls.set(ref.controlId, {
         controlId: ref.controlId,
-        controlName: ref.controlName || ref.controlId,
-        status,
+        controlName: existing?.controlName || ref.controlName || ref.controlId,
+        status: mergeFrameworkControlStatus(existing?.status, status),
       });
     }
   }
@@ -152,4 +153,15 @@ function buildChartResults(controls: IngestedControl[]): ChartResult[] {
     soc2: { principle: "", criteria: [], description: "" },
     frameworks,
   }];
+}
+
+function mergeFrameworkControlStatus(
+  current: string | undefined,
+  incoming: string,
+): string {
+  if (!current) return incoming;
+
+  if (current === "failed" || incoming === "failed") return "failed";
+  if (current === "not-tested" || incoming === "not-tested") return "not-tested";
+  return "passed";
 }

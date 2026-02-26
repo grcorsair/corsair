@@ -191,6 +191,42 @@ describe("signEvidence — mapping registry", () => {
     delete process.env.CORSAIR_MAPPING_DIR;
     resetMappingRegistry();
   });
+
+  test("warns when mapped input is missing assessment date", async () => {
+    const mappingDir = join(tmpDir, "mappings");
+    mkdirSync(mappingDir, { recursive: true });
+    const mapping = {
+      id: "mapping-no-date",
+      match: { allOf: ["$.findings"] },
+      metadata: {
+        title: "Tool X Findings",
+        issuer: "Tool X",
+        scope: "Prod",
+      },
+      controls: {
+        path: "$.findings[*]",
+        idPath: "@.id",
+        descriptionPath: "@.title",
+        statusPath: "@.status",
+        statusMap: { pass: "effective", fail: "ineffective" },
+      },
+    };
+    writeFileSync(join(mappingDir, "toolx-no-date.json"), JSON.stringify(mapping, null, 2));
+    process.env.CORSAIR_MAPPING_DIR = mappingDir;
+    resetMappingRegistry();
+
+    const input = {
+      findings: [
+        { id: "X-1", title: "MFA enabled", status: "pass" },
+      ],
+    };
+
+    const result = await signEvidence({ evidence: input }, keyManager);
+    expect(result.warnings.join(" ")).toContain("Missing or invalid assessment date");
+
+    delete process.env.CORSAIR_MAPPING_DIR;
+    resetMappingRegistry();
+  });
 });
 
 // =============================================================================

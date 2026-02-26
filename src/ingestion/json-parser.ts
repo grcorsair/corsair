@@ -135,7 +135,7 @@ function parseGeneric(
   const metadata: DocumentMetadata = {
     title: input.metadata?.title || "JSON Evidence Import",
     issuer: input.metadata?.issuer || "Unknown",
-    date: input.metadata?.date || new Date().toISOString().split("T")[0],
+    date: input.metadata?.date || "Unknown",
     scope: input.metadata?.scope || "Unknown",
     auditor: input.metadata?.auditor,
     reportType: input.metadata?.reportType || "JSON",
@@ -228,7 +228,7 @@ function normalizeStatus(raw: string): "effective" | "ineffective" | "not-tested
   }
 }
 
-function normalizeSeverity(raw: string): Severity {
+function normalizeSeverity(raw: string): Severity | undefined {
   const lower = raw.toLowerCase().trim();
   switch (lower) {
     case "critical":
@@ -243,6 +243,6 @@ function normalizeSeverity(raw: string): Severity {
     case "info":
       return "LOW";
     default:
-      return raw.toUpperCase() as Severity;
+      return undefined;
   }
 }

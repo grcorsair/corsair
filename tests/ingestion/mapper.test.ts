@@ -156,6 +156,33 @@ describe("Ingestion Mapper", () => {
       expect(cc72!.status).toBe("failed");
     });
 
+    test("prefers failed status when duplicate framework control refs conflict", () => {
+      const duplicated: IngestedDocument = {
+        ...minimalDocument,
+        controls: [
+          {
+            id: "A",
+            description: "First result failed",
+            status: "ineffective",
+            frameworkRefs: [{ framework: "SOC2", controlId: "CC6.1" }],
+          },
+          {
+            id: "B",
+            description: "Later result passed",
+            status: "effective",
+            frameworkRefs: [{ framework: "SOC2", controlId: "CC6.1" }],
+          },
+        ],
+      };
+
+      const result = mapToMarqueInput(duplicated);
+      const soc2Controls = result.chartResults[0].frameworks?.["SOC2"]?.controls ?? [];
+      const cc61 = soc2Controls.find(c => c.controlId === "CC6.1");
+
+      expect(cc61).toBeDefined();
+      expect(cc61!.status).toBe("failed");
+    });
+
     test("should handle controls without framework references", () => {
       const noRefs: IngestedDocument = {
         ...minimalDocument,
