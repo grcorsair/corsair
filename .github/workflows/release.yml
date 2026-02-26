@@ -74,8 +74,8 @@ jobs:
         npm version "$VERSION" --no-git-tag-version --allow-same-version
         (cd packages/sdk && npm version "$VERSION" --no-git-tag-version --allow-same-version)
 
-    - name: Publish to npm (OIDC — no token needed)
-      run: npm publish --access public --include-workspace-root
+    - name: Publish CLI to npm (OIDC — no token needed)
+      run: npm publish --access public --workspace @grcorsair/cli
 
-    - name: Publish SDK to npm
-      run: npm publish --access public --workspace packages/sdk
+    - name: Publish SDK to npm (OIDC — no token needed)
+      run: npm publish --access public --workspace @grcorsair/sdk
