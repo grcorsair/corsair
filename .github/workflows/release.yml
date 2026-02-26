@@ -75,7 +75,11 @@ jobs:
         (cd packages/sdk && npm version "$VERSION" --no-git-tag-version --allow-same-version)
 
     - name: Publish CLI to npm (OIDC — no token needed)
-      run: npm publish --access public --workspace @grcorsair/cli
+      env:
+        NPM_CONFIG_PROVENANCE: "true"
+      run: npm publish --provenance --access public --workspace @grcorsair/cli
 
     - name: Publish SDK to npm (OIDC — no token needed)
-      run: npm publish --access public --workspace @grcorsair/sdk
+      env:
+        NPM_CONFIG_PROVENANCE: "true"
+      run: npm publish --provenance --access public --workspace @grcorsair/sdk
