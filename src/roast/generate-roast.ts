@@ -19,6 +19,99 @@ const CATEGORIES: RoastCategory[] = [
   "transparency",
 ];
 
+const CATEGORY_STYLE: Record<RoastCategory, { low: string[]; mid: string[]; high: string[] }> = {
+  discoverability: {
+    low: [
+      "This trust center is playing hide-and-seek and winning.",
+      "Discoverability is currently set to stealth mode.",
+    ],
+    mid: [
+      "People can find this trust center, but with side-quest energy.",
+      "The map exists, but the legend is missing.",
+    ],
+    high: [
+      "Discoverability is solid. People can find the receipts fast.",
+      "This trust center is easy to locate and hard to ignore.",
+    ],
+  },
+  verifiability: {
+    low: [
+      "Trust claims are loud, cryptographic proof is whispering.",
+      "Right now it is vibes first, verification second.",
+    ],
+    mid: [
+      "Some proof exists, but the chain still has weak links.",
+      "You started the verification journey; finish the route.",
+    ],
+    high: [
+      "Verification posture is strong and mostly evidence-backed.",
+      "Proof beats promises here, and it shows.",
+    ],
+  },
+  freshness: {
+    low: [
+      "This page feels like it was last updated in another era.",
+      "Freshness is giving museum exhibit right now.",
+    ],
+    mid: [
+      "Some updates are recent, but cadence is uneven.",
+      "Freshness is decent, but still not real-time ready.",
+    ],
+    high: [
+      "Freshness is sharp and buyer-friendly.",
+      "Update cadence looks alive, not archived.",
+    ],
+  },
+  "machine-readability": {
+    low: [
+      "Machines asked for JSON and got a PDF scavenger hunt.",
+      "Automation is trying, but the artifact format is fighting back.",
+    ],
+    mid: [
+      "There are machine-readable hints, but not enough structure yet.",
+      "Readable by bots in parts, manual in too many places.",
+    ],
+    high: [
+      "Machine-readability is strong and integration-ready.",
+      "Artifacts look built for APIs, not screenshots.",
+    ],
+  },
+  transparency: {
+    low: [
+      "Transparency is currently more teaser trailer than full release.",
+      "Status visibility is thin when buyers need detail.",
+    ],
+    mid: [
+      "Transparency signals exist, but depth is inconsistent.",
+      "Some visibility is there, but confidence still needs more context.",
+    ],
+    high: [
+      "Transparency posture is clear and confidence-building.",
+      "Status and disclosure signals are doing real work.",
+    ],
+  },
+};
+
+function hashSeed(input: string): number {
+  let hash = 0;
+  for (let idx = 0; idx < input.length; idx += 1) {
+    hash = (hash * 31 + input.charCodeAt(idx)) >>> 0;
+  }
+  return hash;
+}
+
+function pickBySeed(options: string[], seed: string): string {
+  if (options.length === 0) return "";
+  const idx = hashSeed(seed) % options.length;
+  return options[idx] || options[0] || "";
+}
+
+function styleBucket(score: number): "low" | "mid" | "high" {
+  if (score < 4.5) return "low";
+  if (score < 7.5) return "mid";
+  return "high";
+}
+
 function fallbackCopy(input: RoastCopyInput): RoastCopyOutput {
   const categoryRoasts = {
     discoverability: "",
@@ -36,15 +129,23 @@ function fallbackCopy(input: RoastCopyInput): RoastCopyOutput {
     }
 
     const anchorFinding = check.findings[0] || "No clear finding captured.";
-    categoryRoasts[category] = `${category} scored ${check.score.toFixed(1)}/10. ${anchorFinding}`;
+    const style = CATEGORY_STYLE[category];
+    const bucket = styleBucket(check.score);
+    const opener = pickBySeed(style[bucket], `${input.domain}:${category}:${anchorFinding}`);
+    categoryRoasts[category] = `${opener} ${anchorFinding}`;
   }
 
   const scrapedPages = input.pageSignals?.length || 0;
+  const scorePhrase = input.compositeScore < 4.5
+    ? "a compliance jump-scare"
+    : input.compositeScore < 7.5
+      ? "a work-in-progress trust posture"
+      : "a genuinely credible trust posture";
 
   return {
     categoryRoasts,
-    summaryRoast: `${input.domain} landed at ${input.compositeScore.toFixed(1)}/10 (${input.verdict}) after scanning ${scrapedPages} trust-center page(s). Improvements are possible with stronger evidence freshness, cryptographic proofs, and clearer machine-readable artifacts.`,
-    fixPreview: `Tighten trust-center evidence on ${input.domain}: publish verifiable artifacts, keep timestamps fresh, and expose machine-readable endpoints buyers can validate automatically.`,
+    summaryRoast: `${input.domain} scored ${input.compositeScore.toFixed(1)}/10 (${input.verdict}) after scanning ${scrapedPages} trust-center page(s). Right now this reads as ${scorePhrase}. The good news: every weak spot has a fixable evidence path.`,
+    fixPreview: `Next move for ${input.domain}: publish trust.txt + verifiable artifacts, keep dated evidence fresh, and add machine-readable endpoints so buyers can verify without opening ten PDFs.`,
   };
 }
 
@@ -138,6 +239,13 @@ function buildPrompt(input: RoastCopyInput): string {
     `Composite: ${input.compositeScore.toFixed(1)}/10`,
     `Verdict: ${input.verdict}`,
     "",
+    "Writing style requirements:",
+    "- Tone: witty, punchy, and playful (party-game energy).",
+    "- Roast practices, not people. No insults about protected traits.",
+    "- Keep each category roast to 1-2 short sentences and <= 35 words.",
+    "- Make jokes specific to the actual findings; do not use generic filler.",
+    "- Keep fixPreview concrete and actionable, with trust.txt/CPOE direction when relevant.",
+    "",
     "Use only these findings:",
     findings,
     "",
@@ -173,7 +281,7 @@ export async function generateRoastCopy(
         model,
         max_tokens: 900,
         temperature: 0.7,
-        system: "You are a compliance roast writer. Roast practices, not people. Never fabricate findings.",
+        system: "You are a compliance roast writer with sharp one-liner timing. Roast practices, not people. Never fabricate findings. Keep output high-signal and funny.",
         messages: [
           {
             role: "user",
