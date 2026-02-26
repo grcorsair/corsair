@@ -1,4 +1,4 @@
-export const CORSAIR_VERSION = "1.1.5";
+export const CORSAIR_VERSION = "1.1.6";
 
 export const VERIFY_4_LINES = [
   "header, payload = decode_jwt(cpoe)",
