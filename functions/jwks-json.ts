@@ -11,6 +11,7 @@
  */
 
 import type { KeyManager } from "../src/parley/marque-key-manager";
+import type { JsonWebKeyWithKid } from "../src/types";
 
 export interface JWKSJsonDeps {
   keyManager: KeyManager;
@@ -28,7 +29,7 @@ export function createJWKSJsonHandler(
 
   return async (_req: Request): Promise<Response> => {
     try {
-      const keys: JsonWebKey[] = [];
+      const keys: JsonWebKeyWithKid[] = [];
 
       // Active key
       const keypair = await keyManager.loadKeypair();

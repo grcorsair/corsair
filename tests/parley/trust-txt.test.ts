@@ -18,6 +18,9 @@ import {
 } from "../../src/parley/trust-txt";
 import type { TrustTxt } from "../../src/parley/trust-txt";
 
+const toUrlString = (input: Request | URL | string): string =>
+  typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+
 // =============================================================================
 // PARSE
 // =============================================================================
@@ -503,7 +506,8 @@ Contact: compliance@acme.com
 Expires: 2030-12-31T23:59:59Z
 `;
 
-    const mockFetch = async (url: string) => {
+    const mockFetch = async (input: Request | URL | string) => {
+      const url = toUrlString(input);
       expect(url).toBe("https://acme.com/.well-known/trust.txt");
       return {
         ok: true,
@@ -523,7 +527,8 @@ Expires: 2030-12-31T23:59:59Z
     const mockTxt = `DID: did:web:acme.com\n`;
     const delegatedUrl = "https://trust.example.com/trust.txt";
 
-    const mockFetch = async (url: string) => {
+    const mockFetch = async (input: Request | URL | string) => {
+      const url = toUrlString(input);
       if (url === "https://acme.com/.well-known/trust.txt") {
         return { ok: false, status: 404, statusText: "Not Found" } as unknown as Response;
       }
@@ -554,7 +559,8 @@ Expires: 2030-12-31T23:59:59Z
     const delegatedUrl = "https://trust.example.com/trust.txt";
     const hash = createHash("sha256").update(mockTxt).digest("hex");
 
-    const mockFetch = async (url: string) => {
+    const mockFetch = async (input: Request | URL | string) => {
+      const url = toUrlString(input);
       if (url === "https://acme.com/.well-known/trust.txt") {
         return { ok: false, status: 404, statusText: "Not Found" } as unknown as Response;
       }
@@ -582,7 +588,8 @@ Expires: 2030-12-31T23:59:59Z
     const mockTxt = `DID: did:web:acme.com\n`;
     const delegatedUrl = "https://trust.acme.com/.well-known/trust.txt";
 
-    const mockFetch = async (url: string) => {
+    const mockFetch = async (input: Request | URL | string) => {
+      const url = toUrlString(input);
       if (url === "https://acme.com/.well-known/trust.txt") {
         return { ok: false, status: 404, statusText: "Not Found" } as unknown as Response;
       }
@@ -608,8 +615,8 @@ Expires: 2030-12-31T23:59:59Z
 
   test("constructs correct URL for domain", async () => {
     let capturedUrl = "";
-    const mockFetch = async (url: string) => {
-      capturedUrl = url;
+    const mockFetch = async (input: Request | URL | string) => {
+      capturedUrl = toUrlString(input);
       return {
         ok: true,
         text: async () => "DID: did:web:example.com\n",
@@ -621,7 +628,7 @@ Expires: 2030-12-31T23:59:59Z
   });
 
   test("returns error for HTTP failure", async () => {
-    const mockFetch = async () => ({
+    const mockFetch = async (_input: Request | URL | string) => ({
       ok: false,
       status: 404,
       statusText: "Not Found",
@@ -634,7 +641,7 @@ Expires: 2030-12-31T23:59:59Z
   });
 
   test("returns error for network failure", async () => {
-    const mockFetch = async (): Promise<Response> => {
+    const mockFetch = async (_input: Request | URL | string): Promise<Response> => {
       throw new Error("Network error");
     };
 

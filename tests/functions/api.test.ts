@@ -19,7 +19,7 @@ import {
   createSCITTRouter,
   type SCITTRouterDeps,
 } from "../../functions/scitt-register";
-import { SSFStreamManager } from "../../src/flagship/ssf-stream";
+import { MemorySSFStreamManager } from "../../src/flagship/ssf-stream";
 import { MockSCITTRegistry } from "../../src/parley/scitt-registry";
 import { FLAGSHIP_EVENTS } from "../../src/flagship/flagship-types";
 
@@ -179,11 +179,11 @@ describe("SSF Configuration Endpoint", () => {
 // =============================================================================
 
 describe("SSF Stream API", () => {
-  let streamManager: SSFStreamManager;
+  let streamManager: MemorySSFStreamManager;
   let router: (req: Request) => Promise<Response>;
 
   beforeEach(() => {
-    streamManager = new SSFStreamManager();
+    streamManager = new MemorySSFStreamManager();
     const deps: SSFStreamRouterDeps = { streamManager };
     router = createSSFStreamRouter(deps);
   });
@@ -570,7 +570,7 @@ describe("SCITT Registration API", () => {
 
 describe("Route matching", () => {
   test("SSF router returns 404 for unknown routes", async () => {
-    const streamManager = new SSFStreamManager();
+    const streamManager = new MemorySSFStreamManager();
     const router = createSSFStreamRouter({ streamManager });
 
     const req = jsonRequest("GET", "/ssf/unknown");

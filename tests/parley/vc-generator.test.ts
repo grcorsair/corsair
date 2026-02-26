@@ -197,7 +197,7 @@ describe("VC Generator - JWT-VC Generation", () => {
     const jwt = await generateVCJWT(input, keyManager);
 
     const payload = jose.decodeJwt(jwt);
-    expect(["2.0", "2.1"]).toContain(payload.parley);
+    expect(["2.0", "2.1"]).toContain(payload.parley as string);
   });
 
   test("JWT vc.credentialSubject contains core CPOE data", async () => {
@@ -228,7 +228,7 @@ describe("VC Generator - JWT-VC Generation", () => {
     const { payload } = await jose.jwtVerify(jwt, publicKeyObj);
 
     expect(payload.iss).toBe("did:web:grcorsair.com");
-    expect(["2.0", "2.1"]).toContain(payload.parley);
+    expect(["2.0", "2.1"]).toContain(payload.parley as string);
   });
 
   test("JWT respects custom expiry days", async () => {
@@ -246,8 +246,8 @@ describe("VC Generator - JWT-VC Generation", () => {
   test("JWT credentialSubject sanitizes sensitive data (ARNs, IPs)", async () => {
     const { keyManager, input } = await setup();
     // Inject sensitive data into raid results
-    input.raidResults[0].target = "arn:aws:cognito-idp:us-east-1:123456789012:userpool/us-east-1_TestPool";
-    input.raidResults[0].findings = [
+    input.raidResults![0].target = "arn:aws:cognito-idp:us-east-1:123456789012:userpool/us-east-1_TestPool";
+    input.raidResults![0].findings = [
       "Attack from 192.168.1.100 with key AKIAIOSFODNN7EXAMPLE",
     ];
 

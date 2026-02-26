@@ -3,6 +3,7 @@ import { decodeJwt } from "jose";
 import { validatePublicUrl } from "../security/url-validation";
 import { verifyVCJWTViaDID } from "./vc-verifier";
 import type { DependencyProof } from "./vc-types";
+import type { FetchLike } from "../types/fetch";
 
 export interface DependencyParseResult {
   dependencies: DependencyProof[];
@@ -28,7 +29,7 @@ export interface DependencyVerificationResult {
 
 export interface DependencyVerifyOptions {
   depth?: number;
-  fetchFn?: typeof fetch;
+  fetchFn?: FetchLike;
   timeoutMs?: number;
 }
 

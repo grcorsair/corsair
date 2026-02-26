@@ -7,7 +7,7 @@ import { resolveScittEntries } from "../../src/parley/scitt-client";
 
 describe("resolveScittEntries", () => {
   test("returns entries from a valid response", async () => {
-    const fakeFetch: typeof fetch = async () => {
+    const fakeFetch = async () => {
       return Response.json({
         entries: [
           {
@@ -41,4 +41,3 @@ describe("resolveScittEntries", () => {
     expect(result.error).toContain("Blocked");
   });
 });
-

@@ -108,7 +108,6 @@ export function validatePolicyArtifact(input: unknown): PolicyValidationResult {
   return {
     ok: true,
     errors: [],
-    policy: policy as PolicyArtifact,
+    policy: policy as unknown as PolicyArtifact,
   };
 }
-

@@ -5,14 +5,16 @@
  */
 
 import { decodeProtectedHeader, importJWK, exportSPKI } from "jose";
+import type { KeyLike } from "jose";
 import type { KeyManager } from "./marque-key-manager";
 import { resolveDIDDocument } from "./did-resolver";
+import type { FetchLike } from "../types/fetch";
 
 export async function resolveReceiptPublicKeyPem(
   jwt: string,
   keyManager: KeyManager,
   extraTrustedKeys?: Buffer[],
-  fetchFn?: typeof fetch,
+  fetchFn?: FetchLike,
 ): Promise<string | null> {
   const jwtToUse = jwt.includes("~")
     ? (await import("./sd-jwt")).parseSDJWT(jwt).jwt
@@ -33,7 +35,7 @@ export async function resolveReceiptPublicKeyPem(
     if (vm?.publicKeyJwk) {
       try {
         const key = await importJWK(vm.publicKeyJwk, "EdDSA");
-        return await exportSPKI(key);
+        return await exportSPKI(key as unknown as KeyLike);
       } catch {
         // fall through to local keys
       }
@@ -48,4 +50,3 @@ export async function resolveReceiptPublicKeyPem(
   if (!keypair) return null;
   return keypair.publicKey.toString();
 }
-

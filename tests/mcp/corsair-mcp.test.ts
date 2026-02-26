@@ -9,6 +9,7 @@ import { existsSync, mkdirSync, rmSync } from "fs";
 import { join } from "path";
 import { TOOL_DEFINITIONS, handleToolCall } from "../../src/mcp/corsair-mcp-server";
 import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
+import { withPreconnect } from "../helpers/mock-fetch";
 
 const tmpDir = join(import.meta.dir, ".tmp-mcp-test");
 let keyManager: MarqueKeyManager;
@@ -100,15 +101,15 @@ describe("corsair_sign tool", () => {
     let capturedUrl = "";
     let capturedBody = "";
 
-    globalThis.fetch = async (url: string | URL, init?: RequestInit) => {
-      capturedUrl = String(url);
+    globalThis.fetch = withPreconnect(async (input: Request | URL | string, init?: RequestInit) => {
+      capturedUrl = String(input);
       capturedAuth = String((init?.headers as Record<string, string>)?.Authorization || "");
       capturedBody = String(init?.body || "");
       return new Response(JSON.stringify({ cpoe: "eyJ.test.jwt", detectedFormat: "generic" }), {
         status: 200,
         headers: { "content-type": "application/json" },
       });
-    };
+    });
 
     const result = await handleToolCall(
       "corsair_sign",

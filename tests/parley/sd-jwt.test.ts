@@ -584,10 +584,13 @@ describe("SD-JWT Verification", () => {
     expect(verification.valid).toBe(true);
     // The non-disclosable claims should be in the payload
     expect(verification.payload).toBeDefined();
-    expect(verification.payload?.vc.credentialSubject.type).toBe(
+    const verifiedPayload = verification.payload as {
+      vc?: { credentialSubject?: { type?: string; scope?: string } };
+    } | undefined;
+    expect(verifiedPayload?.vc?.credentialSubject?.type).toBe(
       "CorsairCPOE",
     );
-    expect(verification.payload?.vc.credentialSubject.scope).toBeDefined();
+    expect(verifiedPayload?.vc?.credentialSubject?.scope).toBeDefined();
   });
 
   test("should reject malformed JWT in SD-JWT", async () => {

@@ -11,6 +11,7 @@
 
 import type { KeyManager } from "../src/parley/marque-key-manager";
 import type { DIDDocument } from "../src/parley/did-resolver";
+import type { JsonWebKeyWithKid } from "../src/types";
 import { formatDIDWeb, parseDIDWeb } from "../src/parley/did-resolver";
 import { generateTrustTxt, validateTrustTxt, type TrustTxt, type TrustTxtValidation } from "../src/parley/trust-txt";
 
@@ -184,7 +185,7 @@ export function createOnboardRouter(
     }
 
     let didDocument: DIDDocument;
-    let jwk: JsonWebKey;
+    let jwk: JsonWebKeyWithKid;
     try {
       didDocument = await keyManager.generateDIDDocument(domain);
       jwk = await keyManager.exportJWK();

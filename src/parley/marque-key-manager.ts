@@ -225,7 +225,7 @@ export class MarqueKeyManager implements KeyManager {
    */
   async importJWK(jwk: JsonWebKey): Promise<Buffer> {
     const key = await joseImportJWK(jwk, "EdDSA");
-    const pem = await exportSPKI(key as crypto.KeyObject);
+    const pem = await exportSPKI(key as unknown as crypto.KeyObject);
     return Buffer.from(pem);
   }
 

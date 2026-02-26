@@ -1,4 +1,5 @@
 import type { ComplianceCatalog, ComplianceCatalogEntry } from "./compliance-catalog";
+import type { FetchLike } from "../types/fetch";
 import { resolveComplianceCatalog } from "./compliance-catalog";
 import { resolveTrustTxt } from "./trust-txt";
 import { isBlockedHost } from "../security/url-validation";
@@ -23,7 +24,7 @@ export interface CpoeListResolution {
 }
 
 export interface CpoeResolverDeps {
-  fetchFn?: typeof fetch;
+  fetchFn?: FetchLike;
   resolveTrustTxt?: typeof resolveTrustTxt;
   resolveComplianceCatalog?: typeof resolveComplianceCatalog;
 }
@@ -81,7 +82,7 @@ export async function resolveCpoeList(
 
 export async function fetchCpoeJwt(
   url: string,
-  fetchFn?: typeof fetch,
+  fetchFn?: FetchLike,
 ): Promise<CpoeFetchResult> {
   const urlError = validateHttpsUrl(url);
   if (urlError) {

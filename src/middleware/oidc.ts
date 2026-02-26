@@ -7,6 +7,8 @@
 
 import { createHash } from "crypto";
 import { decodeJwt, decodeProtectedHeader, importJWK, jwtVerify } from "jose";
+import type { FetchLike } from "../types/fetch";
+import type { JsonWebKeyWithKid } from "../types";
 
 // =============================================================================
 // TYPES
@@ -130,7 +132,7 @@ export function resetOIDCCacheForTests(): void {
 // =============================================================================
 
 const discoveryCache = new Map<string, { jwksUri: string; expiresAt: number }>();
-const jwksCache = new Map<string, { keys: JsonWebKey[]; expiresAt: number }>();
+const jwksCache = new Map<string, { keys: JsonWebKeyWithKid[]; expiresAt: number }>();
 
 const DEFAULT_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
@@ -183,7 +185,7 @@ function extractMappedClaims(
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
-async function fetchJSON(url: string, fetchFn: typeof fetch): Promise<{ data: any; expiresAt: number }> {
+async function fetchJSON(url: string, fetchFn: FetchLike): Promise<{ data: any; expiresAt: number }> {
   const res = await fetchFn(url, { signal: AbortSignal.timeout(5000) });
   if (!res.ok) {
     throw new Error(`OIDC fetch failed: ${url} (${res.status})`);
@@ -194,7 +196,7 @@ async function fetchJSON(url: string, fetchFn: typeof fetch): Promise<{ data: an
 
 async function resolveJWKSUri(
   provider: OIDCProviderConfig,
-  fetchFn: typeof fetch,
+  fetchFn: FetchLike,
 ): Promise<string> {
   if (provider.jwksUri) return provider.jwksUri;
 
@@ -216,13 +218,13 @@ async function resolveJWKSUri(
 async function resolveJWKS(
   issuer: string,
   jwksUri: string,
-  fetchFn: typeof fetch,
-): Promise<JsonWebKey[]> {
+  fetchFn: FetchLike,
+): Promise<JsonWebKeyWithKid[]> {
   const cached = jwksCache.get(issuer);
   if (cached && cached.expiresAt > Date.now()) return cached.keys;
 
   const { data, expiresAt } = await fetchJSON(jwksUri, fetchFn);
-  const keys = Array.isArray(data?.keys) ? data.keys as JsonWebKey[] : [];
+  const keys = Array.isArray(data?.keys) ? data.keys as JsonWebKeyWithKid[] : [];
   jwksCache.set(issuer, { keys, expiresAt });
   return keys;
 }
@@ -237,7 +239,7 @@ function isOIDCEnabled(): boolean {
 
 export async function verifyOIDCToken(
   token: string,
-  options?: { fetchFn?: typeof fetch },
+  options?: { fetchFn?: FetchLike },
 ): Promise<OIDCVerificationResult | null> {
   if (!isOIDCEnabled()) return null;
 
@@ -262,7 +264,7 @@ export async function verifyOIDCToken(
   if (!fetchFn) return null;
 
   let jwksUri: string;
-  let keys: JsonWebKey[];
+  let keys: JsonWebKeyWithKid[];
   try {
     jwksUri = await resolveJWKSUri(provider, fetchFn);
     keys = await resolveJWKS(issuer, jwksUri, fetchFn);
@@ -282,7 +284,7 @@ export async function verifyOIDCToken(
         issuer: issuerRaw,
         audience: provider.audiences,
         clockTolerance: provider.clockSkewSeconds ?? 60,
-      });
+      }) as Awaited<ReturnType<typeof jwtVerify>>;
       break;
     } catch {
       // Try next key

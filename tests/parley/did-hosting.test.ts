@@ -110,7 +110,7 @@ describe("DID Document Hosting", () => {
       const doc = await manager.generateDIDDocument("grcorsair.com");
 
       // Mock fetch to return the generated document
-      const mockFetch = async (_url: string) =>
+      const mockFetch = async (_input: Request | URL | string) =>
         ({
           ok: true,
           json: async () => doc,
@@ -137,7 +137,7 @@ describe("DID Document Hosting", () => {
       const doc = await manager.generateDIDDocument("grcorsair.com");
       const originalX = doc.verificationMethod[0].publicKeyJwk.x;
 
-      const mockFetch = async (_url: string) =>
+      const mockFetch = async (_input: Request | URL | string) =>
         ({
           ok: true,
           json: async () => doc,

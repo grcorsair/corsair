@@ -8,6 +8,7 @@
  */
 
 import { jwtVerify, importSPKI, decodeJwt, decodeProtectedHeader } from "jose";
+import type { FetchLike } from "../types/fetch";
 import type { MarqueVerificationResult } from "./marque-verifier";
 import { VC_CONTEXT, CPOE_SCHEMA_VERSION } from "./vc-types";
 
@@ -157,7 +158,7 @@ function extensionsValid(extensions: Record<string, unknown>): boolean {
  */
 export async function verifyVCJWTViaDID(
   jwt: string,
-  fetchFn?: typeof fetch,
+  fetchFn?: FetchLike,
 ): Promise<MarqueVerificationResult> {
   // Support SD-JWT (JWT + disclosures)
   let jwtToVerify = jwt;

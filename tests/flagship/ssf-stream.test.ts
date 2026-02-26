@@ -6,16 +6,16 @@
  */
 
 import { describe, test, expect, beforeEach } from "bun:test";
-import { SSFStreamManager } from "../../src/flagship/ssf-stream";
+import { MemorySSFStreamManager } from "../../src/flagship/ssf-stream";
 import {
   FLAGSHIP_EVENTS,
   type SSFStreamConfig,
 } from "../../src/flagship/flagship-types";
 
-let manager: SSFStreamManager;
+let manager: MemorySSFStreamManager;
 
 beforeEach(() => {
-  manager = new SSFStreamManager();
+  manager = new MemorySSFStreamManager();
 });
 
 describe("SSFStreamManager", () => {

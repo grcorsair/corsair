@@ -84,7 +84,7 @@ describe("Ingestion Mapper", () => {
       expect(result.issuer.name).toBe("Acme Corp");
       expect(result.issuer.organization).toBe("Acme Corp");
       expect(result.providers).toContain("soc2-document");
-      expect(result.markResults).toHaveLength(1);
+      expect(((result.markResults ?? []))).toHaveLength(1);
       expect(result.raidResults).toHaveLength(0);
       expect(result.chartResults).toHaveLength(1);
       expect(result.evidencePaths).toHaveLength(0);
@@ -92,7 +92,7 @@ describe("Ingestion Mapper", () => {
 
     test("should map controls to DriftFindings in markResults", () => {
       const result = mapToMarqueInput(minimalDocument);
-      const findings = result.markResults[0].findings;
+      const findings = ((result.markResults ?? []))[0].findings;
 
       expect(findings).toHaveLength(3);
 
@@ -111,7 +111,7 @@ describe("Ingestion Mapper", () => {
 
     test("should set driftDetected when any control is ineffective", () => {
       const result = mapToMarqueInput(minimalDocument);
-      expect(result.markResults[0].driftDetected).toBe(true);
+      expect(((result.markResults ?? []))[0].driftDetected).toBe(true);
     });
 
     test("should not set driftDetected when all controls are effective", () => {
@@ -120,7 +120,7 @@ describe("Ingestion Mapper", () => {
         controls: minimalDocument.controls.filter(c => c.status === "effective"),
       };
       const result = mapToMarqueInput(allEffective);
-      expect(result.markResults[0].driftDetected).toBe(false);
+      expect(((result.markResults ?? []))[0].driftDetected).toBe(false);
     });
 
     test("should build chartResults from framework references", () => {
@@ -166,7 +166,7 @@ describe("Ingestion Mapper", () => {
       const result = mapToMarqueInput(noRefs);
 
       // Should still produce valid output
-      expect(result.markResults[0].findings).toHaveLength(1);
+      expect(((result.markResults ?? []))[0].findings).toHaveLength(1);
       // Chart may have empty frameworks
       expect(result.chartResults).toHaveLength(1);
     });
@@ -182,7 +182,7 @@ describe("Ingestion Mapper", () => {
       const result = mapToMarqueInput(documentWithContext);
 
       // Should still produce valid base output
-      expect(result.markResults).toHaveLength(1);
+      expect(((result.markResults ?? []))).toHaveLength(1);
       expect(result.issuer.name).toBe("Acme Corp");
 
       // Assessment context doesn't change base MarqueGeneratorInput
@@ -197,7 +197,7 @@ describe("Ingestion Mapper", () => {
         ],
       };
       const result = mapToMarqueInput(noSeverity);
-      const finding = result.markResults[0].findings[0];
+      const finding = ((result.markResults ?? []))[0].findings[0];
       expect(finding.severity).toBe("MEDIUM");
     });
 
@@ -207,8 +207,8 @@ describe("Ingestion Mapper", () => {
         controls: [],
       };
       const result = mapToMarqueInput(empty);
-      expect(result.markResults[0].findings).toHaveLength(0);
-      expect(result.markResults[0].driftDetected).toBe(false);
+      expect(((result.markResults ?? []))[0].findings).toHaveLength(0);
+      expect(((result.markResults ?? []))[0].driftDetected).toBe(false);
     });
 
     test("should pass through document reference for provenance building", () => {

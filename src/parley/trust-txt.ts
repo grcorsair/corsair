@@ -21,6 +21,7 @@
  */
 
 import { isBlockedHost } from "../security/url-validation";
+import type { FetchLike } from "../types/fetch";
 
 // =============================================================================
 // TYPES
@@ -322,7 +323,7 @@ function validateHttpsUrl(url: string, fieldName: string): string | undefined {
  * Accepts an optional fetchFn for testing/mocking.
  */
 export interface TrustTxtResolverDeps {
-  fetchFn?: typeof fetch;
+  fetchFn?: FetchLike;
   dns?: {
     resolveTxt: (hostname: string) => Promise<string[][]>;
     resolveCname: (hostname: string) => Promise<string[]>;
@@ -330,7 +331,7 @@ export interface TrustTxtResolverDeps {
 }
 
 function normalizeResolverDeps(
-  deps?: TrustTxtResolverDeps | typeof fetch,
+  deps?: TrustTxtResolverDeps | FetchLike,
 ): TrustTxtResolverDeps {
   if (typeof deps === "function") {
     return { fetchFn: deps };
@@ -357,7 +358,7 @@ function extractDelegationRecords(records: string[]): { url?: string; hash?: str
 
 async function resolveDelegatedTxt(
   domain: string,
-  fetchFn: typeof fetch,
+  fetchFn: FetchLike,
   dns: TrustTxtResolverDeps["dns"],
 ): Promise<TrustTxtResolution | null> {
   if (!dns) return null;
@@ -426,7 +427,7 @@ async function resolveDelegatedTxt(
 
 async function resolveDelegatedCname(
   domain: string,
-  fetchFn: typeof fetch,
+  fetchFn: FetchLike,
   dns: TrustTxtResolverDeps["dns"],
 ): Promise<TrustTxtResolution | null> {
   if (!dns) return null;
@@ -490,7 +491,7 @@ async function getDnsResolver(): Promise<TrustTxtResolverDeps["dns"] | undefined
 
 export async function resolveTrustTxt(
   domain: string,
-  deps?: TrustTxtResolverDeps | typeof fetch,
+  deps?: TrustTxtResolverDeps | FetchLike,
 ): Promise<TrustTxtResolution> {
   const { fetchFn, dns } = normalizeResolverDeps(deps);
   // SSRF protection: block private/reserved hosts

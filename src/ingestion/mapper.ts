@@ -137,7 +137,7 @@ function buildChartResults(controls: IngestedControl[]): ChartResult[] {
   }
 
   // Convert to ChartResult format
-  const frameworks: Record<Framework, { controls: { controlId: string; controlName: string; status: string }[] }> = {};
+  const frameworks: Partial<Record<Framework, { controls: { controlId: string; controlName: string; status: string }[] }>> = {};
 
   for (const [framework, controlMap] of frameworkMap) {
     frameworks[framework] = {

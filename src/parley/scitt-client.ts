@@ -3,6 +3,7 @@
  */
 
 import { isBlockedHost } from "../security/url-validation";
+import type { FetchLike } from "../types/fetch";
 import type { SCITTListEntry } from "./scitt-types";
 
 export interface SCITTListResponse {
@@ -22,7 +23,7 @@ export interface SCITTListResolution {
 
 export async function resolveScittEntries(
   url: string,
-  fetchFn?: typeof fetch,
+  fetchFn?: FetchLike,
 ): Promise<SCITTListResolution> {
   const urlError = validateHttpsUrl(url, "scitt");
   if (urlError) {
@@ -74,4 +75,3 @@ function validateHttpsUrl(url: string, fieldName: string): string | undefined {
 
   return undefined;
 }
-

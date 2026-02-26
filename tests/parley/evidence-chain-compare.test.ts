@@ -3,6 +3,7 @@ import * as os from "os";
 import * as path from "path";
 import * as fs from "fs";
 import { EvidenceEngine, compareEvidenceChain } from "../../src/evidence";
+import type { EvidenceChainAggregate } from "../../src/evidence";
 
 function createTestDir(): string {
   return path.join(
@@ -36,7 +37,7 @@ describe("Evidence chain comparison", () => {
     const summary = engine.summarizeChains([evidencePath]);
     expect(summary).not.toBeNull();
 
-    const expected = {
+    const expected: Partial<EvidenceChainAggregate> = {
       chainType: "hash-linked",
       algorithm: "sha256",
       canonicalization: "sorted-json-v1",
@@ -61,7 +62,7 @@ describe("Evidence chain comparison", () => {
     const summary = engine.summarizeChains([evidencePath]);
     expect(summary).not.toBeNull();
 
-    const expected = {
+    const expected: Partial<EvidenceChainAggregate> = {
       chainType: "hash-linked",
       algorithm: "sha256",
       canonicalization: "sorted-json-v1",

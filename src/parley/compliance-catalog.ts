@@ -6,6 +6,7 @@
  */
 
 import { isBlockedHost } from "../security/url-validation";
+import type { FetchLike } from "../types/fetch";
 
 // =============================================================================
 // TYPES
@@ -145,7 +146,7 @@ function validateHttpsUrl(url: string, fieldName: string): string | undefined {
 
 export async function resolveComplianceCatalog(
   url: string,
-  fetchFn?: typeof fetch,
+  fetchFn?: FetchLike,
 ): Promise<ComplianceCatalogResolution> {
   const urlError = validateHttpsUrl(url, "catalog");
   if (urlError) {

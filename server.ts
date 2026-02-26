@@ -81,23 +81,25 @@ const ALLOWED_ORIGINS = (Bun.env.CORSAIR_ALLOWED_ORIGINS || `https://${DOMAIN}`)
 let ready = false;
 let initError: string | null = null;
 
+type Handler = (req: Request) => Response | Promise<Response>;
+
 // Mutable refs populated after async init
-let healthHandler: ((req: Request) => Promise<Response>) | null = null;
-let verifyRouter: ((req: Request) => Promise<Response>) | null = null;
-let signRouter: ((req: Request) => Response | Promise<Response>) | null = null;
-let demoSignRouter: ((req: Request) => Response | Promise<Response>) | null = null;
-let issueRouter: ((req: Request) => Response | Promise<Response>) | null = null;
-let onboardRouter: ((req: Request) => Promise<Response>) | null = null;
-let didJsonHandler: ((req: Request) => Promise<Response>) | null = null;
-let jwksJsonHandler: ((req: Request) => Promise<Response>) | null = null;
-let ssfConfigHandler: ((req: Request) => Response) | null = null;
-let ssfRouter: ((req: Request) => Response | Promise<Response>) | null = null;
-let scittRouter: ((req: Request) => Response | Promise<Response>) | null = null;
-let scittListRouter: ((req: Request) => Promise<Response>) | null = null;
-let badgeRouter: ((req: Request) => Promise<Response>) | null = null;
-let profileRouter: ((req: Request) => Promise<Response>) | null = null;
-let hostedTrustTxtRouter: ((req: Request) => Promise<Response>) | null = null;
-let hostedTrustTxtPublicHandler: ((req: Request) => Promise<Response>) | null = null;
+let healthHandler: Handler | null = null;
+let verifyRouter: Handler | null = null;
+let signRouter: Handler | null = null;
+let demoSignRouter: Handler | null = null;
+let issueRouter: Handler | null = null;
+let onboardRouter: Handler | null = null;
+let didJsonHandler: Handler | null = null;
+let jwksJsonHandler: Handler | null = null;
+let ssfConfigHandler: Handler | null = null;
+let ssfRouter: Handler | null = null;
+let scittRouter: Handler | null = null;
+let scittListRouter: Handler | null = null;
+let badgeRouter: Handler | null = null;
+let profileRouter: Handler | null = null;
+let hostedTrustTxtRouter: Handler | null = null;
+let hostedTrustTxtPublicHandler: Handler | null = null;
 
 // =============================================================================
 // CORS HELPER
@@ -169,7 +171,7 @@ const server = Bun.serve({
         path.startsWith("/.well-known/") ||
         path.startsWith("/badge/") || path.startsWith("/profile/") ||
         (path.startsWith("/trust/") && path.endsWith("/trust.txt")) ||
-        ((path === "/scitt/entries" || path === "/v1/scitt/entries") && req.method === "GET");
+        (path === "/scitt/entries" || path === "/v1/scitt/entries");
       const corsOrigin = getCorsOrigin(req, isPublic);
       const headers: Record<string, string> = {
         "access-control-allow-methods": "GET, POST, PATCH, DELETE, OPTIONS",
@@ -387,19 +389,47 @@ async function initialize() {
     getCPOEById: async (_marqueId) => null,
     getLatestByDomain: async (domain) => {
       const profile = await registry.getIssuerProfile(`did:web:${domain}`);
-      if (!profile || !profile.latestCPOE) return null;
+      if (!profile || profile.history.length === 0) return null;
+      const latest = profile.history[0]!;
       return {
-        marqueId: profile.latestCPOE.marqueId,
+        marqueId: latest.entryId,
         tier: "self-signed" as const,
         controlsTested: undefined,
-        overallScore: profile.latestCPOE.overallScore,
+        overallScore: latest.score,
         jwt: "",
       };
     },
     generateBadge: defaultGenerateBadge,
   }));
   profileRouter = rateLimitPg(db as any, 30)(createProfileRouter({
-    getIssuerProfile: (issuerDID) => registry.getIssuerProfile(issuerDID),
+    getIssuerProfile: async (issuerDID) => {
+      const profile = await registry.getIssuerProfile(issuerDID);
+      if (!profile) return null;
+      const did = profile.issuerDID;
+      const domainPart = did.replace(/^did:web:/, "");
+      const domain = domainPart.split(":")[0] || domainPart;
+      const latest = profile.history[0];
+      const firstSeen = profile.history.length > 0
+        ? profile.history[profile.history.length - 1]!.registrationTime
+        : profile.lastCPOEDate;
+
+      return {
+        did,
+        domain,
+        cpoeCount: profile.totalCPOEs,
+        provenanceSummary: profile.provenanceSummary,
+        latestCPOE: latest ? {
+          marqueId: latest.entryId,
+          scope: latest.scope,
+          provenance: latest.provenance,
+          overallScore: latest.score,
+          issuedAt: latest.registrationTime,
+        } : undefined,
+        frameworks: profile.frameworks,
+        firstSeen,
+        lastSeen: profile.lastCPOEDate,
+      };
+    },
   }));
 
   const preAuthLimit = 60;

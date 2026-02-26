@@ -7,6 +7,7 @@
 
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { ParleyClient } from "../../src/parley/parley-client";
+import { withPreconnect } from "../helpers/mock-fetch";
 import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
 import { MarqueGenerator } from "../../src/parley/marque-generator";
 import type { MarqueDocument } from "../../src/parley/marque-types";
@@ -81,10 +82,10 @@ beforeAll(() => {
   };
 
   originalFetch = globalThis.fetch;
-  globalThis.fetch = (input: Request | URL | string, init?: RequestInit) => {
+  globalThis.fetch = withPreconnect(async (input: Request | URL | string, init?: RequestInit) => {
     const req = input instanceof Request ? input : new Request(input, init);
     return Promise.resolve(handler(req));
-  };
+  });
 
   serverPort = 12345;
 });

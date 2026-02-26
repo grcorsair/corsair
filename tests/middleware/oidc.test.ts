@@ -1,5 +1,7 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { generateKeyPair, SignJWT, exportJWK } from "jose";
+import type { JsonWebKeyWithKid } from "../../src/types";
+import { withPreconnect } from "../helpers/mock-fetch";
 
 import { getOIDCProviders, resetOIDCCacheForTests, verifyOIDCToken } from "../../src/middleware/oidc";
 
@@ -91,7 +93,7 @@ describe("verifyOIDCToken", () => {
 
   test("accepts valid token and maps claims", async () => {
     const { publicKey, privateKey } = await generateKeyPair("EdDSA");
-    const jwk = await exportJWK(publicKey);
+    const jwk = await exportJWK(publicKey) as JsonWebKeyWithKid;
     jwk.kid = "kid-1";
 
     process.env.CORSAIR_OIDC_CONFIG = JSON.stringify({
@@ -105,15 +107,15 @@ describe("verifyOIDCToken", () => {
       ],
     });
 
-    globalThis.fetch = async (url: string | URL) => {
-      if (String(url) === JWKS_URL) {
+    globalThis.fetch = withPreconnect(async (input: Request | URL | string) => {
+      if (String(input) === JWKS_URL) {
         return new Response(JSON.stringify({ keys: [jwk] }), {
           status: 200,
           headers: { "content-type": "application/json" },
         });
       }
       return new Response("not found", { status: 404 });
-    };
+    });
 
     const token = await makeToken({
       privateKey,
@@ -130,7 +132,7 @@ describe("verifyOIDCToken", () => {
 
   test("rejects missing iat", async () => {
     const { publicKey, privateKey } = await generateKeyPair("EdDSA");
-    const jwk = await exportJWK(publicKey);
+    const jwk = await exportJWK(publicKey) as JsonWebKeyWithKid;
     jwk.kid = "kid-2";
 
     process.env.CORSAIR_OIDC_CONFIG = JSON.stringify({
@@ -139,10 +141,10 @@ describe("verifyOIDCToken", () => {
       ],
     });
 
-    globalThis.fetch = async () => new Response(JSON.stringify({ keys: [jwk] }), {
+    globalThis.fetch = withPreconnect(async () => new Response(JSON.stringify({ keys: [jwk] }), {
       status: 200,
       headers: { "content-type": "application/json" },
-    });
+    }));
 
     const token = await makeToken({ privateKey, kid: "kid-2", includeIat: false });
     const result = await verifyOIDCToken(token);
@@ -151,7 +153,7 @@ describe("verifyOIDCToken", () => {
 
   test("rejects future iat beyond clock skew", async () => {
     const { publicKey, privateKey } = await generateKeyPair("EdDSA");
-    const jwk = await exportJWK(publicKey);
+    const jwk = await exportJWK(publicKey) as JsonWebKeyWithKid;
     jwk.kid = "kid-3";
 
     process.env.CORSAIR_OIDC_CONFIG = JSON.stringify({
@@ -160,10 +162,10 @@ describe("verifyOIDCToken", () => {
       ],
     });
 
-    globalThis.fetch = async () => new Response(JSON.stringify({ keys: [jwk] }), {
+    globalThis.fetch = withPreconnect(async () => new Response(JSON.stringify({ keys: [jwk] }), {
       status: 200,
       headers: { "content-type": "application/json" },
-    });
+    }));
 
     const token = await makeToken({ privateKey, kid: "kid-3", iatOffsetSeconds: 120 });
     const result = await verifyOIDCToken(token);
@@ -172,7 +174,7 @@ describe("verifyOIDCToken", () => {
 
   test("rejects missing jti when required", async () => {
     const { publicKey, privateKey } = await generateKeyPair("EdDSA");
-    const jwk = await exportJWK(publicKey);
+    const jwk = await exportJWK(publicKey) as JsonWebKeyWithKid;
     jwk.kid = "kid-4";
 
     process.env.CORSAIR_OIDC_CONFIG = JSON.stringify({
@@ -181,10 +183,10 @@ describe("verifyOIDCToken", () => {
       ],
     });
 
-    globalThis.fetch = async () => new Response(JSON.stringify({ keys: [jwk] }), {
+    globalThis.fetch = withPreconnect(async () => new Response(JSON.stringify({ keys: [jwk] }), {
       status: 200,
       headers: { "content-type": "application/json" },
-    });
+    }));
 
     const token = await makeToken({ privateKey, kid: "kid-4", includeJti: false });
     const result = await verifyOIDCToken(token);
@@ -193,7 +195,7 @@ describe("verifyOIDCToken", () => {
 
   test("rejects wrong audience", async () => {
     const { publicKey, privateKey } = await generateKeyPair("EdDSA");
-    const jwk = await exportJWK(publicKey);
+    const jwk = await exportJWK(publicKey) as JsonWebKeyWithKid;
     jwk.kid = "kid-5";
 
     process.env.CORSAIR_OIDC_CONFIG = JSON.stringify({
@@ -202,10 +204,10 @@ describe("verifyOIDCToken", () => {
       ],
     });
 
-    globalThis.fetch = async () => new Response(JSON.stringify({ keys: [jwk] }), {
+    globalThis.fetch = withPreconnect(async () => new Response(JSON.stringify({ keys: [jwk] }), {
       status: 200,
       headers: { "content-type": "application/json" },
-    });
+    }));
 
     const token = await makeToken({ privateKey, kid: "kid-5", audience: "wrong-aud" });
     const result = await verifyOIDCToken(token);
@@ -214,7 +216,7 @@ describe("verifyOIDCToken", () => {
 
   test("discovers JWKS via OIDC discovery", async () => {
     const { publicKey, privateKey } = await generateKeyPair("EdDSA");
-    const jwk = await exportJWK(publicKey);
+    const jwk = await exportJWK(publicKey) as JsonWebKeyWithKid;
     jwk.kid = "kid-6";
 
     process.env.CORSAIR_OIDC_CONFIG = JSON.stringify({
@@ -223,21 +225,21 @@ describe("verifyOIDCToken", () => {
       ],
     });
 
-    globalThis.fetch = async (url: string | URL) => {
-      if (String(url).endsWith("/.well-known/openid-configuration")) {
+    globalThis.fetch = withPreconnect(async (input: Request | URL | string) => {
+      if (String(input).endsWith("/.well-known/openid-configuration")) {
         return new Response(JSON.stringify({ jwks_uri: JWKS_URL }), {
           status: 200,
           headers: { "content-type": "application/json", "cache-control": "max-age=3600" },
         });
       }
-      if (String(url) === JWKS_URL) {
+      if (String(input) === JWKS_URL) {
         return new Response(JSON.stringify({ keys: [jwk] }), {
           status: 200,
           headers: { "content-type": "application/json", "cache-control": "max-age=3600" },
         });
       }
       return new Response("not found", { status: 404 });
-    };
+    });
 
     const token = await makeToken({ privateKey, kid: "kid-6", includeJti: true });
     const result = await verifyOIDCToken(token);

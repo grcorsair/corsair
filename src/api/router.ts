@@ -266,7 +266,8 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
     let inputBinding: V1VerifyResponse["inputBinding"] = null;
     if (sourceDocumentHash) {
       const cs = (payload?.vc as Record<string, unknown> | undefined)?.credentialSubject as Record<string, unknown> | undefined;
-      const expectedHash = cs?.provenance && (cs.provenance as { sourceDocument?: string }).sourceDocument;
+      const expectedRaw = cs?.provenance && (cs.provenance as { sourceDocument?: unknown }).sourceDocument;
+      const expectedHash = typeof expectedRaw === "string" ? expectedRaw : undefined;
       const errors: string[] = [];
       if (!expectedHash) {
         errors.push("missing provenance.sourceDocument in CPOE");

@@ -16,6 +16,7 @@ import * as crypto from "crypto";
 import { resolve } from "path";
 import { fileURLToPath } from "url";
 import type { IngestedControl, IngestedDocument } from "./types";
+import type { Severity } from "../types";
 import {
   canonicalizeMappingPack,
   isMappingPack,

@@ -14,6 +14,7 @@ import {
   type EventQueueRow,
   type DeliveryQueueDeps,
 } from "../../functions/ssf-delivery-worker";
+import { withPreconnect } from "../helpers/mock-fetch";
 
 // =============================================================================
 // HELPERS
@@ -33,7 +34,7 @@ function createMockFetch(responses: Array<{ status: number; headers?: Record<str
     return new Response("", { status: responseConfig.status, headers });
   };
 
-  return { mockFetch: mockFetch as typeof globalThis.fetch, calls };
+  return { mockFetch: withPreconnect(mockFetch), calls };
 }
 
 // =============================================================================
@@ -243,7 +244,7 @@ describe("FlagshipClient - Retry and Circuit Breaker", () => {
 
   test("uses AbortSignal timeout on requests", async () => {
     // Create a fetch that respects AbortSignal and hangs until aborted
-    globalThis.fetch = ((_url: string | URL | Request, init?: RequestInit) => {
+    globalThis.fetch = withPreconnect((_url: string | URL | Request, init?: RequestInit) => {
       return new Promise<Response>((resolve, reject) => {
         const signal = init?.signal;
         if (signal) {
@@ -257,7 +258,7 @@ describe("FlagshipClient - Retry and Circuit Breaker", () => {
         }
         // Never resolve — simulates a hanging server
       });
-    }) as typeof globalThis.fetch;
+    });
 
     const client = new FlagshipClient("http://test", "key", {
       maxRetries: 0,

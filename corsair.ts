@@ -18,6 +18,8 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { VERSION } from "./src/version";
 import type { DocumentSource } from "./src/ingestion/types";
+import type { JsonWebKeyWithKid } from "./src/types";
+import type { FlagshipEventType } from "./src/flagship/flagship-types";
 
 // =============================================================================
 // SUBCOMMAND ROUTING
@@ -1894,7 +1896,8 @@ NOTE:
       const subject = payload?.vc as Record<string, unknown> | undefined;
       const credSubject = subject?.credentialSubject as Record<string, unknown> | undefined;
       const summary = credSubject?.summary as Record<string, unknown> | undefined;
-      const score = summary?.overallScore ?? "?";
+      const rawScore = summary?.overallScore;
+      const score = typeof rawScore === "number" ? rawScore : "?";
       entries.push({
         path: entry.path,
         issuer: (payload?.iss as string) || "unknown",
@@ -1929,7 +1932,8 @@ NOTE:
     const credSubject = subject?.credentialSubject as Record<string, unknown> | undefined;
     const summary = credSubject?.summary as Record<string, unknown> | undefined;
     const provenance = credSubject?.provenance as Record<string, unknown> | undefined;
-    const score = summary?.overallScore ?? "?";
+    const rawScore = summary?.overallScore;
+    const score = typeof rawScore === "number" ? rawScore : "?";
     const source = provenance?.source ?? "?";
     const date = entry.mtime.toISOString().split("T")[0];
 
@@ -2362,23 +2366,23 @@ EVENT ALIASES:
     "marque-revoked": FLAGSHIP_EVENTS.MARQUE_REVOKED,
   };
 
-  const normalizeEvents = (raw?: string): string[] | undefined => {
+  const normalizeEvents = (raw?: string): FlagshipEventType[] | undefined => {
     if (!raw) return undefined;
     const tokens = raw.split(",").map((t) => t.trim()).filter(Boolean);
-    const values = Object.values(FLAGSHIP_EVENTS);
-    const normalized: string[] = [];
+    const values = Object.values(FLAGSHIP_EVENTS) as FlagshipEventType[];
+    const normalized: FlagshipEventType[] = [];
     for (const token of tokens) {
-      if (values.includes(token as any)) {
-        normalized.push(token);
+      if (values.includes(token as FlagshipEventType)) {
+        normalized.push(token as FlagshipEventType);
         continue;
       }
       if (aliasMap[token]) {
-        normalized.push(aliasMap[token]);
+        normalized.push(aliasMap[token] as FlagshipEventType);
         continue;
       }
       const keyMatch = (FLAGSHIP_EVENTS as Record<string, string>)[token.toUpperCase()];
       if (keyMatch) {
-        normalized.push(keyMatch);
+        normalized.push(keyMatch as FlagshipEventType);
         continue;
       }
       console.error(`Error: Unknown event type: ${token}`);
@@ -3281,7 +3285,7 @@ EXAMPLES:
     process.exit(2);
   }
 
-  let jwk: JsonWebKey;
+  let jwk: JsonWebKeyWithKid;
   try {
     jwk = await keyManager.exportJWK();
   } catch (err) {
@@ -3404,7 +3408,7 @@ EXAMPLES:
     process.exit(2);
   }
 
-  let jwk: JsonWebKey;
+  let jwk: JsonWebKeyWithKid;
   try {
     jwk = await keyManager.exportJWK();
   } catch (err) {

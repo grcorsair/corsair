@@ -16,6 +16,7 @@
 export type Severity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 export type EvidenceType = "positive" | "negative" | "exception";
 export type OperationType = "recon" | "mark" | "raid" | "chart" | "plunder" | "escape" | "compaction_summary";
+export type JsonWebKeyWithKid = JsonWebKey & { kid?: string };
 
 // Core frameworks with autocomplete; extensible via (string & {})
 export type CoreFramework = "MITRE" | "NIST-800-53" | "NIST-CSF" | "CIS" | "SOC2" | "ISO27001" | "PCI-DSS" | "CMMC" | "FedRAMP" | "HIPAA" | "GDPR" | "SOX" | "COBIT";
@@ -149,9 +150,9 @@ export interface ChartResult {
     description: string;
   };
   /** Extensible framework mappings keyed by Framework string */
-  frameworks?: Record<Framework, {
+  frameworks?: Partial<Record<Framework, {
     controls: { controlId: string; controlName: string; status: string }[];
-  }>;
+  }>>;
   /** Threat model result if STRIDE analysis was used */
   threatModel?: ThreatModelResult;
 }

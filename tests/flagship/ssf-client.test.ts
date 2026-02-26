@@ -1,15 +1,16 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { createSSFStream, getSSFStream, updateSSFStream, deleteSSFStream } from "../../src/flagship/ssf-client";
+import { withPreconnect } from "../helpers/mock-fetch";
 
 const originalFetch = globalThis.fetch;
 
 function mockFetch(responseBody: unknown, status = 200) {
-  globalThis.fetch = (async (input: RequestInfo, init?: RequestInit) => {
+  globalThis.fetch = withPreconnect(async (_input: Request | URL | string, _init?: RequestInit) => {
     return new Response(JSON.stringify(responseBody), {
       status,
       headers: { "content-type": "application/json" },
     });
-  }) as typeof fetch;
+  });
 }
 
 beforeEach(() => {
@@ -22,8 +23,8 @@ afterEach(() => {
 
 describe("ssf-client", () => {
   test("createSSFStream posts to /ssf/streams", async () => {
-    let captured: { input?: RequestInfo; init?: RequestInit } = {};
-    globalThis.fetch = (async (input: RequestInfo, init?: RequestInit) => {
+    let captured: { input?: Request | URL | string; init?: RequestInit } = {};
+    globalThis.fetch = withPreconnect(async (input: Request | URL | string, init?: RequestInit) => {
       captured = { input, init };
       return new Response(JSON.stringify({
         streamId: "stream-123",
@@ -36,7 +37,7 @@ describe("ssf-client", () => {
         createdAt: "2026-02-01T00:00:00Z",
         updatedAt: "2026-02-01T00:00:00Z",
       }), { status: 201, headers: { "content-type": "application/json" } });
-    }) as typeof fetch;
+    });
 
     const stream = await createSSFStream({
       delivery: { method: "poll" },
@@ -54,7 +55,7 @@ describe("ssf-client", () => {
   });
 
   test("get/update/delete use stream id", async () => {
-    globalThis.fetch = (async (input: RequestInfo, init?: RequestInit) => {
+    globalThis.fetch = withPreconnect(async (input: Request | URL | string, init?: RequestInit) => {
       const method = init?.method || "GET";
       if (method === "GET") {
         return new Response(JSON.stringify({ streamId: "stream-1", status: "active", config: { delivery: { method: "poll" }, events_requested: [], format: "jwt" }, createdAt: "", updatedAt: "" }), { status: 200, headers: { "content-type": "application/json" } });
@@ -63,7 +64,7 @@ describe("ssf-client", () => {
         return new Response(JSON.stringify({ streamId: "stream-1", status: "active", config: { delivery: { method: "poll" }, events_requested: [], format: "jwt" }, createdAt: "", updatedAt: "" }), { status: 200, headers: { "content-type": "application/json" } });
       }
       return new Response(JSON.stringify({ status: "deleted", streamId: "stream-1" }), { status: 200, headers: { "content-type": "application/json" } });
-    }) as typeof fetch;
+    });
 
     const base = "https://api.example.com";
     const opts = { apiUrl: base, authToken: "token" };

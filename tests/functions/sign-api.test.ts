@@ -10,11 +10,13 @@ import { createHash } from "crypto";
 import { existsSync, mkdirSync, rmSync } from "fs";
 import { join } from "path";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
+import type { JsonWebKeyWithKid } from "../../src/types";
 import { createSignRouter } from "../../functions/sign";
 import { requireAuth, invalidateApiKeyCache } from "../../src/middleware/auth";
 import { resetOIDCCacheForTests } from "../../src/middleware/oidc";
 import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
 import { MockSCITTRegistry } from "../../src/parley/scitt-registry";
+import { withPreconnect } from "../helpers/mock-fetch";
 
 const tmpDir = join(import.meta.dir, ".tmp-sign-api");
 let keyManager: MarqueKeyManager;
@@ -166,7 +168,7 @@ describe("POST /sign — OIDC keyless + SCITT", () => {
     const jwksUrl = "https://issuer.example.com/jwks";
 
     const { publicKey, privateKey } = await generateKeyPair("EdDSA");
-    const jwk = await exportJWK(publicKey);
+    const jwk = await exportJWK(publicKey) as JsonWebKeyWithKid;
     jwk.kid = "kid-oidc";
 
     process.env.CORSAIR_OIDC_CONFIG = JSON.stringify({
@@ -183,15 +185,15 @@ describe("POST /sign — OIDC keyless + SCITT", () => {
     process.env.CORSAIR_API_KEYS = "";
     invalidateApiKeyCache();
 
-    globalThis.fetch = async (url: string | URL) => {
-      if (String(url) === jwksUrl) {
+    globalThis.fetch = withPreconnect(async (input: Request | URL | string) => {
+      if (String(input) === jwksUrl) {
         return new Response(JSON.stringify({ keys: [jwk] }), {
           status: 200,
           headers: { "content-type": "application/json" },
         });
       }
       return new Response("not found", { status: 404 });
-    };
+    });
 
     const token = await new SignJWT({ email: "agent@example.com" })
       .setProtectedHeader({ alg: "EdDSA", kid: "kid-oidc" })

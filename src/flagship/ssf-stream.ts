@@ -142,4 +142,4 @@ export class MemorySSFStreamManager implements SSFStreamManagerInterface {
 }
 
 // Backward-compatible alias
-export { MemorySSFStreamManager as SSFStreamManager };
+export type SSFStreamManager = SSFStreamManagerInterface;

@@ -10,6 +10,7 @@
  */
 
 import { isBlockedHost } from "../security/url-validation";
+import type { FetchLike } from "../types/fetch";
 
 // =============================================================================
 // DID DOCUMENT TYPES
@@ -121,7 +122,7 @@ export function formatDIDWeb(domain: string, path?: string): string {
  */
 export async function resolveDIDDocument(
   did: string,
-  fetchFn?: typeof fetch,
+  fetchFn?: FetchLike,
 ): Promise<DIDResolutionResult> {
   const emptyResult = (error: string): DIDResolutionResult => ({
     didDocument: null,

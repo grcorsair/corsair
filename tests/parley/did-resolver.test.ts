@@ -17,6 +17,9 @@ import type {
   DIDResolutionResult,
 } from "../../src/parley/did-resolver";
 
+const toUrlString = (input: Request | URL | string): string =>
+  typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+
 describe("DID Resolver - did:web Resolution", () => {
   describe("parseDIDWeb", () => {
     test("parses simple domain DID", () => {
@@ -143,7 +146,7 @@ describe("DID Resolver - did:web Resolution", () => {
         assertionMethod: ["did:web:grcorsair.com#key-1"],
       };
 
-      const mockFetch = async (_url: string) => ({
+      const mockFetch = async (_input: Request | URL | string) => ({
         ok: true,
         json: async () => mockDIDDocument,
       }) as unknown as Response;
@@ -157,8 +160,8 @@ describe("DID Resolver - did:web Resolution", () => {
 
     test("constructs correct URL for simple domain (.well-known/did.json)", async () => {
       let capturedUrl = "";
-      const mockFetch = async (url: string) => {
-        capturedUrl = url;
+      const mockFetch = async (input: Request | URL | string) => {
+        capturedUrl = toUrlString(input);
         return {
           ok: true,
           json: async () => ({
@@ -177,8 +180,8 @@ describe("DID Resolver - did:web Resolution", () => {
 
     test("constructs correct URL for DID with path", async () => {
       let capturedUrl = "";
-      const mockFetch = async (url: string) => {
-        capturedUrl = url;
+      const mockFetch = async (input: Request | URL | string) => {
+        capturedUrl = toUrlString(input);
         return {
           ok: true,
           json: async () => ({
@@ -196,7 +199,7 @@ describe("DID Resolver - did:web Resolution", () => {
     });
 
     test("returns error result on HTTP failure", async () => {
-      const mockFetch = async (_url: string) => ({
+      const mockFetch = async (_input: Request | URL | string) => ({
         ok: false,
         status: 404,
         statusText: "Not Found",
@@ -209,7 +212,7 @@ describe("DID Resolver - did:web Resolution", () => {
     });
 
     test("returns error result on network failure", async () => {
-      const mockFetch = async (_url: string): Promise<Response> => {
+      const mockFetch = async (_input: Request | URL | string): Promise<Response> => {
         throw new Error("Network error");
       };
 
@@ -271,7 +274,7 @@ describe("DID Resolver - did:web Resolution", () => {
     });
 
     test("blocks fetch redirects (redirect: error)", async () => {
-      const mockFetch = async (_url: string, opts?: RequestInit) => {
+      const mockFetch = async (_input: Request | URL | string, opts?: RequestInit) => {
         // Verify redirect: "error" is passed
         expect((opts as any)?.redirect).toBe("error");
         throw new TypeError("fetch failed (redirect blocked)");
@@ -283,7 +286,7 @@ describe("DID Resolver - did:web Resolution", () => {
     });
 
     test("allows did:web:grcorsair.com (public domain)", async () => {
-      const mockFetch = async (_url: string) => ({
+      const mockFetch = async (_input: Request | URL | string) => ({
         ok: true,
         json: async () => ({
           "@context": ["https://www.w3.org/ns/did/v1"],

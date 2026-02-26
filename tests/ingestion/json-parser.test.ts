@@ -255,6 +255,6 @@ describe("parseJSON — pipeline integration", () => {
     expect(provenance.source).toBe("tool");
 
     const marque = mapToMarqueInput(doc);
-    expect(marque.markResults[0]?.findings).toHaveLength(1);
+    expect((marque.markResults ?? [])[0]?.findings).toHaveLength(1);
   });
 });

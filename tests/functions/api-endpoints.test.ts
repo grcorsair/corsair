@@ -5,6 +5,7 @@ import { importPKCS8, SignJWT, decodeJwt } from "jose";
 import { createVerifyRouter, type VerifyResponse } from "../../functions/verify";
 import { createDIDJsonHandler } from "../../functions/did-json";
 import { createJWKSJsonHandler } from "../../functions/jwks-json";
+import type { JsonWebKeyWithKid } from "../../src/types";
 import { createIssueRouter, type IssueRequest, type IssueResponse } from "../../functions/issue";
 import { MarqueKeyManager } from "../../src/parley/marque-key-manager";
 import { MockSCITTRegistry } from "../../src/parley/scitt-registry";
@@ -266,7 +267,7 @@ describe("GET /.well-known/jwks.json", () => {
     const res = await handler(req);
     expect(res.status).toBe(200);
 
-    const jwks: { keys: JsonWebKey[] } = await res.json();
+    const jwks: { keys: JsonWebKeyWithKid[] } = await res.json();
     expect(jwks.keys.length).toBeGreaterThan(0);
 
     const activeKey = jwks.keys[0];

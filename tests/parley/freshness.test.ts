@@ -21,6 +21,7 @@ import type {
   StapleConfig,
   FreshnessResult,
 } from "../../src/parley/freshness";
+import type { CPOECredentialSubject } from "../../src/parley/vc-types";
 
 // =============================================================================
 // TEST HELPERS
@@ -366,16 +367,13 @@ describe("CPOE integration", () => {
   });
 
   test("a CPOE without freshness field is backwards compatible (type allows optional)", async () => {
-    // This tests that CPOECredentialSubject accepts missing freshness
-    const { CPOECredentialSubject } = await import("../../src/parley/vc-types");
-    // Type-level test: just verifying the import doesn't break
-    // The actual backwards compat is ensured by the optional field in vc-types.ts
+    // Type-level check: optional freshness should allow omission
     const subject = {
       type: "CorsairCPOE" as const,
       scope: "test",
       provenance: { source: "tool" as const },
       summary: { controlsTested: 5, controlsPassed: 5, controlsFailed: 0, overallScore: 100 },
-    };
+    } satisfies Partial<CPOECredentialSubject>;
     // No freshness field -- should be valid CPOECredentialSubject shape
     expect(subject.type).toBe("CorsairCPOE");
     expect(subject).not.toHaveProperty("freshness");

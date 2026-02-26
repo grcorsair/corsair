@@ -243,7 +243,7 @@ export function createVerifyRouter(
     };
 
     if (!result.valid) {
-      (response as Record<string, unknown>).reason = result.reason;
+      (response as unknown as Record<string, unknown>).reason = result.reason;
     }
 
     return jsonOk(response);

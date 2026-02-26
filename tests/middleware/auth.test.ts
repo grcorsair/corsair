@@ -8,6 +8,8 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { requireAuth, invalidateApiKeyCache } from "../../src/middleware/auth";
 import { resetOIDCCacheForTests } from "../../src/middleware/oidc";
 import { SignJWT, exportJWK, generateKeyPair } from "jose";
+import type { JsonWebKeyWithKid } from "../../src/types";
+import { withPreconnect } from "../helpers/mock-fetch";
 
 // Simple passthrough handler for testing
 const echoHandler = (req: Request) =>
@@ -186,7 +188,7 @@ describe("requireAuth middleware", () => {
     });
 
     const { publicKey, privateKey } = await generateKeyPair("RS256");
-    const jwk = await exportJWK(publicKey);
+    const jwk = await exportJWK(publicKey) as JsonWebKeyWithKid;
     jwk.kid = "test-kid";
 
     const token = await new SignJWT({ role: "agent" })
@@ -198,21 +200,21 @@ describe("requireAuth middleware", () => {
       .setExpirationTime("2h")
       .sign(privateKey);
 
-    globalThis.fetch = (async (url: string) => {
-      if (url === discoveryUrl) {
+    globalThis.fetch = withPreconnect(async (input: Request | URL | string) => {
+      if (String(input) === discoveryUrl) {
         return new Response(JSON.stringify({ jwks_uri: jwksUrl }), {
           status: 200,
           headers: { "cache-control": "max-age=60" },
         });
       }
-      if (url === jwksUrl) {
+      if (String(input) === jwksUrl) {
         return new Response(JSON.stringify({ keys: [jwk] }), {
           status: 200,
           headers: { "cache-control": "max-age=60" },
         });
       }
       return new Response("not found", { status: 404 });
-    }) as typeof fetch;
+    });
 
     const handler = requireAuth((req: Request) =>
       Response.json({

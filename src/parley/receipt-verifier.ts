@@ -60,6 +60,8 @@ export function verifyProcessChain(
       receiptsTotal: 0,
       reproducibleVerified: 0,
       attestedVerified: 0,
+      toolAttestedVerified: 0,
+      scittRegistered: 0,
       chainDigest: "",
       steps: [],
     };

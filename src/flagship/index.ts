@@ -23,6 +23,7 @@ export {
 } from "./flagship-types";
 
 export { generateSET, verifySET } from "./set-generator";
-export { MemorySSFStreamManager, SSFStreamManager, type SSFStreamManagerInterface } from "./ssf-stream";
+export { MemorySSFStreamManager } from "./ssf-stream";
+export type { SSFStreamManager, SSFStreamManagerInterface } from "./ssf-stream";
 export { PgSSFStreamManager, createStreamManager } from "./pg-ssf-stream";
 export { FlagshipClient } from "./flagship-client";

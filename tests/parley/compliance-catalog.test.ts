@@ -13,6 +13,9 @@ import {
 } from "../../src/parley/compliance-catalog";
 import type { ComplianceCatalog } from "../../src/parley/compliance-catalog";
 
+const toUrlString = (input: Request | URL | string): string =>
+  typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+
 // =============================================================================
 // PARSE
 // =============================================================================
@@ -110,7 +113,7 @@ describe("compliance catalog - validateComplianceCatalog", () => {
       cpoes: [
         {
           url: "https://acme.com/compliance/soc2.jwt",
-          source: "robot",
+          source: "robot" as unknown as ComplianceCatalog["cpoes"][number]["source"],
         },
       ],
     };
@@ -136,7 +139,8 @@ describe("compliance catalog - resolveComplianceCatalog", () => {
       ],
     });
 
-    const mockFetch = async (url: string) => {
+    const mockFetch = async (input: Request | URL | string) => {
+      const url = toUrlString(input);
       expect(url).toBe("https://acme.com/compliance/catalog.json");
       return {
         ok: true,
