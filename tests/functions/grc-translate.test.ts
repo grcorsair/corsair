@@ -42,8 +42,8 @@ describe("grc translate router", () => {
         },
         results: [
           {
-            model: "openai/gpt-4o-mini",
-            label: "GPT-4o mini",
+            model: "google/gemini-3-flash-preview",
+            label: "Gemini 3 Flash Preview",
             status: "ok",
             latencyMs: 100,
             output: {
@@ -88,4 +88,3 @@ describe("grc translate router", () => {
     expect(res.status).toBe(404);
   });
 });
-

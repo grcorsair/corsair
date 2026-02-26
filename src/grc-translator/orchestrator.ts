@@ -14,18 +14,18 @@ import {
 } from "./types";
 
 const DEFAULT_MODELS = [
-  "openai/gpt-4o-mini",
-  "google/gemini-2.0-flash-lite-001",
-  "anthropic/claude-3-haiku",
+  "google/gemini-3-flash-preview",
+  "x-ai/grok-4.1-fast",
+  "anthropic/claude-haiku-4.5",
 ];
 
 const COMPARE_MODELS = [
-  "openai/gpt-4o-mini",
-  "google/gemini-2.0-flash-lite-001",
-  "anthropic/claude-3-haiku",
-  "meta-llama/llama-3.1-8b-instruct",
-  "mistralai/mistral-small",
-  "qwen/qwen-2.5-7b-instruct",
+  "google/gemini-3-flash-preview",
+  "x-ai/grok-4.1-fast",
+  "anthropic/claude-haiku-4.5",
+  "minimax/minimax-m2.1",
+  "moonshotai/kimi-k2.5",
+  "openai/gpt-5.2-chat",
 ];
 
 const MAX_MODELS_DEFAULT = 10;
