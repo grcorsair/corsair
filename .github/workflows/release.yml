@@ -129,4 +129,29 @@ jobs:
         git commit -m "chore: update corsair to v${{ steps.sha.outputs.version }}"
         git push
 
+  verify-homebrew:
+    needs: update-homebrew
+    runs-on: ubuntu-latest
+    steps:
+    - name: Compute version + sha
+      id: sha
+      run: |
+        VERSION="${GITHUB_REF_NAME#v}"
+        URL="https://github.com/grcorsair/corsair/archive/refs/tags/v${VERSION}.tar.gz"
+        SHA=$(curl -L "$URL" | shasum -a 256 | awk '{print $1}')
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "url=$URL" >> "$GITHUB_OUTPUT"
+        echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+    - name: Verify tap formula
+      env:
+        EXPECTED_VERSION: ${{ steps.sha.outputs.version }}
+        EXPECTED_URL: ${{ steps.sha.outputs.url }}
+        EXPECTED_SHA: ${{ steps.sha.outputs.sha }}
+      run: |
+        FORMULA=$(curl -L https://raw.githubusercontent.com/grcorsair/homebrew-corsair/main/Formula/corsair.rb)
+        echo "$FORMULA" | grep -q "url \"${EXPECTED_URL}\"" || { echo "url mismatch"; exit 1; }
+        echo "$FORMULA" | grep -q "sha256 \"${EXPECTED_SHA}\"" || { echo "sha mismatch"; exit 1; }
+        echo "$FORMULA" | grep -q "version \"${EXPECTED_VERSION}\"" || { echo "version mismatch"; exit 1; }
+
     # SDK publish intentionally disabled — SDK is coming soon and not actively maintained.
