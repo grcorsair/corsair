@@ -31,7 +31,7 @@ const COMPARE_MODELS = [
 const MAX_MODELS_DEFAULT = 10;
 const MAX_INPUT_BYTES_DEFAULT = 131_072;
 const MODEL_TIMEOUT_MS_DEFAULT = 20_000;
-const MAX_OUTPUT_TOKENS_DEFAULT = 300;
+const MAX_OUTPUT_TOKENS_DEFAULT = 500;
 
 export interface ExecuteGrcTranslateDeps {
   apiKey?: string;

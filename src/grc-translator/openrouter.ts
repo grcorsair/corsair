@@ -31,7 +31,7 @@ export async function callOpenRouterModel(input: ModelCallInput, deps: OpenRoute
         { role: "system", content: input.system },
         { role: "user", content: input.prompt },
       ],
-      temperature: 0.7,
+      temperature: 0.2,
       max_tokens: input.maxOutputTokens,
     }),
     signal: AbortSignal.timeout(input.timeoutMs),
