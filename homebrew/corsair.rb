@@ -7,9 +7,9 @@ class Corsair < Formula
   homepage "https://grcorsair.com"
   license "Apache-2.0"
 
-  url "https://github.com/grcorsair/corsair/archive/refs/tags/v1.1.5.tar.gz"
-  sha256 "e8542942c7496dfd48847ea5d8062e895c28d9fda5dcced35beb428b7db65a9e"
-  version "1.1.5"
+  url "https://github.com/grcorsair/corsair/archive/refs/tags/v1.1.6.tar.gz"
+  sha256 "85e95fa2943d6a3b369b33e5357bd0cd65634ee7cbcb02b1e10b0703e9b41ef0"
+  version "1.1.6"
 
   # HEAD install (always latest from main)
   head "https://github.com/grcorsair/corsair.git", branch: "main"
