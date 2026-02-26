@@ -533,11 +533,10 @@ curl -X POST https://api.grcorsair.com/verify \
 
 ### SDK
 
-```bash
-# SDK is monorepo-only for now
-# Clone the repo and use packages/sdk as a workspace
-# If you need a packaged dependency today, use the CLI or API.
-```
+The SDK is **coming soon** and **not actively maintained**. It is **not published to npm**.
+If you need a packaged dependency today, use the CLI or API.
+
+For internal development only, you can use `packages/sdk` as a workspace after cloning the repo.
 
 ---
 
@@ -624,7 +623,7 @@ src/
 bin/                       # Standalone CLIs (verify, DID, MCP)
 functions/                 # Railway API endpoints
 apps/web/                  # grcorsair.com (Next.js 15)
-  packages/sdk/              # @grcorsair/sdk (monorepo-only)
+  packages/sdk/              # @grcorsair/sdk (coming soon, not actively maintained)
 tests/                     # Test suite
 ```
 

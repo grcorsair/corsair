@@ -94,7 +94,7 @@ export default function ForGrcPlatformsPage() {
               <Link href="/docs/integrations/api">REST API</Link>
             </Button>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/docs/integrations/sdk">TypeScript SDK</Link>
+              <Link href="/docs/getting-started/quick-start">CLI Quick Start</Link>
             </Button>
           </div>
         </FadeIn>
@@ -196,7 +196,7 @@ export default function ForGrcPlatformsPage() {
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <Button asChild size="sm">
-                  <Link href="/docs/integrations/sdk">Use the SDK</Link>
+                  <Link href="/docs/getting-started/quick-start">Use the CLI</Link>
                 </Button>
                 <Button variant="outline" size="sm" asChild>
                   <Link href="/docs/integrations/api">REST API</Link>

@@ -84,7 +84,7 @@ export const CATEGORIES: IntegrationCategoryMeta[] = [
     name: "SDKs & Libraries",
     pirateName: "ARMORY",
     description:
-      "Build custom integrations in your language. All SDKs wrap the same HTTP API.",
+      "Coming soon. SDKs are not actively maintained yet — use the REST API.",
   },
   {
     id: "browser",
@@ -254,7 +254,7 @@ export const INTEGRATIONS: Integration[] = [
     category: "ai-assistants",
     status: "available",
     description: "4 MCP tools — sign, verify, diff, formats — in Claude Code",
-    docsUrl: "/docs/integrations/sdk",
+    docsUrl: "/docs/integrations/skills",
     snippet: '{ "corsair": { "command": "bun", "args": ["run", "bin/corsair-mcp.ts"] } }',
   },
   {
@@ -374,10 +374,9 @@ export const INTEGRATIONS: Integration[] = [
     id: "sdk-typescript",
     name: "TypeScript SDK",
     category: "sdks",
-    status: "available",
-    description: "TypeScript SDK (monorepo) — sign and verify programmatically",
+    status: "coming",
+    description: "Coming soon. Developer preview only (not actively maintained).",
     docsUrl: "/docs/integrations/sdk",
-    snippet: "git clone https://github.com/grcorsair/corsair.git",
   },
   {
     id: "sdk-python",

@@ -43,7 +43,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
     // Docs — Integrations
     { url: `${baseUrl}/docs/integrations/api`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${baseUrl}/docs/integrations/sdk`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/docs/integrations/ci-cd`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/docs/integrations/cloudflare`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/docs/integrations/jwt-vc`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },

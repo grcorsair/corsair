@@ -72,14 +72,10 @@ jobs:
       run: |
         VERSION="${TAG_NAME#v}"
         npm version "$VERSION" --no-git-tag-version --allow-same-version
-        (cd packages/sdk && npm version "$VERSION" --no-git-tag-version --allow-same-version)
 
     - name: Publish CLI to npm (OIDC — no token needed)
       env:
         NPM_CONFIG_PROVENANCE: "true"
       run: npm publish --provenance --access public --workspace @grcorsair/cli
 
-    - name: Publish SDK to npm (OIDC — no token needed)
-      env:
-        NPM_CONFIG_PROVENANCE: "true"
-      run: npm publish --provenance --access public --workspace @grcorsair/sdk
+    # SDK publish intentionally disabled — SDK is coming soon and not actively maintained.
