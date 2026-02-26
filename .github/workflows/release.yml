@@ -76,6 +76,6 @@ jobs:
     - name: Publish CLI to npm (OIDC — no token needed)
       env:
         NPM_CONFIG_PROVENANCE: "true"
-      run: npm publish --provenance --access public --workspace @grcorsair/cli
+      run: npm publish --provenance --access public --include-workspace-root
 
     # SDK publish intentionally disabled — SDK is coming soon and not actively maintained.
