@@ -9,7 +9,7 @@
 <br/>
 
 ![Tests](https://img.shields.io/github/actions/workflow/status/arudjreis/corsair/test.yml?style=for-the-badge&label=TESTS&labelColor=0A0E17&color=2ECC71)
-![Version](https://img.shields.io/badge/v1.1.6-D4A853?style=for-the-badge&label=VERSION&labelColor=0A0E17)
+![Version](https://img.shields.io/badge/v1.1.7-D4A853?style=for-the-badge&label=VERSION&labelColor=0A0E17)
 ![License](https://img.shields.io/badge/Apache_2.0-D4A853?style=for-the-badge&label=LICENSE&labelColor=0A0E17)
 ![Runtime](https://img.shields.io/badge/Bun-E8E2D6?style=for-the-badge&label=RUNTIME&labelColor=0A0E17&logo=bun&logoColor=E8E2D6)
 ![Language](https://img.shields.io/badge/TypeScript-D4A853?style=for-the-badge&label=LANG&labelColor=0A0E17&logo=typescript&logoColor=D4A853)
@@ -179,7 +179,7 @@ corsair mappings list                          # Show loaded mappings
 corsair mappings list --json                   # Machine-readable output
 corsair mappings validate --json               # Validate mappings
 corsair mappings add https://example.com/pack.json  # Add a mapping pack
-corsair mappings pack --id wiz --version 1.1.6 --mapping ./mappings  # Build a pack
+corsair mappings pack --id wiz --version 1.1.7 --mapping ./mappings  # Build a pack
 corsair mappings sign --file pack.json --key ./keys/mapping-pack.key  # Sign a pack
 ```
 
