@@ -11,7 +11,7 @@ import {
   type RoastResult,
 } from "@/lib/roast";
 
-const EXAMPLE_DOMAINS = ["acme.com", "example.com", "grcorsair.com"];
+const EXAMPLE_DOMAINS = ["trust.gitlab.com", "example.com", "grcorsair.com"];
 
 type RoastState = "idle" | "loading" | "ready" | "error";
 
@@ -28,7 +28,7 @@ export function RoastLab() {
 
     if (!isValidDomain(normalized)) {
       setState("error");
-      setError("Enter a valid domain like acme.com.");
+      setError("Enter a valid domain like trust.gitlab.com.");
       setResult(null);
       return;
     }
@@ -88,7 +88,7 @@ export function RoastLab() {
             type="text"
             value={domain}
             onChange={(event) => setDomain(event.target.value)}
-            placeholder="acme.com"
+            placeholder="trust.gitlab.com"
             autoComplete="off"
             className="w-full rounded-lg border border-input bg-card px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/30"
           />
@@ -116,6 +116,11 @@ export function RoastLab() {
             </button>
           ))}
         </div>
+
+        <p className="mt-3 text-xs text-corsair-text-dim/80">
+          Public pages only. Paste a domain or URL and Corsair will normalize it, crawl trust/security/compliance content,
+          and generate a roast plus `trust.txt` bootstrap guidance.
+        </p>
 
         {error && (
           <p className="mt-3 rounded-md border border-corsair-crimson/30 bg-corsair-crimson/10 px-3 py-2 text-xs text-corsair-crimson">

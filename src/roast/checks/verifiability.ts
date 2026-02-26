@@ -9,51 +9,54 @@ export async function checkVerifiability(ctx: RoastScanContext): Promise<RoastSc
   const trustTxt = ctx.trustResolution.trustTxt;
   const cpoes = ctx.cpoeListResolution.cpoes;
   if (cpoes.length === 0) {
-    findings.push("No signed CPOEs discovered");
-    return {
-      category: "verifiability",
-      score: 0,
-      findings,
-    };
+    const keywordUniverse = new Set<string>();
+    for (const page of ctx.pageSignals) {
+      for (const keyword of page.keywordHits) keywordUniverse.add(keyword);
+    }
+
+    const claimsTrust = keywordUniverse.has("soc 2") || keywordUniverse.has("iso 27001") || keywordUniverse.has("audit");
+    if (claimsTrust) {
+      score += 3;
+      findings.push("Trust claims found (SOC 2 / ISO / audit language) on trust-center pages");
+      findings.push("No cryptographically verifiable CPOEs discovered yet");
+    } else {
+      findings.push("No signed CPOEs discovered and no clear attestations found on crawled pages");
+    }
   }
 
   const doFetchCpoeJwt = ctx.deps.fetchCpoeJwt;
   const doVerify = ctx.deps.verifyVCJWTViaDID;
   const doResolveDid = ctx.deps.resolveDIDDocument;
 
-  if (!doFetchCpoeJwt || !doVerify) {
-    findings.push("Verification dependencies unavailable");
-    return {
-      category: "verifiability",
-      score: 0,
-      findings,
-    };
-  }
-
-  const maxCpoes = Math.max(1, Math.min(ctx.deps.maxCpoes ?? 5, 10));
-  const toCheck = cpoes.slice(0, maxCpoes);
-
-  let validCount = 0;
-  for (const cpoe of toCheck) {
-    const fetched = await doFetchCpoeJwt(cpoe.url, ctx.deps.fetchFn);
-    if (!fetched.jwt) {
-      findings.push(`CPOE unreachable or unreadable: ${cpoe.url}${fetched.error ? ` (${fetched.error})` : ""}`);
-      continue;
-    }
-
-    const verification = await doVerify(fetched.jwt, ctx.deps.fetchFn);
-    if (verification.valid) {
-      validCount++;
-      findings.push(`CPOE signature valid: ${cpoe.url}`);
+  if (cpoes.length > 0) {
+    if (!doFetchCpoeJwt || !doVerify) {
+      findings.push("Verification dependencies unavailable");
     } else {
-      findings.push(`CPOE signature invalid: ${cpoe.url}`);
-    }
-  }
+      const maxCpoes = Math.max(1, Math.min(ctx.deps.maxCpoes ?? 5, 10));
+      const toCheck = cpoes.slice(0, maxCpoes);
 
-  if (validCount > 0) {
-    const ratio = validCount / toCheck.length;
-    score += 4 * ratio;
-    score += 2 * ratio;
+      let validCount = 0;
+      for (const cpoe of toCheck) {
+        const fetched = await doFetchCpoeJwt(cpoe.url, ctx.deps.fetchFn);
+        if (!fetched.jwt) {
+          findings.push(`CPOE unreachable or unreadable: ${cpoe.url}${fetched.error ? ` (${fetched.error})` : ""}`);
+          continue;
+        }
+
+        const verification = await doVerify(fetched.jwt, ctx.deps.fetchFn);
+        if (verification.valid) {
+          validCount++;
+          findings.push(`CPOE signature valid: ${cpoe.url}`);
+        } else {
+          findings.push(`CPOE signature invalid: ${cpoe.url}`);
+        }
+      }
+
+      if (validCount > 0) {
+        const ratio = validCount / toCheck.length;
+        score += 6 * ratio;
+      }
+    }
   }
 
   if (trustTxt?.did && doResolveDid) {

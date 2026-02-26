@@ -531,13 +531,18 @@ curl -X POST https://api.grcorsair.com/onboard \
 curl -X POST https://api.grcorsair.com/verify \
   -d '{"cpoe": "eyJ..."}'
 
-# Roast a trust center (no auth required)
+# Roast a trust center (crawls public trust/security/compliance pages; no auth required)
 curl -X POST https://api.grcorsair.com/roast \
   -H "Content-Type: application/json" \
-  -d '{"domain":"acme.com"}'
+  -d '{"domain":"trust.gitlab.com"}'
 
 # Fetch a saved roast report (no auth required)
 curl https://api.grcorsair.com/roast/<report-id>
+
+# Then publish trust.txt + onboarding artifacts
+curl -X POST https://api.grcorsair.com/onboard \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
+  -d '{"contact":"security@acme.com","frameworks":["SOC2"]}'
 ```
 
 ### SDK

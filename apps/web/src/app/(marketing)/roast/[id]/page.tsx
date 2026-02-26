@@ -90,9 +90,14 @@ export default async function RoastResultPage({ params }: RoastResultPageProps) 
               <h1 className="mt-1 font-display text-3xl font-bold text-corsair-text">Trust Center Roast</h1>
               <p className="mt-1 font-mono text-xs text-corsair-text-dim">ID: {id}</p>
             </div>
-            <Button asChild variant="outline" size="sm" className="font-mono text-[10px]">
-              <Link href="/roast">Run another roast</Link>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm" className="font-mono text-[10px]">
+                <Link href="/roast">Run another roast</Link>
+              </Button>
+              <Button asChild size="sm" className="font-mono text-[10px]">
+                <Link href="/publish">Generate trust.txt</Link>
+              </Button>
+            </div>
           </div>
         </FadeIn>
 

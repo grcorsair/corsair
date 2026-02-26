@@ -14,6 +14,7 @@ export interface RoastRouterDeps {
     compositeScore: number;
     verdict: RoastScanResult["verdict"];
     checks: RoastScanResult["checks"];
+    pageSignals?: RoastScanResult["pageSignals"];
   }) => Promise<RoastCopyOutput>;
   generateTrustTxtExample?: (domain: string) => string;
   now?: () => Date;
@@ -51,7 +52,21 @@ function normalizePath(pathname: string): string {
 }
 
 function normalizeDomain(input: string): string {
-  return input.trim().toLowerCase().replace(/\.$/, "");
+  const trimmed = input.trim().toLowerCase();
+  if (!trimmed) return "";
+
+  let candidate = trimmed;
+  try {
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      candidate = new URL(trimmed).hostname;
+    } else if (trimmed.includes("/") || trimmed.includes("?") || trimmed.includes("#")) {
+      candidate = new URL(`https://${trimmed}`).hostname;
+    }
+  } catch {
+    candidate = trimmed;
+  }
+
+  return candidate.replace(/\.$/, "");
 }
 
 function isValidDomain(domain: string): boolean {
@@ -102,6 +117,7 @@ export function createRoastRouter(deps: RoastRouterDeps): (req: Request) => Prom
           compositeScore: scan.compositeScore,
           verdict: scan.verdict,
           checks: scan.checks,
+          pageSignals: scan.pageSignals,
         });
 
         const createdAt = now().toISOString();
@@ -119,6 +135,7 @@ export function createRoastRouter(deps: RoastRouterDeps): (req: Request) => Prom
           fixPreview: copy.fixPreview,
           trustTxtExample: doGenerateTrustTxtExample(scan.domain),
           createdAt,
+          pageSignals: scan.pageSignals,
         };
 
         await deps.store.save(result, ttlDays);

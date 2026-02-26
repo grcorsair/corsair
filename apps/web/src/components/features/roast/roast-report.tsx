@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 import {
   ROAST_CATEGORY_LABEL,
@@ -48,6 +50,24 @@ export function RoastReport({ result, compact = false }: RoastReportProps) {
         </div>
 
         <p className="mt-4 text-sm leading-relaxed text-corsair-text-dim">{result.summaryRoast}</p>
+
+        <div className="mt-4 rounded-lg border border-corsair-gold/20 bg-corsair-deep/30 p-3">
+          <p className="font-pixel text-[7px] tracking-wider text-corsair-gold/70">TURN ROAST INTO PROOF</p>
+          <p className="mt-1 text-xs text-corsair-text-dim">
+            Fix what got roasted: publish `trust.txt`, expose machine-readable evidence, and make your posture verifiable with Corsair.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button asChild size="sm" className="font-mono text-[10px]">
+              <Link href="/publish">Generate trust.txt</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="font-mono text-[10px]">
+              <Link href="/verify">Verify by domain</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="font-mono text-[10px]">
+              <Link href="/docs/integrations/api">API docs</Link>
+            </Button>
+          </div>
+        </div>
       </section>
 
       {!compact && <PixelDivider variant="diamond" />}
@@ -86,9 +106,26 @@ export function RoastReport({ result, compact = false }: RoastReportProps) {
       </section>
 
       <section className="rounded-xl border border-corsair-border bg-[#0A0A0A] p-4">
-        <p className="mb-2 font-pixel text-[7px] tracking-wider text-corsair-green/60">
-          TRUST.TXT PREVIEW
-        </p>
+        <p className="mb-2 font-pixel text-[7px] tracking-wider text-corsair-green/60">SCRAPED PAGE EVIDENCE</p>
+        {result.pageSignals && result.pageSignals.length > 0 ? (
+          <div className="space-y-3">
+            {result.pageSignals.slice(0, 4).map((page) => (
+              <div key={page.url} className="rounded-lg border border-corsair-border/70 bg-black/30 p-3">
+                <p className="font-mono text-[11px] text-corsair-gold">{page.url}</p>
+                {page.title && (
+                  <p className="mt-1 text-xs text-corsair-text">{page.title}</p>
+                )}
+                <p className="mt-1 text-xs text-corsair-text-dim/90">{page.excerpt}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-corsair-text-dim">No crawl excerpts captured.</p>
+        )}
+      </section>
+
+      <section className="rounded-xl border border-corsair-border bg-[#0A0A0A] p-4">
+        <p className="mb-2 font-pixel text-[7px] tracking-wider text-corsair-green/60">OPTIONAL TRUST.TXT BOOTSTRAP</p>
         <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-corsair-text-dim">
           {result.trustTxtExample}
         </pre>

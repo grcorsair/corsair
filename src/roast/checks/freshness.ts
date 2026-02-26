@@ -46,13 +46,24 @@ export async function checkFreshness(ctx: RoastScanContext): Promise<RoastScored
     }
   }
 
+  if (newest === 0) {
+    for (const page of ctx.pageSignals) {
+      for (const dateMention of page.dateMentions) {
+        const parsed = parseDate(dateMention);
+        if (parsed > 0 && parsed <= now + 24 * 60 * 60 * 1000) {
+          newest = Math.max(newest, parsed);
+        }
+      }
+    }
+  }
+
   let score = 0;
   if (newest > 0) {
     const ageDays = Math.max(0, Math.floor((now - newest) / (24 * 60 * 60 * 1000)));
     score = scoreByAgeDays(ageDays);
-    findings.push(`Most recent evidence appears ${ageDays} day(s) old`);
+    findings.push(`Most recent trust signal appears ${ageDays} day(s) old`);
   } else {
-    findings.push("No datable evidence found");
+    findings.push("No datable trust-center updates found");
   }
 
   const expires = ctx.trustResolution.trustTxt?.expires;

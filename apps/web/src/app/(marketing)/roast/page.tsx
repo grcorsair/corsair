@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { RoastLab } from "@/components/features/roast/roast-lab";
 import { FadeIn } from "@/components/motion/fade-in";
 import { PixelDivider } from "@/components/pixel-art/pixel-divider";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   title: "Roast My Trust Center — Compliance Discovery Scanner",
   description:
-    "Scan any domain's trust center and get a scored roast across discoverability, verifiability, freshness, machine-readability, and transparency.",
+    "Scrape public trust-center pages for any domain and get a scored roast across discoverability, verifiability, freshness, machine-readability, and transparency.",
   openGraph: {
     title: "Roast My Trust Center — Compliance Discovery Scanner",
     description:
-      "Scan any domain's trust center and get a scored roast across discoverability, verifiability, freshness, machine-readability, and transparency.",
+      "Scrape public trust-center pages for any domain and get a scored roast across discoverability, verifiability, freshness, machine-readability, and transparency.",
     url: "/roast",
     type: "website",
     images: [
@@ -27,7 +29,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Roast My Trust Center — Compliance Discovery Scanner",
     description:
-      "Scan any domain's trust center and get a scored roast across discoverability, verifiability, freshness, machine-readability, and transparency.",
+      "Scrape public trust-center pages for any domain and get a scored roast across discoverability, verifiability, freshness, machine-readability, and transparency.",
     images: ["/roast/opengraph-image"],
   },
 };
@@ -45,8 +47,9 @@ export default function RoastPage() {
               roast my trust center
             </h1>
             <p className="mx-auto max-w-2xl text-corsair-text-dim">
-              Enter a domain and Corsair will score its machine-verifiable trust posture. This is a
-              compliance scanner, not a vibes checker.
+              Enter a trust-center domain (for example <span className="text-corsair-gold">trust.gitlab.com</span>) and Corsair
+              will scrape public pages, score the posture, and generate a funny but evidence-backed roast. Then use the fix
+              path to publish `trust.txt` and verifiable proof artifacts.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               {[
@@ -83,12 +86,34 @@ export default function RoastPage() {
               Deterministic checks, not subjective grading
             </h2>
             <ul className="space-y-2 text-sm text-corsair-text-dim">
-              <li>Discoverability checks trust.txt and delegation paths.</li>
-              <li>Verifiability checks whether published CPOEs cryptographically verify.</li>
-              <li>Freshness checks issuance recency and expiry posture.</li>
-              <li>Machine readability checks catalog and structured metadata availability.</li>
-              <li>Transparency checks SCITT visibility and provenance hints.</li>
+              <li>Discoverability checks crawlability of trust/security/compliance pages and optional trust.txt.</li>
+              <li>Verifiability checks cryptographic artifacts first, then trust claims found on pages.</li>
+              <li>Freshness checks recent timestamps and publication recency from scraped content.</li>
+              <li>Machine readability checks for JSON/API artifacts versus PDF-only patterns.</li>
+              <li>Transparency checks for status, incident, and disclosure signals.</li>
             </ul>
+          </section>
+        </FadeIn>
+
+        <FadeIn delay={0.1}>
+          <section className="mt-6 rounded-xl border border-corsair-gold/25 bg-corsair-surface p-5">
+            <p className="mb-2 font-pixel text-[7px] tracking-wider text-corsair-gold/70">ROAST FLYWHEEL</p>
+            <h2 className="mb-2 font-display text-xl font-bold text-corsair-text">Get roasted, then ship trust signals</h2>
+            <p className="text-sm text-corsair-text-dim">
+              The loop is simple: run a roast, share the report, fix gaps with Corsair onboarding, and publish `trust.txt` so
+              buyers and agents can verify your evidence.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button asChild size="sm" className="font-mono text-[10px]">
+                <Link href="/publish">Generate trust.txt</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm" className="font-mono text-[10px]">
+                <Link href="/setup">Hosted setup</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm" className="font-mono text-[10px]">
+                <Link href="/docs/integrations/api">API integration</Link>
+              </Button>
+            </div>
           </section>
         </FadeIn>
       </div>

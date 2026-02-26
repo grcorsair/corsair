@@ -130,7 +130,9 @@ If the request is authenticated with an OIDC token, `extensions.ext.oidc.identit
 
 ## POST /roast
 
-Scan a domain's trust center and return a persisted roast report across discoverability, verifiability, freshness, machine readability, and transparency.
+Scan trust-center pages for a domain (for example `trust.gitlab.com`) and return a persisted roast report across discoverability, verifiability, freshness, machine readability, and transparency.
+The scanner crawls public trust/security/compliance pages, then scores and roasts based on discovered evidence.
+Use the returned `fixPreview` and `trustTxtExample` as the handoff into `POST /onboard` or `trust-txt` publishing.
 No authentication required.
 
 ```bash
@@ -143,7 +145,7 @@ curl -X POST https://api.grcorsair.com/roast \
 
 | Field | Type | Required | Description |
 |:------|:-----|:---------|:-----------|
-| `domain` | string | Yes | Root domain to scan, e.g. `acme.com` |
+| `domain` | string | Yes | Domain or URL to scan, e.g. `trust.gitlab.com` or `https://trust.gitlab.com` |
 
 **Response:**
 
@@ -155,6 +157,19 @@ curl -X POST https://api.grcorsair.com/roast \
     "compositeScore": 6.2,
     "verdict": "GETTING THERE",
     "checks": [],
+    "pageSignals": [
+      {
+        "url": "https://trust.gitlab.com",
+        "title": "GitLab Trust Center",
+        "excerpt": "Security and compliance overview...",
+        "linkCount": 22,
+        "pdfLinkCount": 4,
+        "structuredLinkCount": 2,
+        "statusLinkCount": 1,
+        "keywordHits": ["security", "compliance", "soc 2"],
+        "dateMentions": ["2026-02-20"]
+      }
+    ],
     "summaryRoast": "...",
     "fixPreview": "...",
     "trustTxtExample": "DID: did:web:acme.com",

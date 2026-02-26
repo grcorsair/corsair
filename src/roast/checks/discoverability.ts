@@ -6,65 +6,50 @@ export async function checkDiscoverability(ctx: RoastScanContext): Promise<Roast
   const findings: string[] = [];
   let score = 0;
 
+  const pageCount = ctx.pageSignals.length;
+  if (pageCount > 0) {
+    score += 4;
+    findings.push(`${pageCount} trust-center page(s) crawled`);
+
+    const keywordUniverse = new Set<string>();
+    for (const page of ctx.pageSignals) {
+      for (const keyword of page.keywordHits) keywordUniverse.add(keyword);
+    }
+
+    if (keywordUniverse.has("trust") || keywordUniverse.has("security") || keywordUniverse.has("compliance")) {
+      score += 2;
+      findings.push("Trust/security/compliance language found on public pages");
+    }
+
+    const docsPage = ctx.pageSignals.find((page) =>
+      page.url.toLowerCase().includes("trust") || page.url.toLowerCase().includes("security"),
+    );
+    if (docsPage) {
+      score += 1;
+      findings.push(`Trust-center style landing page found: ${docsPage.url}`);
+    }
+  } else {
+    findings.push("No crawlable trust-center pages found");
+  }
+
   const trustTxt = ctx.trustResolution.trustTxt;
   if (trustTxt) {
-    score += 4;
+    score += 1;
     findings.push(`trust.txt found at ${ctx.trustResolution.url || "/.well-known/trust.txt"}`);
 
     if (trustTxt.did) {
-      score += 1;
+      score += 0.5;
       findings.push(`DID present: ${trustTxt.did}`);
     } else {
       findings.push("DID missing from trust.txt");
     }
 
     if (trustTxt.cpoes.length > 0) {
-      score += 1;
+      score += 0.5;
       findings.push(`${trustTxt.cpoes.length} CPOE URL(s) listed`);
-    } else {
-      findings.push("No CPOE URLs listed in trust.txt");
-    }
-
-    if (trustTxt.scitt) {
-      score += 1;
-      findings.push("SCITT endpoint declared");
-    }
-    if (trustTxt.flagship) {
-      score += 0.5;
-      findings.push("FLAGSHIP endpoint declared");
-    }
-    if (trustTxt.frameworks.length > 0) {
-      score += 0.5;
-      findings.push(`Frameworks listed: ${trustTxt.frameworks.join(", ")}`);
-    }
-    if (trustTxt.contact) {
-      score += 0.5;
-      findings.push("Contact listed");
-    }
-    if (trustTxt.expires) {
-      score += 0.5;
-      findings.push("Expires field present");
     }
   } else {
     findings.push("No trust.txt found at /.well-known/trust.txt (or delegated DNS)");
-
-    const fetchFn = ctx.deps.fetchFn || globalThis.fetch;
-    for (const path of ["/trust", "/security", "/compliance"]) {
-      try {
-        const res = await fetchFn(`https://${ctx.domain}${path}`, {
-          method: "GET",
-          signal: AbortSignal.timeout(4000),
-          redirect: "error",
-        });
-        if (res.ok) {
-          score += 1;
-          findings.push(`Fallback page discovered at ${path}`);
-          break;
-        }
-      } catch {
-        // Ignore and continue fallback probes
-      }
-    }
   }
 
   const fetchFn = ctx.deps.fetchFn || globalThis.fetch;

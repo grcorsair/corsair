@@ -5,6 +5,19 @@ import { scanDomain } from "../../src/roast/scanner";
 describe("roast scanner", () => {
   test("returns deterministic checks and verdict for healthy domain", async () => {
     const deps = {
+      crawlTrustCenter: async () => ([
+        {
+          url: "https://acme.com/trust",
+          title: "Acme Trust Center",
+          excerpt: "SOC 2, ISO 27001, incident response and status page links.",
+          linkCount: 10,
+          pdfLinkCount: 1,
+          structuredLinkCount: 2,
+          statusLinkCount: 1,
+          keywordHits: ["trust", "security", "compliance", "soc 2", "iso 27001", "incident"],
+          dateMentions: ["2026-02-20"],
+        },
+      ]),
       resolveTrustTxt: async () => ({
         trustTxt: {
           did: "did:web:acme.com",
@@ -62,13 +75,27 @@ describe("roast scanner", () => {
     const second = await scanDomain("acme.com", deps as never);
 
     expect(first.checks).toHaveLength(5);
+    expect(first.pageSignals.length).toBe(1);
     expect(first.verdict).toBe(second.verdict);
     expect(first.compositeScore).toBe(second.compositeScore);
     expect(first.verdict).toBe("CORSAIR READY");
   });
 
-  test("returns low discoverability when trust.txt is missing", async () => {
+  test("keeps discoverability meaningful from scraped pages when trust.txt is missing", async () => {
     const result = await scanDomain("ghost.example", {
+      crawlTrustCenter: async () => ([
+        {
+          url: "https://ghost.example/security",
+          title: "Ghost Security",
+          excerpt: "Security and compliance resources.",
+          linkCount: 2,
+          pdfLinkCount: 0,
+          structuredLinkCount: 0,
+          statusLinkCount: 0,
+          keywordHits: ["security", "compliance"],
+          dateMentions: [],
+        },
+      ]),
       resolveTrustTxt: async () => ({
         trustTxt: null,
         error: "Resolution failed",
@@ -80,7 +107,7 @@ describe("roast scanner", () => {
 
     const discoverability = result.checks.find((c) => c.category === "discoverability");
     expect(discoverability).toBeTruthy();
-    expect(discoverability!.score).toBeLessThan(2);
+    expect(discoverability!.score).toBeGreaterThan(4);
     expect(discoverability!.findings.join(" ")).toContain("No trust.txt");
   });
 });

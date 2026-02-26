@@ -35,19 +35,29 @@ export async function checkTransparency(ctx: RoastScanContext): Promise<RoastSco
     findings.push("FLAGSHIP stream endpoint declared");
   }
 
-  const fetchFn = ctx.deps.fetchFn || globalThis.fetch;
-  try {
-    const changelogRes = await fetchFn(`https://${ctx.domain}/changelog`, {
-      method: "GET",
-      signal: AbortSignal.timeout(4000),
-      redirect: "error",
-    });
-    if (changelogRes.ok) {
-      score += 1;
-      findings.push("Public changelog endpoint found");
-    }
-  } catch {
-    // Optional signal only
+  let statusLinks = 0;
+  const keywordUniverse = new Set<string>();
+  for (const page of ctx.pageSignals) {
+    statusLinks += page.statusLinkCount;
+    for (const keyword of page.keywordHits) keywordUniverse.add(keyword);
+  }
+
+  if (statusLinks > 0) {
+    score += 2;
+    findings.push(`${statusLinks} status/incident link(s) found`);
+  }
+
+  if (keywordUniverse.has("bug bounty")) {
+    score += 1;
+    findings.push("Bug bounty language present");
+  }
+  if (keywordUniverse.has("incident")) {
+    score += 1;
+    findings.push("Incident communication language present");
+  }
+  if (keywordUniverse.has("subprocessor")) {
+    score += 1;
+    findings.push("Subprocessor transparency language present");
   }
 
   return {

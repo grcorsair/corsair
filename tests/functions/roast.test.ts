@@ -46,6 +46,19 @@ describe("roast router", () => {
           { category: "machine-readability", score: 6, findings: ["catalog present"] },
           { category: "transparency", score: 7, findings: ["scitt entries present"] },
         ],
+        pageSignals: [
+          {
+            url: "https://acme.com/trust",
+            title: "Acme Trust Center",
+            excerpt: "SOC 2 and ISO 27001 overview page",
+            linkCount: 5,
+            pdfLinkCount: 1,
+            structuredLinkCount: 1,
+            statusLinkCount: 1,
+            keywordHits: ["trust", "soc 2"],
+            dateMentions: ["2026-02-20"],
+          },
+        ],
       }),
       generateRoastCopy: async () => ({
         categoryRoasts: {
@@ -72,5 +85,47 @@ describe("roast router", () => {
     expect(getRes.status).toBe(200);
     const fetched = await getRes.json();
     expect(fetched.result.id).toBe(created.result.id);
+    expect(fetched.result.pageSignals?.[0]?.url).toBe("https://acme.com/trust");
+  });
+
+  test("accepts trust-center URL input and normalizes to domain", async () => {
+    const store = createMemoryRoastStore();
+    const seen: string[] = [];
+    const router = createRoastRouter({
+      store,
+      scanDomain: async (domain) => {
+        seen.push(domain);
+        return {
+          domain,
+          compositeScore: 6.2,
+          verdict: "GETTING THERE",
+          checks: [
+            { category: "discoverability", score: 6, findings: ["trust page found"] },
+            { category: "verifiability", score: 6, findings: ["claims listed"] },
+            { category: "freshness", score: 6, findings: ["recent updates"] },
+            { category: "machine-readability", score: 6, findings: ["json endpoint"] },
+            { category: "transparency", score: 6, findings: ["status page present"] },
+          ],
+          pageSignals: [],
+        };
+      },
+      generateRoastCopy: async () => ({
+        categoryRoasts: {
+          discoverability: "discoverability roast",
+          verifiability: "verifiability roast",
+          freshness: "freshness roast",
+          "machine-readability": "machine-readability roast",
+          transparency: "transparency roast",
+        },
+        summaryRoast: "summary",
+        fixPreview: "fix",
+      }),
+      generateTrustTxtExample: () => "DID: did:web:trust.gitlab.com",
+      now: () => new Date("2026-02-26T00:00:00Z"),
+    });
+
+    const res = await router(jsonRequest("/roast", "POST", { domain: "https://trust.gitlab.com/" }));
+    expect(res.status).toBe(200);
+    expect(seen[0]).toBe("trust.gitlab.com");
   });
 });

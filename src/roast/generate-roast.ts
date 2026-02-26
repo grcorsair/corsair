@@ -39,10 +39,12 @@ function fallbackCopy(input: RoastCopyInput): RoastCopyOutput {
     categoryRoasts[category] = `${category} scored ${check.score.toFixed(1)}/10. ${anchorFinding}`;
   }
 
+  const scrapedPages = input.pageSignals?.length || 0;
+
   return {
     categoryRoasts,
-    summaryRoast: `${input.domain} landed at ${input.compositeScore.toFixed(1)}/10 (${input.verdict}). Improvements are possible with signed CPOEs, a complete trust.txt, and visible transparency endpoints.`,
-    fixPreview: `Start with ${input.domain}/.well-known/trust.txt, publish signed CPOEs, and register them in SCITT so buyers can verify posture automatically.`,
+    summaryRoast: `${input.domain} landed at ${input.compositeScore.toFixed(1)}/10 (${input.verdict}) after scanning ${scrapedPages} trust-center page(s). Improvements are possible with stronger evidence freshness, cryptographic proofs, and clearer machine-readable artifacts.`,
+    fixPreview: `Tighten trust-center evidence on ${input.domain}: publish verifiable artifacts, keep timestamps fresh, and expose machine-readable endpoints buyers can validate automatically.`,
   };
 }
 
@@ -119,6 +121,18 @@ function buildPrompt(input: RoastCopyInput): string {
     .map((check) => `${check.category} (${check.score.toFixed(1)}/10):\n${check.findings.map((f) => `- ${f}`).join("\n")}`)
     .join("\n\n");
 
+  const pageSignals = (input.pageSignals || [])
+    .slice(0, 4)
+    .map((page) => [
+      `URL: ${page.url}`,
+      `Title: ${page.title || "n/a"}`,
+      `Keywords: ${page.keywordHits.join(", ") || "none"}`,
+      `Links: total=${page.linkCount}, pdf=${page.pdfLinkCount}, structured=${page.structuredLinkCount}, status=${page.statusLinkCount}`,
+      `Dates: ${page.dateMentions.join(", ") || "none"}`,
+      `Excerpt: ${page.excerpt.slice(0, 450)}`,
+    ].join("\n"))
+    .join("\n\n");
+
   return [
     `Domain: ${input.domain}`,
     `Composite: ${input.compositeScore.toFixed(1)}/10`,
@@ -126,6 +140,9 @@ function buildPrompt(input: RoastCopyInput): string {
     "",
     "Use only these findings:",
     findings,
+    "",
+    "Scraped trust-center page evidence:",
+    pageSignals || "(none)",
     "",
     "Return strict JSON with keys: categoryRoasts, summaryRoast, fixPreview.",
     "Do not invent findings.",
@@ -142,7 +159,7 @@ export async function generateRoastCopy(
   }
 
   const doFetch = deps.fetchFn || globalThis.fetch;
-  const model = deps.model || Bun.env.ROAST_ANTHROPIC_MODEL || process.env.ROAST_ANTHROPIC_MODEL || "claude-3-5-haiku-latest";
+  const model = deps.model || Bun.env.ROAST_ANTHROPIC_MODEL || process.env.ROAST_ANTHROPIC_MODEL || "claude-4-5-haiku-latest";
 
   try {
     const response = await doFetch("https://api.anthropic.com/v1/messages", {

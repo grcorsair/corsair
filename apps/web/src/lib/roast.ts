@@ -30,11 +30,24 @@ export interface RoastResult {
   fixPreview: string;
   trustTxtExample: string;
   createdAt: string;
+  pageSignals?: RoastPageSignal[];
 }
 
 export interface RoastError {
   error: string;
   code?: "INVALID_DOMAIN" | "RATE_LIMITED" | "SCAN_FAILED" | "NOT_FOUND";
+}
+
+export interface RoastPageSignal {
+  url: string;
+  title?: string;
+  excerpt: string;
+  linkCount: number;
+  pdfLinkCount: number;
+  structuredLinkCount: number;
+  statusLinkCount: number;
+  keywordHits: string[];
+  dateMentions: string[];
 }
 
 export const ROAST_CATEGORY_LABEL: Record<RoastCategory, string> = {
@@ -46,7 +59,21 @@ export const ROAST_CATEGORY_LABEL: Record<RoastCategory, string> = {
 };
 
 export function normalizeDomain(input: string): string {
-  return input.trim().toLowerCase().replace(/\.$/, "");
+  const trimmed = input.trim().toLowerCase();
+  if (!trimmed) return "";
+
+  let candidate = trimmed;
+  try {
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      candidate = new URL(trimmed).hostname;
+    } else if (trimmed.includes("/") || trimmed.includes("?") || trimmed.includes("#")) {
+      candidate = new URL(`https://${trimmed}`).hostname;
+    }
+  } catch {
+    candidate = trimmed;
+  }
+
+  return candidate.replace(/\.$/, "");
 }
 
 export function isValidDomain(domain: string): boolean {

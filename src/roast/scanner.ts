@@ -10,6 +10,7 @@ import { checkVerifiability } from "./checks/verifiability";
 import { checkFreshness } from "./checks/freshness";
 import { checkMachineReadability } from "./checks/machine-readability";
 import { checkTransparency } from "./checks/transparency";
+import { crawlTrustCenter } from "./crawl";
 import type { RoastScanResult, RoastScoredCheck } from "./types";
 import type { RoastScannerDeps } from "./scanner-types";
 
@@ -34,8 +35,13 @@ export async function scanDomain(
   domain: string,
   deps: RoastScannerDeps = {},
 ): Promise<RoastScanResult> {
+  const doCrawlTrustCenter = deps.crawlTrustCenter ?? crawlTrustCenter;
   const doResolveTrustTxt = deps.resolveTrustTxt ?? resolveTrustTxt;
   const doResolveCpoeList = deps.resolveCpoeList ?? resolveCpoeList;
+  const pageSignals = await doCrawlTrustCenter(domain, {
+    fetchFn: deps.fetchFn,
+    maxPages: deps.maxCrawlPages,
+  });
 
   const trustResolution = await doResolveTrustTxt(domain, {
     fetchFn: deps.fetchFn,
@@ -57,6 +63,7 @@ export async function scanDomain(
 
   const ctx = {
     domain,
+    pageSignals,
     trustResolution,
     cpoeListResolution,
     deps: {
@@ -119,5 +126,6 @@ export async function scanDomain(
     checks,
     compositeScore,
     verdict,
+    pageSignals,
   };
 }

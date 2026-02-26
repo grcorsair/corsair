@@ -8,13 +8,33 @@ export async function checkMachineReadability(ctx: RoastScanContext): Promise<Ro
 
   const trustTxt = ctx.trustResolution.trustTxt;
   if (trustTxt) {
-    score += 2;
+    score += 1.5;
     findings.push("trust.txt is machine-readable");
   }
 
   if (ctx.cpoeListResolution.cpoes.length > 0) {
     score += 5;
     findings.push(`${ctx.cpoeListResolution.cpoes.length} JWT CPOE artifact(s) discovered`);
+  }
+
+  let structuredLinks = 0;
+  let pdfLinks = 0;
+  for (const page of ctx.pageSignals) {
+    structuredLinks += page.structuredLinkCount;
+    pdfLinks += page.pdfLinkCount;
+  }
+
+  if (structuredLinks > 0) {
+    score += 2;
+    findings.push(`${structuredLinks} structured link(s) found (.json/.xml/API-style paths)`);
+  }
+
+  if (pdfLinks > 0) {
+    findings.push(`${pdfLinks} PDF report link(s) found`);
+    if (structuredLinks === 0) {
+      score += 0.5;
+      findings.push("Trust center appears PDF-heavy with limited machine-readable endpoints");
+    }
   }
 
   if (trustTxt?.catalog) {
@@ -25,29 +45,6 @@ export async function checkMachineReadability(ctx: RoastScanContext): Promise<Ro
   if (trustTxt?.scitt) {
     score += 1;
     findings.push("API-style SCITT endpoint declared");
-  }
-
-  // Lightweight fallback: if no structured artifacts exist, probe trust pages for obvious PDF-only signal.
-  if (!trustTxt && ctx.cpoeListResolution.cpoes.length === 0) {
-    const fetchFn = ctx.deps.fetchFn || globalThis.fetch;
-    for (const path of ["/trust", "/security", "/compliance"]) {
-      try {
-        const res = await fetchFn(`https://${ctx.domain}${path}`, {
-          method: "GET",
-          signal: AbortSignal.timeout(4000),
-          redirect: "error",
-        });
-        if (!res.ok) continue;
-        const html = (await res.text()).toLowerCase();
-        if (html.includes(".pdf")) {
-          score += 0.5;
-          findings.push(`Likely PDF-centric trust center at ${path}`);
-          break;
-        }
-      } catch {
-        // Ignore and continue probes
-      }
-    }
   }
 
   if (score === 0) {

@@ -11,6 +11,18 @@ export interface RoastScoredCheck {
   findings: string[];
 }
 
+export interface RoastPageSignal {
+  url: string;
+  title?: string;
+  excerpt: string;
+  linkCount: number;
+  pdfLinkCount: number;
+  structuredLinkCount: number;
+  statusLinkCount: number;
+  keywordHits: string[];
+  dateMentions: string[];
+}
+
 export interface RoastCheck extends RoastScoredCheck {
   roast: string;
 }
@@ -28,6 +40,7 @@ export interface RoastScanResult {
   compositeScore: number;
   verdict: RoastVerdict;
   checks: RoastScoredCheck[];
+  pageSignals: RoastPageSignal[];
 }
 
 export interface RoastResult {
@@ -40,6 +53,7 @@ export interface RoastResult {
   fixPreview: string;
   trustTxtExample: string;
   createdAt: string;
+  pageSignals?: RoastPageSignal[];
 }
 
 export interface RoastRequest {
@@ -56,6 +70,7 @@ export interface RoastCopyInput {
   compositeScore: number;
   verdict: RoastVerdict;
   checks: RoastScoredCheck[];
+  pageSignals?: RoastPageSignal[];
 }
 
 export interface RoastCopyOutput {
