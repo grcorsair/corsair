@@ -31,6 +31,7 @@ describe("trust.txt - parseTrustTxt", () => {
 DID: did:web:acme.com
 CPOE: https://acme.com/compliance/soc2-2026-q1.jwt
 CPOE: https://acme.com/compliance/iso27001-2026.jwt
+JWKS: https://acme.com/.well-known/jwks.json
 SCITT: https://log.grcorsair.com/v1/entries?issuer=did:web:acme.com
 CATALOG: https://acme.com/compliance/catalog.json
 POLICY: https://acme.com/.well-known/policy.json
@@ -46,6 +47,7 @@ Expires: 2026-12-31T23:59:59Z
       "https://acme.com/compliance/soc2-2026-q1.jwt",
       "https://acme.com/compliance/iso27001-2026.jwt",
     ]);
+    expect(result.jwks).toBe("https://acme.com/.well-known/jwks.json");
     expect(result.scitt).toBe("https://log.grcorsair.com/v1/entries?issuer=did:web:acme.com");
     expect(result.catalog).toBe("https://acme.com/compliance/catalog.json");
     expect(result.policy).toBe("https://acme.com/.well-known/policy.json");
@@ -131,6 +133,7 @@ Frameworks: SOC2,ISO27001, NIST-800-53 , PCI-DSS
   test("is case-insensitive for keys", () => {
     const input = `did: did:web:acme.com
 cpoe: https://acme.com/cpoe.jwt
+jwks: https://acme.com/.well-known/jwks.json
 scitt: https://log.grcorsair.com/v1/entries
 catalog: https://acme.com/compliance/catalog.json
 policy: https://acme.com/.well-known/policy.json
@@ -143,6 +146,7 @@ expires: 2026-12-31T23:59:59Z
     const result = parseTrustTxt(input);
     expect(result.did).toBe("did:web:acme.com");
     expect(result.cpoes).toEqual(["https://acme.com/cpoe.jwt"]);
+    expect(result.jwks).toBe("https://acme.com/.well-known/jwks.json");
     expect(result.scitt).toBe("https://log.grcorsair.com/v1/entries");
     expect(result.catalog).toBe("https://acme.com/compliance/catalog.json");
     expect(result.policy).toBe("https://acme.com/.well-known/policy.json");
@@ -197,6 +201,7 @@ describe("trust.txt - generateTrustTxt", () => {
         "https://acme.com/compliance/soc2.jwt",
         "https://acme.com/compliance/iso27001.jwt",
       ],
+      jwks: "https://acme.com/.well-known/jwks.json",
       scitt: "https://log.grcorsair.com/v1/entries?issuer=did:web:acme.com",
       catalog: "https://acme.com/compliance/catalog.json",
       policy: "https://acme.com/.well-known/policy.json",
@@ -210,6 +215,7 @@ describe("trust.txt - generateTrustTxt", () => {
     expect(output).toContain("DID: did:web:acme.com");
     expect(output).toContain("CPOE: https://acme.com/compliance/soc2.jwt");
     expect(output).toContain("CPOE: https://acme.com/compliance/iso27001.jwt");
+    expect(output).toContain("JWKS: https://acme.com/.well-known/jwks.json");
     expect(output).toContain("SCITT: https://log.grcorsair.com/v1/entries?issuer=did:web:acme.com");
     expect(output).toContain("CATALOG: https://acme.com/compliance/catalog.json");
     expect(output).toContain("POLICY: https://acme.com/.well-known/policy.json");
@@ -229,6 +235,7 @@ describe("trust.txt - generateTrustTxt", () => {
     const output = generateTrustTxt(input);
     expect(output).toContain("DID: did:web:acme.com");
     expect(output).not.toContain("CPOE:");
+    expect(output).not.toContain("JWKS:");
     expect(output).not.toContain("SCITT:");
     expect(output).not.toContain("FLAGSHIP:");
     expect(output).not.toContain("Contact:");
@@ -271,6 +278,7 @@ describe("trust.txt - round-trip", () => {
         "https://acme.com/compliance/soc2.jwt",
         "https://acme.com/compliance/iso27001.jwt",
       ],
+      jwks: "https://acme.com/.well-known/jwks.json",
       scitt: "https://log.grcorsair.com/v1/entries?issuer=did:web:acme.com",
       catalog: "https://acme.com/compliance/catalog.json",
       policy: "https://acme.com/.well-known/policy.json",
@@ -285,6 +293,7 @@ describe("trust.txt - round-trip", () => {
 
     expect(parsed.did).toBe(original.did);
     expect(parsed.cpoes).toEqual(original.cpoes);
+    expect(parsed.jwks).toBe(original.jwks);
     expect(parsed.scitt).toBe(original.scitt);
     expect(parsed.catalog).toBe(original.catalog);
     expect(parsed.policy).toBe(original.policy);
@@ -333,6 +342,9 @@ describe("trust.txt - validateTrustTxt", () => {
     const input: TrustTxt = {
       did: "did:web:acme.com",
       cpoes: ["https://acme.com/cpoe.jwt"],
+      jwks: "https://acme.com/.well-known/jwks.json",
+      scitt: "https://log.acme.com/entries",
+      catalog: "https://acme.com/compliance/catalog.json",
       frameworks: ["SOC2"],
       contact: "compliance@acme.com",
       expires: "2026-12-31T23:59:59Z",
@@ -346,6 +358,9 @@ describe("trust.txt - validateTrustTxt", () => {
   test("missing DID fails validation", () => {
     const input: TrustTxt = {
       cpoes: ["https://acme.com/cpoe.jwt"],
+      jwks: "https://acme.com/.well-known/jwks.json",
+      scitt: "https://log.acme.com/entries",
+      catalog: "https://acme.com/compliance/catalog.json",
       frameworks: ["SOC2"],
     };
 
@@ -357,6 +372,9 @@ describe("trust.txt - validateTrustTxt", () => {
   test("invalid DID format fails validation", () => {
     const input: TrustTxt = {
       did: "not-a-did",
+      jwks: "https://acme.com/.well-known/jwks.json",
+      scitt: "https://log.acme.com/entries",
+      catalog: "https://acme.com/compliance/catalog.json",
       cpoes: [],
       frameworks: [],
     };
@@ -370,6 +388,9 @@ describe("trust.txt - validateTrustTxt", () => {
     const input: TrustTxt = {
       did: "did:web:acme.com",
       cpoes: ["http://acme.com/cpoe.jwt"],
+      jwks: "https://acme.com/.well-known/jwks.json",
+      scitt: "https://log.acme.com/entries",
+      catalog: "https://acme.com/compliance/catalog.json",
       frameworks: [],
     };
 
@@ -382,6 +403,9 @@ describe("trust.txt - validateTrustTxt", () => {
     const input: TrustTxt = {
       did: "did:web:acme.com",
       cpoes: ["not-a-url"],
+      jwks: "https://acme.com/.well-known/jwks.json",
+      scitt: "https://log.acme.com/entries",
+      catalog: "https://acme.com/compliance/catalog.json",
       frameworks: [],
     };
 
@@ -394,6 +418,9 @@ describe("trust.txt - validateTrustTxt", () => {
     const input: TrustTxt = {
       did: "did:web:acme.com",
       cpoes: [],
+      jwks: "https://acme.com/.well-known/jwks.json",
+      scitt: "https://log.acme.com/entries",
+      catalog: "https://acme.com/compliance/catalog.json",
       frameworks: [],
       expires: "2020-01-01T00:00:00Z",
     };
@@ -407,6 +434,9 @@ describe("trust.txt - validateTrustTxt", () => {
     const input: TrustTxt = {
       did: "did:web:acme.com",
       cpoes: [],
+      jwks: "https://acme.com/.well-known/jwks.json",
+      scitt: "https://log.acme.com/entries",
+      catalog: "https://acme.com/compliance/catalog.json",
       frameworks: [],
       expires: "not-a-date",
     };
@@ -416,12 +446,43 @@ describe("trust.txt - validateTrustTxt", () => {
     expect(result.errors.some(e => e.includes("Expires"))).toBe(true);
   });
 
+  test("missing JWKS fails validation", () => {
+    const input: TrustTxt = {
+      did: "did:web:acme.com",
+      cpoes: [],
+      scitt: "https://log.acme.com/entries",
+      catalog: "https://acme.com/compliance/catalog.json",
+      frameworks: [],
+    };
+
+    const result = validateTrustTxt(input);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes("JWKS"))).toBe(true);
+  });
+
+  test("non-HTTPS JWKS URL fails validation", () => {
+    const input: TrustTxt = {
+      did: "did:web:acme.com",
+      cpoes: [],
+      jwks: "http://acme.com/.well-known/jwks.json",
+      scitt: "https://log.acme.com/entries",
+      catalog: "https://acme.com/compliance/catalog.json",
+      frameworks: [],
+    };
+
+    const result = validateTrustTxt(input);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes("JWKS"))).toBe(true);
+  });
+
   test("non-HTTPS SCITT URL fails validation", () => {
     const input: TrustTxt = {
       did: "did:web:acme.com",
       cpoes: [],
+      jwks: "https://acme.com/.well-known/jwks.json",
       frameworks: [],
       scitt: "http://log.example.com/entries",
+      catalog: "https://acme.com/compliance/catalog.json",
     };
 
     const result = validateTrustTxt(input);
@@ -433,6 +494,9 @@ describe("trust.txt - validateTrustTxt", () => {
     const input: TrustTxt = {
       did: "did:web:acme.com",
       cpoes: [],
+      jwks: "https://acme.com/.well-known/jwks.json",
+      scitt: "https://log.acme.com/entries",
+      catalog: "https://acme.com/compliance/catalog.json",
       frameworks: [],
       flagship: "http://signals.example.com/stream",
     };
@@ -446,6 +510,8 @@ describe("trust.txt - validateTrustTxt", () => {
     const input: TrustTxt = {
       did: "did:web:acme.com",
       cpoes: [],
+      jwks: "https://acme.com/.well-known/jwks.json",
+      scitt: "https://log.acme.com/entries",
       frameworks: [],
       catalog: "http://acme.com/compliance/catalog.json",
     };
@@ -459,6 +525,9 @@ describe("trust.txt - validateTrustTxt", () => {
     const input: TrustTxt = {
       did: "did:web:acme.com",
       cpoes: [],
+      jwks: "https://acme.com/.well-known/jwks.json",
+      scitt: "https://log.acme.com/entries",
+      catalog: "https://acme.com/compliance/catalog.json",
       frameworks: [],
       policy: "http://acme.com/policy.json",
     };
@@ -472,6 +541,9 @@ describe("trust.txt - validateTrustTxt", () => {
     const input: TrustTxt = {
       did: "did:web:acme.com",
       cpoes: ["https://192.168.1.1/cpoe.jwt"],
+      jwks: "https://acme.com/.well-known/jwks.json",
+      scitt: "https://log.acme.com/entries",
+      catalog: "https://acme.com/compliance/catalog.json",
       frameworks: [],
     };
 
@@ -480,16 +552,18 @@ describe("trust.txt - validateTrustTxt", () => {
     expect(result.errors.some(e => e.includes("private") || e.includes("Blocked"))).toBe(true);
   });
 
-  test("minimal valid trust.txt passes", () => {
+  test("missing SCITT and CATALOG fail validation", () => {
     const input: TrustTxt = {
       did: "did:web:acme.com",
       cpoes: [],
+      jwks: "https://acme.com/.well-known/jwks.json",
       frameworks: [],
     };
 
     const result = validateTrustTxt(input);
-    expect(result.valid).toBe(true);
-    expect(result.errors).toEqual([]);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes("SCITT"))).toBe(true);
+    expect(result.errors.some(e => e.includes("CATALOG"))).toBe(true);
   });
 });
 

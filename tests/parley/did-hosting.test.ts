@@ -55,7 +55,7 @@ describe("DID Document Hosting", () => {
       // Verification method
       expect(doc.verificationMethod).toHaveLength(1);
       const vm = doc.verificationMethod[0];
-      expect(vm.id).toBe("did:web:grcorsair.com#key-1");
+      expect(vm.id).toMatch(/^did:web:grcorsair\.com#key-[a-f0-9]{16}$/);
       expect(vm.type).toBe("JsonWebKey2020");
       expect(vm.controller).toBe("did:web:grcorsair.com");
       expect(vm.publicKeyJwk).toBeDefined();
@@ -65,8 +65,8 @@ describe("DID Document Hosting", () => {
       expect((vm.publicKeyJwk.x as string).length).toBeGreaterThan(0);
 
       // Authentication and assertion references
-      expect(doc.authentication).toContain("did:web:grcorsair.com#key-1");
-      expect(doc.assertionMethod).toContain("did:web:grcorsair.com#key-1");
+      expect(doc.authentication).toContain(vm.id);
+      expect(doc.assertionMethod).toContain(vm.id);
     });
 
     test("publicKeyJwk contains a real Ed25519 public key (not placeholder)", async () => {
@@ -163,8 +163,8 @@ describe("DID Document Hosting", () => {
       const doc = await manager.generateDIDDocument("localhost:3000");
 
       expect(doc.id).toBe("did:web:localhost%3A3000");
-      expect(doc.verificationMethod[0].id).toBe(
-        "did:web:localhost%3A3000#key-1",
+      expect(doc.verificationMethod[0].id).toMatch(
+        /^did:web:localhost%3A3000#key-[a-f0-9]{16}$/,
       );
       expect(doc.verificationMethod[0].controller).toBe(
         "did:web:localhost%3A3000",
@@ -189,8 +189,8 @@ describe("DID Document Hosting", () => {
       const doc = await manager.generateDIDDocument("api.grcorsair.com");
 
       expect(doc.id).toBe("did:web:api.grcorsair.com");
-      expect(doc.verificationMethod[0].id).toBe(
-        "did:web:api.grcorsair.com#key-1",
+      expect(doc.verificationMethod[0].id).toMatch(
+        /^did:web:api\.grcorsair\.com#key-[a-f0-9]{16}$/,
       );
     });
   });

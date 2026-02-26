@@ -11,6 +11,7 @@
  */
 
 import type { KeyManager } from "../src/parley/marque-key-manager";
+import { keyIdForDid } from "../src/parley/marque-key-manager";
 import type { JsonWebKeyWithKid } from "../src/types";
 
 export interface JWKSJsonDeps {
@@ -37,7 +38,7 @@ export function createJWKSJsonHandler(
         const activeJWK = await keyManager.exportJWK(keypair.publicKey);
         keys.push({
           ...activeJWK,
-          kid: `did:web:${domain.replace(/:/g, "%3A")}#key-1`,
+          kid: keyIdForDid(`did:web:${domain.replace(/:/g, "%3A")}`, keypair.publicKey),
           use: "sig",
           alg: "EdDSA",
         });
@@ -49,7 +50,7 @@ export function createJWKSJsonHandler(
         const retiredJWK = await keyManager.exportJWK(retired[i]);
         keys.push({
           ...retiredJWK,
-          kid: `did:web:${domain.replace(/:/g, "%3A")}#key-retired-${i + 1}`,
+          kid: keyIdForDid(`did:web:${domain.replace(/:/g, "%3A")}`, retired[i]),
           use: "sig",
           alg: "EdDSA",
         });

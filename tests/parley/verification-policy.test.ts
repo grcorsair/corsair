@@ -5,13 +5,14 @@
  */
 
 import { describe, test, expect } from "bun:test";
-import { evaluateVerificationPolicy } from "../../src/parley/verification-policy";
+import { evaluateVerificationPolicy, getDefaultVerificationPolicy } from "../../src/parley/verification-policy";
 
 function makePayload(overrides?: Record<string, unknown>) {
   return {
     iss: "did:web:acme.com",
     vc: {
       credentialSubject: {
+        scope: "AWS Prod",
         summary: { overallScore: 90 },
         frameworks: { SOC2: { controlsMapped: 1, passed: 1, failed: 0, controls: [] } },
         provenance: {
@@ -130,5 +131,18 @@ describe("verification policy", () => {
       process: { chainValid: true, receiptsTotal: 2, receiptsVerified: 2, scittRegistered: 2 },
     });
     expect(result.ok).toBe(true);
+  });
+
+  test("default policy enforces did:web + scope + summary + provenance", () => {
+    const payload = makePayload();
+    const result = evaluateVerificationPolicy(payload, getDefaultVerificationPolicy());
+    expect(result.ok).toBe(true);
+  });
+
+  test("default policy fails when issuer is not did:web", () => {
+    const payload = makePayload({ iss: "https://issuer.example.com" });
+    const result = evaluateVerificationPolicy(payload, getDefaultVerificationPolicy());
+    expect(result.ok).toBe(false);
+    expect(result.errors.some((e) => e.includes("did:web"))).toBe(true);
   });
 });

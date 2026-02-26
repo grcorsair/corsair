@@ -206,6 +206,27 @@ describe("corsair diff — primary command", () => {
     expect(code).toBe(0);
     expect(stdout).toContain("No regression");
   });
+
+  test("diff fails hard when issuer/scope are incompatible", async () => {
+    const original = readFileSync(join(tmpDir, "cpoe-v1.jwt"), "utf-8").trim();
+    const [header, payload, signature] = original.split(".");
+    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString());
+    parsed.iss = "did:web:other.example.com";
+    const tampered = `${header}.${Buffer.from(JSON.stringify(parsed)).toString("base64url")}.${signature}`;
+    const incompatiblePath = join(tmpDir, "cpoe-incompatible.jwt");
+    writeFileSync(incompatiblePath, tampered);
+
+    const proc = Bun.spawn([
+      "bun", "run", "corsair.ts", "diff",
+      "--current", incompatiblePath,
+      "--previous", join(tmpDir, "cpoe-v1.jwt"),
+    ], { cwd, stderr: "pipe" });
+    const stderr = await new Response(proc.stderr).text();
+    const code = await proc.exited;
+
+    expect(code).toBe(2);
+    expect(stderr).toContain("issuer mismatch");
+  });
 });
 
 // =============================================================================

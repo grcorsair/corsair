@@ -9,7 +9,7 @@
  * - trust.txt
  */
 
-import type { KeyManager } from "../src/parley/marque-key-manager";
+import { keyIdForDid, type KeyManager } from "../src/parley/marque-key-manager";
 import type { DIDDocument } from "../src/parley/did-resolver";
 import type { JsonWebKeyWithKid } from "../src/types";
 import { formatDIDWeb, parseDIDWeb } from "../src/parley/did-resolver";
@@ -36,6 +36,9 @@ export interface OnboardRequest {
 
   /** SCITT endpoint override */
   scitt?: string;
+
+  /** JWKS endpoint override */
+  jwks?: string;
 
   /** Catalog snapshot URL */
   catalog?: string;
@@ -158,14 +161,17 @@ export function createOnboardRouter(
     const expiresAt = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000).toISOString();
 
     const includeDefaults = body.includeDefaults !== false;
-    const scitt = body.scitt || (includeDefaults ? `https://${domain}/scitt/entries` : undefined);
+    const jwksUrl = body.jwks || `https://${domain}/.well-known/jwks.json`;
+    const scitt = body.scitt || `https://${domain}/scitt/entries`;
+    const catalog = body.catalog || `https://${domain}/compliance/catalog.json`;
     const flagship = body.flagship || (includeDefaults ? `https://${domain}/ssf/streams` : undefined);
 
     const trustTxtInput: TrustTxt = {
       did,
       cpoes: isStringArray(body.cpoes) ? body.cpoes : [],
+      jwks: jwksUrl,
       scitt,
-      catalog: typeof body.catalog === "string" ? body.catalog : undefined,
+      catalog,
       policy: typeof body.policy === "string" ? body.policy : undefined,
       flagship,
       frameworks: isStringArray(body.frameworks) ? body.frameworks : [],
@@ -186,18 +192,35 @@ export function createOnboardRouter(
 
     let didDocument: DIDDocument;
     let jwk: JsonWebKeyWithKid;
+    let retiredKeys: Buffer[] = [];
     try {
       didDocument = await keyManager.generateDIDDocument(domain);
-      jwk = await keyManager.exportJWK();
+      const keypair = await keyManager.loadKeypair();
+      if (!keypair) {
+        return jsonError(503, "No signing key configured. Run key generation first.");
+      }
+      jwk = await keyManager.exportJWK(keypair.publicKey);
+      jwk.kid = keyIdForDid(did, keypair.publicKey);
+      retiredKeys = await keyManager.getRetiredKeys();
     } catch {
       return jsonError(503, "No signing key configured. Run key generation first.");
     }
 
-    jwk.kid = `${did}#key-1`;
     jwk.use = "sig";
     jwk.alg = "EdDSA";
 
-    const jwks = { keys: [jwk] };
+    const keys: JsonWebKeyWithKid[] = [jwk];
+    for (const retiredKey of retiredKeys) {
+      const retiredJwk = await keyManager.exportJWK(retiredKey);
+      keys.push({
+        ...retiredJwk,
+        kid: keyIdForDid(did, retiredKey),
+        use: "sig",
+        alg: "EdDSA",
+      });
+    }
+
+    const jwks = { keys };
     const trustTxt = generateTrustTxt(trustTxtInput);
 
     const response: OnboardResponse = {

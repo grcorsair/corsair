@@ -346,7 +346,8 @@ describe("VC Verifier - verifyVCJWTViaDID", () => {
 
     // Export the public key as JWK for the mock DID document
     const keypair = (await keyManager.loadKeypair())!;
-    const jwk = await keyManager.exportJWK();
+    const jwk = await keyManager.exportJWK(keypair.publicKey);
+    const kid = jose.decodeProtectedHeader(jwt).kid as string;
 
     // Mock fetch that returns a DID document with the correct public key
     const mockFetchFn = async (url: string | URL | Request): Promise<Response> => {
@@ -354,13 +355,13 @@ describe("VC Verifier - verifyVCJWTViaDID", () => {
         "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/suites/jws-2020/v1"],
         id: "did:web:test.example.com",
         verificationMethod: [{
-          id: "did:web:test.example.com#key-1",
+          id: kid,
           type: "JsonWebKey2020",
           controller: "did:web:test.example.com",
           publicKeyJwk: jwk,
         }],
-        authentication: ["did:web:test.example.com#key-1"],
-        assertionMethod: ["did:web:test.example.com#key-1"],
+        authentication: [kid],
+        assertionMethod: [kid],
       };
 
       return new Response(JSON.stringify(didDocument), {

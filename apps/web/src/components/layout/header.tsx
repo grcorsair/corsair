@@ -56,6 +56,7 @@ const primitives = [
 ];
 
 const topNavLinks = [
+  { href: "/roast", label: "Roast" },
   { href: "/how-it-works", label: "How It Works" },
   { href: "/for", label: "For You" },
   { href: "/docs", label: "Docs" },

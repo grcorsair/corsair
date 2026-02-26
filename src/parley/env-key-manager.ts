@@ -8,7 +8,7 @@
 import * as crypto from "crypto";
 import { exportSPKI, importSPKI, exportJWK as joseExportJWK, importJWK as joseImportJWK } from "jose";
 import type { DIDDocument, VerificationMethod } from "./did-resolver";
-import type { KeyManager } from "./marque-key-manager";
+import { keyIdForDid, type KeyManager } from "./marque-key-manager";
 
 export interface EnvKeyManagerOptions {
   publicKeyPem: string;
@@ -97,9 +97,13 @@ export class EnvKeyManager implements KeyManager {
   }
 
   async generateDIDDocument(domain: string): Promise<DIDDocument> {
-    const jwk = await this.exportJWK();
     const did = `did:web:${domain.replace(/:/g, "%3A")}`;
-    const keyId = `${did}#key-1`;
+    const keypair = await this.loadKeypair();
+    if (!keypair) {
+      throw new Error("No keypair available in env");
+    }
+    const keyId = keyIdForDid(did, keypair.publicKey);
+    const jwk = await this.exportJWK(keypair.publicKey);
 
     const verificationMethod: VerificationMethod = {
       id: keyId,

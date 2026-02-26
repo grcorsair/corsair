@@ -8,6 +8,7 @@ const productLinks = [
   { href: "/publish", label: "Publish" },
   { href: "/setup", label: "Hosted Setup" },
   { href: "/verify", label: "Verify" },
+  { href: "/roast", label: "Roast" },
   { href: "/diff", label: "Diff" },
   { href: "/signal", label: "Signal" },
   { href: "/how-it-works", label: "How It Works" },

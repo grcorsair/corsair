@@ -698,6 +698,10 @@ interface DriftControl {
 }
 
 interface DiffReport {
+  compatibility: {
+    issuer: { current: string; previous: string };
+    scope: { current: string; previous: string };
+  };
   score: {
     previous: number;
     current: number;
@@ -1053,6 +1057,24 @@ function computeDiffResult(currentJwt: string, previousJwt: string): DiffResult 
     return { ok: false, error: "CPOE files do not contain valid credentialSubject" };
   }
 
+  const currentIssuer = typeof currentPayload.iss === "string" ? currentPayload.iss : "";
+  const previousIssuer = typeof previousPayload.iss === "string" ? previousPayload.iss : "";
+  if (!currentIssuer || !previousIssuer) {
+    return { ok: false, error: "CPOE files are missing iss claim" };
+  }
+  if (currentIssuer !== previousIssuer) {
+    return { ok: false, error: `issuer mismatch: ${previousIssuer} -> ${currentIssuer}` };
+  }
+
+  const currentScope = typeof currentSubject.scope === "string" ? currentSubject.scope : "";
+  const previousScope = typeof previousSubject.scope === "string" ? previousSubject.scope : "";
+  if (!currentScope || !previousScope) {
+    return { ok: false, error: "CPOE files are missing credentialSubject.scope" };
+  }
+  if (currentScope !== previousScope) {
+    return { ok: false, error: `scope mismatch: ${previousScope} -> ${currentScope}` };
+  }
+
   // Build control maps from frameworks
   const currentControls = extractControls(currentSubject);
   const previousControls = extractControls(previousSubject);
@@ -1090,14 +1112,29 @@ function computeDiffResult(currentJwt: string, previousJwt: string): DiffResult 
   // Score comparison
   const currentScore = currentSubject.summary?.overallScore ?? 0;
   const previousScore = previousSubject.summary?.overallScore ?? 0;
+  if (typeof currentScore !== "number" || Number.isNaN(currentScore)) {
+    return { ok: false, error: "current CPOE is missing numeric summary.overallScore" };
+  }
+  if (typeof previousScore !== "number" || Number.isNaN(previousScore)) {
+    return { ok: false, error: "previous CPOE is missing numeric summary.overallScore" };
+  }
   const scoreChange = currentScore - previousScore;
 
-  const hasRegression = newFailures.length > 0 || scoreChange < 0;
+  newFailures.sort();
+  improvements.sort();
+  addedControls.sort();
+  removedControls.sort();
+
+  const hasRegression = newFailures.length > 0 || removedControls.length > 0 || scoreChange < 0;
 
   return {
     ok: true,
     currentControls,
     report: {
+      compatibility: {
+        issuer: { current: currentIssuer, previous: previousIssuer },
+        scope: { current: currentScope, previous: previousScope },
+      },
       score: {
         previous: previousScore,
         current: currentScore,
@@ -3003,6 +3040,8 @@ EXAMPLES:
 
     const privateKey = await importPKCS8(keypair.privateKey.toString(), "EdDSA");
 
+    const { keyIdForDid } = await import("./src/parley/marque-key-manager");
+
     renewedJwt = await new SignJWT({
       vc,
       parley: existingPayload.parley || "2.1",
@@ -3010,7 +3049,7 @@ EXAMPLES:
       .setProtectedHeader({
         alg: "EdDSA",
         typ: "vc+jwt",
-        kid: `${existingIss}#key-1`,
+        kid: keyIdForDid(existingIss, keypair.publicKey),
       })
       .setIssuedAt()
       .setIssuer(existingIss)
@@ -3286,15 +3325,20 @@ EXAMPLES:
   }
 
   let jwk: JsonWebKeyWithKid;
+  let keyId: string;
   try {
-    jwk = await keyManager.exportJWK();
+    const keypair = await keyManager.loadKeypair();
+    if (!keypair) {
+      throw new Error("No keypair found. Generate a keypair first.");
+    }
+    const { keyIdForDid } = await import("./src/parley/marque-key-manager");
+    keyId = keyIdForDid(finalDid, keypair.publicKey);
+    jwk = await keyManager.exportJWK(keypair.publicKey);
   } catch (err) {
     console.error(`Error: ${(err as Error).message}`);
     console.error('Generate keys with: corsair keygen --output ' + keyDir);
     process.exit(2);
   }
-
-  const keyId = `${finalDid}#key-1`;
   const didDoc = {
     "@context": [
       "https://www.w3.org/ns/did/v1",
@@ -3409,19 +3453,42 @@ EXAMPLES:
   }
 
   let jwk: JsonWebKeyWithKid;
+  let retired: Buffer[] = [];
+  let kid: string;
   try {
-    jwk = await keyManager.exportJWK();
+    const keypair = await keyManager.loadKeypair();
+    if (!keypair) {
+      throw new Error("No keypair found. Generate a keypair first.");
+    }
+    const { keyIdForDid } = await import("./src/parley/marque-key-manager");
+    kid = keyIdForDid(finalDid, keypair.publicKey);
+    jwk = await keyManager.exportJWK(keypair.publicKey);
+    retired = await keyManager.getRetiredKeys();
   } catch (err) {
     console.error(`Error: ${(err as Error).message}`);
     console.error('Generate keys with: corsair keygen --output ' + keyDir);
     process.exit(2);
   }
 
-  jwk.kid = `${finalDid}#key-1`;
+  jwk.kid = kid;
   jwk.use = "sig";
   jwk.alg = "EdDSA";
 
-  const jwks = { keys: [jwk] };
+  const keys: JsonWebKeyWithKid[] = [jwk];
+  if (retired.length > 0) {
+    const { keyIdForDid } = await import("./src/parley/marque-key-manager");
+    for (const retiredKey of retired) {
+      const retiredJwk = await keyManager.exportJWK(retiredKey);
+      keys.push({
+        ...retiredJwk,
+        kid: keyIdForDid(finalDid, retiredKey),
+        use: "sig",
+        alg: "EdDSA",
+      });
+    }
+  }
+
+  const jwks = { keys };
   const output = JSON.stringify(jwks, null, 2);
 
   if (outputPath) {
@@ -3451,7 +3518,7 @@ SUBCOMMANDS:
 ABOUT:
   trust.txt is a discovery layer for compliance proofs, modeled after
   security.txt (RFC 9116). Organizations publish /.well-known/trust.txt
-  to advertise their DID identity, CPOE proofs, SCITT log, optional catalog snapshot,
+  to advertise their DID identity, JWKS endpoint, CPOE proofs, SCITT log, optional catalog snapshot,
   policy artifact, and signal endpoints.
   Delegation is supported via DNS for low-friction adoption.
 
@@ -3494,6 +3561,7 @@ async function handleTrustTxtGenerate(args: string[]): Promise<void> {
   let did: string | undefined;
   let cpoeDir: string | undefined;
   let cpoeUrls: string[] = [];
+  let jwks: string | undefined;
   let scitt: string | undefined;
   let catalog: string | undefined;
   let policy: string | undefined;
@@ -3514,6 +3582,9 @@ async function handleTrustTxtGenerate(args: string[]): Promise<void> {
         break;
       case "--cpoe-url":
         cpoeUrls.push(args[++i]);
+        break;
+      case "--jwks":
+        jwks = args[++i];
         break;
       case "--scitt":
         scitt = args[++i];
@@ -3556,6 +3627,7 @@ OPTIONS:
   --cpoes <DIR>            Directory to scan for .jwt CPOE files
   --cpoe-url <URL>         Add a CPOE URL (repeatable)
   --base-url <URL>         Base URL to prefix scanned CPOE filenames
+  --jwks <URL>             JWKS endpoint for key discovery
   --scitt <URL>            SCITT transparency log endpoint
   --catalog <URL>          Catalog snapshot with per-CPOE metadata
   --policy <URL>           Policy artifact for verification criteria
@@ -3578,6 +3650,17 @@ EXAMPLES:
     console.error("Error: --did is required");
     console.error('Run "corsair trust-txt generate --help" for usage');
     process.exit(2);
+  }
+
+  const didDomain = did.replace(/^did:web:/, "").replace(/%3A/gi, ":");
+  if (!jwks) {
+    jwks = `https://${didDomain}/.well-known/jwks.json`;
+  }
+  if (!scitt) {
+    scitt = `https://${didDomain}/scitt/entries`;
+  }
+  if (!catalog) {
+    catalog = `https://${didDomain}/compliance/catalog.json`;
   }
 
   // Scan directory for .jwt files if specified
@@ -3623,6 +3706,7 @@ EXAMPLES:
   const output = generateTrustTxt({
     did,
     cpoes: cpoeUrls,
+    jwks,
     scitt,
     catalog,
     policy,
@@ -3834,6 +3918,7 @@ async function handleTrustTxtValidate(args: string[]): Promise<void> {
   }
   console.log("");
   console.log(`  DID:        ${resolution.trustTxt.did || "(missing)"}`);
+  console.log(`  JWKS:       ${resolution.trustTxt.jwks || "(missing)"}`);
   console.log(`  CPOEs:      ${resolution.trustTxt.cpoes.length}`);
   console.log(`  Frameworks: ${resolution.trustTxt.frameworks.join(", ") || "(none)"}`);
   console.log(`  Contact:    ${resolution.trustTxt.contact || "(none)"}`);
@@ -4016,6 +4101,7 @@ async function handleTrustTxtDiscover(args: string[]): Promise<void> {
   }
   console.log("");
   console.log(`  Identity: ${ct.did || "(none)"}`);
+  console.log(`  JWKS:     ${ct.jwks || "(none)"}`);
   console.log(`  Status:   ${validation.valid ? "VALID" : "INVALID"}`);
   console.log("");
 

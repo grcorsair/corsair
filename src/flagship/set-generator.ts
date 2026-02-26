@@ -11,7 +11,7 @@
 
 import { SignJWT, jwtVerify, importPKCS8, importSPKI } from "jose";
 import * as crypto from "crypto";
-import type { MarqueKeyManager } from "../parley/marque-key-manager";
+import type { KeyManager } from "../parley/marque-key-manager";
 import type {
   FlagshipEvent,
   SETPayload,
@@ -38,7 +38,7 @@ export async function generateSET(
   event: FlagshipEvent,
   issuerDID: string,
   audience: string,
-  keyManager: MarqueKeyManager,
+  keyManager: KeyManager,
 ): Promise<string> {
   // Load private key from keyManager
   const keypair = await keyManager.loadKeypair();
@@ -134,7 +134,7 @@ export function generateFlagshipDescription(event: FlagshipEvent): string {
 
 export async function verifySET(
   jwt: string,
-  keyManager: MarqueKeyManager,
+  keyManager: KeyManager,
 ): Promise<{ valid: boolean; payload?: SETPayload }> {
   try {
     const keypair = await keyManager.loadKeypair();

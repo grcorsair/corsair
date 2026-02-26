@@ -27,6 +27,7 @@ export interface HostedTrustTxtRequest {
   domain: string;
   did?: string;
   cpoes?: string[];
+  jwks?: string;
   scitt?: string;
   catalog?: string;
   policy?: string;
@@ -151,14 +152,17 @@ function buildTrustTxtInput(domain: string, body: HostedTrustTxtRequest): TrustT
     : 365;
   const includeDefaults = body.includeDefaults !== false;
 
-  const scitt = body.scitt || (includeDefaults ? `https://${domain}/scitt/entries` : undefined);
+  const jwks = body.jwks || `https://${domain}/.well-known/jwks.json`;
+  const scitt = body.scitt || `https://${domain}/scitt/entries`;
+  const catalog = body.catalog || `https://${domain}/compliance/catalog.json`;
   const flagship = body.flagship || (includeDefaults ? `https://${domain}/ssf/streams` : undefined);
 
   return {
     did: body.did,
     cpoes: isStringArray(body.cpoes) ? body.cpoes : [],
+    jwks,
     scitt,
-    catalog: typeof body.catalog === "string" ? body.catalog : undefined,
+    catalog,
     policy: typeof body.policy === "string" ? body.policy : undefined,
     flagship,
     frameworks: isStringArray(body.frameworks) ? body.frameworks : [],

@@ -185,7 +185,7 @@ export async function verifyVCJWTViaDID(
     return { valid: false, reason: "schema_invalid", issuerTier: "unverifiable" };
   }
 
-  // 3. Extract DID from kid (format: "did:web:domain#key-1")
+  // 3. Extract DID from kid (format: "did:web:domain#key-<fingerprint>")
   const did = kid.split("#")[0];
 
   // 4. Resolve DID document

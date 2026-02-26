@@ -94,6 +94,18 @@ export function createVerifyRouter(
         if (candidate.requireIssuer && typeof candidate.requireIssuer !== "string") {
           return jsonError(400, "policy.requireIssuer must be a string");
         }
+        if (candidate.requireDidWebIssuer !== undefined && typeof candidate.requireDidWebIssuer !== "boolean") {
+          return jsonError(400, "policy.requireDidWebIssuer must be a boolean");
+        }
+        if (candidate.requireScope !== undefined && typeof candidate.requireScope !== "boolean") {
+          return jsonError(400, "policy.requireScope must be a boolean");
+        }
+        if (candidate.requireSummary !== undefined && typeof candidate.requireSummary !== "boolean") {
+          return jsonError(400, "policy.requireSummary must be a boolean");
+        }
+        if (candidate.requireProvenance !== undefined && typeof candidate.requireProvenance !== "boolean") {
+          return jsonError(400, "policy.requireProvenance must be a boolean");
+        }
         if (candidate.requireFramework && !Array.isArray(candidate.requireFramework)) {
           return jsonError(400, "policy.requireFramework must be an array of strings");
         }
@@ -192,13 +204,14 @@ export function createVerifyRouter(
     } catch { /* decode-only, non-critical */ }
 
     let policyResult: { ok: boolean; errors: string[] } | null = null;
-    if (policy) {
-      if (!payload) {
-        policyResult = { ok: false, errors: ["Policy checks require JWT-VC input"] };
-      } else {
-        const { evaluateVerificationPolicy } = await import("../src/parley/verification-policy");
-        policyResult = evaluateVerificationPolicy(payload, policy);
-      }
+    if (!payload) {
+      policyResult = { ok: false, errors: ["Policy checks require JWT-VC input"] };
+    } else {
+      const { evaluateVerificationPolicy, getDefaultVerificationPolicy } = await import("../src/parley/verification-policy");
+      policyResult = evaluateVerificationPolicy(payload, {
+        ...getDefaultVerificationPolicy(),
+        ...(policy || {}),
+      });
     }
 
     let processResult: VerifyResponse["process"] | null = null;

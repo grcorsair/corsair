@@ -46,6 +46,15 @@ const PRIVATE_KEY_FILENAME = "corsair-signing.key";
 const PUBLIC_KEY_FILENAME = "corsair-signing.pub";
 const RETIRED_DIR = "retired";
 
+export function keyFingerprint(publicKey: Buffer | string): string {
+  const normalized = typeof publicKey === "string" ? publicKey : publicKey.toString();
+  return crypto.createHash("sha256").update(normalized).digest("hex").slice(0, 16);
+}
+
+export function keyIdForDid(did: string, publicKey: Buffer | string): string {
+  return `${did}#key-${keyFingerprint(publicKey)}`;
+}
+
 export class MarqueKeyManager implements KeyManager {
   private keyDir: string;
 
@@ -187,6 +196,10 @@ export class MarqueKeyManager implements KeyManager {
    * Keys are returned in filesystem order (typically chronological).
    */
   getRetiredKeys(): Buffer[] {
+    return this.getRetiredKeyEntries().map((entry) => entry.publicKey);
+  }
+
+  private getRetiredKeyEntries(): Array<{ publicKey: Buffer; retiredAt?: string }> {
     const retiredDir = path.join(this.keyDir, RETIRED_DIR);
 
     if (!fs.existsSync(retiredDir)) {
@@ -197,7 +210,13 @@ export class MarqueKeyManager implements KeyManager {
       .filter((f) => f.endsWith(".pub"))
       .sort();
 
-    return files.map((f) => Buffer.from(fs.readFileSync(path.join(retiredDir, f))));
+    return files.map((fileName) => {
+      const fullPath = path.join(retiredDir, fileName);
+      const publicKey = Buffer.from(fs.readFileSync(fullPath));
+      const match = fileName.match(/^corsair-signing-(\d+)-/);
+      const retiredAt = match ? new Date(Number(match[1])).toISOString() : undefined;
+      return { publicKey, retiredAt };
+    });
   }
 
   /**
@@ -234,16 +253,36 @@ export class MarqueKeyManager implements KeyManager {
    * The DID Document contains the public key as a JsonWebKey2020 verification method.
    */
   async generateDIDDocument(domain: string): Promise<DIDDocument> {
-    const jwk = await this.exportJWK();
     const did = `did:web:${domain.replace(/:/g, "%3A")}`;
-    const keyId = `${did}#key-1`;
+    const keypair = await this.loadKeypair();
+    if (!keypair) {
+      throw new Error("No keypair found. Generate a keypair first.");
+    }
+    const publicKeyPath = path.join(this.keyDir, PUBLIC_KEY_FILENAME);
+    const activeStats = fs.existsSync(publicKeyPath) ? fs.statSync(publicKeyPath) : null;
 
-    const verificationMethod: VerificationMethod = {
-      id: keyId,
+    const verificationMethod: VerificationMethod[] = [];
+    const activeJwk = await this.exportJWK(keypair.publicKey);
+    const activeKeyId = keyIdForDid(did, keypair.publicKey);
+    verificationMethod.push({
+      id: activeKeyId,
       type: "JsonWebKey2020",
       controller: did,
-      publicKeyJwk: jwk,
-    };
+      publicKeyJwk: activeJwk,
+      ...(activeStats ? { validFrom: activeStats.mtime.toISOString() } : {}),
+    });
+
+    const retiredEntries = this.getRetiredKeyEntries();
+    for (const retired of retiredEntries) {
+      const retiredJwk = await this.exportJWK(retired.publicKey);
+      verificationMethod.push({
+        id: keyIdForDid(did, retired.publicKey),
+        type: "JsonWebKey2020",
+        controller: did,
+        publicKeyJwk: retiredJwk,
+        ...(retired.retiredAt ? { validUntil: retired.retiredAt } : {}),
+      });
+    }
 
     return {
       "@context": [
@@ -251,9 +290,9 @@ export class MarqueKeyManager implements KeyManager {
         "https://w3id.org/security/suites/jws-2020/v1",
       ],
       id: did,
-      verificationMethod: [verificationMethod],
-      authentication: [keyId],
-      assertionMethod: [keyId],
+      verificationMethod,
+      authentication: verificationMethod.map((vm) => vm.id),
+      assertionMethod: verificationMethod.map((vm) => vm.id),
     };
   }
 }

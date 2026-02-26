@@ -21,7 +21,7 @@ import {
   importJWK as joseImportJWK,
 } from "jose";
 import type { DIDDocument, VerificationMethod } from "./did-resolver";
-import type { KeyManager } from "./marque-key-manager";
+import { keyIdForDid, type KeyManager } from "./marque-key-manager";
 
 const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
@@ -262,16 +262,29 @@ export class PgKeyManager implements KeyManager {
    * Generate a DID Document for a given domain using the active public key.
    */
   async generateDIDDocument(domain: string): Promise<DIDDocument> {
-    const jwk = await this.exportJWK();
     const did = `did:web:${domain.replace(/:/g, "%3A")}`;
-    const keyId = `${did}#key-1`;
+    const keypair = await this.loadKeypair();
+    if (!keypair) {
+      throw new Error("No active key found. Generate a keypair first.");
+    }
 
-    const verificationMethod: VerificationMethod = {
-      id: keyId,
+    const verificationMethod: VerificationMethod[] = [];
+    verificationMethod.push({
+      id: keyIdForDid(did, keypair.publicKey),
       type: "JsonWebKey2020",
       controller: did,
-      publicKeyJwk: jwk,
-    };
+      publicKeyJwk: await this.exportJWK(keypair.publicKey),
+    });
+
+    const retired = await this.getRetiredKeys();
+    for (const retiredKey of retired) {
+      verificationMethod.push({
+        id: keyIdForDid(did, retiredKey),
+        type: "JsonWebKey2020",
+        controller: did,
+        publicKeyJwk: await this.exportJWK(retiredKey),
+      });
+    }
 
     return {
       "@context": [
@@ -279,9 +292,9 @@ export class PgKeyManager implements KeyManager {
         "https://w3id.org/security/suites/jws-2020/v1",
       ],
       id: did,
-      verificationMethod: [verificationMethod],
-      authentication: [keyId],
-      assertionMethod: [keyId],
+      verificationMethod,
+      authentication: verificationMethod.map((vm) => vm.id),
+      assertionMethod: verificationMethod.map((vm) => vm.id),
     };
   }
 }

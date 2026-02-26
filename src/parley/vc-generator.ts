@@ -5,7 +5,7 @@
  * from MarqueGeneratorInput. Uses jose library with Ed25519 (EdDSA).
  *
  * The generated JWT contains:
- *   Header: { alg: "EdDSA", typ: "vc+jwt", kid: "did:web:domain#key-1" }
+ *   Header: { alg: "EdDSA", typ: "vc+jwt", kid: "did:web:domain#key-<fingerprint>" }
  *   Payload: { iss, sub, exp, iat, jti, vc: {...}, parley: "2.1" }
  *
  * Pipeline: parse → provenance → sign.
@@ -14,7 +14,7 @@
 import * as crypto from "crypto";
 import { SignJWT, importPKCS8 } from "jose";
 
-import { MarqueKeyManager } from "./marque-key-manager";
+import { MarqueKeyManager, keyIdForDid } from "./marque-key-manager";
 import { sanitize } from "./marque-generator";
 import type { MarqueGeneratorInput } from "./marque-generator";
 import type { CPOECredentialSubject, CPOEProvenance } from "./vc-types";
@@ -86,7 +86,7 @@ export async function generateVCJWT(
     .setProtectedHeader({
       alg: "EdDSA",
       typ: "vc+jwt",
-      kid: `${issuerDid}#key-1`,
+      kid: keyIdForDid(issuerDid, keypair.publicKey),
     })
     .setIssuedAt()
     .setIssuer(issuerDid)

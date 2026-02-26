@@ -17,6 +17,7 @@
 
 import * as crypto from "crypto";
 import { SignJWT, importPKCS8, importJWK, jwtVerify } from "jose";
+import { keyIdForDid } from "./marque-key-manager";
 
 // =============================================================================
 // TYPES
@@ -182,13 +183,16 @@ export async function createSDJWT(
 
   // Sign the JWT
   const privateKey = await importPKCS8(config.privateKeyPem, "EdDSA");
+  const publicKeyPem = crypto.createPublicKey(config.privateKeyPem)
+    .export({ type: "spki", format: "pem" })
+    .toString();
 
   const { iss, sub, exp, iat, jti, vc, parley } = jwtPayload;
   const jwt = await new SignJWT({ vc, parley })
     .setProtectedHeader({
       alg: "EdDSA",
       typ: "vc+jwt",
-      kid: `${config.issuerDid}#key-1`,
+      kid: keyIdForDid(config.issuerDid, publicKeyPem),
     })
     .setIssuedAt(iat)
     .setIssuer(iss)

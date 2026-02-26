@@ -198,6 +198,7 @@ OPTIONS:
   let trustTxtUrl: string | undefined;
   let catalogUrl: string | undefined;
   let catalogWarning: string | undefined;
+  let trustIssuerDid: string | undefined;
 
   if (filePath) {
     if (!existsSync(filePath)) {
@@ -226,9 +227,15 @@ OPTIONS:
     trustTxtUrl = resolution.trustTxtUrl;
     catalogUrl = resolution.catalogUrl;
     catalogWarning = resolution.catalogError;
+    trustIssuerDid = resolution.issuerDid;
+
+    if (trustIssuerDid && requireIssuer && requireIssuer !== trustIssuerDid) {
+      console.error(`Error: --require-issuer (${requireIssuer}) conflicts with trust.txt DID (${trustIssuerDid})`);
+      process.exit(2);
+    }
 
     if (resolution.cpoes.length === 0) {
-      console.error("Error: No CPOEs found for domain");
+      console.error(`Error: ${resolution.error || "No CPOEs found for domain"}`);
       process.exit(1);
     }
 
@@ -285,20 +292,7 @@ OPTIONS:
     }
   }
 
-  const policyRequested = Boolean(
-    policyFromFile
-    || requireIssuer
-    || requireFrameworks.length > 0
-    || maxAgeDays !== undefined
-    || minScore !== undefined
-    || requireSource
-    || requireSourceIdentities.length > 0
-    || requireToolAttestation
-    || requireInputBinding
-    || requireEvidenceChain
-    || requireReceipts
-    || requireScitt
-  );
+  const policyRequested = true;
 
   let receiptsData: Array<import("../parley/process-receipt").ProcessReceipt> | undefined;
   if (receiptsPath) {
@@ -462,26 +456,32 @@ OPTIONS:
     }
 
     let policyResult: { ok: boolean; errors: string[] } | undefined;
-    if (policyRequested) {
+    if (policyRequested && format === "JWT-VC") {
       if (!payload) {
         policyResult = { ok: false, errors: ["Policy checks require JWT-VC input"] };
       } else {
-        const { evaluateVerificationPolicy } = await import("../parley/verification-policy");
-        const mergedPolicy = {
-          requireIssuer: requireIssuer ?? policyFromFile?.requireIssuer,
-          requireFramework: requireFrameworks.length > 0 ? requireFrameworks : policyFromFile?.requireFramework,
-          maxAgeDays: maxAgeDays ?? policyFromFile?.maxAgeDays,
-          minScore: minScore ?? policyFromFile?.minScore,
-          requireSource: requireSource ?? policyFromFile?.requireSource,
-          requireSourceIdentity: requireSourceIdentities.length > 0
-            ? requireSourceIdentities
-            : policyFromFile?.requireSourceIdentity,
-          requireToolAttestation: requireToolAttestation || policyFromFile?.requireToolAttestation,
-          requireInputBinding: requireInputBinding || policyFromFile?.requireInputBinding,
-          requireEvidenceChain: requireEvidenceChain || policyFromFile?.requireEvidenceChain,
-          requireReceipts: requireReceipts || policyFromFile?.requireReceipts,
-          requireScitt: requireScitt || policyFromFile?.requireScitt,
+        const { evaluateVerificationPolicy, getDefaultVerificationPolicy } = await import("../parley/verification-policy");
+        const baseline = getDefaultVerificationPolicy();
+        if (!useDid) {
+          baseline.requireDidWebIssuer = false;
+        }
+        const explicitIssuer = requireIssuer ?? trustIssuerDid;
+        const mergedPolicy: import("../parley/verification-policy").VerificationPolicy = {
+          ...baseline,
+          ...(policyFromFile || {}),
+          ...(explicitIssuer ? { requireIssuer: explicitIssuer } : {}),
+          ...(requireFrameworks.length > 0 ? { requireFramework: requireFrameworks } : {}),
+          ...(maxAgeDays !== undefined ? { maxAgeDays } : {}),
+          ...(minScore !== undefined ? { minScore } : {}),
+          ...(requireSource ? { requireSource } : {}),
+          ...(requireSourceIdentities.length > 0 ? { requireSourceIdentity: requireSourceIdentities } : {}),
         };
+
+        if (requireToolAttestation) mergedPolicy.requireToolAttestation = true;
+        if (requireInputBinding) mergedPolicy.requireInputBinding = true;
+        if (requireEvidenceChain) mergedPolicy.requireEvidenceChain = true;
+        if (requireReceipts) mergedPolicy.requireReceipts = true;
+        if (requireScitt) mergedPolicy.requireScitt = true;
 
         policyResult = evaluateVerificationPolicy(payload, mergedPolicy, {
           process: processResult

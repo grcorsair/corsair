@@ -1,7 +1,7 @@
 import type { ComplianceCatalog, ComplianceCatalogEntry } from "./compliance-catalog";
 import type { FetchLike } from "../types/fetch";
 import { resolveComplianceCatalog } from "./compliance-catalog";
-import { resolveTrustTxt } from "./trust-txt";
+import { resolveTrustTxt, validateTrustTxt } from "./trust-txt";
 import { isBlockedHost } from "../security/url-validation";
 
 export type CpoeResolutionSource = "catalog" | "trust-txt";
@@ -21,6 +21,9 @@ export interface CpoeListResolution {
   catalogUrl?: string;
   catalogError?: string;
   error?: string;
+  issuerDid?: string;
+  jwksUrl?: string;
+  scittUrl?: string;
 }
 
 export interface CpoeResolverDeps {
@@ -50,33 +53,58 @@ export async function resolveCpoeList(
 
   const trustTxtUrl = trustResolution.url;
   const trustTxt = trustResolution.trustTxt;
-  let catalogError: string | undefined;
-
-  if (trustTxt.catalog) {
-    const doResolveCatalog = deps.resolveComplianceCatalog ?? resolveComplianceCatalog;
-    const catalogResolution = await doResolveCatalog(trustTxt.catalog, deps.fetchFn);
-    if (catalogResolution.catalog) {
-      const catalogCpoes = normalizeCatalogCpoes(catalogResolution.catalog);
-      if (catalogCpoes.length > 0) {
-        return {
-          cpoes: catalogCpoes,
-          source: "catalog",
-          trustTxtUrl,
-          catalogUrl: trustTxt.catalog,
-        };
-      }
-    } else {
-      catalogError = catalogResolution.error || "Catalog resolution failed";
-    }
+  const strictValidation = validateTrustTxt(trustTxt);
+  if (!strictValidation.valid) {
+    return {
+      cpoes: [],
+      source: "trust-txt",
+      trustTxtUrl,
+      issuerDid: trustTxt.did,
+      jwksUrl: trustTxt.jwks,
+      scittUrl: trustTxt.scitt,
+      error: `trust.txt validation failed: ${strictValidation.errors.join("; ")}`,
+    };
   }
 
-  const trustTxtCpoes = trustTxt.cpoes.map((url) => ({ url }));
+  const doResolveCatalog = deps.resolveComplianceCatalog ?? resolveComplianceCatalog;
+  const catalogResolution = await doResolveCatalog(trustTxt.catalog!, deps.fetchFn);
+  if (!catalogResolution.catalog) {
+    const catalogError = catalogResolution.error || "Catalog resolution failed";
+    return {
+      cpoes: [],
+      source: "catalog",
+      trustTxtUrl,
+      catalogUrl: trustTxt.catalog,
+      catalogError,
+      issuerDid: trustTxt.did,
+      jwksUrl: trustTxt.jwks,
+      scittUrl: trustTxt.scitt,
+      error: `Catalog is required for strict trust loop (${catalogError})`,
+    };
+  }
+
+  const catalogCpoes = normalizeCatalogCpoes(catalogResolution.catalog);
+  if (catalogCpoes.length === 0) {
+    return {
+      cpoes: [],
+      source: "catalog",
+      trustTxtUrl,
+      catalogUrl: trustTxt.catalog,
+      issuerDid: trustTxt.did,
+      jwksUrl: trustTxt.jwks,
+      scittUrl: trustTxt.scitt,
+      error: "Catalog is required for strict trust loop but contains no CPOEs",
+    };
+  }
+
   return {
-    cpoes: trustTxtCpoes,
-    source: "trust-txt",
+    cpoes: catalogCpoes,
+    source: "catalog",
     trustTxtUrl,
     catalogUrl: trustTxt.catalog,
-    catalogError,
+    issuerDid: trustTxt.did,
+    jwksUrl: trustTxt.jwks,
+    scittUrl: trustTxt.scitt,
   };
 }
 

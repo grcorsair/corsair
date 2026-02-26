@@ -121,6 +121,18 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
         if (policy.requireIssuer && typeof policy.requireIssuer !== "string") {
           return envelopeError("validation_error", "policy.requireIssuer must be a string", requestId, 400);
         }
+        if (policy.requireDidWebIssuer !== undefined && typeof policy.requireDidWebIssuer !== "boolean") {
+          return envelopeError("validation_error", "policy.requireDidWebIssuer must be a boolean", requestId, 400);
+        }
+        if (policy.requireScope !== undefined && typeof policy.requireScope !== "boolean") {
+          return envelopeError("validation_error", "policy.requireScope must be a boolean", requestId, 400);
+        }
+        if (policy.requireSummary !== undefined && typeof policy.requireSummary !== "boolean") {
+          return envelopeError("validation_error", "policy.requireSummary must be a boolean", requestId, 400);
+        }
+        if (policy.requireProvenance !== undefined && typeof policy.requireProvenance !== "boolean") {
+          return envelopeError("validation_error", "policy.requireProvenance must be a boolean", requestId, 400);
+        }
         if (policy.requireFramework && !Array.isArray(policy.requireFramework)) {
           return envelopeError("validation_error", "policy.requireFramework must be an array of strings", requestId, 400);
         }
@@ -283,22 +295,23 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
     }
 
     let policyResult: V1VerifyResponse["policy"] = null;
-    if (policy) {
-      if (!payload) {
-        policyResult = { ok: false, errors: ["Policy checks require JWT-VC input"] };
-      } else {
-        const { evaluateVerificationPolicy } = await import("../parley/verification-policy");
-        policyResult = evaluateVerificationPolicy(payload, policy, {
-          process: processResult ? {
-            chainValid: processResult.chainValid,
-            receiptsTotal: processResult.receiptsTotal,
-            receiptsVerified: processResult.receiptsVerified,
-            toolAttestedVerified: processResult.toolAttested ?? 0,
-            scittRegistered: processResult.scittRegistered ?? 0,
-          } : null,
-          inputBinding: inputBinding ? { ok: inputBinding.ok, errors: inputBinding.errors } : null,
-        });
-      }
+    if (!payload) {
+      policyResult = { ok: false, errors: ["Policy checks require JWT-VC input"] };
+    } else {
+      const { evaluateVerificationPolicy, getDefaultVerificationPolicy } = await import("../parley/verification-policy");
+      policyResult = evaluateVerificationPolicy(payload, {
+        ...getDefaultVerificationPolicy(),
+        ...(policy || {}),
+      }, {
+        process: processResult ? {
+          chainValid: processResult.chainValid,
+          receiptsTotal: processResult.receiptsTotal,
+          receiptsVerified: processResult.receiptsVerified,
+          toolAttestedVerified: processResult.toolAttested ?? 0,
+          scittRegistered: processResult.scittRegistered ?? 0,
+        } : null,
+        inputBinding: inputBinding ? { ok: inputBinding.ok, errors: inputBinding.errors } : null,
+      });
     }
 
     // Build response

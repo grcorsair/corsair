@@ -12,7 +12,9 @@
  * optional `freshness` field on CPOECredentialSubject.
  */
 
+import * as crypto from "crypto";
 import { SignJWT, jwtVerify, importPKCS8, importJWK, errors } from "jose";
+import { keyIdForDid } from "./marque-key-manager";
 
 // =============================================================================
 // CONSTANTS
@@ -111,7 +113,7 @@ export interface FreshnessResult {
  * Generate a signed freshness staple JWT.
  *
  * The JWT contains:
- *   Header: { alg: "EdDSA", typ: "freshness+jwt", kid: "<did>#key-1" }
+ *   Header: { alg: "EdDSA", typ: "freshness+jwt", kid: "<did>#key-<fingerprint>" }
  *   Payload: { iss, iat, exp, checkedAt, alertsActive, streamId?, score? }
  */
 export async function generateFreshnessStaple(
@@ -122,6 +124,9 @@ export async function generateFreshnessStaple(
   const expiresAt = new Date(now.getTime() + ttlDays * 24 * 60 * 60 * 1000);
 
   const privateKey = await importPKCS8(config.privateKeyPem, "EdDSA");
+  const publicKeyPem = crypto.createPublicKey(config.privateKeyPem)
+    .export({ type: "spki", format: "pem" })
+    .toString();
 
   // Build custom claims
   const claims: Record<string, unknown> = {
@@ -141,7 +146,7 @@ export async function generateFreshnessStaple(
     .setProtectedHeader({
       alg: "EdDSA",
       typ: "freshness+jwt",
-      kid: `${config.issuerDid}#key-1`,
+      kid: keyIdForDid(config.issuerDid, publicKeyPem),
     })
     .setIssuedAt()
     .setIssuer(config.issuerDid)

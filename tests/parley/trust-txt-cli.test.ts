@@ -62,6 +62,7 @@ describe("trust-txt CLI", () => {
       ]);
       expect(result.stdout).toContain("DID: did:web:acme.com");
       expect(result.stdout).toContain("CPOE: https://acme.com/soc2.jwt");
+      expect(result.stdout).toContain("JWKS: https://acme.com/.well-known/jwks.json");
       expect(result.stdout).toContain("CATALOG: https://acme.com/compliance/catalog.json");
       expect(result.stdout).toContain("POLICY: https://acme.com/.well-known/policy.json");
       expect(result.stdout).toContain("Frameworks: SOC2, ISO27001");
@@ -107,6 +108,7 @@ describe("trust-txt CLI", () => {
 
         const content = readFileSync(outputPath, "utf-8");
         expect(content).toContain("DID: did:web:test.com");
+        expect(content).toContain("JWKS: https://test.com/.well-known/jwks.json");
         expect(content).toContain("# Corsair Trust Discovery");
       } finally {
         rmSync(tmpDir, { recursive: true, force: true });

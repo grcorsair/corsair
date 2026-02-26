@@ -241,8 +241,8 @@ describe("GET /.well-known/did.json", () => {
     expect(doc.verificationMethod.length).toBeGreaterThan(0);
     expect(doc.verificationMethod[0].type).toBe("JsonWebKey2020");
     expect(doc.verificationMethod[0].publicKeyJwk).toBeTruthy();
-    expect(doc.authentication).toContain(`did:web:${TEST_DOMAIN}#key-1`);
-    expect(doc.assertionMethod).toContain(`did:web:${TEST_DOMAIN}#key-1`);
+    expect(doc.authentication[0]).toMatch(new RegExp(`^did:web:${TEST_DOMAIN.replace(/\./g, "\\.")}#key-[a-f0-9]{16}$`));
+    expect(doc.assertionMethod[0]).toMatch(new RegExp(`^did:web:${TEST_DOMAIN.replace(/\./g, "\\.")}#key-[a-f0-9]{16}$`));
   });
 
   test("sets CORS and cache headers", async () => {
@@ -273,7 +273,7 @@ describe("GET /.well-known/jwks.json", () => {
     const activeKey = jwks.keys[0];
     expect(activeKey.kty).toBe("OKP");
     expect(activeKey.crv).toBe("Ed25519");
-    expect(activeKey.kid).toContain(`did:web:${TEST_DOMAIN}#key-1`);
+    expect(activeKey.kid).toMatch(new RegExp(`^did:web:${TEST_DOMAIN.replace(/\./g, "\\.")}#key-[a-f0-9]{16}$`));
     expect(activeKey.use).toBe("sig");
     expect(activeKey.alg).toBe("EdDSA");
   });

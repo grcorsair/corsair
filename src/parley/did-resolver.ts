@@ -34,7 +34,7 @@ export interface DIDDocument {
 }
 
 export interface VerificationMethod {
-  /** Key identifier (e.g., "did:web:grcorsair.com#key-1") */
+  /** Key identifier (e.g., "did:web:grcorsair.com#key-<fingerprint>") */
   id: string;
 
   /** Key type */
@@ -45,6 +45,12 @@ export interface VerificationMethod {
 
   /** Public key in JWK format */
   publicKeyJwk: JsonWebKey;
+
+  /** Optional validity start (ISO 8601) */
+  validFrom?: string;
+
+  /** Optional validity end (ISO 8601) */
+  validUntil?: string;
 }
 
 export interface DIDResolutionResult {

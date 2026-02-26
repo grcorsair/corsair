@@ -29,13 +29,15 @@ curl -X POST https://api.grcorsair.com/sign \
   -d '{"evidence": {...}}'
 ```
 
-Public endpoints (verify, health) require no authentication.
+Public endpoints (verify, roast, health) require no authentication.
 
 | Endpoint | Auth Required |
 |:---------|:-------------|
 | `GET /health` | No |
 | `POST /sign` | Yes |
 | `POST /verify` | No |
+| `POST /roast` | No |
+| `GET /roast/:id` | No |
 | `POST /issue` | Yes |
 | `POST /onboard` | Yes |
 | `POST /trust-txt/host` | Yes |
@@ -125,6 +127,49 @@ curl -X POST https://api.grcorsair.com/sign \
 
 Note: `registerScitt` is also supported by `POST /issue` and returns `scittEntryId` when enabled.
 If the request is authenticated with an OIDC token, `extensions.ext.oidc.identity` (when present) contains **hashed** claim values.
+
+## POST /roast
+
+Scan a domain's trust center and return a persisted roast report across discoverability, verifiability, freshness, machine readability, and transparency.
+No authentication required.
+
+```bash
+curl -X POST https://api.grcorsair.com/roast \
+  -H "Content-Type: application/json" \
+  -d '{"domain":"acme.com"}'
+```
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|:------|:-----|:---------|:-----------|
+| `domain` | string | Yes | Root domain to scan, e.g. `acme.com` |
+
+**Response:**
+
+```json
+{
+  "result": {
+    "id": "6f9f2b13-6c76-47d2-9658-0d4d6c7f2a2e",
+    "domain": "acme.com",
+    "compositeScore": 6.2,
+    "verdict": "GETTING THERE",
+    "checks": [],
+    "summaryRoast": "...",
+    "fixPreview": "...",
+    "trustTxtExample": "DID: did:web:acme.com",
+    "createdAt": "2026-02-26T00:00:00.000Z"
+  }
+}
+```
+
+## GET /roast/:id
+
+Fetch a previously generated roast report by ID. Reports are retained for a limited TTL window.
+
+```bash
+curl https://api.grcorsair.com/roast/6f9f2b13-6c76-47d2-9658-0d4d6c7f2a2e
+```
 
 ## POST /onboard
 

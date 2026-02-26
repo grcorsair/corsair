@@ -61,6 +61,18 @@ export function validatePolicyArtifact(input: unknown): PolicyValidationResult {
   if (policy.requireIssuer !== undefined && typeof policy.requireIssuer !== "string") {
     errors.push("policy.requireIssuer must be a string");
   }
+  if (policy.requireDidWebIssuer !== undefined && typeof policy.requireDidWebIssuer !== "boolean") {
+    errors.push("policy.requireDidWebIssuer must be a boolean");
+  }
+  if (policy.requireScope !== undefined && typeof policy.requireScope !== "boolean") {
+    errors.push("policy.requireScope must be a boolean");
+  }
+  if (policy.requireSummary !== undefined && typeof policy.requireSummary !== "boolean") {
+    errors.push("policy.requireSummary must be a boolean");
+  }
+  if (policy.requireProvenance !== undefined && typeof policy.requireProvenance !== "boolean") {
+    errors.push("policy.requireProvenance must be a boolean");
+  }
   if (policy.requireFramework !== undefined && !Array.isArray(policy.requireFramework)) {
     errors.push("policy.requireFramework must be an array of strings");
   }

@@ -20,6 +20,8 @@ describe("cpoe-resolver", () => {
         trustTxt: {
           did: "did:web:acme.com",
           cpoes: ["https://acme.com/cpoe-1.jwt"],
+          jwks: "https://acme.com/.well-known/jwks.json",
+          scitt: "https://log.acme.com/entries",
           catalog: "https://acme.com/catalog.json",
           frameworks: [],
         },
@@ -43,12 +45,14 @@ describe("cpoe-resolver", () => {
     expect(resolution.catalogUrl).toBe("https://acme.com/catalog.json");
   });
 
-  test("falls back to trust.txt when catalog fails", async () => {
+  test("returns error when strict catalog resolution fails", async () => {
     const resolution = await resolveCpoeList("acme.com", {
       resolveTrustTxt: async () => trustTxtResolution({
         trustTxt: {
           did: "did:web:acme.com",
           cpoes: ["https://acme.com/cpoe-1.jwt", "https://acme.com/cpoe-2.jwt"],
+          jwks: "https://acme.com/.well-known/jwks.json",
+          scitt: "https://log.acme.com/entries",
           catalog: "https://acme.com/catalog.json",
           frameworks: [],
         },
@@ -61,8 +65,9 @@ describe("cpoe-resolver", () => {
       }),
     });
 
-    expect(resolution.source).toBe("trust-txt");
-    expect(resolution.cpoes).toHaveLength(2);
+    expect(resolution.cpoes).toHaveLength(0);
+    expect(resolution.source).toBe("catalog");
+    expect(resolution.error).toContain("Catalog");
     expect(resolution.catalogError).toBe("HTTP 404");
   });
 

@@ -59,14 +59,16 @@ describe("POST /onboard", () => {
     expect(body.error).toContain("CPOE[0]");
   });
 
-  test("supports disabling default SCITT/FLAGSHIP entries", async () => {
+  test("supports disabling optional FLAGSHIP default while keeping strict trust anchors", async () => {
     const router = createOnboardRouter({ keyManager, domain: TEST_DOMAIN });
     const res = await router(createRequest({ includeDefaults: false }));
 
     expect(res.status).toBe(200);
     const body: OnboardResponse = await res.json();
     expect(body.files.trustTxt.content).toContain(`DID: did:web:${TEST_DOMAIN}`);
-    expect(body.files.trustTxt.content).not.toContain("SCITT:");
+    expect(body.files.trustTxt.content).toContain(`JWKS: https://${TEST_DOMAIN}/.well-known/jwks.json`);
+    expect(body.files.trustTxt.content).toContain(`SCITT: https://${TEST_DOMAIN}/scitt/entries`);
+    expect(body.files.trustTxt.content).toContain(`CATALOG: https://${TEST_DOMAIN}/compliance/catalog.json`);
     expect(body.files.trustTxt.content).not.toContain("FLAGSHIP:");
   });
 });

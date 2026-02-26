@@ -46,6 +46,10 @@ export interface V1VerifyRequest {
   cpoe: string;
   /** Optional verification policy */
   policy?: {
+    requireDidWebIssuer?: boolean;
+    requireScope?: boolean;
+    requireSummary?: boolean;
+    requireProvenance?: boolean;
     requireIssuer?: string;
     requireFramework?: string[];
     maxAgeDays?: number;

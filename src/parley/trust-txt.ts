@@ -34,6 +34,9 @@ export interface TrustTxt {
   /** Active CPOE URLs — verifiable compliance proofs */
   cpoes: string[];
 
+  /** JWKS endpoint for verification key discovery */
+  jwks?: string;
+
   /** SCITT transparency log endpoint for this issuer */
   scitt?: string;
 
@@ -114,6 +117,9 @@ export function parseTrustTxt(input: string): TrustTxt {
       case "cpoe":
         if (value) result.cpoes.push(value);
         break;
+      case "jwks":
+        result.jwks = value;
+        break;
       case "scitt":
         result.scitt = value;
         break;
@@ -175,6 +181,12 @@ export function generateTrustTxt(input: TrustTxt): string {
     }
   }
 
+  // Key discovery
+  if (input.jwks) {
+    lines.push("");
+    lines.push(`JWKS: ${input.jwks}`);
+  }
+
   // Transparency log
   if (input.scitt) {
     lines.push("");
@@ -228,8 +240,11 @@ export function generateTrustTxt(input: TrustTxt): string {
  *
  * Checks:
  * - DID is present and starts with "did:web:"
+ * - JWKS is present and is an HTTPS URL
+ * - SCITT is present and is an HTTPS URL
+ * - CATALOG is present and is an HTTPS URL
  * - All CPOE URLs are valid HTTPS URLs pointing to public addresses
- * - SCITT/FLAGSHIP URLs are HTTPS
+ * - POLICY/FLAGSHIP URLs are HTTPS when present
  * - Expires is a valid ISO 8601 date in the future
  */
 export function validateTrustTxt(input: TrustTxt): TrustTxtValidation {
@@ -249,14 +264,26 @@ export function validateTrustTxt(input: TrustTxt): TrustTxtValidation {
     if (urlError) errors.push(urlError);
   }
 
+  // JWKS is required for strict trust loop
+  if (!input.jwks) {
+    errors.push("JWKS is required");
+  } else {
+    const urlError = validateHttpsUrl(input.jwks, "JWKS");
+    if (urlError) errors.push(urlError);
+  }
+
   // Validate SCITT URL
-  if (input.scitt) {
+  if (!input.scitt) {
+    errors.push("SCITT is required");
+  } else {
     const urlError = validateHttpsUrl(input.scitt, "SCITT");
     if (urlError) errors.push(urlError);
   }
 
   // Validate CATALOG URL
-  if (input.catalog) {
+  if (!input.catalog) {
+    errors.push("CATALOG is required");
+  } else {
     const urlError = validateHttpsUrl(input.catalog, "CATALOG");
     if (urlError) errors.push(urlError);
   }

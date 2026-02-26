@@ -8,6 +8,8 @@
  *
  * PRODUCT LAYER (customer-facing):
  *   POST /verify                        — Free CPOE verification (adoption driver)
+ *   POST /roast                         — Trust center roast scanner (public)
+ *   GET  /roast/:id                     — Fetch stored roast result
  *   POST /issue                         — CPOE issuance (revenue)
  *   POST /onboard                       — Machine-actionable onboarding artifacts
  *   POST /trust-txt/host                — Hosted trust.txt + DNS delegation
@@ -50,6 +52,7 @@ import { createSignRouter } from "./functions/sign";
 import { createDemoSignRouter } from "./functions/sign-demo";
 import { createOnboardRouter } from "./functions/onboard";
 import { createHostedTrustTxtRouter, createHostedTrustTxtPublicHandler } from "./functions/hosted-trust-txt";
+import { createRoastRouter } from "./functions/roast";
 import { requireAuth } from "./src/middleware/auth";
 import { rateLimitPg } from "./src/middleware/rate-limit";
 import { withSecurityHeaders } from "./src/middleware/security-headers";
@@ -60,7 +63,9 @@ import { PgSCITTRegistry } from "./src/parley/pg-scitt-registry";
 import { PgKeyManager } from "./src/parley/pg-key-manager";
 import { EnvKeyManager } from "./src/parley/env-key-manager";
 import { processDeliveryQueue } from "./functions/ssf-delivery-worker";
+import { verifySET } from "./src/flagship/set-generator";
 import { createHostedTrustTxtStore } from "./src/parley/hosted-trust-store";
+import { createRoastStore } from "./src/roast/storage";
 
 // =============================================================================
 // CONFIGURATION
@@ -100,6 +105,8 @@ let badgeRouter: Handler | null = null;
 let profileRouter: Handler | null = null;
 let hostedTrustTxtRouter: Handler | null = null;
 let hostedTrustTxtPublicHandler: Handler | null = null;
+let roastCreateRouter: Handler | null = null;
+let roastReadRouter: Handler | null = null;
 
 // =============================================================================
 // CORS HELPER
@@ -168,6 +175,8 @@ const server = Bun.serve({
     if (req.method === "OPTIONS") {
       const isPublic = path === "/verify" || path === "/v1/verify" ||
         path === "/sign/demo" || path === "/v1/sign/demo" ||
+        path === "/roast" || path === "/v1/roast" ||
+        path.startsWith("/roast/") || path.startsWith("/v1/roast/") ||
         path.startsWith("/.well-known/") ||
         path.startsWith("/badge/") || path.startsWith("/profile/") ||
         (path.startsWith("/trust/") && path.endsWith("/trust.txt")) ||
@@ -204,6 +213,18 @@ const server = Bun.serve({
 
     if (path === "/onboard" || path === "/v1/onboard") {
       return onboardRouter!(req);
+    }
+
+    if (path === "/roast" || path === "/v1/roast") {
+      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+      (req as Request & { corsairRateLimitKey?: string }).corsairRateLimitKey = `${ip}:POST:/roast`;
+      return roastCreateRouter!(req);
+    }
+
+    if (path.startsWith("/roast/") || path.startsWith("/v1/roast/")) {
+      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+      (req as Request & { corsairRateLimitKey?: string }).corsairRateLimitKey = `${ip}:GET:/roast`;
+      return roastReadRouter!(req);
     }
 
     if (path === "/trust-txt/host" || path.startsWith("/trust-txt/host/") ||
@@ -265,7 +286,7 @@ const server = Bun.serve({
       {
         error: "Not found",
         endpoints: {
-          product: ["POST /verify", "POST /sign", "POST /issue"],
+          product: ["POST /verify", "POST /sign", "POST /issue", "POST /roast", "GET /roast/:id"],
           trust: ["GET /.well-known/did.json", "GET /.well-known/jwks.json"],
           infrastructure: ["GET /scitt/entries", "POST /scitt/entries", "POST /ssf/streams"],
           onboarding: ["POST /onboard"],
@@ -463,6 +484,12 @@ async function initialize() {
   hostedTrustTxtPublicHandler = createHostedTrustTxtPublicHandler({ store: hostedTrustStore });
   ssfRouter = withAuthRateLimit(createSSFStreamRouter({ streamManager }), 30);
   scittRouter = withAuthRateLimit(createSCITTRouter({ registry }), 30);
+  const roastStore = createRoastStore(db as any);
+  const roastRouter = createRoastRouter({
+    store: roastStore,
+  });
+  roastCreateRouter = rateLimitPg(db as any, 10, 60 * 60 * 1000)(roastRouter);
+  roastReadRouter = rateLimitPg(db as any, 60)(roastRouter);
 
   // 9. Start delivery worker if enabled
   if (Bun.env.ENABLE_DELIVERY_WORKER === "true") {
@@ -484,6 +511,28 @@ async function initialize() {
         if (rows.length === 0) return null;
         const config = typeof rows[0].config === "string" ? JSON.parse(rows[0].config) : rows[0].config;
         return config?.delivery?.endpoint_url ? { endpoint_url: config.delivery.endpoint_url } : null;
+      },
+      verifySet: async (setToken: string) => {
+        const verification = await verifySET(setToken, keyManager);
+        return {
+          valid: verification.valid,
+          jti: typeof verification.payload?.jti === "string" ? verification.payload.jti : undefined,
+        };
+      },
+      isAcknowledged: async (streamId: string, jti: string) => {
+        const rows = await (db as any)`
+          SELECT 1 FROM ssf_acknowledgments
+          WHERE stream_id = ${streamId} AND jti = ${jti}
+          LIMIT 1
+        `;
+        return rows.length > 0;
+      },
+      acknowledgeDelivery: async (streamId: string, jti: string) => {
+        await (db as any)`
+          INSERT INTO ssf_acknowledgments (stream_id, jti)
+          VALUES (${streamId}, ${jti})
+          ON CONFLICT (stream_id, jti) DO NOTHING
+        `;
       },
       updateEvent: async (update: { id: number; status: string; attempts: number; next_retry?: string; delivered_at?: string }) => {
         await (db as any)`
@@ -530,6 +579,8 @@ async function initialize() {
   console.log(`  SCITT:   POST http://localhost:${PORT}/scitt/entries`);
   console.log(`  Badge:   GET  http://localhost:${PORT}/badge/<id>.svg`);
   console.log(`  Profile: GET  http://localhost:${PORT}/profile/<domain>`);
+  console.log(`  Roast:   POST http://localhost:${PORT}/roast`);
+  console.log(`  Roast:   GET  http://localhost:${PORT}/roast/<id>`);
   console.log(`  SSF:     POST http://localhost:${PORT}/ssf/streams`);
   console.log(`  Health:  GET  http://localhost:${PORT}/health`);
 }

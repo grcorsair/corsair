@@ -116,7 +116,8 @@ corsair diff --current q2.jwt --previous q1.jwt
 ## Persistence
 
 - **CLI / local use:** file-based, no database required.
-- **Hosted API / production:** Postgres is required via `DATABASE_URL` for keys, SCITT, and audit trails.
+- **Hosted API / production:** Postgres is required via `DATABASE_URL` for keys, SCITT, audit trails, and persisted roast reports.
+- Migrations are applied automatically on API startup (idempotent), including `014_roast_results.sql`.
 
 ---
 
@@ -529,6 +530,14 @@ curl -X POST https://api.grcorsair.com/onboard \
 # Verify (no auth required)
 curl -X POST https://api.grcorsair.com/verify \
   -d '{"cpoe": "eyJ..."}'
+
+# Roast a trust center (no auth required)
+curl -X POST https://api.grcorsair.com/roast \
+  -H "Content-Type: application/json" \
+  -d '{"domain":"acme.com"}'
+
+# Fetch a saved roast report (no auth required)
+curl https://api.grcorsair.com/roast/<report-id>
 ```
 
 ### SDK

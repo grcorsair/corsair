@@ -308,6 +308,7 @@ describe("Delivery Worker - processDeliveryQueue", () => {
       fetchPendingEvents: async () => events,
       getStreamConfig: async (streamId: string) =>
         streamConfigs.get(streamId) || null,
+      verifySet: async () => ({ valid: true, jti: "jti-001" }),
       updateEvent: async (update) => {
         updates.push(update);
       },
@@ -356,6 +357,7 @@ describe("Delivery Worker - processDeliveryQueue", () => {
       fetchPendingEvents: async () => events,
       getStreamConfig: async (streamId: string) =>
         streamConfigs.get(streamId) || null,
+      verifySet: async () => ({ valid: true, jti: "jti-002" }),
       updateEvent: async (update) => {
         updates.push(update);
       },
@@ -408,6 +410,7 @@ describe("Delivery Worker - processDeliveryQueue", () => {
       fetchPendingEvents: async () => events,
       getStreamConfig: async (streamId: string) =>
         streamConfigs.get(streamId) || null,
+      verifySet: async () => ({ valid: true, jti: "jti-003" }),
       updateEvent: async (update) => {
         updates.push(update);
       },
@@ -446,6 +449,7 @@ describe("Delivery Worker - processDeliveryQueue", () => {
     const deps: DeliveryQueueDeps = {
       fetchPendingEvents: async () => events,
       getStreamConfig: async () => null, // Stream not found
+      verifySet: async () => ({ valid: true, jti: "jti-004" }),
       updateEvent: async (update) => {
         updates.push(update);
       },
@@ -504,6 +508,11 @@ describe("Delivery Worker - processDeliveryQueue", () => {
       fetchPendingEvents: async () => events,
       getStreamConfig: async (streamId: string) =>
         streamConfigs.get(streamId) || null,
+      verifySet: async (setToken: string) => {
+        if (setToken === "token-a") return { valid: true, jti: "jti-a" };
+        if (setToken === "token-b") return { valid: true, jti: "jti-b" };
+        return { valid: true, jti: "jti-c" };
+      },
       updateEvent: async (update) => {
         updates.push(update);
       },
@@ -521,6 +530,7 @@ describe("Delivery Worker - processDeliveryQueue", () => {
     const deps: DeliveryQueueDeps = {
       fetchPendingEvents: async () => [],
       getStreamConfig: async () => null,
+      verifySet: async () => ({ valid: true, jti: "unused" }),
       updateEvent: async () => {},
       pushEvent: async () => ({ delivered: true }),
     };
@@ -531,6 +541,70 @@ describe("Delivery Worker - processDeliveryQueue", () => {
     expect(result.delivered).toBe(0);
     expect(result.failed).toBe(0);
     expect(result.expired).toBe(0);
+  });
+
+  test("expires events when SET signature/jti validation fails", async () => {
+    const events: EventQueueRow[] = [
+      {
+        id: 21,
+        stream_id: "stream-x",
+        set_token: "bad-token",
+        jti: "jti-x",
+        status: "pending",
+        attempts: 0,
+        max_attempts: 5,
+        next_retry: new Date().toISOString(),
+      },
+    ];
+
+    const updates: Array<{ id: number; status: string; attempts: number }> = [];
+    const deps: DeliveryQueueDeps = {
+      fetchPendingEvents: async () => events,
+      getStreamConfig: async () => ({ endpoint_url: "https://receiver.example.com/events" }),
+      verifySet: async () => ({ valid: false }),
+      updateEvent: async (update) => {
+        updates.push(update);
+      },
+      pushEvent: async () => ({ delivered: true }),
+    };
+
+    const result = await processDeliveryQueue(deps);
+    expect(result.processed).toBe(1);
+    expect(result.delivered).toBe(0);
+    expect(result.expired).toBe(1);
+    expect(updates[0].status).toBe("expired");
+  });
+
+  test("marks already acknowledged events as delivered without pushing", async () => {
+    const events: EventQueueRow[] = [
+      {
+        id: 22,
+        stream_id: "stream-y",
+        set_token: "token-y",
+        jti: "jti-y",
+        status: "pending",
+        attempts: 0,
+        max_attempts: 5,
+        next_retry: new Date().toISOString(),
+      },
+    ];
+
+    let pushCalls = 0;
+    const deps: DeliveryQueueDeps = {
+      fetchPendingEvents: async () => events,
+      getStreamConfig: async () => ({ endpoint_url: "https://receiver.example.com/events" }),
+      verifySet: async () => ({ valid: true, jti: "jti-y" }),
+      isAcknowledged: async () => true,
+      updateEvent: async () => {},
+      pushEvent: async () => {
+        pushCalls++;
+        return { delivered: true };
+      },
+    };
+
+    const result = await processDeliveryQueue(deps);
+    expect(result.delivered).toBe(1);
+    expect(pushCalls).toBe(0);
   });
 
   test("backoff formula produces correct delays", async () => {
@@ -562,6 +636,7 @@ describe("Delivery Worker - processDeliveryQueue", () => {
       fetchPendingEvents: async () => events,
       getStreamConfig: async (streamId: string) =>
         streamConfigs.get(streamId) || null,
+      verifySet: async () => ({ valid: true, jti: "jti-x" }),
       updateEvent: async (update) => {
         updates.push(update);
       },

@@ -6,6 +6,14 @@
  */
 
 export interface VerificationPolicy {
+  /** Require issuer claim to use did:web */
+  requireDidWebIssuer?: boolean;
+  /** Require credentialSubject.scope */
+  requireScope?: boolean;
+  /** Require credentialSubject.summary with numeric overallScore */
+  requireSummary?: boolean;
+  /** Require credentialSubject.provenance.source */
+  requireProvenance?: boolean;
   /** Require a specific issuer DID */
   requireIssuer?: string;
   /** Require one or more frameworks to be present */
@@ -28,6 +36,15 @@ export interface VerificationPolicy {
   requireReceipts?: boolean;
   /** Require SCITT entry IDs */
   requireScitt?: boolean;
+}
+
+export function getDefaultVerificationPolicy(): VerificationPolicy {
+  return {
+    requireDidWebIssuer: true,
+    requireScope: true,
+    requireSummary: true,
+    requireProvenance: true,
+  };
 }
 
 export interface PolicyEvaluationResult {
@@ -71,6 +88,32 @@ export function evaluateVerificationPolicy(
     scittEntryIds?: string[];
   } | undefined;
   const evidenceChain = cs?.evidenceChain as { chainVerified?: boolean } | undefined;
+
+  if (policy.requireDidWebIssuer) {
+    if (!issuer || !issuer.startsWith("did:web:")) {
+      errors.push("issuer must be did:web");
+    }
+  }
+
+  if (policy.requireScope) {
+    const scope = cs?.scope;
+    if (typeof scope !== "string" || scope.trim().length === 0) {
+      errors.push("missing credentialSubject.scope");
+    }
+  }
+
+  if (policy.requireSummary) {
+    const summary = cs?.summary as { overallScore?: unknown } | undefined;
+    if (!summary || typeof summary.overallScore !== "number") {
+      errors.push("missing credentialSubject.summary.overallScore");
+    }
+  }
+
+  if (policy.requireProvenance) {
+    if (!provenance?.source) {
+      errors.push("missing credentialSubject.provenance.source");
+    }
+  }
 
   if (policy.requireIssuer && issuer !== policy.requireIssuer) {
     errors.push(`issuer mismatch: expected ${policy.requireIssuer}`);

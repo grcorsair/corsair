@@ -16,8 +16,21 @@
 
 import { getDb } from "./src/db/connection";
 import { processDeliveryQueue } from "./functions/ssf-delivery-worker";
+import { PgKeyManager } from "./src/parley/pg-key-manager";
+import { verifySET } from "./src/flagship/set-generator";
 
 const db = getDb();
+const keySecretRaw = (Bun.env.CORSAIR_KEY_ENCRYPTION_SECRET || "").trim();
+if (!keySecretRaw) {
+  throw new Error("CORSAIR_KEY_ENCRYPTION_SECRET is required");
+}
+const keySecret = /^[0-9a-fA-F]{64}$/.test(keySecretRaw)
+  ? Buffer.from(keySecretRaw, "hex")
+  : Buffer.from(keySecretRaw, "base64");
+if (keySecret.length !== 32) {
+  throw new Error("CORSAIR_KEY_ENCRYPTION_SECRET must be 32 bytes");
+}
+const keyManager = new PgKeyManager(db as any, keySecret);
 
 console.log(`[${new Date().toISOString()}] SSF Delivery Worker starting...`);
 
@@ -78,6 +91,31 @@ const result = await processDeliveryQueue({
         WHERE id = ${update.id}
       `;
     }
+  },
+
+  async verifySet(setToken) {
+    const verification = await verifySET(setToken, keyManager);
+    return {
+      valid: verification.valid,
+      jti: typeof verification.payload?.jti === "string" ? verification.payload.jti : undefined,
+    };
+  },
+
+  async isAcknowledged(streamId, jti) {
+    const rows = await db`
+      SELECT 1 FROM ssf_acknowledgments
+      WHERE stream_id = ${streamId} AND jti = ${jti}
+      LIMIT 1
+    `;
+    return (rows as unknown[]).length > 0;
+  },
+
+  async acknowledgeDelivery(streamId, jti) {
+    await db`
+      INSERT INTO ssf_acknowledgments (stream_id, jti)
+      VALUES (${streamId}, ${jti})
+      ON CONFLICT (stream_id, jti) DO NOTHING
+    `;
   },
 
   async pushEvent(endpoint, setToken) {

@@ -38,6 +38,11 @@ export interface DeliveryQueueDeps {
   getStreamConfig: (
     streamId: string,
   ) => Promise<{ endpoint_url: string } | null>;
+  verifySet: (
+    setToken: string,
+  ) => Promise<{ valid: boolean; jti?: string }>;
+  isAcknowledged?: (streamId: string, jti: string) => Promise<boolean>;
+  acknowledgeDelivery?: (streamId: string, jti: string) => Promise<void>;
   updateEvent: (update: EventUpdate) => Promise<void>;
   pushEvent: (
     endpoint: string,
@@ -90,9 +95,46 @@ export async function processDeliveryQueue(
   };
 
   const events = await deps.fetchPendingEvents();
+  const seen = new Set<string>();
 
   for (const event of events) {
     result.processed++;
+    const dedupeKey = `${event.stream_id}:${event.jti}`;
+
+    if (seen.has(dedupeKey)) {
+      await deps.updateEvent({
+        id: event.id,
+        status: "delivered",
+        attempts: event.attempts,
+        delivered_at: new Date().toISOString(),
+      });
+      result.delivered++;
+      continue;
+    }
+    seen.add(dedupeKey);
+
+    const verified = await deps.verifySet(event.set_token);
+    if (!verified.valid || !verified.jti || verified.jti !== event.jti) {
+      await deps.updateEvent({
+        id: event.id,
+        status: "expired",
+        attempts: event.attempts + 1,
+      });
+      result.failed++;
+      result.expired++;
+      continue;
+    }
+
+    if (deps.isAcknowledged && await deps.isAcknowledged(event.stream_id, event.jti)) {
+      await deps.updateEvent({
+        id: event.id,
+        status: "delivered",
+        attempts: event.attempts,
+        delivered_at: new Date().toISOString(),
+      });
+      result.delivered++;
+      continue;
+    }
 
     // Look up stream config
     const config = await deps.getStreamConfig(event.stream_id);
@@ -111,6 +153,9 @@ export async function processDeliveryQueue(
         attempts: event.attempts + 1,
         delivered_at: new Date().toISOString(),
       });
+      if (deps.acknowledgeDelivery) {
+        await deps.acknowledgeDelivery(event.stream_id, event.jti);
+      }
       result.delivered++;
     } catch {
       const newAttempts = event.attempts + 1;

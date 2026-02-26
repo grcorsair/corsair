@@ -167,6 +167,13 @@ Use this routing logic:
 2. `POST /onboard` with a Bearer token (API key or OIDC token).
 3. Return `files.didJson`, `files.jwksJson`, and `files.trustTxt` from the response.
 
+### ROAST (API)
+
+1. If the user wants a trust center scan, use the public roast endpoint.
+2. `POST /roast` with `{ "domain": "<domain>" }`.
+3. Return `result.id`, `result.compositeScore`, `result.verdict`, and key findings.
+4. For share links/retrieval, use `GET /roast/:id`.
+
 ### DISCOVER
 
 1. Confirm the domain with the user.

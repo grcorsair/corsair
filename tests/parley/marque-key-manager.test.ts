@@ -225,11 +225,11 @@ describe("MARQUE Key Manager - Ed25519 Signing", () => {
     expect(didDoc.id).toBe("did:web:grcorsair.com");
     expect(didDoc.verificationMethod).toHaveLength(1);
     expect(didDoc.verificationMethod[0].type).toBe("JsonWebKey2020");
-    expect(didDoc.verificationMethod[0].id).toBe("did:web:grcorsair.com#key-1");
+    expect(didDoc.verificationMethod[0].id).toMatch(/^did:web:grcorsair\.com#key-[a-f0-9]{16}$/);
     expect(didDoc.verificationMethod[0].controller).toBe("did:web:grcorsair.com");
     expect(didDoc.verificationMethod[0].publicKeyJwk.kty).toBe("OKP");
-    expect(didDoc.authentication).toContain("did:web:grcorsair.com#key-1");
-    expect(didDoc.assertionMethod).toContain("did:web:grcorsair.com#key-1");
+    expect(didDoc.authentication).toContain(didDoc.verificationMethod[0].id);
+    expect(didDoc.assertionMethod).toContain(didDoc.verificationMethod[0].id);
   });
 
   test("generateDIDDocument encodes port in DID", async () => {
@@ -240,6 +240,6 @@ describe("MARQUE Key Manager - Ed25519 Signing", () => {
     const didDoc = await manager.generateDIDDocument("localhost:3000");
 
     expect(didDoc.id).toBe("did:web:localhost%3A3000");
-    expect(didDoc.verificationMethod[0].id).toBe("did:web:localhost%3A3000#key-1");
+    expect(didDoc.verificationMethod[0].id).toMatch(/^did:web:localhost%3A3000#key-[a-f0-9]{16}$/);
   });
 });

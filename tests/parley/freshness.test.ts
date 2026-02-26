@@ -98,7 +98,7 @@ describe("generateFreshnessStaple", () => {
       makeConfig({ issuerDid: "did:web:example.com" }),
     );
     const header = decodeProtectedHeader(staple);
-    expect(header.kid).toBe("did:web:example.com#key-1");
+    expect(header.kid).toMatch(/^did:web:example\.com#key-[a-f0-9]{16}$/);
   });
 
   test("should include checkedAt in payload", async () => {
