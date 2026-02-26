@@ -95,11 +95,20 @@ jobs:
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         echo "sha=$SHA" >> "$GITHUB_OUTPUT"
 
+    - name: Get GitHub App token
+      id: app
+      uses: actions/create-github-app-token@v1
+      with:
+        app-id: ${{ secrets.HOMEBREW_APP_ID }}
+        private-key: ${{ secrets.HOMEBREW_APP_PRIVATE_KEY }}
+        owner: grcorsair
+        repositories: homebrew-corsair
+
     - name: Checkout tap repo
       uses: actions/checkout@v4
       with:
         repository: grcorsair/homebrew-corsair
-        token: ${{ secrets.TAP_PUSH_TOKEN }}
+        token: ${{ steps.app.outputs.token }}
         path: tap
 
     - name: Update formula
