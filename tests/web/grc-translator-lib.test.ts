@@ -34,6 +34,29 @@ describe("web grc translator helpers", () => {
     expect(payload.framework).toBe("SOC2");
   });
 
+  test("parses json with trailing commas", () => {
+    const payload = parseJsonPayload('{"framework":"SOC2","controls":[{"id":"CC6.1",}],}') as {
+      controls: Array<{ id: string }>;
+    };
+    expect(payload.controls[0]?.id).toBe("CC6.1");
+  });
+
+  test("parses json embedded in wrapper text", () => {
+    const payload = parseJsonPayload('policy preview:\n{"framework":"SOC2","controls":[]}\nend') as {
+      framework: string;
+    };
+    expect(payload.framework).toBe("SOC2");
+  });
+
+  test("parses json missing final closing brace", () => {
+    const payload = parseJsonPayload('{"Sid":"Deny","Condition":{"Null":{"s3:x-amz-server-side-encryption":"true"}}') as {
+      Sid: string;
+      Condition: { Null: Record<string, string> };
+    };
+    expect(payload.Sid).toBe("Deny");
+    expect(payload.Condition.Null["s3:x-amz-server-side-encryption"]).toBe("true");
+  });
+
   test("rejects oversized payload", () => {
     const oversized = "x".repeat(GRC_TRANSLATOR_MAX_INPUT_BYTES + 10);
     const json = JSON.stringify({ blob: oversized });

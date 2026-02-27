@@ -65,22 +65,111 @@ function tryParseJson(input: string): unknown | undefined {
   }
 }
 
+function extractLikelyJsonBlock(input: string): string | undefined {
+  const firstObject = input.indexOf("{");
+  const firstArray = input.indexOf("[");
+  const starts = [firstObject, firstArray].filter((idx) => idx >= 0);
+  if (starts.length === 0) return undefined;
+  const start = Math.min(...starts);
+
+  const lastObject = input.lastIndexOf("}");
+  const lastArray = input.lastIndexOf("]");
+  const end = Math.max(lastObject, lastArray);
+  if (end > start) {
+    return input.slice(start, end + 1).trim();
+  }
+
+  return input.slice(start).trim();
+}
+
+function removeTrailingCommas(input: string): string {
+  return input.replace(/,\s*([}\]])/g, "$1");
+}
+
+function appendMissingClosers(input: string): string {
+  const stack: string[] = [];
+  let inString = false;
+  let escaped = false;
+
+  for (const char of input) {
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === "\\") {
+        escaped = true;
+        continue;
+      }
+      if (char === "\"") {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === "\"") {
+      inString = true;
+      continue;
+    }
+    if (char === "{" || char === "[") {
+      stack.push(char);
+      continue;
+    }
+    if (char === "}" || char === "]") {
+      if (stack.length === 0) continue;
+      const top = stack[stack.length - 1];
+      if ((top === "{" && char === "}") || (top === "[" && char === "]")) {
+        stack.pop();
+      }
+    }
+  }
+
+  if (stack.length === 0) return input;
+  const closers = stack
+    .reverse()
+    .map((open) => (open === "{" ? "}" : "]"))
+    .join("");
+  return `${input}${closers}`;
+}
+
+function parseWithCandidates(input: string): unknown | undefined {
+  const candidates = new Set<string>();
+  candidates.add(input);
+
+  if (/^"[^"]+"\s*:/.test(input)) {
+    candidates.add(`{${input}}`);
+  }
+
+  const extracted = extractLikelyJsonBlock(input);
+  if (extracted) {
+    candidates.add(extracted);
+  }
+
+  for (const candidate of [...candidates]) {
+    candidates.add(removeTrailingCommas(candidate));
+    candidates.add(appendMissingClosers(candidate));
+    candidates.add(appendMissingClosers(removeTrailingCommas(candidate)));
+  }
+
+  for (const candidate of candidates) {
+    const parsed = tryParseJson(candidate);
+    if (parsed !== undefined) return parsed;
+  }
+
+  return undefined;
+}
+
 export function parseJsonPayload(input: string): unknown {
   const trimmed = unwrapCodeFence(input).replace(/^\uFEFF/, "").trim();
   if (!trimmed) {
     throw new Error("Paste JSON evidence first.");
   }
 
-  let parsed = tryParseJson(trimmed);
-
-  // Common paste case: raw object snippet without outer braces, e.g. `"Sid": "...", "Effect": "..."`
-  if (parsed === undefined && /^"[^"]+"\s*:/.test(trimmed)) {
-    parsed = tryParseJson(`{${trimmed}}`);
-  }
+  let parsed = parseWithCandidates(trimmed);
 
   // Common transport case: a JSON string containing JSON text.
   if (typeof parsed === "string") {
-    const nested = tryParseJson(parsed);
+    const nested = parseWithCandidates(parsed);
     if (nested !== undefined) parsed = nested;
   }
 
