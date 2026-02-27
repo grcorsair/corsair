@@ -52,17 +52,40 @@ export function byteLength(value: string): number {
   return new TextEncoder().encode(value).length;
 }
 
+function unwrapCodeFence(input: string): string {
+  const match = input.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  return (match?.[1] ?? input).trim();
+}
+
+function tryParseJson(input: string): unknown | undefined {
+  try {
+    return JSON.parse(input) as unknown;
+  } catch {
+    return undefined;
+  }
+}
+
 export function parseJsonPayload(input: string): unknown {
-  const trimmed = input.trim();
+  const trimmed = unwrapCodeFence(input).replace(/^\uFEFF/, "").trim();
   if (!trimmed) {
     throw new Error("Paste JSON evidence first.");
   }
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(trimmed) as unknown;
-  } catch {
-    throw new Error("Invalid JSON format.");
+  let parsed = tryParseJson(trimmed);
+
+  // Common paste case: raw object snippet without outer braces, e.g. `"Sid": "...", "Effect": "..."`
+  if (parsed === undefined && /^"[^"]+"\s*:/.test(trimmed)) {
+    parsed = tryParseJson(`{${trimmed}}`);
+  }
+
+  // Common transport case: a JSON string containing JSON text.
+  if (typeof parsed === "string") {
+    const nested = tryParseJson(parsed);
+    if (nested !== undefined) parsed = nested;
+  }
+
+  if (parsed === undefined) {
+    throw new Error("Invalid JSON format. If this is a snippet, include braces.");
   }
 
   if (parsed === null || typeof parsed !== "object") {
