@@ -1,7 +1,7 @@
 export type GrcTranslateMode = "quick" | "compare";
 
 export interface GrcTranslatorOutput {
-  roast: string;
+  headline: string;
   plainEnglish: string;
   grcFindings: string[];
   nextActions: string[];
@@ -135,6 +135,7 @@ function appendMissingClosers(input: string): string {
 function parseWithCandidates(input: string): unknown | undefined {
   const candidates = new Set<string>();
   candidates.add(input);
+  candidates.add(`[${input}]`);
 
   if (/^"[^"]+"\s*:/.test(input)) {
     candidates.add(`{${input}}`);

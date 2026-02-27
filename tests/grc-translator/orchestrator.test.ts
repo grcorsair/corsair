@@ -48,7 +48,7 @@ describe("executeGrcTranslate", () => {
     const result = await executeGrcTranslate(request(), deps);
     expect(result.results).toHaveLength(1);
     expect(result.results[0]?.status).toBe("fallback");
-    expect(result.results[0]?.output.roast.length).toBeGreaterThan(0);
+    expect(result.results[0]?.output.headline.length).toBeGreaterThan(0);
   });
 
   test("redacts sensitive values before sending to model", async () => {
@@ -60,7 +60,7 @@ describe("executeGrcTranslate", () => {
         lastPrompt = input.prompt;
         return {
           text: JSON.stringify({
-            roast: "Funny",
+            headline: "Funny",
             plainEnglish: "Clear",
             grcFindings: ["Found something"],
             nextActions: ["Fix something"],
@@ -89,4 +89,3 @@ describe("executeGrcTranslate", () => {
     expect(lastPrompt).not.toContain("123456789012");
   });
 });
-

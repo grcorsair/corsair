@@ -167,13 +167,6 @@ Use this routing logic:
 2. `POST /onboard` with a Bearer token (API key or OIDC token).
 3. Return `files.didJson`, `files.jwksJson`, and `files.trustTxt` from the response.
 
-### ROAST (API)
-
-1. If the user wants a trust center scan, use the public roast endpoint (it crawls trust/security/compliance pages).
-2. `POST /roast` with `{ "domain": "<domain>" }`.
-3. Return `result.id`, `result.compositeScore`, `result.verdict`, and key findings.
-4. For share links/retrieval, use `GET /roast/:id`.
-
 ### GRC TRANSLATE (API)
 
 1. If the user wants fast narrative interpretation of evidence JSON, use the public translator endpoint.

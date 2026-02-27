@@ -104,13 +104,13 @@ function parseModelOutput(raw: string): GrcTranslatorOutput | null {
   if (!parsed || typeof parsed !== "object") return null;
 
   const obj = parsed as {
-    roast?: unknown;
+    headline?: unknown;
     plainEnglish?: unknown;
     grcFindings?: unknown;
     nextActions?: unknown;
   };
 
-  const roast = typeof obj.roast === "string" ? obj.roast.trim() : "";
+  const headline = typeof obj.headline === "string" ? obj.headline.trim() : "";
   const plainEnglish = typeof obj.plainEnglish === "string" ? obj.plainEnglish.trim() : "";
   const grcFindings = Array.isArray(obj.grcFindings)
     ? obj.grcFindings.filter((v): v is string => typeof v === "string").map((v) => v.trim()).filter(Boolean)
@@ -119,12 +119,12 @@ function parseModelOutput(raw: string): GrcTranslatorOutput | null {
     ? obj.nextActions.filter((v): v is string => typeof v === "string").map((v) => v.trim()).filter(Boolean)
     : [];
 
-  if (!roast || !plainEnglish || grcFindings.length === 0 || nextActions.length === 0) {
+  if (!headline || !plainEnglish || grcFindings.length === 0 || nextActions.length === 0) {
     return null;
   }
 
   return {
-    roast,
+    headline,
     plainEnglish,
     grcFindings: grcFindings.slice(0, 6),
     nextActions: nextActions.slice(0, 5),
@@ -137,7 +137,7 @@ function deterministicFallback(payloadText: string): GrcTranslatorOutput {
   const keys = [...new Set(keyMatches)].slice(0, 6);
 
   return {
-    roast: "Your JSON is giving 'audit season meets improv night' energy.",
+    headline: "Your JSON is giving 'audit season meets improv night' energy.",
     plainEnglish: "The evidence has useful structure, but trust signals need clearer machine-verifiable anchors.",
     grcFindings: [
       `Top-level signal keys seen: ${keys.length > 0 ? keys.join(", ") : "limited structure"}`,

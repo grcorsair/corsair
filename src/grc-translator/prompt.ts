@@ -8,7 +8,7 @@ export interface BuildPromptInput {
 
 export function buildTranslatorSystemPrompt(style: GrcTranslateStyle): string {
   const tone = style === "funny"
-    ? "Use witty, punchy humor. Roast practices, not people."
+    ? "Use witty, punchy humor. Critique practices, not people."
     : "Use concise neutral tone.";
 
   return [
@@ -16,7 +16,7 @@ export function buildTranslatorSystemPrompt(style: GrcTranslateStyle): string {
     tone,
     "Never fabricate findings.",
     "Only infer from supplied JSON.",
-    "Return strict JSON only with keys: roast, plainEnglish, grcFindings, nextActions.",
+    "Return strict JSON only with keys: headline, plainEnglish, grcFindings, nextActions.",
     "grcFindings must be an array of 3-6 short factual bullets.",
     "nextActions must be an array of 3-5 actionable bullets.",
   ].join(" ");

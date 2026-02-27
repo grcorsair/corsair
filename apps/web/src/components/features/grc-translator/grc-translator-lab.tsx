@@ -204,7 +204,7 @@ export function GrcTranslatorLab() {
                       {entry.status} · {entry.latencyMs}ms · {entry.model}
                     </p>
                   </div>
-                  <p className="mt-2 text-sm text-corsair-text">{entry.output.roast}</p>
+                  <p className="mt-2 text-sm text-corsair-text">{entry.output.headline}</p>
                   <p className="mt-2 text-xs text-corsair-text-dim">{entry.output.plainEnglish}</p>
 
                   <p className="mt-3 font-mono text-[10px] uppercase tracking-wider text-corsair-gold/70">Findings</p>

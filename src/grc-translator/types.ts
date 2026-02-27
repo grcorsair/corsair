@@ -12,7 +12,7 @@ export interface GrcTranslateRequest {
 }
 
 export interface GrcTranslatorOutput {
-  roast: string;
+  headline: string;
   plainEnglish: string;
   grcFindings: string[];
   nextActions: string[];

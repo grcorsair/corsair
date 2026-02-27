@@ -29,15 +29,13 @@ curl -X POST https://api.grcorsair.com/sign \
   -d '{"evidence": {...}}'
 ```
 
-Public endpoints (verify, roast, grc translate, health) require no authentication.
+Public endpoints (verify, grc translate, health) require no authentication.
 
 | Endpoint | Auth Required |
 |:---------|:-------------|
 | `GET /health` | No |
 | `POST /sign` | Yes |
 | `POST /verify` | No |
-| `POST /roast` | No |
-| `GET /roast/:id` | No |
 | `POST /grc/translate` | No |
 | `POST /issue` | Yes |
 | `POST /onboard` | Yes |
@@ -128,64 +126,6 @@ curl -X POST https://api.grcorsair.com/sign \
 
 Note: `registerScitt` is also supported by `POST /issue` and returns `scittEntryId` when enabled.
 If the request is authenticated with an OIDC token, `extensions.ext.oidc.identity` (when present) contains **hashed** claim values.
-
-## POST /roast
-
-Scan trust-center pages for a domain (for example `trust.acme.com`) and return a persisted roast report across discoverability, verifiability, freshness, machine readability, and transparency.
-The scanner crawls public trust/security/compliance pages, then scores and roasts based on discovered evidence.
-Use the returned `fixPreview` and `trustTxtExample` as the handoff into `POST /onboard` or `trust-txt` publishing.
-No authentication required.
-
-```bash
-curl -X POST https://api.grcorsair.com/roast \
-  -H "Content-Type: application/json" \
-  -d '{"domain":"acme.com"}'
-```
-
-**Request Body:**
-
-| Field | Type | Required | Description |
-|:------|:-----|:---------|:-----------|
-| `domain` | string | Yes | Domain or URL to scan, e.g. `trust.acme.com` or `https://trust.acme.com` |
-
-**Response:**
-
-```json
-{
-  "result": {
-    "id": "6f9f2b13-6c76-47d2-9658-0d4d6c7f2a2e",
-    "domain": "acme.com",
-    "compositeScore": 6.2,
-    "verdict": "GETTING THERE",
-    "checks": [],
-    "pageSignals": [
-      {
-        "url": "https://trust.acme.com",
-        "title": "GitLab Trust Center",
-        "excerpt": "Security and compliance overview...",
-        "linkCount": 22,
-        "pdfLinkCount": 4,
-        "structuredLinkCount": 2,
-        "statusLinkCount": 1,
-        "keywordHits": ["security", "compliance", "soc 2"],
-        "dateMentions": ["2026-02-20"]
-      }
-    ],
-    "summaryRoast": "...",
-    "fixPreview": "...",
-    "trustTxtExample": "DID: did:web:acme.com",
-    "createdAt": "2026-02-26T00:00:00.000Z"
-  }
-}
-```
-
-## GET /roast/:id
-
-Fetch a previously generated roast report by ID. Reports are retained for a limited TTL window.
-
-```bash
-curl https://api.grcorsair.com/roast/6f9f2b13-6c76-47d2-9658-0d4d6c7f2a2e
-```
 
 ## POST /grc/translate
 

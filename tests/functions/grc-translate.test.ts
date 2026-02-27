@@ -47,7 +47,7 @@ describe("grc translate router", () => {
             status: "ok",
             latencyMs: 100,
             output: {
-              roast: "short roast",
+              headline: "short commentary",
               plainEnglish: "plain",
               grcFindings: ["one finding"],
               nextActions: ["one action"],
