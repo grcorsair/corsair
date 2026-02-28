@@ -1,85 +1,50 @@
-# Corsair Jira Integration
+# Corsair Jira Integration (SSF Push)
 
-Attach CPOE verification links to Jira issues when compliance events fire.
+Attach verification links or compliance status updates to Jira issues from FLAGSHIP event streams.
 
-## How It Works
+## Flow
 
-1. **FLAGSHIP** emits a webhook when compliance changes (drift, new CPOE, revocation)
-2. **Jira Automation** receives the webhook
-3. Rule matches the control ID to a Jira issue
-4. Attaches CPOE verification link as a comment
+1. Jira Automation receives a webhook.
+2. Automation rule decodes payload fields and comments on matching issues.
+3. Corsair sends events via SSF push delivery as signed SET JWTs.
 
-## Setup
+## 1) Create a Jira incoming webhook rule
 
-### 1. Create a Jira Automation Rule
+In Jira: **Project Settings -> Automation -> Create Rule**
 
-Go to **Project Settings → Automation → Create Rule**
+- Trigger: **Incoming webhook**
+- Keep the generated webhook URL.
+- Add actions (for example: comment on issue, transition issue, set priority).
 
-**Trigger**: Incoming webhook
-- Webhook URL: (Jira provides this)
-
-**Condition**: Check webhook payload
-```
-{{webhookData.event_type}} equals "cpoe.signed"
-```
-
-**Action**: Add comment to issue
-```
-Compliance evidence signed as CPOE.
-
-*CPOE ID*: {{webhookData.data.marque_id}}
-*Controls Tested*: {{webhookData.data.summary.controls_tested}}
-*Controls Passed*: {{webhookData.data.summary.controls_passed}}
-*Score*: {{webhookData.data.summary.overall_score}}%
-
-[Verify CPOE|https://grcorsair.com/marque?jwt={{webhookData.data.jwt}}]
-```
-
-### 2. Configure FLAGSHIP Webhook
-
-Register the Jira automation webhook URL with Corsair:
+## 2) Register the Jira endpoint as an SSF stream
 
 ```bash
-curl -X POST https://api.grcorsair.com/v1/webhooks \
+curl -X POST https://api.grcorsair.com/v1/ssf/streams \
   -H "Authorization: Bearer $AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "url": "https://automation.atlassian.com/pro/hooks/YOUR_HOOK_ID",
-    "events": ["cpoe.signed", "drift.detected", "score.degraded"],
-    "secret": "your-webhook-secret"
+    "delivery": {
+      "method": "push",
+      "endpoint_url": "https://automation.atlassian.com/pro/hooks/YOUR_HOOK_ID"
+    },
+    "events_requested": [
+      "https://grcorsair.com/events/compliance-change/v1",
+      "https://grcorsair.com/events/credential-change/v1"
+    ],
+    "format": "jwt"
   }'
 ```
 
-## Webhook Event Payloads
+## 3) Handle SET payloads
 
-### cpoe.signed
-```json
-{
-  "event_type": "cpoe.signed",
-  "timestamp": "2026-02-14T00:00:00Z",
-  "data": {
-    "marque_id": "marque-a1b2c3d4...",
-    "jwt": "eyJ...",
-    "summary": {
-      "controls_tested": 24,
-      "controls_passed": 22,
-      "controls_failed": 2,
-      "overall_score": 91
-    }
-  }
-}
-```
+Corsair sends:
+- Header: `Content-Type: application/secevent+jwt`
+- Body: signed SET JWT
 
-### drift.detected
-```json
-{
-  "event_type": "drift.detected",
-  "timestamp": "2026-02-14T00:00:00Z",
-  "data": {
-    "control_id": "iam-mfa-root",
-    "previous_status": "effective",
-    "current_status": "ineffective",
-    "severity": "high"
-  }
-}
-```
+Decode JWT claims in your receiver and use `events` entries to map actions (for example, create a comment when `credential-change` events arrive).
+
+## Useful stream endpoints
+
+- `GET /v1/ssf/streams/:id` to inspect status
+- `PATCH /v1/ssf/streams/:id` to change subscriptions
+- `DELETE /v1/ssf/streams/:id` to stop delivery

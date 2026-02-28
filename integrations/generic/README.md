@@ -1,65 +1,48 @@
-# Generic Webhook Integration
+# Generic Webhook Integration (SSF Push)
 
-Connect FLAGSHIP compliance events to any tool with a webhook URL.
+Connect FLAGSHIP compliance events to any system that accepts HTTPS webhook calls.
 
-## FLAGSHIP Event Types
+## Register an SSF stream
 
-| Event | Description | CAEP Type |
-|-------|-------------|-----------|
-| `cpoe.signed` | New CPOE signed | `credential-change` |
-| `cpoe.verified` | CPOE verified by third party | `credential-change` |
-| `drift.detected` | Compliance drift detected | `compliance-change` |
-| `score.degraded` | Evidence quality score dropped | `compliance-change` |
-| `cert.expiring` | Certification expiring soon | `credential-change` |
-| `cert.renewed` | Certification renewed | `credential-change` |
-| `cpoe.revoked` | CPOE emergency revocation | `session-revoked` |
-| `vendor.risk_change` | Vendor risk level changed | `compliance-change` |
-
-## Register a Webhook
+Corsair delivers FLAGSHIP events using OpenID Shared Signals Framework (SSF) and Security Event Tokens (SET).
+Create a push stream:
 
 ```bash
-curl -X POST https://api.grcorsair.com/v1/webhooks \
+curl -X POST https://api.grcorsair.com/v1/ssf/streams \
   -H "Authorization: Bearer $AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "url": "https://your-tool.example.com/webhook/corsair",
-    "events": ["cpoe.signed", "drift.detected"],
-    "secret": "whsec_your_secret_here"
+    "delivery": {
+      "method": "push",
+      "endpoint_url": "https://your-tool.example.com/webhook/corsair"
+    },
+    "events_requested": [
+      "https://grcorsair.com/events/compliance-change/v1",
+      "https://grcorsair.com/events/credential-change/v1"
+    ],
+    "format": "jwt"
   }'
 ```
 
-## Webhook Payload Format
+## Event types
 
-All webhooks are signed with HMAC-SHA256. Verify using the `X-Corsair-Signature` header.
+| Alias | Event URI |
+|-------|-----------|
+| `COLORS_CHANGED` | `https://grcorsair.com/events/colors-changed/v1` |
+| `FLEET_ALERT` | `https://grcorsair.com/events/compliance-change/v1` |
+| `PAPERS_CHANGED` | `https://grcorsair.com/events/credential-change/v1` |
+| `MARQUE_REVOKED` | `https://grcorsair.com/events/session-revoked/v1` |
 
-```json
-{
-  "id": "evt_a1b2c3d4",
-  "event_type": "cpoe.signed",
-  "timestamp": "2026-02-14T00:00:00Z",
-  "data": { ... }
-}
-```
+## Delivery format
 
-## Verify Webhook Signature
+Push delivery uses:
+- `Content-Type: application/secevent+jwt`
+- Body: a signed SET JWT
 
-```typescript
-import { createHmac } from "crypto";
+Decode and verify the JWT signature against the issuer key in `/.well-known/jwks.json`.
 
-function verifyWebhook(payload: string, signature: string, secret: string): boolean {
-  const expected = createHmac("sha256", secret).update(payload).digest("hex");
-  return `sha256=${expected}` === signature;
-}
-```
+## Stream lifecycle
 
-## Works With
-
-Any tool that accepts incoming webhooks:
-- **Asana** — Create tasks on drift detection
-- **Monday.com** — Update compliance board
-- **ServiceNow** — Create incidents on revocation
-- **PagerDuty** — Alert on-call on critical drift
-- **Slack** — Post to compliance channel
-- **Teams** — Send adaptive cards
-- **Discord** — Post to security channel
-- **Custom apps** — Any HTTP endpoint
+- `GET /v1/ssf/streams/:id` to inspect stream configuration/status
+- `PATCH /v1/ssf/streams/:id` to update subscriptions or destination
+- `DELETE /v1/ssf/streams/:id` to disable delivery

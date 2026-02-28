@@ -17,6 +17,23 @@ The Corsair REST API provides programmatic access to CPOE signing and verificati
 
 The hosted API requires Postgres for key storage, SCITT entries, and audit trails. Set `DATABASE_URL` in production. CLI-only usage is file-based and does not require a database.
 
+### Data Capture Foundation
+
+The API now includes an append-only internal `event_journal` table for hosted-operation metadata.
+This is not a public API endpoint; it is persisted server-side for analytics/audit use.
+
+- Stream ownership is isolated via `ssf_streams.owner_type` + `owner_id` (`api_key`, `oidc`, `legacy`).
+- SCITT continuity is hardened with a unique `scitt_entries.tree_size` constraint.
+- Journal rows are immutable in normal operation (`UPDATE`/`DELETE` are blocked by DB rules).
+
+Current journal event types:
+- `sign.success`, `sign.failure`
+- `issue.success`, `issue.failure`
+- `verify.success`, `verify.failure`
+- `scitt.entry.registered`
+- `ssf.stream.created`, `ssf.stream.read`, `ssf.stream.updated`, `ssf.stream.deleted`
+- `trusttxt.hosted.upsert`, `trusttxt.hosted.verified`, `trusttxt.hosted.public_fetch`
+
 ## Authentication
 
 Protected endpoints require a Bearer token in the `Authorization` header. Use an API key or an OIDC token (when OIDC is configured).
@@ -29,11 +46,13 @@ curl -X POST https://api.grcorsair.com/sign \
   -d '{"evidence": {...}}'
 ```
 
-Public endpoints (verify, grc translate, health) require no authentication.
+Public endpoints (verify, grc translate, health, formats) require no authentication.
 
 | Endpoint | Auth Required |
 |:---------|:-------------|
 | `GET /health` | No |
+| `GET /v1/health` | No |
+| `GET /formats` | No |
 | `POST /sign` | Yes |
 | `POST /verify` | No |
 | `POST /grc/translate` | No |
@@ -126,6 +145,32 @@ curl -X POST https://api.grcorsair.com/sign \
 
 Note: `registerScitt` is also supported by `POST /issue` and returns `scittEntryId` when enabled.
 If the request is authenticated with an OIDC token, `extensions.ext.oidc.identity` (when present) contains **hashed** claim values.
+
+## GET /formats
+
+List supported ingestion formats and mapping-pack identifiers currently loaded by the API.
+No authentication required.
+
+```bash
+curl https://api.grcorsair.com/formats
+```
+
+**Response:**
+
+```json
+{
+  "ok": true,
+  "data": [
+    { "id": "generic", "name": "Generic JSON", "description": "Any JSON payload with { metadata, controls[] }" },
+    { "id": "mapping-pack", "name": "Mapping Registry", "description": "Config-driven ingestion using mapping packs" },
+    { "id": "mapping:scanner-x", "name": "Scanner X", "description": "Mapping format (scanner-x)" }
+  ],
+  "meta": {
+    "mappingCount": 1,
+    "loadErrors": 0
+  }
+}
+```
 
 ## POST /grc/translate
 
@@ -243,7 +288,7 @@ curl -X POST https://api.grcorsair.com/trust-txt/host \
   }'
 ```
 
-**Request Body:** Same fields as `POST /onboard`, except `domain` is required and may be any verified domain.
+**Request Body:** Same fields as `POST /onboard`, except `domain` is required. Ownership is enforced after `POST /trust-txt/host/:domain/verify` succeeds.
 
 **Response (hosted + DNS delegation):**
 
@@ -325,40 +370,41 @@ curl -X POST https://api.grcorsair.com/verify \
   }'
 ```
 
-**Response:**
+**Response (`POST /verify`):**
 
 ```json
 {
-  "ok": true,
-  "data": {
-    "valid": true,
-    "issuer": "did:web:grcorsair.com",
-    "trustTier": "corsair-verified",
-    "scope": "SOC 2 Type II - AWS Production Controls",
-    "summary": {
-      "controlsTested": 24,
-      "controlsPassed": 22,
-      "controlsFailed": 2,
-      "overallScore": 91
-    },
-    "provenance": {
-      "source": "tool",
-      "sourceIdentity": "Scanner v1.2",
-      "sourceDate": "2026-01-15"
-    },
-    "extensions": {
-      "mapping": { "id": "toolx-evidence-only", "evidenceOnly": true },
-      "passthrough": { "summary": { "passed": 12, "failed": 2 } }
-    },
-    "timestamps": {
-      "issuedAt": "2026-02-13T00:00:00.000Z",
-      "expiresAt": "2026-05-14T00:00:00.000Z"
-    },
-    "policy": { "ok": true, "errors": [] },
-    "process": { "chainValid": true, "receiptsVerified": 2, "receiptsTotal": 2 },
-    "inputBinding": { "ok": true, "errors": [] }
+  "verified": true,
+  "issuer": "did:web:grcorsair.com",
+  "issuerTier": "corsair-verified",
+  "scope": "SOC 2 Type II - AWS Production Controls",
+  "summary": {
+    "controlsTested": 24,
+    "controlsPassed": 22,
+    "controlsFailed": 2,
+    "overallScore": 91
+  },
+  "provenance": {
+    "source": "tool",
+    "sourceIdentity": "Scanner v1.2",
+    "sourceDate": "2026-01-15"
+  },
+  "timestamps": {
+    "issuedAt": "2026-02-13T00:00:00.000Z",
+    "expiresAt": "2026-05-14T00:00:00.000Z"
+  },
+  "policy": { "ok": true, "errors": [] },
+  "process": { "chainValid": true, "receiptsVerified": 2, "receiptsTotal": 2 },
+  "inputBinding": { "ok": true, "errors": [] },
+  "digests": {
+    "inputSha256": "3e4e9b...",
+    "jwtSha256": "3e4e9b..."
+  },
+  "extensions": {
+    "mapping": { "id": "toolx-evidence-only", "evidenceOnly": true }
   }
 }
 ```
 
 `sourceDocumentHash` should be the SHA-256 of canonical JSON (sorted keys), matching `provenance.sourceDocument`.
+`POST /v1/verify` returns the same verification payload in the v1 envelope format: `{ ok, data }`.

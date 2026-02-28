@@ -27,21 +27,38 @@ paths:
       description: Returns server health status. Always available, no auth required.
       responses:
         "200":
-          description: Server is healthy
+          description: Server is healthy or starting up
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  ok:
-                    type: boolean
-                    example: true
                   status:
                     type: string
-                    enum: [ready, starting]
+                    enum: [ok, starting]
                   version:
                     type: string
                     example: "1.0.0"
+                  timestamp:
+                    type: string
+                    format: date-time
+        "503":
+          description: Server degraded or initialization failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [degraded, error]
+                  version:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+                  error:
+                    type: string
 
   /sign:
     post:
@@ -215,6 +232,15 @@ paths:
                           type: string
                         description:
                           type: string
+                        detection:
+                          type: string
+                  meta:
+                    type: object
+                    properties:
+                      mappingCount:
+                        type: integer
+                      loadErrors:
+                        type: integer
 
 components:
   securitySchemes:
@@ -377,21 +403,87 @@ components:
               description: Trust classification
               enum:
                 - corsair-verified
-                - self-signed-valid
+                - self-signed
                 - unverifiable
                 - invalid
             issuer:
               type: string
               description: DID of the issuer
-            issuedAt:
+            scope:
               type: string
-              format: date-time
-            expiresAt:
-              type: string
-              format: date-time
-            subject:
+            summary:
               type: object
-              description: CPOE credential subject (summary, provenance, frameworks)
+              properties:
+                controlsTested:
+                  type: integer
+                controlsPassed:
+                  type: integer
+                controlsFailed:
+                  type: integer
+                overallScore:
+                  type: number
+            provenance:
+              type: object
+              properties:
+                source:
+                  type: string
+                sourceIdentity:
+                  type: string
+                sourceDate:
+                  type: string
+            timestamps:
+              type: object
+              properties:
+                issuedAt:
+                  type: string
+                  format: date-time
+                expiresAt:
+                  type: string
+                  format: date-time
+            policy:
+              type: object
+              properties:
+                ok:
+                  type: boolean
+                errors:
+                  type: array
+                  items:
+                    type: string
+            process:
+              type: object
+              properties:
+                chainValid:
+                  type: boolean
+                receiptsVerified:
+                  type: integer
+                receiptsTotal:
+                  type: integer
+                toolAttested:
+                  type: integer
+                scittRegistered:
+                  type: integer
+            inputBinding:
+              type: object
+              properties:
+                ok:
+                  type: boolean
+                errors:
+                  type: array
+                  items:
+                    type: string
+                expected:
+                  type: string
+                actual:
+                  type: string
+            digests:
+              type: object
+              properties:
+                inputSha256:
+                  type: string
+                jwtSha256:
+                  type: string
+            reason:
+              type: string
 
     ErrorResponse:
       type: object
