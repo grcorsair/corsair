@@ -18,6 +18,9 @@ import {
   type HostedTrustTxtStore,
   type HostedTrustTxtOwnerType,
 } from "../src/parley/hosted-trust-store";
+import type { EventJournalWriter } from "../src/intelligence/event-journal";
+import { writeEventBestEffort } from "../src/intelligence/event-journal";
+import { getRequestActor } from "../src/intelligence/request-context";
 
 // =============================================================================
 // TYPES
@@ -69,6 +72,7 @@ export interface HostedTrustTxtDeps {
   trustHost: string;
   resolveTrustTxt?: typeof resolveTrustTxt;
   now?: () => Date;
+  eventJournal?: EventJournalWriter;
 }
 
 // =============================================================================
@@ -146,10 +150,22 @@ function extractOwner(req: Request): { type: HostedTrustTxtOwnerType; id: string
   return null;
 }
 
-function buildTrustTxtInput(domain: string, body: HostedTrustTxtRequest): TrustTxt {
-  const expiryDays = typeof body.expiryDays === "number" && body.expiryDays > 0
-    ? body.expiryDays
-    : 365;
+function buildTrustTxtInput(
+  domain: string,
+  body: HostedTrustTxtRequest,
+  existing?: HostedTrustTxtRecord | null,
+): TrustTxt {
+  const hasExplicitExpiryDays = typeof body.expiryDays === "number" && body.expiryDays > 0;
+  let expires: string | undefined;
+  if (hasExplicitExpiryDays) {
+    expires = computeExpiry(body.expiryDays as number);
+  } else if (existing?.config?.expires) {
+    // Preserve prior expiry for idempotent regeneration and stable hash pins.
+    expires = existing.config.expires;
+  } else if (!existing) {
+    expires = computeExpiry(365);
+  }
+
   const includeDefaults = body.includeDefaults !== false;
 
   const jwks = body.jwks || `https://${domain}/.well-known/jwks.json`;
@@ -167,7 +183,7 @@ function buildTrustTxtInput(domain: string, body: HostedTrustTxtRequest): TrustT
     flagship,
     frameworks: isStringArray(body.frameworks) ? body.frameworks : [],
     contact: typeof body.contact === "string" ? body.contact : undefined,
-    expires: computeExpiry(expiryDays),
+    expires,
   };
 }
 
@@ -196,6 +212,23 @@ function ownerMatches(record: HostedTrustTxtRecord, owner: { type: HostedTrustTx
   return record.ownerType === owner.type && record.ownerId === owner.id;
 }
 
+function normalizeComparableUrl(input: string): string | null {
+  try {
+    const parsed = new URL(input);
+    const protocol = parsed.protocol.toLowerCase();
+    const host = parsed.hostname.toLowerCase();
+    const hasNonDefaultPort = parsed.port &&
+      !((protocol === "https:" && parsed.port === "443") || (protocol === "http:" && parsed.port === "80"));
+    const port = hasNonDefaultPort ? `:${parsed.port}` : "";
+    let pathname = parsed.pathname || "/";
+    pathname = pathname.replace(/\/+$/, "");
+    if (!pathname) pathname = "/";
+    return `${protocol}//${host}${port}${pathname}`;
+  } catch {
+    return null;
+  }
+}
+
 // =============================================================================
 // ROUTER
 // =============================================================================
@@ -206,10 +239,12 @@ export function createHostedTrustTxtRouter(
   const { store, trustHost } = deps;
   const doResolveTrustTxt = deps.resolveTrustTxt ?? resolveTrustTxt;
   const now = deps.now ?? (() => new Date());
+  const eventJournal = deps.eventJournal;
 
   return async (req: Request): Promise<Response> => {
     const url = new URL(req.url);
     const path = normalizePath(url.pathname);
+    const actor = getRequestActor(req);
 
     if (path === "/trust-txt/host" && req.method === "POST") {
       let body: HostedTrustTxtRequest;
@@ -246,7 +281,12 @@ export function createHostedTrustTxtRouter(
         }
       }
 
-      const trustInput = buildTrustTxtInput(domain, { ...body, did });
+      const existing = await store.get(domain);
+      if (existing?.status === "active" && !ownerMatches(existing, owner)) {
+        return jsonError(403, "Domain is already owned by a different owner");
+      }
+
+      const trustInput = buildTrustTxtInput(domain, { ...body, did }, existing);
       const validation = validateTrustTxt(trustInput);
       if (!validation.valid) {
         return jsonError(400, validation.errors.join("; "));
@@ -254,11 +294,6 @@ export function createHostedTrustTxtRouter(
 
       const trustTxt = generateTrustTxt(trustInput);
       const trustTxtHash = hashTrustTxt(trustTxt);
-
-      const existing = await store.get(domain);
-      if (existing && !ownerMatches(existing, owner)) {
-        return jsonError(403, "Domain is already owned by a different owner");
-      }
 
       const status: HostedTrustTxtStatus = existing
         ? (existing.trustTxtHash === trustTxtHash ? existing.status : "pending")
@@ -277,6 +312,22 @@ export function createHostedTrustTxtRouter(
         verifiedAt,
         createdAt: existing?.createdAt,
         updatedAt: now().toISOString(),
+      });
+
+      await writeEventBestEffort(eventJournal, {
+        eventType: "trusttxt.hosted.upsert",
+        actorType: actor.actorType,
+        actorIdHash: actor.actorIdHash,
+        targetType: "domain",
+        targetId: domain,
+        requestMethod: req.method,
+        requestPath: path,
+        metadata: {
+          status: record.status,
+          trustTxtHash: record.trustTxtHash,
+          cpoeCount: record.config.cpoes.length,
+          frameworks: record.config.frameworks,
+        },
       });
 
       return jsonOk(buildResponse(record, trustHost));
@@ -316,8 +367,11 @@ export function createHostedTrustTxtRouter(
 
         const resolution = await doResolveTrustTxt(domain);
         const expectedUrl = buildHostedUrl(trustHost, domain);
+        const expectedComparable = normalizeComparableUrl(expectedUrl);
+        const actualComparable = resolution.url ? normalizeComparableUrl(resolution.url) : null;
+        const urlMatches = Boolean(expectedComparable && actualComparable && expectedComparable === actualComparable);
 
-        if (!resolution.trustTxt || resolution.url !== expectedUrl) {
+        if (!resolution.trustTxt || !urlMatches) {
           const reason = resolution.error || "trust.txt is not delegated to Corsair host";
           return jsonError(400, reason);
         }
@@ -331,6 +385,21 @@ export function createHostedTrustTxtRouter(
           status: "active",
           verifiedAt: now().toISOString(),
           updatedAt: now().toISOString(),
+        });
+
+        await writeEventBestEffort(eventJournal, {
+          eventType: "trusttxt.hosted.verified",
+          actorType: actor.actorType,
+          actorIdHash: actor.actorIdHash,
+          targetType: "domain",
+          targetId: domain,
+          requestMethod: req.method,
+          requestPath: path,
+          metadata: {
+            status: updated.status,
+            source: resolution.source || null,
+            delegatedMethod: resolution.delegated?.method || null,
+          },
         });
 
         const response: HostedTrustTxtVerifyResponse = {
@@ -353,9 +422,10 @@ export function createHostedTrustTxtRouter(
 }
 
 export function createHostedTrustTxtPublicHandler(
-  deps: { store: HostedTrustTxtStore },
+  deps: { store: HostedTrustTxtStore; eventJournal?: EventJournalWriter },
 ): (req: Request) => Promise<Response> {
   const { store } = deps;
+  const eventJournal = deps.eventJournal;
 
   return async (req: Request): Promise<Response> => {
     if (req.method !== "GET") {
@@ -377,6 +447,18 @@ export function createHostedTrustTxtPublicHandler(
     if (!record) {
       return new Response("Not found", { status: 404 });
     }
+
+    await writeEventBestEffort(eventJournal, {
+      eventType: "trusttxt.hosted.public_fetch",
+      actorType: "anonymous",
+      targetType: "domain",
+      targetId: domain,
+      requestMethod: req.method,
+      requestPath: url.pathname,
+      metadata: {
+        status: record.status,
+      },
+    });
 
     return new Response(record.trustTxt, {
       status: 200,
