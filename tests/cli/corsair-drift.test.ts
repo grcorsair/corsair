@@ -230,15 +230,96 @@ describe("corsair diff — primary command", () => {
 });
 
 // =============================================================================
-// LOG COMMAND (stub)
+// LOG COMMAND (local + SCITT-backed)
 // =============================================================================
 
-describe("corsair log — stub command", () => {
-  test("log --help shows planned usage", async () => {
-    const proc = Bun.spawn(["bun", "run", "corsair.ts", "log", "--help"], { cwd });
-    const output = await new Response(proc.stdout).text();
-    await proc.exited;
-    expect(output).toContain("LOG");
-    expect(output).toContain("SCITT");
+describe("corsair log", () => {
+  test("local mode lists recent JWT files from --dir", async () => {
+    const proc = Bun.spawn([
+      "bun", "run", "corsair.ts", "log",
+      "--dir", tmpDir,
+      "--last", "2",
+    ], { cwd, stdout: "pipe" });
+    const stdout = await new Response(proc.stdout).text();
+    const code = await proc.exited;
+
+    expect(code).toBe(0);
+    expect(stdout).toContain("CORSAIR LOG");
+    expect(stdout).toContain("cpoe-v");
+  });
+
+  test("local mode --json returns structured entries", async () => {
+    const proc = Bun.spawn([
+      "bun", "run", "corsair.ts", "log",
+      "--dir", tmpDir,
+      "--last", "2",
+      "--json",
+    ], { cwd, stdout: "pipe" });
+    const stdout = await new Response(proc.stdout).text();
+    const code = await proc.exited;
+
+    expect(code).toBe(0);
+    const parsed = JSON.parse(stdout) as { directory: string; entries: Array<{ path: string; issuer: string }> };
+    expect(parsed.directory).toContain("tests/cli/.tmp-drift-test");
+    expect(parsed.entries.length).toBe(2);
+    expect(parsed.entries.every((entry) => entry.path.endsWith(".jwt"))).toBe(true);
+    expect(parsed.entries.every((entry) => typeof entry.issuer === "string" && entry.issuer.length > 0)).toBe(true);
+  });
+
+  test("SCITT-backed mode queries endpoint and renders entries", async () => {
+    const preloadPath = join(tmpDir, "mock-scitt-fetch.js");
+    writeFileSync(preloadPath, `
+globalThis.fetch = async (input) => {
+  const url = typeof input === "string"
+    ? input
+    : input instanceof URL
+      ? input.toString()
+      : input.url;
+  if (url.startsWith("https://example.com/scitt/entries")) {
+    return new Response(JSON.stringify({
+      entries: [
+        {
+          entryId: "entry-123",
+          registrationTime: "2026-02-28T12:00:00.000Z",
+          treeSize: 1,
+          issuer: "did:web:acme.com",
+          scope: "SOC2",
+          provenance: { source: "tool", sourceIdentity: "Scanner v1.0" },
+          summary: { controlsTested: 10, controlsPassed: 9, controlsFailed: 1, overallScore: 90 }
+        }
+      ],
+      pagination: { limit: 10, offset: 0, count: 1 }
+    }), { status: 200, headers: { "content-type": "application/json" } });
+  }
+  return new Response("Not found", { status: 404, statusText: "Not Found" });
+};
+globalThis.fetch.preconnect = () => {};
+`);
+
+    const proc = Bun.spawn([
+      "bun",
+      "run",
+      "--preload", preloadPath,
+      "corsair.ts",
+      "log",
+      "--scitt", "https://example.com/scitt/entries",
+      "--json",
+    ], { cwd, stdout: "pipe", stderr: "pipe" });
+
+    const stdout = await new Response(proc.stdout).text();
+    const stderr = await new Response(proc.stderr).text();
+    const code = await proc.exited;
+
+    expect(code).toBe(0);
+    expect(stderr).toBe("");
+    const parsed = JSON.parse(stdout) as {
+      scitt: string;
+      entries: Array<{ entryId: string; issuer: string; summary?: { overallScore: number } }>;
+    };
+    expect(parsed.scitt).toContain("https://example.com/scitt/entries");
+    expect(parsed.entries.length).toBe(1);
+    expect(parsed.entries[0]?.entryId).toBe("entry-123");
+    expect(parsed.entries[0]?.issuer).toBe("did:web:acme.com");
+    expect(parsed.entries[0]?.summary?.overallScore).toBe(90);
   });
 });

@@ -25,7 +25,15 @@ jobs:
         run: which bun && bun --version
 
       - name: Run tests
-        run: bun test
+        run: bun run test:coverage
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          if-no-files-found: warn
 
   build-web:
     name: Build Web

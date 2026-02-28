@@ -46,6 +46,15 @@ export interface GrcTranslateError {
   code?: "INVALID_REQUEST" | "DISABLED" | "MODEL_UNAVAILABLE" | "TRANSLATION_FAILED" | "RATE_LIMITED";
 }
 
+export interface PostGrcTranslationInput {
+  payload: unknown;
+  mode: GrcTranslateMode;
+  redact: boolean;
+  style?: string;
+  audience?: string;
+  models?: string[];
+}
+
 export const GRC_TRANSLATOR_MAX_INPUT_BYTES = 131_072;
 
 export function byteLength(value: string): number {
@@ -185,6 +194,43 @@ export function parseJsonPayload(input: string): unknown {
   const size = byteLength(trimmed);
   if (size > GRC_TRANSLATOR_MAX_INPUT_BYTES) {
     throw new Error(`JSON payload exceeds ${GRC_TRANSLATOR_MAX_INPUT_BYTES} byte limit.`);
+  }
+
+  return parsed;
+}
+
+export async function postGrcTranslation(
+  input: PostGrcTranslationInput,
+  deps?: {
+    endpoint?: string;
+    fetcher?: typeof fetch;
+  },
+): Promise<GrcTranslateResponse> {
+  const endpoint = deps?.endpoint ?? "/api/grc-translate";
+  const fetcher = deps?.fetcher ?? fetch;
+
+  const response = await fetcher(endpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      payload: input.payload,
+      mode: input.mode,
+      redact: input.redact,
+      style: input.style ?? "funny",
+      audience: input.audience ?? "grc-buyer",
+      models: input.models,
+    }),
+  });
+
+  const body = await response.json().catch(() => null);
+  if (!response.ok) {
+    const parsed = (body || {}) as GrcTranslateError;
+    throw new Error(parsed.error || `Translator failed (HTTP ${response.status}).`);
+  }
+
+  const parsed = (body as { result?: GrcTranslateResponse } | null)?.result;
+  if (!parsed) {
+    throw new Error("Translator response missing result payload.");
   }
 
   return parsed;

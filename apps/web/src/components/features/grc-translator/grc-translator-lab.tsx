@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   byteLength,
   parseJsonPayload,
-  type GrcTranslateError,
+  postGrcTranslation,
   type GrcTranslateMode,
   type GrcTranslateResponse,
 } from "@/lib/grc-translator";
@@ -86,33 +86,13 @@ export function GrcTranslatorLab() {
     }
 
     try {
-      const response = await fetch("/api/grc-translate", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          payload,
-          mode,
-          redact,
-          style: "funny",
-          audience: "grc-buyer",
-        }),
+      const parsed = await postGrcTranslation({
+        payload,
+        mode,
+        redact,
+        style: "funny",
+        audience: "grc-buyer",
       });
-
-      const body = await response.json().catch(() => null);
-      if (!response.ok) {
-        const parsed = (body || {}) as GrcTranslateError;
-        setError(parsed.error || `Translator failed (HTTP ${response.status}).`);
-        setLoading(false);
-        return;
-      }
-
-      const parsed = (body as { result?: GrcTranslateResponse })?.result;
-      if (!parsed) {
-        setError("Translator response missing result payload.");
-        setLoading(false);
-        return;
-      }
-
       setResult(parsed);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Translator request failed.");

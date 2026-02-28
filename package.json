@@ -15,6 +15,7 @@
     "lint:web": "bun run --filter '@corsair/web' lint",
     "typecheck": "bunx tsc -p tsconfig.json",
     "test": "bun test",
+    "test:coverage": "bun test --coverage --coverage-reporter=text --coverage-reporter=lcov --coverage-dir coverage",
     "test:parley": "bun test tests/parley/",
     "test:flagship": "bun test tests/flagship/",
     "test:ingestion": "bun test tests/ingestion/",
