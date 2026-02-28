@@ -24,6 +24,7 @@
     "test:output": "bun test tests/output/",
     "test:data": "bun test tests/data/",
     "test:functions": "bun test tests/functions/",
+    "validate:connectors": "bun run scripts/validate-connectors.ts",
     "ingest": "bun run corsair.ts ingest",
     "verify": "bun run corsair.ts verify",
     "serve": "bun run corsair.ts serve"

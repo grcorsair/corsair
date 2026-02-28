@@ -1,0 +1,40 @@
+{
+  // Connector template for deterministic ingestion mappings.
+  // Save provider mappings as *.json (not *.jsonc) to activate them.
+  "id": "provider-id",
+  "priority": 8,
+  "source": "json",
+  "sourceTier": "tool",
+  "match": {
+    "allOf": [
+      "$.root_key",
+      "$.records[*].id",
+      "$.records[*].status"
+    ]
+  },
+  "metadata": {
+    "title": "Provider Findings",
+    "issuer": "Provider Name",
+    "datePath": "$.records[0].timestamp",
+    "scopePath": "$.account.id",
+    "reportType": "Provider Findings"
+  },
+  "controls": {
+    "path": "$.records",
+    "idPath": "@.id",
+    "descriptionPath": "@.title",
+    "statusPath": "@.status",
+    "statusMap": {
+      "pass": "effective",
+      "fail": "ineffective"
+    },
+    "severityPath": "@.severity",
+    "severityMap": {
+      "critical": "CRITICAL",
+      "high": "HIGH",
+      "medium": "MEDIUM",
+      "low": "LOW"
+    },
+    "evidencePath": "@.resource"
+  }
+}

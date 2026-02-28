@@ -1,0 +1,37 @@
+[
+  {
+    "id": "gitlab-sast",
+    "priority": 8,
+    "source": "json",
+    "sourceTier": "platform",
+    "match": { "allOf": ["$.scan.scanner.name", "$.vulnerabilities", "$.vulnerabilities[*].severity"] },
+    "metadata": {
+      "title": "GitLab SAST Findings",
+      "issuerPath": "$.scan.scanner.name",
+      "datePath": "$.scan.start_time",
+      "scope": "GitLab CI/CD",
+      "reportType": "GitLab SAST Findings"
+    },
+    "controls": {
+      "path": "$.vulnerabilities",
+      "idPath": "@.id",
+      "descriptionPath": "@.name",
+      "statusPath": "@.state",
+      "statusMap": {
+        "detected": "ineffective",
+        "confirmed": "ineffective",
+        "resolved": "effective",
+        "dismissed": "not-tested"
+      },
+      "severityPath": "@.severity",
+      "severityMap": {
+        "critical": "CRITICAL",
+        "high": "HIGH",
+        "medium": "MEDIUM",
+        "low": "LOW",
+        "info": "LOW"
+      },
+      "evidencePath": "@.location.file"
+    }
+  }
+]

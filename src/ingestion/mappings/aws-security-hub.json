@@ -1,0 +1,31 @@
+[
+  {
+    "id": "aws-security-hub",
+    "priority": 8,
+    "source": "json",
+    "sourceTier": "platform",
+    "match": { "allOf": ["$.Findings", "$.Findings[*].Id", "$.Findings[*].Compliance.Status"] },
+    "metadata": {
+      "title": "AWS Security Hub Findings",
+      "issuer": "AWS Security Hub",
+      "datePath": "$.Findings[0].UpdatedAt",
+      "scopePath": "$.Findings[0].AwsAccountId",
+      "reportType": "AWS Security Hub Findings"
+    },
+    "controls": {
+      "path": "$.Findings",
+      "idPath": "@.Id",
+      "descriptionPath": "@.Title",
+      "statusPath": "@.Compliance.Status",
+      "severityPath": "@.Severity.Label",
+      "severityMap": {
+        "critical": "CRITICAL",
+        "high": "HIGH",
+        "medium": "MEDIUM",
+        "low": "LOW",
+        "informational": "LOW"
+      },
+      "evidencePath": "@.Resources[0].Id"
+    }
+  }
+]

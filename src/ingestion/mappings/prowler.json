@@ -1,0 +1,31 @@
+[
+  {
+    "id": "prowler",
+    "priority": 8,
+    "source": "json",
+    "sourceTier": "tool",
+    "match": { "allOf": ["$.findings", "$.findings[*].check_id", "$.findings[*].status"] },
+    "metadata": {
+      "title": "Prowler Findings",
+      "issuer": "Prowler",
+      "datePath": "$.findings[0].checked_at",
+      "scopePath": "$.findings[0].provider",
+      "reportType": "Prowler Findings"
+    },
+    "controls": {
+      "path": "$.findings",
+      "idPath": "@.check_id",
+      "descriptionPath": "@.title",
+      "statusPath": "@.status",
+      "severityPath": "@.severity",
+      "severityMap": {
+        "critical": "CRITICAL",
+        "high": "HIGH",
+        "medium": "MEDIUM",
+        "low": "LOW",
+        "info": "LOW"
+      },
+      "evidencePath": "@.resource_id"
+    }
+  }
+]

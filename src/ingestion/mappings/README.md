@@ -30,3 +30,21 @@ Mappings are evaluated in priority order (highest first). When priorities
 are equal, file order is deterministic by filename within each directory.
 
 See `src/ingestion/mapping-registry.ts` for the schema.
+
+## Built-in provider mappings
+
+- `bandit.json`
+- `checkov.json`
+- `semgrep.json`
+- `prowler.json`
+- `aws-security-hub.json`
+- `github-sarif.json`
+- `gitlab-sast.json`
+
+## Connector factory workflow
+
+For deterministic connector development with tests + strict validation, use:
+
+- `connector-template.mapping.jsonc` (starter template)
+- `CONNECTOR_WORKFLOW.md` (step-by-step process)
+- `bun run validate:connectors` (guardrail command)

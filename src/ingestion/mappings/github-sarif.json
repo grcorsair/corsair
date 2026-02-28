@@ -1,0 +1,34 @@
+[
+  {
+    "id": "github-sarif",
+    "priority": 8,
+    "source": "json",
+    "sourceTier": "platform",
+    "match": { "allOf": ["$.version", "$.runs[0].results", "$.runs[0].tool.driver.name"] },
+    "metadata": {
+      "title": "GitHub SARIF Findings",
+      "issuerPath": "$.runs[0].tool.driver.name",
+      "datePath": "$.runs[0].invocations[0].endTimeUtc",
+      "scope": "GitHub Code Scanning",
+      "reportType": "SARIF Findings"
+    },
+    "controls": {
+      "path": "$.runs[0].results",
+      "idPath": "@.ruleId",
+      "descriptionPath": "@.message.text",
+      "statusPath": "@.level",
+      "statusMap": {
+        "error": "ineffective",
+        "warning": "ineffective",
+        "note": "not-tested"
+      },
+      "severityPath": "@.level",
+      "severityMap": {
+        "error": "HIGH",
+        "warning": "MEDIUM",
+        "note": "LOW"
+      },
+      "evidencePath": "@.locations[0].physicalLocation.artifactLocation.uri"
+    }
+  }
+]
