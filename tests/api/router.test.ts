@@ -346,7 +346,7 @@ describe("V1 Router — Verify Integration", () => {
   });
 
   test("POST /v1/verify rejects oversized JWT", async () => {
-    const bigJwt = "eyJ" + "a".repeat(25_000) + ".payload.sig";
+    const bigJwt = "eyJ" + "a".repeat(105_000) + ".payload.sig";
     const req = makeRequest("POST", "/v1/verify", { cpoe: bigJwt });
     const res = await router(req);
     expect(res.status).toBe(400);

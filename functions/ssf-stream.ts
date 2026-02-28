@@ -11,9 +11,13 @@
 import type { SSFStreamManager } from "../src/flagship/ssf-stream";
 import type { SSFStreamConfig } from "../src/flagship/flagship-types";
 import { validatePublicUrl } from "../src/security/url-validation";
+import type { EventJournalWriter } from "../src/intelligence/event-journal";
+import { writeEventBestEffort } from "../src/intelligence/event-journal";
+import { getRequestActor, getSSFStreamOwner } from "../src/intelligence/request-context";
 
 export interface SSFStreamRouterDeps {
   streamManager: SSFStreamManager;
+  eventJournal?: EventJournalWriter;
 }
 
 function jsonError(status: number, message: string): Response {
@@ -39,15 +43,24 @@ function extractStreamId(pathname: string): string | null {
   return match ? match[1] : null;
 }
 
+function normalizePath(pathname: string): string {
+  if (pathname.startsWith("/v1/")) {
+    return pathname.slice(3);
+  }
+  return pathname;
+}
+
 export function createSSFStreamRouter(
   deps: SSFStreamRouterDeps,
 ): (req: Request) => Promise<Response> {
-  const { streamManager } = deps;
+  const { streamManager, eventJournal } = deps;
 
   return async (req: Request): Promise<Response> => {
     const url = new URL(req.url);
-    const { pathname } = url;
+    const pathname = normalizePath(url.pathname);
     const method = req.method;
+    const actor = getRequestActor(req);
+    const owner = getSSFStreamOwner(req);
 
     // POST /ssf/streams — Create stream
     if (method === "POST" && pathname === "/ssf/streams") {
@@ -73,7 +86,21 @@ export function createSSFStreamRouter(
         }
       }
 
-      const stream = streamManager.createStream(body as SSFStreamConfig);
+      const stream = await streamManager.createStream(body as SSFStreamConfig, owner);
+      await writeEventBestEffort(eventJournal, {
+        eventType: "ssf.stream.created",
+        actorType: actor.actorType,
+        actorIdHash: actor.actorIdHash,
+        targetType: "ssf_stream",
+        targetId: stream.streamId,
+        requestMethod: method,
+        requestPath: pathname,
+        metadata: {
+          deliveryMethod: stream.config.delivery.method,
+          eventsRequested: stream.config.events_requested.length,
+          format: stream.config.format,
+        },
+      });
       return jsonOk(stream, 201);
     }
 
@@ -83,10 +110,19 @@ export function createSSFStreamRouter(
     if (streamId) {
       // GET /ssf/streams/:id — Get stream
       if (method === "GET") {
-        const stream = streamManager.getStream(streamId);
+        const stream = await streamManager.getStream(streamId, owner);
         if (!stream) {
           return jsonError(404, `Stream not found: ${streamId}`);
         }
+        await writeEventBestEffort(eventJournal, {
+          eventType: "ssf.stream.read",
+          actorType: actor.actorType,
+          actorIdHash: actor.actorIdHash,
+          targetType: "ssf_stream",
+          targetId: streamId,
+          requestMethod: method,
+          requestPath: pathname,
+        });
         return jsonOk(stream);
       }
 
@@ -108,7 +144,19 @@ export function createSSFStreamRouter(
         }
 
         try {
-          const stream = streamManager.updateStream(streamId, body);
+          const stream = await streamManager.updateStream(streamId, body, owner);
+          await writeEventBestEffort(eventJournal, {
+            eventType: "ssf.stream.updated",
+            actorType: actor.actorType,
+            actorIdHash: actor.actorIdHash,
+            targetType: "ssf_stream",
+            targetId: streamId,
+            requestMethod: method,
+            requestPath: pathname,
+            metadata: {
+              updatedFields: Object.keys(body),
+            },
+          });
           return jsonOk(stream);
         } catch {
           return jsonError(404, `Stream not found: ${streamId}`);
@@ -118,7 +166,16 @@ export function createSSFStreamRouter(
       // DELETE /ssf/streams/:id — Delete stream
       if (method === "DELETE") {
         try {
-          streamManager.deleteStream(streamId);
+          await streamManager.deleteStream(streamId, owner);
+          await writeEventBestEffort(eventJournal, {
+            eventType: "ssf.stream.deleted",
+            actorType: actor.actorType,
+            actorIdHash: actor.actorIdHash,
+            targetType: "ssf_stream",
+            targetId: streamId,
+            requestMethod: method,
+            requestPath: pathname,
+          });
           return jsonOk({ status: "deleted", streamId });
         } catch {
           return jsonError(404, `Stream not found: ${streamId}`);

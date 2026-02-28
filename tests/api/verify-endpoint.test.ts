@@ -170,6 +170,9 @@ describe("V1 Verify — Valid CPOE", () => {
     const body: APIEnvelope<V1VerifyResponse> = await res.json();
     expect(body.ok).toBe(true);
     expect(body.data?.valid).toBe(true);
+    expect(body.data?.digests?.inputSha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(body.data?.digests?.jwtSha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(body.data?.digests?.inputSha256).toBe(body.data?.digests?.jwtSha256);
   });
 
   test("extracts issuer from CPOE", async () => {
@@ -310,8 +313,8 @@ describe("V1 Verify — Invalid Input", () => {
     expect(body.error?.message).toContain("three");
   });
 
-  test("rejects oversized JWT (>20KB)", async () => {
-    const bigJwt = "eyJ" + "a".repeat(25_000) + ".payload.sig";
+  test("rejects oversized JWT (>100KB)", async () => {
+    const bigJwt = "eyJ" + "a".repeat(105_000) + ".payload.sig";
     const res = await handler(postVerify({ cpoe: bigJwt }));
     expect(res.status).toBe(400);
 

@@ -10,6 +10,7 @@
 import { describe, test, expect, beforeEach } from "bun:test";
 import { VERSION } from "../../src/version";
 import { handleHealth, createHealthHandler } from "../../functions/health";
+import { createFormatsRouter } from "../../functions/formats";
 import { handleSSFConfiguration, createSSFConfigHandler } from "../../functions/ssf-configuration";
 import {
   createSSFStreamRouter,
@@ -39,6 +40,14 @@ function jsonRequest(
     init.body = JSON.stringify(body);
   }
   return new Request(url, init);
+}
+
+function withApiKeyAuth(req: Request, key: string): Request {
+  (req as Request & { corsairAuth?: unknown }).corsairAuth = {
+    type: "api_key",
+    key,
+  };
+  return req;
 }
 
 async function jsonResponse(response: Response): Promise<unknown> {
@@ -109,6 +118,45 @@ describe("Health Endpoint", () => {
     expect(res.status).toBe(200);
     const body = (await jsonResponse(res)) as Record<string, unknown>;
     expect(body.status).toBe("ok");
+  });
+});
+
+// =============================================================================
+// FORMATS ENDPOINT
+// =============================================================================
+
+describe("Formats Endpoint", () => {
+  test("GET /formats returns supported formats with metadata", async () => {
+    const router = createFormatsRouter();
+    const req = jsonRequest("GET", "/formats");
+    const res = await router(req);
+
+    expect(res.status).toBe(200);
+    const body = (await jsonResponse(res)) as Record<string, unknown>;
+    expect(body.ok).toBe(true);
+
+    const data = body.data as Array<Record<string, unknown>>;
+    expect(Array.isArray(data)).toBe(true);
+    expect(data.some((format) => format.id === "generic")).toBe(true);
+    expect(data.some((format) => format.id === "mapping-pack")).toBe(true);
+
+    const meta = body.meta as Record<string, unknown>;
+    expect(typeof meta.mappingCount).toBe("number");
+    expect(typeof meta.loadErrors).toBe("number");
+  });
+
+  test("supports /v1 format alias", async () => {
+    const router = createFormatsRouter();
+    const req = jsonRequest("GET", "/v1/formats");
+    const res = await router(req);
+    expect(res.status).toBe(200);
+  });
+
+  test("rejects non-GET methods", async () => {
+    const router = createFormatsRouter();
+    const req = jsonRequest("POST", "/formats");
+    const res = await router(req);
+    expect(res.status).toBe(405);
   });
 });
 
@@ -390,6 +438,129 @@ describe("SSF Stream API", () => {
     );
     expect(deleteRes.status).toBe(200);
   });
+
+  test("supports /v1 prefix and async stream managers", async () => {
+    const streams = new Map<string, any>();
+    const asyncManager: SSFStreamRouterDeps["streamManager"] = {
+      async createStream(config) {
+        const now = new Date().toISOString();
+        const stream = {
+          streamId: "stream-async-1",
+          status: "active" as const,
+          config,
+          createdAt: now,
+          updatedAt: now,
+        };
+        streams.set(stream.streamId, stream);
+        return stream;
+      },
+      async updateStream(streamId, updates) {
+        const existing = streams.get(streamId);
+        if (!existing) throw new Error("not found");
+        const updated = {
+          ...existing,
+          config: { ...existing.config, ...updates },
+          updatedAt: new Date().toISOString(),
+        };
+        streams.set(streamId, updated);
+        return updated;
+      },
+      async deleteStream(streamId) {
+        const existing = streams.get(streamId);
+        if (!existing) throw new Error("not found");
+        streams.set(streamId, { ...existing, status: "deleted", updatedAt: new Date().toISOString() });
+      },
+      async getStream(streamId) {
+        return streams.get(streamId) || null;
+      },
+      async getStreamStatus(streamId) {
+        const s = streams.get(streamId);
+        return s ? s.status : null;
+      },
+      async listStreams() {
+        return Array.from(streams.values());
+      },
+      async shouldDeliver(_streamId, _eventType) {
+        return true;
+      },
+    };
+
+    const asyncRouter = createSSFStreamRouter({ streamManager: asyncManager });
+
+    const createRes = await asyncRouter(jsonRequest("POST", "/v1/ssf/streams", {
+      delivery: { method: "poll" },
+      events_requested: [FLAGSHIP_EVENTS.FLEET_ALERT],
+      format: "jwt",
+    }));
+    expect(createRes.status).toBe(201);
+
+    const getRes = await asyncRouter(jsonRequest("GET", "/v1/ssf/streams/stream-async-1"));
+    expect(getRes.status).toBe(200);
+    const body = (await jsonResponse(getRes)) as Record<string, unknown>;
+    expect(body.streamId).toBe("stream-async-1");
+  });
+
+  test("isolates streams by authenticated owner", async () => {
+    const owner1Req = withApiKeyAuth(jsonRequest("POST", "/ssf/streams", {
+      delivery: { method: "poll" },
+      events_requested: [FLAGSHIP_EVENTS.FLEET_ALERT],
+      format: "jwt",
+    }), "owner-1");
+    const createRes = await router(owner1Req);
+    expect(createRes.status).toBe(201);
+    const created = (await jsonResponse(createRes)) as Record<string, unknown>;
+    const streamId = created.streamId as string;
+
+    const owner2GetReq = withApiKeyAuth(
+      jsonRequest("GET", `/ssf/streams/${streamId}`),
+      "owner-2",
+    );
+    const owner2GetRes = await router(owner2GetReq);
+    expect(owner2GetRes.status).toBe(404);
+
+    const owner1GetReq = withApiKeyAuth(
+      jsonRequest("GET", `/ssf/streams/${streamId}`),
+      "owner-1",
+    );
+    const owner1GetRes = await router(owner1GetReq);
+    expect(owner1GetRes.status).toBe(200);
+  });
+
+  test("emits journal events for stream lifecycle operations", async () => {
+    const events: Array<{ eventType: string; targetId?: string }> = [];
+    const eventJournal = {
+      async write(entry: { eventType: string; targetId?: string }): Promise<void> {
+        events.push(entry);
+      },
+    };
+    const journalRouter = createSSFStreamRouter({ streamManager, eventJournal });
+
+    const createReq = withApiKeyAuth(jsonRequest("POST", "/ssf/streams", {
+      delivery: { method: "poll" },
+      events_requested: [FLAGSHIP_EVENTS.FLEET_ALERT],
+      format: "jwt",
+    }), "owner-3");
+    const createRes = await journalRouter(createReq);
+    expect(createRes.status).toBe(201);
+    const created = (await jsonResponse(createRes)) as Record<string, unknown>;
+    const streamId = created.streamId as string;
+
+    const readRes = await journalRouter(
+      withApiKeyAuth(jsonRequest("GET", `/ssf/streams/${streamId}`), "owner-3"),
+    );
+    expect(readRes.status).toBe(200);
+
+    const deleteRes = await journalRouter(
+      withApiKeyAuth(jsonRequest("DELETE", `/ssf/streams/${streamId}`), "owner-3"),
+    );
+    expect(deleteRes.status).toBe(200);
+
+    expect(events.map((e) => e.eventType)).toEqual([
+      "ssf.stream.created",
+      "ssf.stream.read",
+      "ssf.stream.deleted",
+    ]);
+  });
 });
 
 // =============================================================================
@@ -561,6 +732,47 @@ describe("SCITT Registration API", () => {
     expect(receiptRes.status).toBe(200);
     const receipt = (await receiptRes.json()) as Record<string, unknown>;
     expect(receipt.proof).toBeDefined();
+  });
+
+  test("supports /v1-prefixed SCITT routes", async () => {
+    const statement = "eyJhbGciOiJFZERTQSJ9.cpoe-payload.ed25519-sig";
+    const registerRes = await router(
+      jsonRequest("POST", "/v1/scitt/entries", { statement }),
+    );
+    expect(registerRes.status).toBe(201);
+    const registration = (await registerRes.json()) as Record<string, unknown>;
+    const entryId = registration.entryId as string;
+
+    const metaRes = await router(
+      jsonRequest("GET", `/v1/scitt/entries/${entryId}`),
+    );
+    expect(metaRes.status).toBe(200);
+
+    const receiptRes = await router(
+      jsonRequest("GET", `/v1/scitt/entries/${entryId}/receipt`),
+    );
+    expect(receiptRes.status).toBe(200);
+  });
+
+  test("emits journal event when SCITT entry is registered", async () => {
+    const events: Array<{ eventType: string; targetType?: string }> = [];
+    const journalRouter = createSCITTRouter({
+      registry,
+      eventJournal: {
+        async write(entry) {
+          events.push(entry);
+        },
+      },
+    });
+    const registerRes = await journalRouter(
+      jsonRequest("POST", "/scitt/entries", {
+        statement: "eyJhbGciOiJFZERTQSJ9.test.signature",
+      }),
+    );
+    expect(registerRes.status).toBe(201);
+    expect(events.length).toBe(1);
+    expect(events[0].eventType).toBe("scitt.entry.registered");
+    expect(events[0].targetType).toBe("scitt_entry");
   });
 });
 

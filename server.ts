@@ -8,6 +8,7 @@
  *
  * PRODUCT LAYER (customer-facing):
  *   POST /verify                        — Free CPOE verification (adoption driver)
+ *   GET  /formats                       — Supported ingestion format catalog
  *   POST /grc/translate                 — Multi-model funny GRC JSON translator (public)
  *   POST /issue                         — CPOE issuance (revenue)
  *   POST /onboard                       — Machine-actionable onboarding artifacts
@@ -29,6 +30,7 @@
  *
  * OPS:
  *   GET /health                         — Health check (200 during startup, then DB-aware)
+ *   GET /v1/health                      — Versioned health alias
  *
  * All routes also available under /v1/ prefix (e.g. /v1/verify).
  * Runs migrations on startup (idempotent).
@@ -37,6 +39,7 @@
 
 import { VERSION } from "./src/version";
 import { createHealthHandler } from "./functions/health";
+import { createFormatsRouter } from "./functions/formats";
 import { createSSFConfigHandler } from "./functions/ssf-configuration";
 import { createSSFStreamRouter } from "./functions/ssf-stream";
 import { createSCITTRouter } from "./functions/scitt-register";
@@ -64,6 +67,7 @@ import { EnvKeyManager } from "./src/parley/env-key-manager";
 import { processDeliveryQueue } from "./functions/ssf-delivery-worker";
 import { verifySET } from "./src/flagship/set-generator";
 import { createHostedTrustTxtStore } from "./src/parley/hosted-trust-store";
+import { createPgEventJournalWriter } from "./src/intelligence/event-journal";
 
 // =============================================================================
 // CONFIGURATION
@@ -88,6 +92,7 @@ type Handler = (req: Request) => Response | Promise<Response>;
 
 // Mutable refs populated after async init
 let healthHandler: Handler | null = null;
+let formatsRouter: Handler | null = null;
 let verifyRouter: Handler | null = null;
 let signRouter: Handler | null = null;
 let demoSignRouter: Handler | null = null;
@@ -134,7 +139,7 @@ const server = Bun.serve({
     const path = url.pathname;
 
     // /health ALWAYS returns 200 — even during startup
-    if (path === "/health") {
+    if (path === "/health" || path === "/v1/health") {
       if (initError) {
         return Response.json(
           {
@@ -171,6 +176,7 @@ const server = Bun.serve({
     // CORS preflight
     if (req.method === "OPTIONS") {
       const isPublic = path === "/verify" || path === "/v1/verify" ||
+        path === "/formats" || path === "/v1/formats" ||
         path === "/sign/demo" || path === "/v1/sign/demo" ||
         path === "/grc/translate" || path === "/v1/grc/translate" ||
         path.startsWith("/.well-known/") ||
@@ -193,6 +199,10 @@ const server = Bun.serve({
 
     if (path === "/verify" || path === "/v1/verify") {
       return verifyRouter!(req);
+    }
+
+    if (path === "/formats" || path === "/v1/formats") {
+      return formatsRouter!(req);
     }
 
     if (path === "/sign" || path === "/v1/sign") {
@@ -279,9 +289,10 @@ const server = Bun.serve({
           product: ["POST /verify", "POST /sign", "POST /issue", "POST /grc/translate"],
           trust: ["GET /.well-known/did.json", "GET /.well-known/jwks.json"],
           infrastructure: ["GET /scitt/entries", "POST /scitt/entries", "POST /ssf/streams"],
+          metadata: ["GET /formats"],
           onboarding: ["POST /onboard"],
           public: ["GET /badge/<id>.svg", "GET /badge/did/<domain>.svg", "GET /profile/<domain>"],
-          ops: ["GET /health"],
+          ops: ["GET /health", "GET /v1/health"],
         },
       },
       { status: 404, headers: { "content-type": "application/json" } },
@@ -349,6 +360,7 @@ async function initialize() {
   // 6. Initialize services
   const streamManager = new PgSSFStreamManager(db as any);
   const registry = new PgSCITTRegistry(db as any, signingKeyPem);
+  const eventJournal = createPgEventJournalWriter(db as any);
 
   // 6.5 Demo key manager (optional)
   const demoKeyManager = EnvKeyManager.fromEnv();
@@ -388,6 +400,7 @@ async function initialize() {
   verifyRouter = rateLimitPg(db as any, 100)(createVerifyRouter({
     keyManager,
     extraTrustedKeys: demoPublicKey ? [demoPublicKey] : [],
+    eventJournal,
   }));
   healthHandler = createHealthHandler({ db });
   didJsonHandler = createDIDJsonHandler({ keyManager, domain: DOMAIN });
@@ -454,6 +467,7 @@ async function initialize() {
     domain: DOMAIN,
     db,
     scittRegistry: registry,
+    eventJournal,
   }), 10);
   demoSignRouter = rateLimitPg(db as any, 5)(createDemoSignRouter({
     keyManager: demoKeyManager,
@@ -464,17 +478,20 @@ async function initialize() {
     domain: DOMAIN,
     db,
     scittRegistry: registry,
+    eventJournal,
   }), 10);
   onboardRouter = withAuthRateLimit(createOnboardRouter({ keyManager, domain: DOMAIN }), 5);
   const hostedTrustStore = createHostedTrustTxtStore(db);
   hostedTrustTxtRouter = withAuthRateLimit(createHostedTrustTxtRouter({
     store: hostedTrustStore,
     trustHost: TRUST_HOST,
+    eventJournal,
   }), 5);
-  hostedTrustTxtPublicHandler = createHostedTrustTxtPublicHandler({ store: hostedTrustStore });
-  ssfRouter = withAuthRateLimit(createSSFStreamRouter({ streamManager }), 30);
-  scittRouter = withAuthRateLimit(createSCITTRouter({ registry }), 30);
+  hostedTrustTxtPublicHandler = createHostedTrustTxtPublicHandler({ store: hostedTrustStore, eventJournal });
+  ssfRouter = withAuthRateLimit(createSSFStreamRouter({ streamManager, eventJournal }), 30);
+  scittRouter = withAuthRateLimit(createSCITTRouter({ registry, eventJournal }), 30);
   grcTranslateRouter = rateLimitPg(db as any, 20, 60 * 60 * 1000)(createGrcTranslateRouter());
+  formatsRouter = rateLimitPg(db as any, 60)(createFormatsRouter());
 
   // 9. Start delivery worker if enabled
   if (Bun.env.ENABLE_DELIVERY_WORKER === "true") {
@@ -556,6 +573,7 @@ async function initialize() {
   ready = true;
   console.log("\nCorsair API ready!");
   console.log(`  Verify:  POST http://localhost:${PORT}/verify`);
+  console.log(`  Formats: GET  http://localhost:${PORT}/formats`);
   console.log(`  Sign:    POST http://localhost:${PORT}/sign`);
   console.log(`  Issue:   POST http://localhost:${PORT}/issue`);
   console.log(`  DID:     GET  http://localhost:${PORT}/.well-known/did.json`);

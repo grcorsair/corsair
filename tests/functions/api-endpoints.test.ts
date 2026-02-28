@@ -88,6 +88,9 @@ describe("POST /verify", () => {
     expect(body.summary!.controlsTested).toBe(3);
     expect(body.timestamps.issuedAt).toBeTruthy();
     expect(body.timestamps.expiresAt).toBeTruthy();
+    expect(body.digests?.inputSha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(body.digests?.jwtSha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(body.digests?.inputSha256).toBe(body.digests?.jwtSha256);
   });
 
   test("returns structured error for invalid JWT", async () => {
@@ -153,6 +156,9 @@ describe("POST /verify", () => {
 
     const body: VerifyResponse = await res.json();
     expect(body.verified).toBe(true);
+    expect(body.digests?.inputSha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(body.digests?.jwtSha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(body.digests?.inputSha256).not.toBe(body.digests?.jwtSha256);
   });
 
   test("evaluates verification policy when provided", async () => {
@@ -172,6 +178,41 @@ describe("POST /verify", () => {
     const body: VerifyResponse = await res.json();
     expect(body.policy).toBeTruthy();
     expect(body.policy?.ok).toBe(true);
+  });
+
+  test("validates extended policy fields on /verify", async () => {
+    const router = createVerifyRouter({ keyManager });
+    const req = new Request("http://localhost/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cpoe: testJWT,
+        policy: { requireSource: "invalid-source" },
+      }),
+    });
+
+    const res = await router(req);
+    expect(res.status).toBe(400);
+    const body = await res.json() as { error: string };
+    expect(body.error).toContain("policy.requireSource");
+  });
+
+  test("returns inputBinding result when sourceDocumentHash is provided", async () => {
+    const router = createVerifyRouter({ keyManager });
+    const req = new Request("http://localhost/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cpoe: testJWT,
+        sourceDocumentHash: "abc123",
+      }),
+    });
+
+    const res = await router(req);
+    expect(res.status).toBe(200);
+    const body: VerifyResponse = await res.json();
+    expect(body.inputBinding).toBeTruthy();
+    expect(body.inputBinding?.ok).toBe(false);
   });
 
   test("rejects malformed JWT (not 3 segments)", async () => {
@@ -219,6 +260,31 @@ describe("POST /verify", () => {
     const body: VerifyResponse = await res.json();
     expect(body.verified).toBe(false);
     expect((body as any).reason).toBe("expired");
+  });
+
+  test("emits verify journal event", async () => {
+    const events: Array<{ eventType: string; status?: string; targetId?: string }> = [];
+    const router = createVerifyRouter({
+      keyManager,
+      eventJournal: {
+        async write(entry) {
+          events.push(entry);
+        },
+      },
+    });
+    const req = new Request("http://localhost/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cpoe: testJWT }),
+    });
+
+    const res = await router(req);
+    expect(res.status).toBe(200);
+    const body: VerifyResponse = await res.json();
+    expect(events.length).toBe(1);
+    expect(events[0].eventType).toBe("verify.success");
+    expect(events[0].status).toBe("success");
+    expect(events[0].targetId).toBe(body.issuer || undefined);
   });
 });
 
@@ -471,5 +537,33 @@ describe("POST /issue", () => {
 
     const body: IssueResponse = await res.json();
     expect(body.provenance.source).toBe("self"); // Manual = self
+  });
+
+  test("emits issue journal event", async () => {
+    const events: Array<{ eventType: string; targetId?: string; status?: string }> = [];
+    const router = createIssueRouter({
+      keyManager: keyManager as any,
+      domain: TEST_DOMAIN,
+      eventJournal: {
+        async write(entry) {
+          events.push(entry);
+        },
+      },
+    });
+    const req = new Request("http://localhost/issue", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-idempotency-key": "issue-journal-test",
+      },
+      body: JSON.stringify(validIssueBody),
+    });
+
+    const res = await router(req);
+    expect(res.status).toBe(201);
+    expect(events.length).toBe(1);
+    expect(events[0].eventType).toBe("issue.success");
+    expect(events[0].targetId).toBe(`did:web:${TEST_DOMAIN}`);
+    expect(events[0].status).toBeUndefined();
   });
 });

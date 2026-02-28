@@ -16,6 +16,7 @@
 
 import type { KeyManager } from "../parley/marque-key-manager";
 import type { APIEnvelope, APIErrorCode, V1VerifyResponse, V1HealthResponse, V1VerifyRequest } from "./types";
+import { createHash } from "crypto";
 
 // =============================================================================
 // TYPES
@@ -31,6 +32,7 @@ export interface V1RouterDeps {
 // =============================================================================
 
 const CORSAIR_VERSION = "0.5.0";
+const MAX_VERIFY_JWT_SIZE = 100_000; // 100KB
 
 function makeHeaders(requestId: string): Headers {
   const headers = new Headers();
@@ -190,8 +192,8 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
     }
 
     // Reject oversized JWTs (typical CPOE is 2-5KB)
-    if (jwt.length > 20_000) {
-      return envelopeError("payload_too_large", "JWT exceeds maximum size (20KB)", requestId, 400);
+    if (Buffer.byteLength(jwt) > MAX_VERIFY_JWT_SIZE) {
+      return envelopeError("payload_too_large", `JWT exceeds maximum size (${MAX_VERIFY_JWT_SIZE} bytes)`, requestId, 400);
     }
 
     // Basic format check
@@ -330,6 +332,10 @@ export function createV1VerifyHandler(deps: { keyManager: KeyManager }): (req: R
       policy: policyResult,
       process: processResult,
       inputBinding,
+      digests: {
+        inputSha256: createHash("sha256").update(jwt).digest("hex"),
+        jwtSha256: createHash("sha256").update(jwt).digest("hex"),
+      },
       extensions,
     };
 

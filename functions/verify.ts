@@ -19,10 +19,15 @@
 import type { MarqueVerificationResult } from "../src/parley/marque-verifier";
 import type { KeyManager } from "../src/parley/marque-key-manager";
 import type { VerificationPolicy } from "../src/parley/verification-policy";
+import { createHash } from "crypto";
+import type { EventJournalWriter } from "../src/intelligence/event-journal";
+import { writeEventBestEffort } from "../src/intelligence/event-journal";
+import { getRequestActor } from "../src/intelligence/request-context";
 
 export interface VerifyRouterDeps {
   keyManager: KeyManager;
   extraTrustedKeys?: Buffer[];
+  eventJournal?: EventJournalWriter;
 }
 
 const MAX_JWT_SIZE = 100_000; // 100KB
@@ -60,9 +65,10 @@ function jsonOk(data: unknown, status = 200): Response {
 export function createVerifyRouter(
   deps: VerifyRouterDeps,
 ): (req: Request) => Promise<Response> {
-  const { keyManager, extraTrustedKeys } = deps;
+  const { keyManager, extraTrustedKeys, eventJournal } = deps;
 
   return async (req: Request): Promise<Response> => {
+    const actor = getRequestActor(req);
     if (req.method !== "POST") {
       return jsonError(405, "Method not allowed. Use POST.");
     }
@@ -71,10 +77,16 @@ export function createVerifyRouter(
     let rawCpoe: string;
     let policy: VerificationPolicy | undefined;
     let receipts: Array<import("../src/parley/process-receipt").ProcessReceipt> | undefined;
+    let sourceDocumentHash: string | undefined;
     const contentType = req.headers.get("content-type") || "";
 
     if (contentType.includes("application/json")) {
-      let body: { cpoe?: string; policy?: VerificationPolicy; receipts?: unknown };
+      let body: {
+        cpoe?: string;
+        policy?: VerificationPolicy;
+        receipts?: unknown;
+        sourceDocumentHash?: unknown;
+      };
       try {
         body = await req.json();
       } catch {
@@ -118,6 +130,33 @@ export function createVerifyRouter(
         if (candidate.minScore !== undefined && typeof candidate.minScore !== "number") {
           return jsonError(400, "policy.minScore must be a number");
         }
+        if (candidate.requireSource && typeof candidate.requireSource !== "string") {
+          return jsonError(400, "policy.requireSource must be a string");
+        }
+        if (candidate.requireSource && !["self", "tool", "auditor"].includes(candidate.requireSource)) {
+          return jsonError(400, "policy.requireSource must be one of: self, tool, auditor");
+        }
+        if (candidate.requireSourceIdentity && !Array.isArray(candidate.requireSourceIdentity)) {
+          return jsonError(400, "policy.requireSourceIdentity must be an array of strings");
+        }
+        if (Array.isArray(candidate.requireSourceIdentity) && candidate.requireSourceIdentity.some(id => typeof id !== "string")) {
+          return jsonError(400, "policy.requireSourceIdentity must be an array of strings");
+        }
+        if (candidate.requireToolAttestation !== undefined && typeof candidate.requireToolAttestation !== "boolean") {
+          return jsonError(400, "policy.requireToolAttestation must be a boolean");
+        }
+        if (candidate.requireInputBinding !== undefined && typeof candidate.requireInputBinding !== "boolean") {
+          return jsonError(400, "policy.requireInputBinding must be a boolean");
+        }
+        if (candidate.requireEvidenceChain !== undefined && typeof candidate.requireEvidenceChain !== "boolean") {
+          return jsonError(400, "policy.requireEvidenceChain must be a boolean");
+        }
+        if (candidate.requireReceipts !== undefined && typeof candidate.requireReceipts !== "boolean") {
+          return jsonError(400, "policy.requireReceipts must be a boolean");
+        }
+        if (candidate.requireScitt !== undefined && typeof candidate.requireScitt !== "boolean") {
+          return jsonError(400, "policy.requireScitt must be a boolean");
+        }
         policy = candidate;
       }
 
@@ -127,6 +166,11 @@ export function createVerifyRouter(
         }
         receipts = body.receipts as Array<import("../src/parley/process-receipt").ProcessReceipt>;
       }
+
+      if (body.sourceDocumentHash !== undefined && typeof body.sourceDocumentHash !== "string") {
+        return jsonError(400, "sourceDocumentHash must be a string");
+      }
+      sourceDocumentHash = body.sourceDocumentHash;
     } else {
       // Accept raw JWT string
       rawCpoe = (await req.text()).trim();
@@ -204,15 +248,6 @@ export function createVerifyRouter(
     } catch { /* decode-only, non-critical */ }
 
     let policyResult: { ok: boolean; errors: string[] } | null = null;
-    if (!payload) {
-      policyResult = { ok: false, errors: ["Policy checks require JWT-VC input"] };
-    } else {
-      const { evaluateVerificationPolicy, getDefaultVerificationPolicy } = await import("../src/parley/verification-policy");
-      policyResult = evaluateVerificationPolicy(payload, {
-        ...getDefaultVerificationPolicy(),
-        ...(policy || {}),
-      });
-    }
 
     let processResult: VerifyResponse["process"] | null = null;
     if (receipts) {
@@ -234,10 +269,50 @@ export function createVerifyRouter(
         chainValid: fullResult.chainValid,
         receiptsVerified: fullResult.receiptsVerified,
         receiptsTotal: fullResult.receiptsTotal,
+        toolAttested: fullResult.toolAttestedVerified,
+        scittRegistered: fullResult.scittRegistered,
+      };
+    }
+
+    let inputBinding: VerifyResponse["inputBinding"] | null = null;
+    if (typeof sourceDocumentHash === "string") {
+      const cs = (payload?.vc as Record<string, unknown> | undefined)?.credentialSubject as Record<string, unknown> | undefined;
+      const expectedRaw = cs?.provenance && (cs.provenance as { sourceDocument?: unknown }).sourceDocument;
+      const expectedHash = typeof expectedRaw === "string" ? expectedRaw : undefined;
+      const errors: string[] = [];
+      if (!expectedHash) {
+        errors.push("missing provenance.sourceDocument in CPOE");
+      } else if (expectedHash !== sourceDocumentHash) {
+        errors.push("sourceDocumentHash does not match provenance.sourceDocument");
+      }
+      inputBinding = {
+        ok: errors.length === 0,
+        errors,
+        expected: expectedHash,
+        actual: sourceDocumentHash,
       };
     }
 
     // Build response
+    if (!payload) {
+      policyResult = { ok: false, errors: ["Policy checks require JWT-VC input"] };
+    } else {
+      const { evaluateVerificationPolicy, getDefaultVerificationPolicy } = await import("../src/parley/verification-policy");
+      policyResult = evaluateVerificationPolicy(payload, {
+        ...getDefaultVerificationPolicy(),
+        ...(policy || {}),
+      }, {
+        process: processResult ? {
+          chainValid: processResult.chainValid,
+          receiptsTotal: processResult.receiptsTotal,
+          receiptsVerified: processResult.receiptsVerified,
+          toolAttestedVerified: processResult.toolAttested ?? 0,
+          scittRegistered: processResult.scittRegistered ?? 0,
+        } : null,
+        inputBinding: inputBinding ? { ok: inputBinding.ok, errors: inputBinding.errors } : null,
+      });
+    }
+
     const response: VerifyResponse = {
       verified: result.valid,
       issuer: result.signedBy || null,
@@ -252,12 +327,35 @@ export function createVerifyRouter(
       processProvenance,
       policy: policyResult,
       process: processResult,
+      inputBinding,
+      digests: {
+        inputSha256: createHash("sha256").update(rawCpoe).digest("hex"),
+        jwtSha256: createHash("sha256").update(jwtToVerify).digest("hex"),
+      },
       extensions,
     };
 
     if (!result.valid) {
       (response as unknown as Record<string, unknown>).reason = result.reason;
     }
+
+    await writeEventBestEffort(eventJournal, {
+      eventType: result.valid ? "verify.success" : "verify.failure",
+      status: result.valid ? "success" : "failure",
+      actorType: actor.actorType,
+      actorIdHash: actor.actorIdHash,
+      targetType: "issuer",
+      targetId: result.signedBy || undefined,
+      requestMethod: req.method,
+      requestPath: new URL(req.url).pathname,
+      requestId: req.headers.get("x-request-id") || undefined,
+      metadata: {
+        issuerTier: result.issuerTier || null,
+        scope: result.scope || null,
+        reason: result.reason || null,
+        hasReceipts: Boolean(receipts && receipts.length > 0),
+      },
+    });
 
     return jsonOk(response);
   };
@@ -311,6 +409,17 @@ export interface VerifyResponse {
     attestedSteps: number;
   } | null;
   policy?: { ok: boolean; errors: string[] } | null;
-  process?: { chainValid: boolean; receiptsVerified: number; receiptsTotal: number } | null;
+  process?: {
+    chainValid: boolean;
+    receiptsVerified: number;
+    receiptsTotal: number;
+    toolAttested?: number;
+    scittRegistered?: number;
+  } | null;
+  inputBinding?: { ok: boolean; errors: string[]; expected?: string; actual?: string } | null;
+  digests?: {
+    inputSha256: string;
+    jwtSha256: string;
+  } | null;
   extensions?: Record<string, unknown> | null;
 }

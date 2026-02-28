@@ -8,9 +8,13 @@
  */
 
 import type { SCITTRegistry } from "../src/parley/scitt-types";
+import type { EventJournalWriter } from "../src/intelligence/event-journal";
+import { writeEventBestEffort } from "../src/intelligence/event-journal";
+import { getRequestActor } from "../src/intelligence/request-context";
 
 export interface SCITTRouterDeps {
   registry: SCITTRegistry;
+  eventJournal?: EventJournalWriter;
 }
 
 function jsonError(status: number, message: string): Response {
@@ -81,15 +85,23 @@ function matchSCITTRoute(
   return null;
 }
 
+function normalizePath(pathname: string): string {
+  if (pathname.startsWith("/v1/")) {
+    return pathname.slice(3);
+  }
+  return pathname;
+}
+
 export function createSCITTRouter(
   deps: SCITTRouterDeps,
 ): (req: Request) => Promise<Response> {
-  const { registry } = deps;
+  const { registry, eventJournal } = deps;
 
   return async (req: Request): Promise<Response> => {
     const url = new URL(req.url);
-    const { pathname } = url;
+    const pathname = normalizePath(url.pathname);
     const method = req.method;
+    const actor = getRequestActor(req);
 
     // POST /scitt/entries — Register statement
     if (method === "POST" && pathname === "/scitt/entries") {
@@ -114,6 +126,19 @@ export function createSCITTRouter(
       }
 
       const registration = await registry.register(body.statement, { proofOnly: body.proofOnly });
+      await writeEventBestEffort(eventJournal, {
+        eventType: "scitt.entry.registered",
+        actorType: actor.actorType,
+        actorIdHash: actor.actorIdHash,
+        targetType: "scitt_entry",
+        targetId: registration.entryId,
+        requestMethod: method,
+        requestPath: pathname,
+        metadata: {
+          proofOnly: Boolean(body.proofOnly),
+          statementSize: body.statement.length,
+        },
+      });
       return jsonOk({ ...registration, proofOnly: Boolean(body.proofOnly) }, 201);
     }
 

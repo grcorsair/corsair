@@ -106,6 +106,10 @@ export interface V1VerifyResponse {
     scittRegistered?: number;
   } | null;
   inputBinding?: { ok: boolean; errors: string[]; expected?: string; actual?: string } | null;
+  digests?: {
+    inputSha256: string;
+    jwtSha256: string;
+  } | null;
   extensions?: Record<string, unknown> | null;
   reason?: string;
 }
