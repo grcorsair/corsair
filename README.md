@@ -147,6 +147,7 @@ Current emitted `event_journal.event_type` values:
 - `trusttxt.hosted.upsert`, `trusttxt.hosted.verified`, `trusttxt.hosted.public_fetch`
 
 `event_journal` is intentionally write-only in normal operation (`UPDATE`/`DELETE` are blocked by DB rules).
+Read access is exposed via authenticated API: `GET /intelligence/events` (actor-scoped).
 
 Example query:
 
@@ -579,6 +580,10 @@ curl -X POST https://api.grcorsair.com/issue \
   -H "Authorization: Bearer $AUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"source":"tool","metadata":{"issuer":"Acme","assessmentDate":"2026-02-20","scope":"Production"},"controls":[{"id":"CC6.1","title":"MFA","status":"pass"}]}'
+
+# Intelligence events (auth required; actor-scoped)
+curl "https://api.grcorsair.com/intelligence/events?limit=25&status=failure" \
+  -H "Authorization: Bearer $AUTH_TOKEN"
 ```
 
 ### SDK

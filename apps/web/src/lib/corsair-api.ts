@@ -322,3 +322,73 @@ export async function verifyHostedTrustTxtViaAPI(
 ): Promise<APIHostedTrustTxtResult<APIHostedTrustTxtVerifyResponse>> {
   return apiPost<APIHostedTrustTxtVerifyResponse>(`/trust-txt/host/${domain}/verify`, {}, token);
 }
+
+// =============================================================================
+// INTELLIGENCE EVENTS API
+// =============================================================================
+
+export interface APIIntelligenceEvent {
+  eventId: string;
+  eventType: string;
+  eventVersion: number;
+  status: "success" | "failure";
+  occurredAt: string;
+  actorType: "api_key" | "oidc" | "anonymous" | "legacy";
+  targetType?: string;
+  targetId?: string;
+  requestPath?: string;
+  requestMethod?: string;
+  requestId?: string;
+  idempotencyKey?: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface APIIntelligenceEventsResponse {
+  events: APIIntelligenceEvent[];
+  pagination: {
+    limit: number;
+    offset: number;
+    count: number;
+  };
+  filters: {
+    eventType?: string;
+    status?: "success" | "failure";
+    targetType?: string;
+    targetId?: string;
+    since?: string;
+    until?: string;
+  };
+  scope: {
+    actorType: "api_key" | "oidc";
+  };
+}
+
+export interface APIIntelligenceEventsQuery {
+  limit?: number;
+  offset?: number;
+  eventType?: string;
+  status?: "success" | "failure";
+  targetType?: string;
+  targetId?: string;
+  since?: string;
+  until?: string;
+}
+
+export async function getIntelligenceEventsViaAPI(
+  token: string,
+  query: APIIntelligenceEventsQuery = {},
+): Promise<APIHostedTrustTxtResult<APIIntelligenceEventsResponse>> {
+  const params = new URLSearchParams();
+  if (typeof query.limit === "number") params.set("limit", String(query.limit));
+  if (typeof query.offset === "number") params.set("offset", String(query.offset));
+  if (query.eventType) params.set("eventType", query.eventType);
+  if (query.status) params.set("status", query.status);
+  if (query.targetType) params.set("targetType", query.targetType);
+  if (query.targetId) params.set("targetId", query.targetId);
+  if (query.since) params.set("since", query.since);
+  if (query.until) params.set("until", query.until);
+
+  const qs = params.toString();
+  const path = qs ? `/intelligence/events?${qs}` : "/intelligence/events";
+  return apiGet<APIIntelligenceEventsResponse>(path, token);
+}

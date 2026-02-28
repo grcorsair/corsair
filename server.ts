@@ -15,6 +15,7 @@
  *   POST /trust-txt/host                — Hosted trust.txt + DNS delegation
  *   POST /trust-txt/host/:domain/verify — Verify hosted trust.txt delegation
  *   GET  /trust/:domain/trust.txt       — Public hosted trust.txt
+ *   GET  /intelligence/events            — Authenticated event_journal query
  *
  * TRUST ANCHORS:
  *   GET /.well-known/did.json           — DID Document (Ed25519 public key)
@@ -40,6 +41,7 @@
 import { VERSION } from "./src/version";
 import { createHealthHandler } from "./functions/health";
 import { createFormatsRouter } from "./functions/formats";
+import { createIntelligenceEventsRouter } from "./functions/intelligence-events";
 import { createSSFConfigHandler } from "./functions/ssf-configuration";
 import { createSSFStreamRouter } from "./functions/ssf-stream";
 import { createSCITTRouter } from "./functions/scitt-register";
@@ -93,6 +95,7 @@ type Handler = (req: Request) => Response | Promise<Response>;
 // Mutable refs populated after async init
 let healthHandler: Handler | null = null;
 let formatsRouter: Handler | null = null;
+let intelligenceEventsRouter: Handler | null = null;
 let verifyRouter: Handler | null = null;
 let signRouter: Handler | null = null;
 let demoSignRouter: Handler | null = null;
@@ -203,6 +206,10 @@ const server = Bun.serve({
 
     if (path === "/formats" || path === "/v1/formats") {
       return formatsRouter!(req);
+    }
+
+    if (path === "/intelligence/events" || path === "/v1/intelligence/events") {
+      return intelligenceEventsRouter!(req);
     }
 
     if (path === "/sign" || path === "/v1/sign") {
@@ -492,6 +499,7 @@ async function initialize() {
   scittRouter = withAuthRateLimit(createSCITTRouter({ registry, eventJournal }), 30);
   grcTranslateRouter = rateLimitPg(db as any, 20, 60 * 60 * 1000)(createGrcTranslateRouter());
   formatsRouter = rateLimitPg(db as any, 60)(createFormatsRouter());
+  intelligenceEventsRouter = withAuthRateLimit(createIntelligenceEventsRouter({ db: db as any }), 60);
 
   // 9. Start delivery worker if enabled
   if (Bun.env.ENABLE_DELIVERY_WORKER === "true") {

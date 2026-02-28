@@ -242,12 +242,82 @@ paths:
                       loadErrors:
                         type: integer
 
+  /intelligence/events:
+    get:
+      operationId: getIntelligenceEvents
+      summary: Query event journal telemetry
+      description: |
+        Returns append-only operational telemetry from event_journal.
+        Requires Bearer auth and is scoped to the authenticated actor identity.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - in: query
+          name: eventType
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [success, failure]
+        - in: query
+          name: targetType
+          schema:
+            type: string
+        - in: query
+          name: targetId
+          schema:
+            type: string
+        - in: query
+          name: since
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: until
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Intelligence events for authenticated scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntelligenceEventsResponse"
+        "401":
+          description: Missing Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Token invalid or unsupported scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
-      description: API key or OIDC token for authenticated endpoints (sign, issue, onboard). Verify is always free.
+      description: API key or OIDC token for authenticated endpoints (sign, issue, onboard, intelligence). Verify is always free.
 
   schemas:
     OnboardRequest:
@@ -484,6 +554,74 @@ components:
                   type: string
             reason:
               type: string
+
+    IntelligenceEvent:
+      type: object
+      required:
+        - eventId
+        - eventType
+        - eventVersion
+        - status
+        - occurredAt
+        - actorType
+        - metadata
+      properties:
+        eventId:
+          type: string
+        eventType:
+          type: string
+        eventVersion:
+          type: integer
+        status:
+          type: string
+          enum: [success, failure]
+        occurredAt:
+          type: string
+          format: date-time
+        actorType:
+          type: string
+          enum: [api_key, oidc, anonymous, legacy]
+        targetType:
+          type: string
+        targetId:
+          type: string
+        requestPath:
+          type: string
+        requestMethod:
+          type: string
+        requestId:
+          type: string
+        idempotencyKey:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+
+    IntelligenceEventsResponse:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/IntelligenceEvent"
+        pagination:
+          type: object
+          properties:
+            limit:
+              type: integer
+            offset:
+              type: integer
+            count:
+              type: integer
+        filters:
+          type: object
+          additionalProperties: true
+        scope:
+          type: object
+          properties:
+            actorType:
+              type: string
+              enum: [api_key, oidc]
 
     ErrorResponse:
       type: object

@@ -11,6 +11,7 @@ import { describe, test, expect, beforeEach } from "bun:test";
 import { VERSION } from "../../src/version";
 import { handleHealth, createHealthHandler } from "../../functions/health";
 import { createFormatsRouter } from "../../functions/formats";
+import { createIntelligenceEventsRouter } from "../../functions/intelligence-events";
 import { handleSSFConfiguration, createSSFConfigHandler } from "../../functions/ssf-configuration";
 import {
   createSSFStreamRouter,
@@ -157,6 +158,55 @@ describe("Formats Endpoint", () => {
     const req = jsonRequest("POST", "/formats");
     const res = await router(req);
     expect(res.status).toBe(405);
+  });
+});
+
+// =============================================================================
+// INTELLIGENCE EVENTS ENDPOINT
+// =============================================================================
+
+describe("Intelligence Events Endpoint", () => {
+  test("GET /intelligence/events returns scoped events for authenticated actor", async () => {
+    const db = async () => [{
+      event_id: "evt_1",
+      event_type: "verify.success",
+      event_version: 1,
+      status: "success",
+      occurred_at: "2026-02-28T12:00:00.000Z",
+      actor_type: "api_key",
+      target_type: "issuer",
+      target_id: "did:web:acme.com",
+      request_path: "/verify",
+      request_method: "POST",
+      request_id: "req_1",
+      idempotency_key: null,
+      metadata: { issuerTier: "self-signed" },
+    }];
+    const router = createIntelligenceEventsRouter({ db: db as any });
+    const req = withApiKeyAuth(jsonRequest("GET", "/intelligence/events?limit=10"), "test-api-key");
+
+    const res = await router(req);
+    expect(res.status).toBe(200);
+    const body = (await jsonResponse(res)) as Record<string, unknown>;
+    const events = body.events as Array<Record<string, unknown>>;
+    expect(events.length).toBe(1);
+    expect(events[0].eventType).toBe("verify.success");
+  });
+
+  test("supports /v1/intelligence/events alias", async () => {
+    const db = async () => [];
+    const router = createIntelligenceEventsRouter({ db: db as any });
+    const req = withApiKeyAuth(jsonRequest("GET", "/v1/intelligence/events"), "test-api-key");
+    const res = await router(req);
+    expect(res.status).toBe(200);
+  });
+
+  test("returns 400 for invalid status filter", async () => {
+    const db = async () => [];
+    const router = createIntelligenceEventsRouter({ db: db as any });
+    const req = withApiKeyAuth(jsonRequest("GET", "/intelligence/events?status=bad"), "test-api-key");
+    const res = await router(req);
+    expect(res.status).toBe(400);
   });
 });
 

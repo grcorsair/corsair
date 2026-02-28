@@ -9,6 +9,7 @@ const productLinks = [
   { href: "/setup", label: "Hosted Setup" },
   { href: "/verify", label: "Verify" },
   { href: "/translate", label: "Translate" },
+  { href: "/intelligence", label: "Intelligence" },
   { href: "/diff", label: "Diff" },
   { href: "/signal", label: "Signal" },
   { href: "/how-it-works", label: "How It Works" },
@@ -20,6 +21,7 @@ const productLinks = [
 const resourceLinks = [
   { href: "/docs/getting-started/quick-start", label: "Quick Start" },
   { href: "/docs/concepts/pipeline", label: "CPOE Lifecycle" },
+  { href: "/docs/integrations/intelligence", label: "Intelligence API" },
   { href: "/docs/integrations/api", label: "REST API" },
   { href: "/docs/integrations/skills", label: "Agent Skills" },
   { href: "/docs#integrations", label: "Integrations" },

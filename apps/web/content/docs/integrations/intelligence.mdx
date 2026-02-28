@@ -1,0 +1,98 @@
+---
+title: "Intelligence"
+description: "Read operational telemetry from Corsair's append-only event journal."
+section: "integrations"
+order: 35
+---
+
+## Overview
+
+Corsair Intelligence is the read surface for hosted protocol telemetry captured in `event_journal`.
+Writes are emitted by hosted operations (`sign`, `issue`, `verify`, `scitt`, `ssf`, and hosted `trust.txt`).
+
+Current release provides:
+
+- Authenticated read API (`GET /intelligence/events`)
+- Actor-scoped access (API key hash or OIDC subject hash)
+- Optional filters + pagination
+- Dashboard at `/intelligence`
+
+## Access Model
+
+This endpoint is **not public**.
+You must send a Bearer token (API key or OIDC token), and results are scoped to the authenticated actor.
+
+```bash
+curl "https://api.grcorsair.com/intelligence/events?limit=25" \
+  -H "Authorization: Bearer $AUTH_TOKEN"
+```
+
+## Query Parameters
+
+| Param | Type | Description |
+|:------|:-----|:------------|
+| `limit` | number | Page size. Default `50`, max `200` |
+| `offset` | number | Pagination offset. Default `0` |
+| `eventType` | string | Exact event type filter |
+| `status` | string | `success` or `failure` |
+| `targetType` | string | Target type filter (e.g. `domain`, `did`, `issuer`) |
+| `targetId` | string | Exact target ID filter |
+| `since` | ISO timestamp | Start bound on `occurred_at` |
+| `until` | ISO timestamp | End bound on `occurred_at` |
+
+## Response
+
+```json
+{
+  "events": [
+    {
+      "eventId": "evt_123",
+      "eventType": "trusttxt.hosted.verified",
+      "eventVersion": 1,
+      "status": "success",
+      "occurredAt": "2026-02-28T10:00:00.000Z",
+      "actorType": "api_key",
+      "targetType": "domain",
+      "targetId": "acme.com",
+      "requestPath": "/trust-txt/host/acme.com/verify",
+      "requestMethod": "POST",
+      "metadata": {
+        "delegatedMethod": "txt",
+        "source": "delegated-txt"
+      }
+    }
+  ],
+  "pagination": {
+    "limit": 50,
+    "offset": 0,
+    "count": 1
+  },
+  "filters": {
+    "status": "success"
+  },
+  "scope": {
+    "actorType": "api_key"
+  }
+}
+```
+
+## Event Types
+
+Current emitted event types:
+
+- `sign.success`, `sign.failure`
+- `issue.success`, `issue.failure`
+- `verify.success`, `verify.failure`
+- `scitt.entry.registered`
+- `ssf.stream.created`, `ssf.stream.read`, `ssf.stream.updated`, `ssf.stream.deleted`
+- `trusttxt.hosted.upsert`, `trusttxt.hosted.verified`, `trusttxt.hosted.public_fetch`
+
+## Monetization-Friendly Rollout
+
+Recommended product stance:
+
+- Keep endpoint and dashboard visible in docs and nav.
+- Require auth now (already enforced).
+- Keep richer capabilities for paid plans later (org/team scope, exports, retention tiers, anomaly alerts).
+
+This lets you build adoption and feedback without giving away the full analytics product.
