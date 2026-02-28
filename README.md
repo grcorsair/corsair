@@ -8,7 +8,7 @@
 
 <br/>
 
-![Tests](https://img.shields.io/github/actions/workflow/status/arudjreis/corsair/test.yml?style=for-the-badge&label=TESTS&labelColor=0A0E17&color=2ECC71)
+![Tests](https://img.shields.io/github/actions/workflow/status/grcorsair/corsair/test.yml?style=for-the-badge&label=TESTS&labelColor=0A0E17&color=2ECC71)
 ![Version](https://img.shields.io/badge/v1.1.7-D4A853?style=for-the-badge&label=VERSION&labelColor=0A0E17)
 ![License](https://img.shields.io/badge/Apache_2.0-D4A853?style=for-the-badge&label=LICENSE&labelColor=0A0E17)
 ![Runtime](https://img.shields.io/badge/Bun-E8E2D6?style=for-the-badge&label=RUNTIME&labelColor=0A0E17&logo=bun&logoColor=E8E2D6)
@@ -91,8 +91,17 @@ corsair diff --current q2.jwt --previous q1.jwt
 | `CORSAIR_OIDC_CONFIG` | JSON config for OIDC issuers (keyless signing) | No |
 | `CORSAIR_DOMAIN` | Public domain for DID:web and trust.txt generation | Recommended |
 | `CORSAIR_TRUST_HOST` | Hostname for hosted trust.txt URLs (defaults to `trust.<CORSAIR_DOMAIN>`) | Optional |
+| `CORSAIR_ALLOWED_ORIGINS` | Comma-separated CORS origins for authenticated routes | Optional |
 | `CORSAIR_MAPPING_PACK_PUBKEY` | Ed25519 public key PEM to verify signed mapping packs | Optional |
 | `OPENROUTER_API_KEY` | Enables multi-model GRC JSON translator endpoint (`POST /grc/translate`) | Optional |
+| `OPENROUTER_HTTP_REFERER` | HTTP Referer sent to OpenRouter (defaults to `https://grcorsair.com`) | Optional |
+| `GRC_TRANSLATOR_ENABLED` | Enable/disable translator endpoint (default `true`) | Optional |
+| `GRC_TRANSLATOR_MAX_INPUT_BYTES` | Max translator input size in bytes (default `131072`) | Optional |
+| `GRC_TRANSLATOR_MAX_MODELS` | Max models per translator request (default `10`) | Optional |
+| `GRC_TRANSLATOR_MODEL_TIMEOUT_MS` | Per-model timeout in milliseconds (default `20000`) | Optional |
+| `GRC_TRANSLATOR_MAX_OUTPUT_TOKENS` | Max model output tokens (default `500`) | Optional |
+| `ENABLE_DELIVERY_WORKER` | Enables SSF delivery worker loop (`true` to enable) | Optional |
+| `DELIVERY_WORKER_INTERVAL` | SSF delivery worker poll interval ms (default `30000`) | Optional |
 
 `CORSAIR_OIDC_CONFIG` example:
 ```json
@@ -119,6 +128,34 @@ corsair diff --current q2.jwt --previous q1.jwt
 - **CLI / local use:** file-based, no database required.
 - **Hosted API / production:** Postgres is required via `DATABASE_URL` for keys, SCITT, and audit trails.
 - Migrations are applied automatically on API startup (idempotent).
+
+### Data Capture Foundation (v1)
+
+`src/db/migrations/014_data_capture_foundation.sql` adds the non-ephemeral metadata base:
+
+- `event_journal` (append-only): internal telemetry emitted by hosted protocol operations
+- `ssf_streams.owner_type/owner_id`: per-owner isolation for SSF stream CRUD
+- `scitt_entries.tree_size` uniqueness constraint: continuity hardening for append order
+
+Current emitted `event_journal.event_type` values:
+
+- `sign.success`, `sign.failure`
+- `issue.success`, `issue.failure`
+- `verify.success`, `verify.failure`
+- `scitt.entry.registered`
+- `ssf.stream.created`, `ssf.stream.read`, `ssf.stream.updated`, `ssf.stream.deleted`
+- `trusttxt.hosted.upsert`, `trusttxt.hosted.verified`, `trusttxt.hosted.public_fetch`
+
+`event_journal` is intentionally write-only in normal operation (`UPDATE`/`DELETE` are blocked by DB rules).
+
+Example query:
+
+```sql
+SELECT event_type, date_trunc('day', occurred_at) AS day, count(*) AS events
+FROM event_journal
+GROUP BY event_type, day
+ORDER BY day DESC, events DESC;
+```
 
 ---
 
@@ -309,7 +346,7 @@ A CPOE is a JWT with three base64url-encoded segments: `header.payload.signature
 ┌──────────────────────────────────────────────────────────────────┐
 │ HEADER   { "alg": "EdDSA", "typ": "vc+jwt", "kid": "did:web:..." }      │
 ├──────────────────────────────────────────────────────────────────┤
-│ PAYLOAD  { "iss": "did:web:...", "vc": { ... CPOE ... }, "parley": "2.0" }│
+│ PAYLOAD  { "iss": "did:web:...", "vc": { ... CPOE ... }, "parley": "2.1" }│
 ├──────────────────────────────────────────────────────────────────┤
 │ SIGNATURE  Ed25519                                                        │
 └──────────────────────────────────────────────────────────────────┘
@@ -537,10 +574,11 @@ curl -X POST https://api.grcorsair.com/grc/translate \
   -H "Content-Type: application/json" \
   -d '{"payload":{"framework":"SOC2","controls":[{"id":"CC6.1","status":"pass"}]},"mode":"quick","redact":true}'
 
-# Then publish trust.txt + onboarding artifacts
-curl -X POST https://api.grcorsair.com/onboard \
+# Issue a CPOE via API
+curl -X POST https://api.grcorsair.com/issue \
   -H "Authorization: Bearer $AUTH_TOKEN" \
-  -d '{"contact":"security@acme.com","frameworks":["SOC2"]}'
+  -H "Content-Type: application/json" \
+  -d '{"source":"tool","metadata":{"issuer":"Acme","assessmentDate":"2026-02-20","scope":"Production"},"controls":[{"id":"CC6.1","title":"MFA","status":"pass"}]}'
 ```
 
 ### SDK
@@ -555,7 +593,7 @@ For internal development only, you can use `packages/sdk` as a workspace after c
 ## Testing
 
 ```bash
-bun test   # 1184 tests, 64 files — all passing
+bun test   # 1210 tests, 85 files — all passing
 ```
 
 ---
@@ -635,7 +673,7 @@ src/
 bin/                       # Standalone CLIs (verify, DID, MCP)
 functions/                 # Railway API endpoints
 apps/web/                  # grcorsair.com (Next.js 16)
-  packages/sdk/              # @grcorsair/sdk (coming soon, not actively maintained)
+packages/sdk/              # @grcorsair/sdk (coming soon, not actively maintained)
 tests/                     # Test suite
 ```
 
@@ -646,6 +684,7 @@ tests/                     # Test suite
 ## Data Retention
 
 - **SCITT entries** are append-only by design. Entries cannot be deleted or modified after registration.
+- **Event journal** rows are append-only by design. Signal metadata is retained for longitudinal analysis.
 - **Signing keys** are encrypted at rest (AES-256-GCM). Retired keys are preserved for historical CPOE verification.
 
 ## Security

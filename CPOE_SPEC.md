@@ -33,7 +33,7 @@ A CPOE is a standard JWT with three base64url-encoded segments: `header.payload.
   "jti": "marque-a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "iat": 1739059200,
   "exp": 1739664000,
-  "parley": "2.0",
+  "parley": "2.1",
   "vc": {
     "@context": [
       "https://www.w3.org/ns/credentials/v2",
@@ -261,4 +261,4 @@ CPOE is an open format. Implement it, extend it, build on it.
 
 This specification is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The reference implementation is licensed under [Apache 2.0](LICENSE).
 
-Specification source: [github.com/arudjreis/corsair](https://github.com/arudjreis/corsair)
+Specification source: [github.com/grcorsair/corsair](https://github.com/grcorsair/corsair)

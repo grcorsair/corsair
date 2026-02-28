@@ -168,7 +168,7 @@ export const INTEGRATIONS: Integration[] = [
     category: "sign-verify",
     status: "beta",
     description: "Containerized CLI — no local runtime needed",
-    snippet: "docker run ghcr.io/arudjreis/corsair sign --file evidence.json",
+    snippet: "docker run ghcr.io/grcorsair/corsair sign --file evidence.json",
   },
   {
     id: "web-sign",

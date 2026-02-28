@@ -14,7 +14,7 @@
 
 ```bash
 # Clone the ship
-git clone https://github.com/arudjreis/corsair.git
+git clone https://github.com/grcorsair/corsair.git
 cd corsair
 
 # Provision the crew
